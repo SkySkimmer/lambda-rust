@@ -264,18 +264,16 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
     head_step (Write ScOrd (Lit $ LitLoc l) e) σ
               (Lit LitUnit) (<[l:=(ReadingSt 0, v)]>σ)
               None
-| CasFailS l e1 v1 e2 v2 vl σ :
-    to_val e1 = Some v1 →
-    to_val e2 = Some v2 →
-    σ !! l = Some (ReadingSt 0, vl) →
-    vl ≠ v1 →
-    head_step (CAS (Lit $ LitLoc l) e1 e2) σ (Lit $ lit_of_bool false) σ  None
-| CasSucS l e1 v1 e2 v2 σ :
-    to_val e1 = Some v1 →
-    to_val e2 = Some v2 →
-    σ !! l = Some (ReadingSt 0, v1) →
-    head_step (CAS (Lit $ LitLoc l) e1 e2) σ
-              (Lit $ lit_of_bool true) (<[l:=(ReadingSt 0, v2)]>σ) None
+| CasFailS l z1 z2 zl σ :
+    σ !! l = Some (ReadingSt 0, LitV $ LitInt zl) →
+    zl ≠ z1 →
+    head_step (CAS (Lit $ LitLoc l) (Lit $ LitInt z1) (Lit $ LitInt z2)) σ
+              (Lit $ lit_of_bool false) σ  None
+| CasSucS l z1 z2 σ :
+    σ !! l = Some (ReadingSt 0, LitV $ LitInt z1) →
+    head_step (CAS (Lit $ LitLoc l) (Lit $ LitInt z1) (Lit $ LitInt z2)) σ
+              (Lit $ lit_of_bool true) (<[l:=(ReadingSt 0, LitV $ LitInt z2)]>σ)
+              None
 | AllocS n blk i0 init σ :
     0 < n →
     (∀ i, σ !! (blk, i) = None) →
