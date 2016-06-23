@@ -52,8 +52,8 @@ Inductive expr (X : list string) :=
 | Read (o : order) (e : expr X)
 | Write (o : order) (e1 e2: expr X)
 | CAS (e0 e1 e2 : expr X)
-| Alloc (n : nat)
-| Free (n : nat) (e : expr X)
+| Alloc (e : expr X)
+| Free (e1 e2 : expr X)
 | Case (e : expr X) (el : list (expr X))
 | Fork (e : expr X).
 
@@ -69,8 +69,8 @@ Arguments App {_} _%Rust _%Rust.
 Arguments Read {_} _ _%Rust.
 Arguments Write {_} _ _%Rust _%Rust.
 Arguments CAS {_} _%Rust _%Rust _%Rust.
-Arguments Alloc {_} _.
-Arguments Free {_} _ _%Rust.
+Arguments Alloc {_} _%Rust.
+Arguments Free {_} _%Rust _%Rust.
 Arguments Case {_} _%Rust _%Rust.
 Arguments Fork {_} _%Rust.
 
@@ -109,7 +109,9 @@ Inductive ectx_item :=
 | CasLCtx (e1 e2: expr [])
 | CasMCtx (v0 : val) (e2 : expr [])
 | CasRCtx (v0 : val) (v1 : val)
-| FreeCtx (n : nat)
+| AllocCtx
+| FreeLCtx (e2 : expr [])
+| FreeRCtx (v1 : val)
 | CaseCtx (el : list (expr [])).
 
 Definition fill_item (Ki : ectx_item) (e : expr []) : expr [] :=
@@ -125,7 +127,9 @@ Definition fill_item (Ki : ectx_item) (e : expr []) : expr [] :=
   | CasLCtx e1 e2 => CAS e e1 e2
   | CasMCtx v0 e2 => CAS (of_val v0) e e2
   | CasRCtx v0 v1 => CAS (of_val v0) (of_val v1) e
-  | FreeCtx n => Free n e
+  | AllocCtx => Alloc e
+  | FreeLCtx e2 => Free e e2
+  | FreeRCtx v1 => Free (of_val v1) e
   | CaseCtx el => Case e el
   end.
 
@@ -141,8 +145,8 @@ Program Fixpoint wexpr {X Y} (H : X `included` Y) (e : expr X) : expr Y :=
   | Read o e => Read o (wexpr H e)
   | Write o e1 e2 => Write o (wexpr H e1) (wexpr H e2)
   | CAS e0 e1 e2 => CAS (wexpr H e0) (wexpr H e1) (wexpr H e2)
-  | Alloc n => Alloc n
-  | Free n e => Free n (wexpr H e)
+  | Alloc e => Alloc (wexpr H e)
+  | Free e1 e2 => Free (wexpr H e1) (wexpr H e2)
   | Case e el => Case (wexpr H e) (List.map (wexpr H) el)
   | Fork e => Fork (wexpr H e)
   end.
@@ -173,8 +177,8 @@ Program Fixpoint wsubst {X Y} (x : string) (es : expr [])
   | Read o e => Read o (wsubst x es H e)
   | Write o e1 e2 => Write o (wsubst x es H e1) (wsubst x es H e2)
   | CAS e0 e1 e2 => CAS (wsubst x es H e0) (wsubst x es H e1) (wsubst x es H e2)
-  | Alloc n => Alloc n
-  | Free n e => Free n (wsubst x es H e)
+  | Alloc e => Alloc (wsubst x es H e)
+  | Free e1 e2 => Free (wsubst x es H e1) (wsubst x es H e2)
   | Case e el => Case (wsubst x es H e) (List.map (wsubst x es H) el)
   | Fork e => Fork (wsubst x es H e)
   end.
@@ -273,13 +277,16 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
     head_step (CAS (Lit $ LitLoc l) e1 e2) σ
               (Lit $ lit_of_bool true) (<[l:=(ReadingSt 0, v2)]>σ) None
 | AllocS n blk i0 init σ :
+    0 < n →
     (∀ i, σ !! (blk, i) = None) →
-    List.length init = n →
-    head_step (Alloc n) σ (Lit $ LitLoc (blk, i0)) (init_mem blk i0 init σ) None
-| FreeS n blk i0 (σ:state) :
-    (∀ i, is_Some (σ !! (blk, i)) ↔ (i0 ≤ i ∧ i < i0 + n)%nat) →
-    head_step (Free n $ Lit $ LitLoc (blk, i0)) σ
-              (Lit LitUnit) (free_mem blk n i0 σ)
+    List.length init = Z.to_nat n →
+    head_step (Alloc $ Lit $ LitInt n) σ
+              (Lit $ LitLoc (blk, i0)) (init_mem blk i0 init σ) None
+| FreeS n blk i0 σ :
+    0 < n →
+    (∀ i, is_Some (σ !! (blk, i)) ↔ (i0 ≤ i ∧ i < i0 + Z.to_nat n)%nat) →
+    head_step (Free (Lit $ LitInt n) (Lit $ LitLoc (blk, i0))) σ
+              (Lit LitUnit) (free_mem blk (Z.to_nat n) i0 σ)
               None
 | CaseS i el e σ :
     0 ≤ i →
@@ -291,21 +298,17 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
 (** Atomic expressions *)
 Definition atomic (e: expr []) : bool :=
   match e with
-  | Read ScOrd e => bool_decide (is_Some (to_val e))
-  | Write ScOrd e1 e2 => bool_decide (is_Some (to_val e1) ∧ is_Some (to_val e2))
+  | Read ScOrd e | Alloc e => bool_decide (is_Some (to_val e))
+  | Write ScOrd e1 e2 | Free e1 e2 =>
+    bool_decide (is_Some (to_val e1) ∧ is_Some (to_val e2))
   | CAS e0 e1 e2 =>
     bool_decide (is_Some (to_val e0) ∧ is_Some (to_val e1) ∧ is_Some (to_val e2))
-  | Alloc _ => true
-  | Free _ e => bool_decide (is_Some (to_val e))
   | _ => false
   end.
 
 (** Substitution *)
 Lemma var_proof_irrel X x H1 H2 : @Var X x H1 = @Var X x H2.
 Proof. f_equal. by apply (proof_irrel _). Qed.
-
-
-Inductive LTree : Set := Node : list LTree -> LTree.
 
 Lemma wexpr_id X (H : X `included` X) e : wexpr H e = e.
 Proof.
@@ -442,8 +445,8 @@ Lemma fill_item_no_val_inj Ki1 Ki2 e1 e2 :
   to_val e1 = None → to_val e2 = None →
   fill_item Ki1 e1 = fill_item Ki2 e2 → Ki1 = Ki2.
 Proof.
-  destruct Ki1 as [| | | |v1 vl1 el1| | | | | | | |],
-           Ki2 as [| | | |v2 vl2 el2| | | | | | | |];
+  destruct Ki1 as [| | | |v1 vl1 el1| | | | | | | | | |],
+           Ki2 as [| | | |v2 vl2 el2| | | | | | | | | |];
   intros He1 He2 EQ; try discriminate; simplify_eq/=;
     repeat match goal with
     | H : to_val (of_val _) = None |- _ => by rewrite to_of_val in H
@@ -472,20 +475,18 @@ Fixpoint expr_beq {X Y} (e : expr X) (e' : expr Y) : bool :=
   | Lit l, Lit l' => bool_decide (l = l')
   | Rec f xl e, Rec f' xl' e' =>
     bool_decide (f = f') && bool_decide (xl = xl') && expr_beq e e'
-  | Proj e n, Proj e' n' | Free n e, Free n' e' =>
-    expr_beq e e' && bool_decide (n = n')
+  | Proj e n, Proj e' n' => expr_beq e e' && bool_decide (n = n')
   | BinOp op e1 e2, BinOp op' e1' e2' =>
     bool_decide (op = op') && expr_beq e1 e1' && expr_beq e2 e2'
   | App e el, App e' el' | Case e el, Case e' el' =>
     expr_beq e e' && expr_list_beq el el'
-  | Read o e, Read o' e' =>
-    bool_decide (o = o') && expr_beq e e'
+  | Read o e, Read o' e' => bool_decide (o = o') && expr_beq e e'
   | Write o e1 e2, Write o' e1' e2' =>
     bool_decide (o = o') && expr_beq e1 e1' && expr_beq e2 e2'
   | CAS e0 e1 e2, CAS e0' e1' e2' =>
     expr_beq e0 e0' && expr_beq e1 e1' && expr_beq e2 e2'
-  | Alloc n, Alloc n' => bool_decide (n = n')
-  | Fork e, Fork e' => expr_beq e e'
+  | Alloc e, Alloc e' | Fork e, Fork e' => expr_beq e e'
+  | Free e1 e2, Free e1' e2' => expr_beq e1 e1' && expr_beq e2 e2'
   | _, _ => false
   end.
 Lemma expr_beq_correct {X} (e1 e2 : expr X) : expr_beq e1 e2 ↔ e1 = e2.
@@ -523,7 +524,7 @@ Canonical Structure valC := leibnizC val.
 Canonical Structure exprC X := leibnizC (expr X).
 
 (** Language *)
-Program Instance heap_ectxi_lang: EctxiLanguage (expr []) val ectx_item state :=
+Program Instance lrust_ectxi_lang: EctxiLanguage (expr []) val ectx_item state :=
   {| ectxi_language.of_val := of_val;
      ectxi_language.to_val := to_val;
      ectxi_language.fill_item := fill_item;
@@ -534,4 +535,4 @@ Solve Obligations with eauto using to_of_val, of_to_val,
   fill_item_val, atomic_fill_item,
   fill_item_no_val_inj, head_ctx_step_val.
 
-Canonical Structure heap_lang := ectx_lang (expr []).
+Canonical Structure lrust_lang := ectx_lang (expr []).
