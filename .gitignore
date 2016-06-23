@@ -1,0 +1,12 @@
+*.vo
+*.vio
+*.v.d
+*.glob
+*.cache
+*.aux
+\#*\#
+.\#*
+*~
+*.bak
+.coq-native/
+Makefile.coq
