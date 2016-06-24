@@ -6,7 +6,8 @@ From iris.prelude Require Import gmap.
 Open Scope Z_scope.
 
 (** Expressions and vals. *)
-Definition loc : Set := positive * Z.
+Definition block : Set := positive.
+Definition loc : Set := block * Z.
 
 Inductive base_lit : Set :=
 | LitUnit | LitLoc (l : loc) | LitInt (n : Z).
@@ -172,7 +173,7 @@ Program Fixpoint wsubst {X Y} (x : string) (es : expr [])
                 | right Hfy => wexpr (wsubst_rec_false_prf H Hfy) e
                 end
   | BinOp op e1 e2 => BinOp op (wsubst x es H e1) (wsubst x es H e2)
-  | App e1 e2 => App (wsubst x es H e1) (List.map (wsubst x es H) e2)
+  | App e el => App (wsubst x es H e) (List.map (wsubst x es H) el)
   | Read o e => Read o (wsubst x es H e)
   | Write o e1 e2 => Write o (wsubst x es H e1) (wsubst x es H e2)
   | CAS e0 e1 e2 => CAS (wsubst x es H e0) (wsubst x es H e1) (wsubst x es H e2)
@@ -207,14 +208,14 @@ Definition bin_op_eval (op : bin_op) (l1 l2 : base_lit) : option base_lit :=
   | _, _, _ => None
   end.
 
-Fixpoint init_mem (blk:positive) (i:Z) (init:list val) (σ:state) : state :=
+Fixpoint init_mem (blk:block) (i:Z) (init:list val) (σ:state) : state :=
   match init with
   | [] => σ
   | inith :: initq =>
     init_mem blk (Z.succ i) initq (<[(blk, i):=(ReadingSt 0, inith)]>σ)
   end.
 
-Fixpoint free_mem (blk:positive) (n:nat) (i0:Z) (σ:state) : state :=
+Fixpoint free_mem (blk:block) (n:nat) (i0:Z) (σ:state) : state :=
   match n with
   | O => σ
   | S n => free_mem blk n i0 (delete (blk, i0+n) σ)
@@ -447,6 +448,29 @@ Proof.
     | H : to_val (of_val _) = None |- _ => by rewrite to_of_val in H
     end; auto.
   destruct (list_expr_val_eq_inv vl1 vl2 e1 e2 el1 el2); auto. congruence.
+Qed.
+
+Definition fresh_block (σ : state) : block :=
+  let blocklst := (elements (dom _ σ : gset loc)).*1 in
+  let blockset : gset block := foldr (fun b s => {[b]} ∪ s)%C ∅ blocklst in
+  fresh blockset.
+
+Lemma alloc_fresh n σ :
+  let blk := fresh_block σ in
+  let init := repeat (LitV $ LitInt 0) (Z.to_nat n) in
+  0 < n →
+  head_step (Alloc $ Lit $ LitInt n) σ (Lit $ LitLoc (blk, 0))
+            (init_mem blk 0 init σ)
+            None.
+Proof.
+  intros blk init Hn. apply AllocS, repeat_length. auto.
+  clear init n Hn. unfold blk, fresh_block. intro i.
+  match goal with
+  | |- appcontext [foldr ?f ?e] =>
+    assert (FOLD:∀ l x, (x, i) ∈ l → x ∈ (foldr f e (l.*1)))
+  end.
+  { induction l; simpl; inversion 1; subst; set_solver. }
+  rewrite -not_elem_of_dom -elem_of_elements=>/FOLD. apply is_fresh.
 Qed.
 
 (** Equality and other typeclass stuff *)
