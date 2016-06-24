@@ -6,12 +6,12 @@ From iris.prelude Require Import gmap.
 Open Scope Z_scope.
 
 (** Expressions and vals. *)
-Definition loc : Set := positive * nat.
+Definition loc : Set := positive * Z.
 
 Inductive base_lit : Set :=
 | LitUnit | LitLoc (l : loc) | LitInt (n : Z).
 Inductive bin_op : Set :=
-| PlusOp | MinusOp | LeOp.
+| PlusOp | MinusOp | LeOp | ProjOp.
 Inductive order : Set :=
 | ScOrd | NaOrd | InOrd.
 
@@ -46,7 +46,6 @@ Inductive expr (X : list string) :=
 | Var (x : string) `{VarBound x X}
 | Lit (l : base_lit)
 | Rec (f : string) (xl : list string) (e : expr (xl ++ f :: X))
-| Proj (e : expr X) (n : nat)
 | BinOp (op : bin_op) (e1 e2 : expr X)
 | App (e : expr X) (el : list (expr X))
 | Read (o : order) (e : expr X)
@@ -63,7 +62,6 @@ Delimit Scope rust_expr_scope with Rust.
 Arguments Var {_} _ {_}.
 Arguments Lit {_} _.
 Arguments Rec {_} _ _ _%Rust.
-Arguments Proj {_} _%Rust _.
 Arguments BinOp {_} _ _%Rust _%Rust.
 Arguments App {_} _%Rust _%Rust.
 Arguments Read {_} _ _%Rust.
@@ -98,7 +96,6 @@ Definition state := gmap loc (lock_state * val).
 
 (** Evaluation contexts *)
 Inductive ectx_item :=
-| ProjCtx (n : nat)
 | BinOpLCtx (op : bin_op) (e2 : expr [])
 | BinOpRCtx (op : bin_op) (v1 : val)
 | AppLCtx (e2 : list (expr []))
@@ -116,7 +113,6 @@ Inductive ectx_item :=
 
 Definition fill_item (Ki : ectx_item) (e : expr []) : expr [] :=
   match Ki with
-  | ProjCtx n => Proj e n
   | BinOpLCtx op e2 => BinOp op e e2
   | BinOpRCtx op v1 => BinOp op (of_val v1) e
   | AppLCtx e2 => App e e2
@@ -139,7 +135,6 @@ Program Fixpoint wexpr {X Y} (H : X `included` Y) (e : expr X) : expr Y :=
   | Var x _ => @Var _ x _
   | Lit l => Lit l
   | Rec f xl e => Rec f xl (wexpr _ e)
-  | Proj e n => Proj (wexpr H e) n
   | BinOp op e1 e2 => BinOp op (wexpr H e1) (wexpr H e2)
   | App e el => App (wexpr H e) (List.map (wexpr H) el)
   | Read o e => Read o (wexpr H e)
@@ -156,6 +151,11 @@ Definition wexpr' {X} (e : expr []) : expr X := wexpr (included_nil _) e.
 
 Definition of_val' {X} (v : val) : expr X := wexpr (included_nil _) (of_val v).
 
+Lemma wsubst_rec_true_prf {X Y x} (H : X `included` x :: Y)
+      {f} {xl : list string} (Hfxl : x ≠ f ∧ x ∉ xl) :
+  xl ++ f :: X `included` x :: xl ++ f :: Y.
+Proof. set_solver. Qed.
+
 Lemma wsubst_rec_false_prf {X Y x} (H : X `included` x :: Y)
       {f} {xl : list string} (Hfxl : ¬ (x ≠ f ∧ x ∉ xl)) :
   xl ++ f :: X `included` xl ++ f :: Y.
@@ -168,10 +168,9 @@ Program Fixpoint wsubst {X Y} (x : string) (es : expr [])
   | Lit l => Lit l
   | Rec f xl e =>
      Rec f xl $ match decide (x ≠ f ∧ x ∉ xl) return _ with
-                | left Hfy => wsubst x es _ e
+                | left Hfy => wsubst x es (wsubst_rec_true_prf H Hfy) e
                 | right Hfy => wexpr (wsubst_rec_false_prf H Hfy) e
                 end
-  | Proj e n => Proj (wsubst x es H e) n
   | BinOp op e1 e2 => BinOp op (wsubst x es H e1) (wsubst x es H e2)
   | App e1 e2 => App (wsubst x es H e1) (List.map (wsubst x es H) e2)
   | Read o e => Read o (wsubst x es H e)
@@ -204,26 +203,24 @@ Definition bin_op_eval (op : bin_op) (l1 l2 : base_lit) : option base_lit :=
   | MinusOp, LitInt n1, LitInt n2 => Some $ LitInt (n1 - n2)
   | LeOp, LitInt n1, LitInt n2 =>
     Some $ lit_of_bool $ bool_decide (n1 ≤ n2)
+  | ProjOp, LitLoc (blk, offs), LitInt n => Some $ LitLoc(blk, offs + n)
   | _, _, _ => None
   end.
 
-Fixpoint init_mem (blk:positive) (i:nat) (init:list val) (σ:state) : state :=
+Fixpoint init_mem (blk:positive) (i:Z) (init:list val) (σ:state) : state :=
   match init with
   | [] => σ
   | inith :: initq =>
-    init_mem blk (S i) initq (<[(blk, i):=(ReadingSt 0, inith)]>σ)
+    init_mem blk (Z.succ i) initq (<[(blk, i):=(ReadingSt 0, inith)]>σ)
   end.
 
-Fixpoint free_mem (blk:positive) (n i0:nat) (σ:state) : state :=
+Fixpoint free_mem (blk:positive) (n:nat) (i0:Z) (σ:state) : state :=
   match n with
   | O => σ
-  | S n => free_mem blk n i0 (delete (blk, i0+n)%nat σ)
+  | S n => free_mem blk n i0 (delete (blk, i0+n) σ)
   end.
 
 Inductive head_step : expr [] → state → expr [] → state → option (expr []) → Prop :=
-| ProjS blk offs n σ:
-    head_step (Proj (Lit $ LitLoc (blk, offs)) n) σ
-              (Lit $ LitLoc (blk, offs + n)%nat) σ None
 | BinOpS op l1 l2 l' σ :
     bin_op_eval op l1 l2 = Some l' →
     head_step (BinOp op (Lit l1) (Lit l2)) σ (Lit l') σ None
@@ -282,7 +279,7 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
               (Lit $ LitLoc (blk, i0)) (init_mem blk i0 init σ) None
 | FreeS n blk i0 σ :
     0 < n →
-    (∀ i, is_Some (σ !! (blk, i)) ↔ (i0 ≤ i ∧ i < i0 + Z.to_nat n)%nat) →
+    (∀ i, is_Some (σ !! (blk, i)) ↔ (i0 ≤ i ∧ i < i0 + n)) →
     head_step (Free (Lit $ LitInt n) (Lit $ LitLoc (blk, i0))) σ
               (Lit LitUnit) (free_mem blk (Z.to_nat n) i0 σ)
               None
@@ -311,14 +308,14 @@ Proof. f_equal. by apply (proof_irrel _). Qed.
 Lemma wexpr_id X (H : X `included` X) e : wexpr H e = e.
 Proof.
   revert X H e; fix 3.
-  destruct e as [| | | | |? el| | | | | |? el|]; f_equal/=;
+  destruct e as [| | | |? el| | | | | |? el|]; f_equal/=;
     auto using proof_irrel;
   induction el; f_equal/=; auto.
 Qed.
 Lemma wexpr_proof_irrel X Y (H1 H2 : X `included` Y) e : wexpr H1 e = wexpr H2 e.
 Proof.
   revert X Y H1 H2 e; fix 5.
-  destruct e as [| | | | |? el| | | | | |? el|]; f_equal/=;
+  destruct e as [| | | |? el| | | | | |? el|]; f_equal/=;
     auto using proof_irrel;
   induction el; f_equal/=; auto.
 Qed.
@@ -326,7 +323,7 @@ Lemma wexpr_wexpr X Y Z (H1 : X `included` Y) (H2 : Y `included` Z) H3 e :
   wexpr H2 (wexpr H1 e) = wexpr H3 e.
 Proof.
   revert X Y Z H1 H2 H3 e; fix 7.
-  destruct e as [| | | | |? el| | | | | |? el|]; f_equal/=;
+  destruct e as [| | | |? el| | | | | |? el|]; f_equal/=;
     auto using proof_irrel;
   induction el; f_equal/=; auto.
 Qed.
@@ -338,7 +335,7 @@ Lemma wsubst_proof_irrel X Y x es (H1 H2 : X `included` x :: Y) e :
   wsubst x es H1 e = wsubst x es H2 e.
 Proof.
   revert X Y H1 H2 e; fix 5.
-  destruct e as [| | | | |? el| | | | | |? el|];
+  destruct e as [| | | |? el| | | | | |? el|];
     simpl; intros; try case_decide; f_equal;
     auto using proof_irrel, wexpr_proof_irrel;
   induction el; f_equal/=; auto.
@@ -355,7 +352,7 @@ Lemma wsubst_wexpr X Y Z x es (H1: X `included` Y) (H2: Y `included` x::Z) H3 e:
   wsubst x es H2 (wexpr H1 e) = wsubst x es H3 e.
 Proof.
   revert X Y Z H1 H2 H3 e; fix 7.
-  destruct e as [| | | | |? el| | | | | |? el|];
+  destruct e as [| | | |? el| | | | | |? el|];
     intros; simpl; try case_decide; f_equal;
     auto using proof_irrel, wexpr_wexpr;
   induction el; f_equal/=; auto.
@@ -368,7 +365,7 @@ Lemma wsubst_closed X Y x es (H1 : X `included` x :: Y) H2 (e : expr X) :
   x ∉ X → wsubst x es H1 e = wexpr H2 e.
 Proof.
   revert X Y H1 H2 e; fix 5.
-  destruct e as [| | | | |? el| | | | | |? el|];
+  destruct e as [| | | |? el| | | | | |? el|];
     intros; rewrite /=/wexpr'/=; try case_decide; f_equal;
     auto using proof_irrel, wexpr_proof_irrel with set_solver;
     try (induction el; f_equal/=; auto).
@@ -443,8 +440,8 @@ Lemma fill_item_no_val_inj Ki1 Ki2 e1 e2 :
   to_val e1 = None → to_val e2 = None →
   fill_item Ki1 e1 = fill_item Ki2 e2 → Ki1 = Ki2.
 Proof.
-  destruct Ki1 as [| | | |v1 vl1 el1| | | | | | | | | |],
-           Ki2 as [| | | |v2 vl2 el2| | | | | | | | | |];
+  destruct Ki1 as [| | |v1 vl1 el1| | | | | | | | | |],
+           Ki2 as [| | |v2 vl2 el2| | | | | | | | | |];
   intros He1 He2 EQ; try discriminate; simplify_eq/=;
     repeat match goal with
     | H : to_val (of_val _) = None |- _ => by rewrite to_of_val in H
@@ -473,7 +470,6 @@ Fixpoint expr_beq {X Y} (e : expr X) (e' : expr Y) : bool :=
   | Lit l, Lit l' => bool_decide (l = l')
   | Rec f xl e, Rec f' xl' e' =>
     bool_decide (f = f') && bool_decide (xl = xl') && expr_beq e e'
-  | Proj e n, Proj e' n' => expr_beq e e' && bool_decide (n = n')
   | BinOp op e1 e2, BinOp op' e1' e2' =>
     bool_decide (op = op') && expr_beq e1 e1' && expr_beq e2 e2'
   | App e el, App e' el' | Case e el, Case e' el' =>
@@ -490,8 +486,8 @@ Fixpoint expr_beq {X Y} (e : expr X) (e' : expr Y) : bool :=
 Lemma expr_beq_correct {X} (e1 e2 : expr X) : expr_beq e1 e2 ↔ e1 = e2.
 Proof.
   revert X e1 e2; fix 2;
-    destruct e1 as [| | | | |? el1| | | | | |? el1|],
-             e2 as [| | | | |? el2| | | | | |? el2|]; simpl; try done;
+    destruct e1 as [| | | |? el1| | | | | |? el1|],
+             e2 as [| | | |? el2| | | | | |? el2|]; simpl; try done;
   rewrite ?andb_True ?bool_decide_spec ?expr_beq_correct;
   try (split; intro; [destruct_and?|split_and?]; congruence).
   - split; intro. subst. apply var_proof_irrel. congruence.
