@@ -68,21 +68,15 @@ Proof.
   intros; inv_head_step; eauto using to_of_val.
 Qed.
 
-Lemma wp_read_in_pst E1 E2 σ l n v Φ :
-  E2 ⊆ E1 →
+Lemma wp_read_in_pst E σ l n v Φ :
   σ !! l = Some(RSt $ S n, v) →
-  (|={E1,E2}=> ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt n, v)]>σ) ={E2,E1}=★ Φ v))
-  ⊢ WP Read InOrd (Lit $ LitLoc l) @ E1 {{ Φ }}.
+  (▷ ownP σ ★ ▷ (ownP (<[l:=(RSt n, v)]>σ) -★ Φ v))
+  ⊢ WP Read InOrd (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
-  iIntros {??} "HΦP".
-  set (φ (e' : expr []) σ' ef :=
-         ef = None ∧ e' = of_val v ∧ σ' = <[l:=(RSt n, v)]>σ).
-  iApply (wp_lift_head_step E1 E2 φ _ _ σ); auto.
-  { intros. subst φ. inv_head_step. auto. }
-  subst φ. iPvs "HΦP"; first set_solver. iPvsIntro. iNext.
-  iDestruct "HΦP" as "[HΦ HP]". iFrame "HΦ". iIntros {e2 σ2 ef} "[#Hφ HΦ]".
-  iDestruct "Hφ" as %(->&->&->). iPvs ("HP" with "HΦ"); first set_solver.
-  simpl. rewrite right_id. by iApply wp_value'.
+  intros.
+  rewrite -(wp_lift_atomic_det_head_step σ v (<[l:=(RSt n, v)]>σ) None)
+          ?right_id //.
+  intros; inv_head_step; eauto using to_of_val.
 Qed.
 
 Lemma wp_read_na_pst E1 E2 σ l n v Φ :
@@ -116,23 +110,16 @@ Proof.
   intros; inv_head_step; eauto.
 Qed.
 
-Lemma wp_write_in_pst E1 E2 σ l e v v' Φ :
+Lemma wp_write_in_pst E σ l e v v' Φ :
   to_val e = Some v →
-  E2 ⊆ E1 →
   σ !! l = Some(WSt, v') →
-  (|={E1,E2}=> ▷ ownP σ ★
-               ▷ (ownP (<[l:=(RSt 0, v)]>σ) ={E2,E1}=★ Φ (LitV LitUnit)))
-  ⊢ WP Write InOrd (Lit $ LitLoc l) e @ E1 {{ Φ }}.
+  (▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, v)]>σ) -★ Φ (LitV LitUnit)))
+  ⊢ WP Write InOrd (Lit $ LitLoc l) e @ E {{ Φ }}.
 Proof.
-  iIntros {???} "HΦP".
-  set (φ (e' : expr []) σ' ef :=
-         ef = None ∧ e' = Lit LitUnit ∧ σ' = <[l:=(RSt 0, v)]>σ).
-  iApply (wp_lift_head_step E1 E2 φ _ _ σ); auto.
-  { intros. subst φ. inv_head_step. auto. }
-  subst φ. iPvs "HΦP"; first set_solver. iPvsIntro. iNext.
-  iDestruct "HΦP" as "[HΦ HP]". iFrame "HΦ". iIntros {e2 σ2 ef} "[#Hφ HΦ]".
-  iDestruct "Hφ" as %(->&->&->). iPvs ("HP" with "HΦ"); first set_solver.
-  simpl. rewrite right_id. by iApply wp_value.
+  intros.
+  rewrite-(wp_lift_atomic_det_head_step σ (LitV LitUnit)
+             (<[l:=(RSt 0, v)]>σ) None) ?right_id //=. eauto.
+  intros; inv_head_step; eauto.
 Qed.
 
 Lemma wp_write_na_pst E1 E2 σ l e v v' Φ :

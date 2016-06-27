@@ -292,8 +292,8 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
 (** Atomic expressions *)
 Definition atomic (e: expr []) : bool :=
   match e with
-  | Read ScOrd e | Alloc e => bool_decide (is_Some (to_val e))
-  | Write ScOrd e1 e2 | Free e1 e2 =>
+  | Read (ScOrd | InOrd) e | Alloc e => bool_decide (is_Some (to_val e))
+  | Write (ScOrd | InOrd) e1 e2 | Free e1 e2 =>
     bool_decide (is_Some (to_val e1) ∧ is_Some (to_val e2))
   | CAS e0 e1 e2 =>
     bool_decide (is_Some (to_val e0) ∧ is_Some (to_val e1) ∧ is_Some (to_val e2))
