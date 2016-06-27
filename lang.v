@@ -92,7 +92,7 @@ Definition to_val (e : expr []) : option val :=
 
 (** The state: heaps of vals*lockstate. *)
 Inductive lock_state :=
-| WritingSt | ReadingSt (n : nat).
+| WSt | RSt (n : nat).
 Definition state := gmap loc (lock_state * val).
 
 (** Evaluation contexts *)
@@ -208,17 +208,17 @@ Definition bin_op_eval (op : bin_op) (l1 l2 : base_lit) : option base_lit :=
   | _, _, _ => None
   end.
 
-Fixpoint init_mem (blk:block) (i:Z) (init:list val) (σ:state) : state :=
+Fixpoint init_mem (blk:block) (i0:Z) (init:list val) (σ:state) : state :=
   match init with
   | [] => σ
   | inith :: initq =>
-    init_mem blk (Z.succ i) initq (<[(blk, i):=(ReadingSt 0, inith)]>σ)
+    <[(blk, i0):=(RSt 0, inith)]>(init_mem blk (Z.succ i0) initq σ)
   end.
 
-Fixpoint free_mem (blk:block) (n:nat) (i0:Z) (σ:state) : state :=
+Fixpoint free_mem (blk:block) (i0:Z) (n:nat) (σ:state) : state :=
   match n with
   | O => σ
-  | S n => free_mem blk n i0 (delete (blk, i0+n) σ)
+  | S n => free_mem blk i0 n (delete (blk, i0+n) σ)
   end.
 
 Inductive head_step : expr [] → state → expr [] → state → option (expr []) → Prop :=
@@ -229,60 +229,58 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
     List.Forall (λ ei, is_Some (to_val ei)) el →
     subst_l xl el e = Some e' →
     head_step (App (Rec f xl e) el) σ (subst f (Rec f xl e) e') σ None
-| ReadScS l e v σ:
-    to_val e = Some v →
-    σ !! l = Some (ReadingSt 0, v) →
-    head_step (Read ScOrd (Lit $ LitLoc l)) σ e σ None
+| ReadScS l v σ:
+    σ !! l = Some (RSt 0, v) →
+    head_step (Read ScOrd (Lit $ LitLoc l)) σ (of_val v) σ None
 | ReadNaS l n v σ:
-    σ !! l = Some (ReadingSt n, v) →
+    σ !! l = Some (RSt n, v) →
     head_step (Read NaOrd (Lit $ LitLoc l)) σ
-              (Read InOrd (Lit $ LitLoc l)) (<[l:=(ReadingSt (S n), v)]>σ)
+              (Read InOrd (Lit $ LitLoc l)) (<[l:=(RSt $ S n, v)]>σ)
               None
-| ReadInS l n e v σ:
-    to_val e = Some v →
-    σ !! l = Some (ReadingSt (S n), v) →
+| ReadInS l n v σ:
+    σ !! l = Some (RSt $ S n, v) →
     head_step (Read InOrd (Lit $ LitLoc l)) σ
-              e (<[l:=(ReadingSt n, v)]>σ)
+              (of_val v) (<[l:=(RSt n, v)]>σ)
               None
 | WriteScS l e v v' σ:
     to_val e = Some v →
-    σ !! l = Some (ReadingSt 0, v') →
+    σ !! l = Some (RSt 0, v') →
     head_step (Write ScOrd (Lit $ LitLoc l) e) σ
-              (Lit LitUnit) (<[l:=(ReadingSt 0, v)]>σ)
+              (Lit LitUnit) (<[l:=(RSt 0, v)]>σ)
               None
 | WriteNaS l e v' σ:
     is_Some (to_val e) →
-    σ !! l = Some (ReadingSt 0, v') →
+    σ !! l = Some (RSt 0, v') →
     head_step (Write NaOrd (Lit $ LitLoc l) e) σ
-              (Write InOrd (Lit $ LitLoc l) e) (<[l:=(WritingSt, v')]>σ)
+              (Write InOrd (Lit $ LitLoc l) e) (<[l:=(WSt, v')]>σ)
               None
 | WriteInS l e v v' σ:
     to_val e = Some v →
-    σ !! l = Some (WritingSt, v') →
+    σ !! l = Some (WSt, v') →
     head_step (Write ScOrd (Lit $ LitLoc l) e) σ
-              (Lit LitUnit) (<[l:=(ReadingSt 0, v)]>σ)
+              (Lit LitUnit) (<[l:=(RSt 0, v)]>σ)
               None
 | CasFailS l z1 z2 zl σ :
-    σ !! l = Some (ReadingSt 0, LitV $ LitInt zl) →
+    σ !! l = Some (RSt 0, LitV $ LitInt zl) →
     zl ≠ z1 →
     head_step (CAS (Lit $ LitLoc l) (Lit $ LitInt z1) (Lit $ LitInt z2)) σ
               (Lit $ lit_of_bool false) σ  None
 | CasSucS l z1 z2 σ :
-    σ !! l = Some (ReadingSt 0, LitV $ LitInt z1) →
+    σ !! l = Some (RSt 0, LitV $ LitInt z1) →
     head_step (CAS (Lit $ LitLoc l) (Lit $ LitInt z1) (Lit $ LitInt z2)) σ
-              (Lit $ lit_of_bool true) (<[l:=(ReadingSt 0, LitV $ LitInt z2)]>σ)
+              (Lit $ lit_of_bool true) (<[l:=(RSt 0, LitV $ LitInt z2)]>σ)
               None
-| AllocS n blk i0 init σ :
+| AllocS n l init σ :
     0 < n →
-    (∀ i, σ !! (blk, i) = None) →
-    List.length init = Z.to_nat n →
+    (∀ i, σ !! (l.1, i) = None) →
+    Z.of_nat (List.length init) = n →
     head_step (Alloc $ Lit $ LitInt n) σ
-              (Lit $ LitLoc (blk, i0)) (init_mem blk i0 init σ) None
-| FreeS n blk i0 σ :
+              (Lit $ LitLoc l) (init_mem (l.1) (l.2) init σ) None
+| FreeS n l σ :
     0 < n →
-    (∀ i, is_Some (σ !! (blk, i)) ↔ (i0 ≤ i ∧ i < i0 + n)) →
-    head_step (Free (Lit $ LitInt n) (Lit $ LitLoc (blk, i0))) σ
-              (Lit LitUnit) (free_mem blk (Z.to_nat n) i0 σ)
+    (∀ i, is_Some (σ !! (l.1, i)) ↔ (l.2 ≤ i ∧ i < l.2 + n)) →
+    head_step (Free (Lit $ LitInt n) (Lit $ LitLoc l)) σ
+              (Lit LitUnit) (free_mem (l.1) (l.2) (Z.to_nat n) σ)
               None
 | CaseS i el e σ :
     0 ≤ i →
@@ -463,14 +461,53 @@ Lemma alloc_fresh n σ :
             (init_mem blk 0 init σ)
             None.
 Proof.
-  intros blk init Hn. apply AllocS, repeat_length. auto.
-  clear init n Hn. unfold blk, fresh_block. intro i.
-  match goal with
-  | |- appcontext [foldr ?f ?e] =>
-    assert (FOLD:∀ l x, (x, i) ∈ l → x ∈ (foldr f e (l.*1)))
-  end.
-  { induction l; simpl; inversion 1; subst; set_solver. }
-  rewrite -not_elem_of_dom -elem_of_elements=>/FOLD. apply is_fresh.
+  intros blk init Hn. apply AllocS. auto.
+  - clear init n Hn. unfold blk, fresh_block. intro i.
+    match goal with
+    | |- appcontext [foldr ?f ?e] =>
+      assert (FOLD:∀ l x, (x, i) ∈ l → x ∈ (foldr f e (l.*1)))
+    end.
+    { induction l; simpl; inversion 1; subst; set_solver. }
+    rewrite -not_elem_of_dom -elem_of_elements=>/FOLD. apply is_fresh.
+  - rewrite repeat_length. apply Z2Nat.id. lia.
+Qed.
+
+Definition init_mem_spec (l:loc) (n:Z) (σ σ':state) : Prop :=
+  (∀ l', l'.1 ≠ l.1 → σ !! l' =  σ' !! l') ∧
+  (∀ i, l.2 ≤ i < l.2 + n ↔ is_Some (σ' !! (l.1, i))).
+
+Lemma init_mem_sound l init σ:
+  (∀ i, σ !! (l.1, i) = None) →
+  init_mem_spec l (List.length init) σ (init_mem (l.1) (l.2) init σ).
+Proof.
+  destruct l as [blk i0]. unfold init_mem_spec.
+  revert i0. induction init=>/= i0 FRESH; split.
+  - auto.
+  - intro i. rewrite FRESH. split. lia. move=>/is_Some_None[].
+  - intros. rewrite lookup_insert_ne. by apply IHinit. clear IHinit; naive_solver.
+  - intro i.
+    rewrite lookup_insert_is_Some -(proj2 (IHinit (Z.succ i0) _)) //.
+    clear -FRESH. destruct (decide (i = i0)); naive_solver lia.
+Qed.
+
+Definition free_mem_spec (l:loc) (n:Z) (σ σ':state) : Prop :=
+  (∀ l', l'.1 ≠ l.1 → σ !! l' =  σ' !! l') ∧
+  (∀ i, σ' !! (l.1, i) = None).
+
+Lemma free_mem_sound l n σ:
+  0 < n →
+  (∀ i, is_Some (σ !! (l.1, i)) ↔ (l.2 ≤ i ∧ i < l.2 + n)) →
+  free_mem_spec l n σ (free_mem (l.1) (l.2) (Z.to_nat n) σ).
+Proof.
+  intro. rewrite -(Z2Nat.id n) ?Nat2Z.id. 2:lia.
+  destruct l as [blk i0]. unfold free_mem_spec.
+  revert σ. induction (Z.to_nat n) as [|n' IH] =>/= σ Hσ.
+  - split. auto. intro i. rewrite eq_None_not_Some Hσ. lia.
+  - destruct (IH (delete (blk, i0 + n') σ)) as [IH1 IH2].
+    { intro i. rewrite lookup_delete_is_Some Hσ.
+      clear; destruct (decide (i = i0 + n')); naive_solver lia. }
+    split. 2:done.
+    intros l' Hl'. rewrite -IH1 ?lookup_delete_ne //. clear -Hl'; naive_solver.
 Qed.
 
 (** Equality and other typeclass stuff *)
