@@ -257,7 +257,7 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
 | WriteInS l e v v' σ:
     to_val e = Some v →
     σ !! l = Some (WSt, v') →
-    head_step (Write ScOrd (Lit $ LitLoc l) e) σ
+    head_step (Write InOrd (Lit $ LitLoc l) e) σ
               (Lit LitUnit) (<[l:=(RSt 0, v)]>σ)
               None
 | CasFailS l z1 z2 zl σ :
