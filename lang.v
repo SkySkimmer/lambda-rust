@@ -198,27 +198,29 @@ Fixpoint subst_l {X} (xl : list string) (esl : list (expr [])) :
 Definition lit_of_bool (b:bool) : base_lit :=
   LitInt (if b then 1 else 0).
 
+Definition shift_loc (l : loc) (n : Z) : loc := (l.1, l.2+n).
+
 Definition bin_op_eval (op : bin_op) (l1 l2 : base_lit) : option base_lit :=
   match op, l1, l2 with
   | PlusOp, LitInt n1, LitInt n2 => Some $ LitInt (n1 + n2)
   | MinusOp, LitInt n1, LitInt n2 => Some $ LitInt (n1 - n2)
   | LeOp, LitInt n1, LitInt n2 =>
     Some $ lit_of_bool $ bool_decide (n1 ≤ n2)
-  | ProjOp, LitLoc (blk, offs), LitInt n => Some $ LitLoc(blk, offs + n)
+  | ProjOp, LitLoc l, LitInt n => Some $ LitLoc $ shift_loc l n
   | _, _, _ => None
   end.
 
-Fixpoint init_mem (blk:block) (i0:Z) (init:list val) (σ:state) : state :=
+Fixpoint init_mem (l:loc) (init:list val) (σ:state) : state :=
   match init with
   | [] => σ
   | inith :: initq =>
-    <[(blk, i0):=(RSt 0, inith)]>(init_mem blk (Z.succ i0) initq σ)
+    <[l:=(RSt 0, inith)]>(init_mem (shift_loc l 1) initq σ)
   end.
 
-Fixpoint free_mem (blk:block) (i0:Z) (n:nat) (σ:state) : state :=
+Fixpoint free_mem (l:loc) (n:nat) (σ:state) : state :=
   match n with
   | O => σ
-  | S n => free_mem blk i0 n (delete (blk, i0+n) σ)
+  | S n => free_mem l n (delete (shift_loc l n) σ)
   end.
 
 Inductive head_step : expr [] → state → expr [] → state → option (expr []) → Prop :=
@@ -272,15 +274,15 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
               None
 | AllocS n l init σ :
     0 < n →
-    (∀ i, σ !! (l.1, i) = None) →
+    (∀ m, σ !! (shift_loc l m) = None) →
     Z.of_nat (List.length init) = n →
     head_step (Alloc $ Lit $ LitInt n) σ
-              (Lit $ LitLoc l) (init_mem (l.1) (l.2) init σ) None
+              (Lit $ LitLoc l) (init_mem l init σ) None
 | FreeS n l σ :
     0 < n →
-    (∀ i, is_Some (σ !! (l.1, i)) ↔ (l.2 ≤ i ∧ i < l.2 + n)) →
+    (∀ m, is_Some (σ !! (shift_loc l m)) ↔ 0 ≤ m < n) →
     head_step (Free (Lit $ LitInt n) (Lit $ LitLoc l)) σ
-              (Lit LitUnit) (free_mem (l.1) (l.2) (Z.to_nat n) σ)
+              (Lit LitUnit) (free_mem l (Z.to_nat n) σ)
               None
 | CaseS i el e σ :
     0 ≤ i →
@@ -448,64 +450,50 @@ Proof.
   destruct (list_expr_val_eq_inv vl1 vl2 e1 e2 el1 el2); auto. congruence.
 Qed.
 
+Lemma shift_loc_assoc:
+  ∀ l n n', shift_loc (shift_loc l n) n' = shift_loc l (n+n').
+Proof. unfold shift_loc=>/= l n n'. f_equal. lia. Qed.
+Lemma shift_loc_0:
+  ∀ l, shift_loc l 0 = l.
+Proof. unfold shift_loc=>[[??]] /=. f_equal. lia. Qed.
+
 Definition fresh_block (σ : state) : block :=
   let blocklst := (elements (dom _ σ : gset loc)).*1 in
   let blockset : gset block := foldr (fun b s => {[b]} ∪ s)%C ∅ blocklst in
   fresh blockset.
 
 Lemma alloc_fresh n σ :
-  let blk := fresh_block σ in
+  let l := (fresh_block σ, 0) in
   let init := repeat (LitV $ LitInt 0) (Z.to_nat n) in
   0 < n →
-  head_step (Alloc $ Lit $ LitInt n) σ (Lit $ LitLoc (blk, 0))
-            (init_mem blk 0 init σ)
-            None.
+  head_step (Alloc $ Lit $ LitInt n) σ (Lit $ LitLoc l) (init_mem l init σ) None.
 Proof.
-  intros blk init Hn. apply AllocS. auto.
-  - clear init n Hn. unfold blk, fresh_block. intro i.
+  intros l init Hn. apply AllocS. auto.
+  - clear init n Hn. unfold l, fresh_block. intro m.
     match goal with
-    | |- appcontext [foldr ?f ?e] =>
-      assert (FOLD:∀ l x, (x, i) ∈ l → x ∈ (foldr f e (l.*1)))
+    | |- context [foldr ?f ?e] =>
+      assert (FOLD:∀ lst (l:loc), l ∈ lst → l.1 ∈ (foldr f e (lst.*1)))
     end.
-    { induction l; simpl; inversion 1; subst; set_solver. }
+    { induction lst; simpl; inversion 1; subst; set_solver. }
     rewrite -not_elem_of_dom -elem_of_elements=>/FOLD. apply is_fresh.
   - rewrite repeat_length. apply Z2Nat.id. lia.
 Qed.
 
-Definition init_mem_spec (l:loc) (n:Z) (σ σ':state) : Prop :=
-  (∀ l', l'.1 ≠ l.1 → σ !! l' =  σ' !! l') ∧
-  (∀ i, l.2 ≤ i < l.2 + n ↔ is_Some (σ' !! (l.1, i))).
-
-Lemma init_mem_sound l init σ:
-  (∀ i, σ !! (l.1, i) = None) →
-  init_mem_spec l (List.length init) σ (init_mem (l.1) (l.2) init σ).
-Proof.
-  destruct l as [blk i0]. unfold init_mem_spec.
-  revert i0. induction init=>/= i0 FRESH; split.
-  - auto.
-  - intro i. rewrite FRESH. split. lia. move=>/is_Some_None[].
-  - intros. rewrite lookup_insert_ne. by apply IHinit. clear IHinit; naive_solver.
-  - intro i.
-    rewrite lookup_insert_is_Some -(proj2 (IHinit (Z.succ i0) _)) //.
-    clear -FRESH. destruct (decide (i = i0)); naive_solver lia.
-Qed.
-
 Definition free_mem_spec (l:loc) (n:Z) (σ σ':state) : Prop :=
   (∀ l', l'.1 ≠ l.1 → σ !! l' =  σ' !! l') ∧
-  (∀ i, σ' !! (l.1, i) = None).
+  (∀ m, σ' !! (shift_loc l m) = None).
 
 Lemma free_mem_sound l n σ:
   0 < n →
-  (∀ i, is_Some (σ !! (l.1, i)) ↔ (l.2 ≤ i ∧ i < l.2 + n)) →
-  free_mem_spec l n σ (free_mem (l.1) (l.2) (Z.to_nat n) σ).
+  (∀ m, is_Some (σ !! (shift_loc l m)) ↔ (0 ≤ m < n)) →
+  free_mem_spec l n σ (free_mem l (Z.to_nat n) σ).
 Proof.
   intro. rewrite -(Z2Nat.id n) ?Nat2Z.id. 2:lia.
-  destruct l as [blk i0]. unfold free_mem_spec.
-  revert σ. induction (Z.to_nat n) as [|n' IH] =>/= σ Hσ.
-  - split. auto. intro i. rewrite eq_None_not_Some Hσ. lia.
-  - destruct (IH (delete (blk, i0 + n') σ)) as [IH1 IH2].
-    { intro i. rewrite lookup_delete_is_Some Hσ.
-      clear; destruct (decide (i = i0 + n')); naive_solver lia. }
+  unfold free_mem_spec. revert σ. induction (Z.to_nat n) as [|n' IH] =>/= σ Hσ.
+  - split. auto. intro m. rewrite eq_None_not_Some Hσ. lia.
+  - destruct (IH (delete (shift_loc l n') σ)) as [IH1 IH2].
+    { intro m. rewrite lookup_delete_is_Some Hσ.
+      clear; destruct (decide (m = n')); naive_solver lia. }
     split. 2:done.
     intros l' Hl'. rewrite -IH1 ?lookup_delete_ne //. clear -Hl'; naive_solver.
 Qed.
@@ -553,11 +541,11 @@ Proof.
   try (split; intro; [destruct_and?|split_and?]; congruence).
   - split; intro. subst. apply var_proof_irrel. congruence.
   - specialize (expr_beq_correct _ e1). naive_solver.
-  - match goal with |- appcontext [?F el1 el2] => assert (F el1 el2 ↔ el1 = el2) end.
+  - match goal with |- context [?F el1 el2] => assert (F el1 el2 ↔ el1 = el2) end.
     { revert el2. induction el1 as [|el1h el1q]; destruct el2; try done.
       specialize (expr_beq_correct _ el1h). naive_solver. }
     clear expr_beq_correct. naive_solver.
-  - match goal with |- appcontext [?F el1 el2] => assert (F el1 el2 ↔ el1 = el2) end.
+  - match goal with |- context [?F el1 el2] => assert (F el1 el2 ↔ el1 = el2) end.
     { revert el2. induction el1 as [|el1h el1q]; destruct el2; try done.
       specialize (expr_beq_correct _ el1h). naive_solver. }
     clear expr_beq_correct. naive_solver.

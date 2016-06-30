@@ -26,25 +26,27 @@ Proof. exact: weakestpre.wp_bind. Qed.
 Lemma wp_alloc_pst E σ n Φ :
   0 < n →
   (▷ ownP σ ★
-   ▷ (∀ l σ', (∀ i, σ !! (l.1, i) = None) ∧ ■ init_mem_spec l n σ σ' ∧ ownP σ'
-            -★ Φ (LitV $ LitLoc l)))
+   ▷ (∀ l σ', ■ (∀ m, σ !! (shift_loc l m) = None) ★
+              ■ (∃ vl, n = List.length vl ∧ init_mem l vl σ = σ') ★
+              ownP σ' -★ Φ (LitV $ LitLoc l)))
   ⊢ WP Alloc (Lit $ LitInt n) @ E {{ Φ }}.
 Proof.
   iIntros {?}  "[HP HΦ]".
   set (φ (e' : expr []) σ' ef := ∃ l,
-          ef = None ∧ e' = Lit (LitLoc l) ∧ init_mem_spec l n σ σ' ∧
-          (∀ i, σ !! (l.1, i) = None)).
+          ef = None ∧ e' = Lit (LitLoc l) ∧
+          (∀ m, σ !! (shift_loc l m) = None) ∧
+          (∃ vl, n = List.length vl ∧ init_mem l vl σ = σ')).
   iApply (wp_lift_atomic_head_step _ φ σ);
     try (by simpl; eauto).
-  { intros; subst φ; inv_head_step; eauto 8 using init_mem_sound. }
+  { intros; subst φ; inv_head_step; eauto 8. }
   iFrame "HP". iNext. iIntros {v2 σ2 ef} "[Hφ HP]".
   iDestruct "Hφ" as %(l & -> & [= <-]%of_to_val_flip & ? & ?); simpl.
-  iSplit; last done. iApply "HΦ". repeat iSplit; auto.
+  rewrite right_id. iApply "HΦ". auto.
 Qed.
 
 Lemma wp_free_pst E σ l n Φ :
   0 < n →
-  (∀ i, is_Some (σ !! (l.1, i)) ↔ (l.2 ≤ i ∧ i < l.2 + n)) →
+  (∀ m, is_Some (σ !! (shift_loc l m)) ↔ (0 ≤ m < n)) →
   (▷ ownP σ ★
    ▷ (∀ l σ', ■ free_mem_spec l n σ σ' ∧ ownP σ'
               -★ Φ (LitV $ LitUnit)))
