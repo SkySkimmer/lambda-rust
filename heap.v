@@ -298,12 +298,12 @@ Section heap.
   Lemma wp_alloc N E (n:Z) Φ :
     nclose N ⊆ E → 0 < n →
     heap_ctx N ★
-    ▷ (∀ l vl, l ↦★ vl ★ n = length vl ★ †l…(Z.to_nat n) -★ Φ (LitV $ LitLoc l))
+    ▷ (∀ l vl, l ↦★ vl ★ n = length vl ★ †l…(Z.to_nat n) ={E}=★ Φ (LitV $ LitLoc l))
     ⊢ WP Alloc (Lit $ LitInt n) @ E {{ Φ }}.
   Proof.
-    iIntros {??} "[#Hinv HΦ]". rewrite /heap_ctx /heap_inv.
+    iIntros {??} "[#Hinv HΦ]". rewrite /heap_ctx /heap_inv. iApply wp_pvs.
     iInv> N as "INV". iDestruct "INV" as {σ heapFree} "(Hσ&Hvalσ&Hfree&%)".
-    iApply wp_pvs. iApply wp_alloc_pst =>//. iNext. iFrame "Hσ".
+    iApply wp_alloc_pst =>//. iNext. iFrame "Hσ".
     iIntros {l σ'} "(%&#Hσσ'&Hσ')". iDestruct "Hσσ'" as %(vl&HvlLen&Hvl).
     iPvs (own_update _ (● to_heapVal σ) with "Hvalσ") as "[Hvalσ' Hmapsto]";
       first apply (init_mem_update_val _ l vl); auto.

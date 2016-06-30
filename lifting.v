@@ -25,10 +25,10 @@ Proof. exact: weakestpre.wp_bind. Qed.
 (** Base axioms for core primitives of the language: Stateful reductions. *)
 Lemma wp_alloc_pst E σ n Φ :
   0 < n →
-  (▷ ownP σ ★
-   ▷ (∀ l σ', ■ (∀ m, σ !! (shift_loc l m) = None) ★
-              ■ (∃ vl, n = List.length vl ∧ init_mem l vl σ = σ') ★
-              ownP σ' -★ Φ (LitV $ LitLoc l)))
+  ▷ ownP σ ★
+  ▷ (∀ l σ', ■ (∀ m, σ !! (shift_loc l m) = None) ★
+             ■ (∃ vl, n = List.length vl ∧ init_mem l vl σ = σ') ★
+             ownP σ' ={E}=★ Φ (LitV $ LitLoc l))
   ⊢ WP Alloc (Lit $ LitInt n) @ E {{ Φ }}.
 Proof.
   iIntros {?}  "[HP HΦ]".
@@ -47,9 +47,9 @@ Qed.
 Lemma wp_free_pst E σ l n Φ :
   0 < n →
   (∀ m, is_Some (σ !! (shift_loc l m)) ↔ (0 ≤ m < n)) →
-  (▷ ownP σ ★
-   ▷ (∀ l σ', ■ free_mem_spec l n σ σ' ∧ ownP σ'
-              -★ Φ (LitV $ LitUnit)))
+  ▷ ownP σ ★
+  ▷ (∀ l σ', ■ free_mem_spec l n σ σ' ∧ ownP σ'
+             ={E}=★ Φ (LitV $ LitUnit))
   ⊢ WP Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
   iIntros {??}  "[HP HΦ]".
@@ -64,7 +64,7 @@ Qed.
 
 Lemma wp_read_sc_pst E σ l v Φ :
   σ !! l = Some (RSt 0, v) →
-  (▷ ownP σ ★ ▷ (ownP σ -★ Φ v)) ⊢ WP Read ScOrd (Lit $ LitLoc l) @ E {{ Φ }}.
+  ▷ ownP σ ★ ▷ (ownP σ ={E}=★ Φ v) ⊢ WP Read ScOrd (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
   intros. rewrite -(wp_lift_atomic_det_head_step σ v σ None) ?right_id //.
   intros; inv_head_step; eauto using to_of_val.
@@ -72,7 +72,7 @@ Qed.
 
 Lemma wp_read_in_pst E σ l n v Φ :
   σ !! l = Some(RSt $ S n, v) →
-  (▷ ownP σ ★ ▷ (ownP (<[l:=(RSt n, v)]>σ) -★ Φ v))
+  ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt n, v)]>σ) ={E}=★ Φ v)
   ⊢ WP Read InOrd (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
   intros.
@@ -103,7 +103,7 @@ Qed.
 Lemma wp_write_sc_pst E σ l e v v' Φ :
   to_val e = Some v →
   σ !! l = Some (RSt 0, v') →
-  (▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, v)]>σ) -★ Φ (LitV LitUnit)))
+  ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, v)]>σ) ={E}=★ Φ (LitV LitUnit))
   ⊢ WP Write ScOrd (Lit $ LitLoc l) e @ E {{ Φ }}.
 Proof.
   intros.
@@ -115,7 +115,7 @@ Qed.
 Lemma wp_write_in_pst E σ l e v v' Φ :
   to_val e = Some v →
   σ !! l = Some(WSt, v') →
-  (▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, v)]>σ) -★ Φ (LitV LitUnit)))
+  ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, v)]>σ) ={E}=★ Φ (LitV LitUnit))
   ⊢ WP Write InOrd (Lit $ LitLoc l) e @ E {{ Φ }}.
 Proof.
   intros.
@@ -146,7 +146,7 @@ Qed.
 
 Lemma wp_cas_fail_pst E σ l z1 z2 z' Φ :
   σ !! l = Some (RSt 0, LitV $ LitInt z') → z' ≠ z1 →
-  (▷ ownP σ ★ ▷ (ownP σ -★ Φ (LitV $ LitInt 0)))
+  ▷ ownP σ ★ ▷ (ownP σ ={E}=★ Φ (LitV $ LitInt 0))
   ⊢ WP CAS (Lit $ LitLoc l) (Lit $ LitInt z1) (Lit $ LitInt z2) @ E {{ Φ }}.
 Proof.
   intros.
@@ -156,7 +156,7 @@ Qed.
 
 Lemma wp_cas_suc_pst E σ l z1 z2 Φ :
   σ !! l = Some (RSt 0, LitV $ LitInt z1) →
-  (▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, LitV $ LitInt z2)]>σ) -★ Φ (LitV $ LitInt 1)))
+  ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, LitV $ LitInt z2)]>σ) ={E}=★ Φ (LitV $ LitInt 1))
   ⊢ WP CAS (Lit $ LitLoc l) (Lit $ LitInt z1) (Lit $ LitInt z2) @ E {{ Φ }}.
 Proof.
   intros.
@@ -167,7 +167,7 @@ Qed.
 
 (** Base axioms for core primitives of the language: Stateless reductions *)
 Lemma wp_fork E e Φ :
-  (▷ Φ (LitV LitUnit) ★ ▷ WP e {{ _, True }}) ⊢ WP Fork e @ E {{ Φ }}.
+  ▷ Φ (LitV LitUnit) ★ ▷ WP e {{ _, True }} ⊢ WP Fork e @ E {{ Φ }}.
 Proof.
   rewrite -(wp_lift_pure_det_head_step (Fork e) (Lit LitUnit) (Some e)) //=.
   rewrite later_sep -(wp_value _ _ (Lit _)) //.
@@ -178,8 +178,7 @@ Lemma wp_rec E f xl erec erec' e el Φ :
   e = Rec f xl erec →
   List.Forall (λ ei, is_Some (to_val ei)) el →
   subst_l xl el erec = Some erec' →
-  ▷ WP subst f e erec' @ E {{ Φ }}
-  ⊢ WP App e el @ E {{ Φ }}.
+  ▷ WP subst f e erec' @ E {{ Φ }} ⊢ WP App e el @ E {{ Φ }}.
 Proof.
   intros -> ??.
   rewrite-(wp_lift_pure_det_head_step (App _ _) (subst f (Rec f xl erec) erec') None)

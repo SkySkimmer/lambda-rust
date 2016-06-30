@@ -3,3 +3,4 @@ lang.v
 substitution.v
 tactics.v
 lifting.v
+heap.v
