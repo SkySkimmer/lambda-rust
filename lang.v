@@ -231,8 +231,8 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
     Forall (λ ei, is_Some (to_val ei)) el →
     subst_l xl el e = Some e' →
     head_step (App (Rec f xl e) el) σ (subst f (Rec f xl e) e') σ None
-| ReadScS l v σ:
-    σ !! l = Some (RSt 0, v) →
+| ReadScS l n v σ:
+    σ !! l = Some (RSt n, v) →
     head_step (Read ScOrd (Lit $ LitLoc l)) σ (of_val v) σ None
 | ReadNaS l n v σ:
     σ !! l = Some (RSt n, v) →

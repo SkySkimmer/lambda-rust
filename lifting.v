@@ -61,8 +61,8 @@ Proof.
   iSplit; last done. iApply ("HΦ" with "HP").
 Qed.
 
-Lemma wp_read_sc_pst E σ l v Φ :
-  σ !! l = Some (RSt 0, v) →
+Lemma wp_read_sc_pst E σ l n v Φ :
+  σ !! l = Some (RSt n, v) →
   ▷ ownP σ ★ ▷ (ownP σ ={E}=★ Φ v) ⊢ WP Read ScOrd (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
   intros. rewrite -(wp_lift_atomic_det_head_step σ v σ None) ?right_id //.
