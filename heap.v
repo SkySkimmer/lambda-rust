@@ -240,12 +240,56 @@ Section heap.
                pair_op inter_op.
   Qed.
 
+  (** Properties about heapFreeable_rel and heapFreeable *)
+  Lemma fresh_heapFreeable_None σ l h:
+    (∀ m : Z, σ !! shift_loc l m = None) → heapFreeable_rel σ h →
+    h !! l.1 = None.
+  Proof.
+    intros FRESH REL. apply eq_None_not_Some. intros [[q s] Hqs].
+    apply (reflexive_eq (R:=equiv)), REL in Hqs. destruct Hqs as [Hsne REL'].
+    destruct (map_choose s) as [i Hi%REL']; first done.
+    specialize (FRESH (i-l.2)). rewrite /shift_loc Zplus_minus in FRESH.
+    rewrite FRESH in Hi. by eapply is_Some_None.
+  Qed.
+
+  Lemma valid_heapFreeable_None blk s (h : heapFreeableUR):
+    ✓ ({[blk := (1%Qp, s)]} ⋅ h) → h !! blk = None.
+  Proof.
+    intros Hv. specialize (Hv blk). revert Hv.
+    rewrite lookup_op lookup_insert cmra_valid_validN.
+    intros Hv. specialize (Hv O). apply exclusiveN_Some_l in Hv. done. apply _.
+  Qed.
+
+  Lemma valid_heapFreeable_is_Some σ l n h:
+    heapFreeable_rel σ ({[l.1 := (1%Qp, inter (l.2) n)]} ⋅ h) →
+    ✓ ({[l.1 := (1%Qp, inter (l.2) n)]} ⋅ h) →
+    ∀ m : Z, is_Some (σ !! shift_loc l m) ↔ 0 ≤ m ∧ m < n.
+  Proof.
+    intros REL FREED%valid_heapFreeable_None m. unfold shift_loc.
+    edestruct (REL (l.1)) as [_ ->].
+      by rewrite -insert_singleton_op // lookup_insert.
+    destruct (decide (0 ≤ m ∧ m < n)).
+    - rewrite inter_lookup_Some; last lia. naive_solver.
+    - rewrite inter_lookup_None; last lia.
+      split. intros []%is_Some_None. naive_solver.
+  Qed.
+
+  Lemma heapFreeable_rel_stable σ h l p :
+    heapFreeable_rel σ h → is_Some (σ !! l) →
+    heapFreeable_rel (<[l := p]>σ) h.
+  Proof.
+    intros REL Hσ blk qs Hqs. destruct (REL blk qs) as [? REL']; first done.
+    split. done. intro i. rewrite -REL' lookup_insert_is_Some.
+    destruct (decide (l = (blk, i))); naive_solver.
+  Qed.
+
   (** Weakest precondition *)
   Lemma init_mem_update_val σ l vl:
     (∀ m : Z, σ !! shift_loc l m = None) →
-    ● to_heapVal σ ~~> ● to_heapVal (init_mem l vl σ)
-      ⋅ ◯ big_op (imap
-            (λ i v, {[shift_loc l i := (1%Qp, Cinr 0%nat, DecAgree v)]}) vl).
+    ● to_heapVal σ ~~>
+    ● to_heapVal (init_mem l vl σ)
+    ⋅ ◯ big_op (imap
+          (λ i v, {[shift_loc l i := (1%Qp, Cinr 0%nat, DecAgree v)]}) vl).
   Proof.
     revert l. induction vl as [|v vl IH]=> l FRESH.
     - simpl. rewrite right_id. reflexivity.
@@ -265,18 +309,7 @@ Section heap.
         by apply auth_update, alloc_unit_singleton_local_update.
   Qed.
 
-  Lemma fresh_block_heap_freeable σ l h:
-    (∀ m : Z, σ !! shift_loc l m = None) → heapFreeable_rel σ h →
-    h !! l.1 = None.
-  Proof.
-    intros FRESH REL. apply eq_None_not_Some. intros [[q s] Hqs].
-    apply (reflexive_eq (R:=equiv)), REL in Hqs. destruct Hqs as [Hsne REL'].
-    destruct (map_choose s) as [i Hi%REL']; first done.
-    specialize (FRESH (i-l.2)). rewrite /shift_loc Zplus_minus in FRESH.
-    rewrite FRESH in Hi. by eapply is_Some_None.
-  Qed.
-
-  Lemma init_mem_update_freeable (l:loc) n h σ:
+  Lemma heapFreeable_init_mem_update l n h σ:
     (∀ m : Z, σ !! shift_loc l m = None) → heapFreeable_rel σ h →
     ● h ~~>
     ● ({[l.1 := (1%Qp, inter (l.2) n)]}⋅h)⋅◯ {[l.1 := (1%Qp, inter (l.2) n)]}.
@@ -284,21 +317,21 @@ Section heap.
     intros FRESH REL.
     etrans; last apply auth_update, alloc_unit_singleton_local_update.
     - rewrite right_id left_id. reflexivity.
-    - simpl. eauto using fresh_block_heap_freeable.
+    - simpl. eauto using fresh_heapFreeable_None.
     - split. done. apply inter_valid.
   Qed.
 
-  Lemma init_mem_rel_freeable (l:loc) n h vl σ:
-    0 < n → heapFreeable_rel σ h → (∀ m : Z, σ !! shift_loc l m = None) →
-    n = Datatypes.length vl →
+  Lemma heapFreeable_rel_init_mem l h vl σ:
+    vl ≠ [] → (∀ m : Z, σ !! shift_loc l m = None) →
+    heapFreeable_rel σ h →
     heapFreeable_rel (init_mem l vl σ)
-                     ({[l.1 := (1%Qp, inter (l.2) (Z.to_nat n))]} ⋅ h).
+                     ({[l.1 := (1%Qp, inter (l.2) (Datatypes.length vl))]} ⋅ h).
   Proof.
-    intros Hn REL FRESH Hlen blk qs. destruct (decide (l.1 = blk)) as [|NEQ].
+    intros Hvlnil FRESH REL blk qs. destruct (decide (l.1 = blk)) as [|NEQ].
     - subst.
-      rewrite lookup_op lookup_insert (fresh_block_heap_freeable σ) // Nat2Z.id.
+      rewrite lookup_op lookup_insert (fresh_heapFreeable_None σ) //.
       inversion 1. subst. split.
-      + destruct (length vl). lia.
+      + destruct vl. done.
         intros EQ%(f_equal (lookup (l.2)))%(reflexive_eq (R:=equiv)).
         setoid_subst. rewrite lookup_insert lookup_empty in EQ. inversion EQ.
       + setoid_subst. clear -FRESH. revert l FRESH. induction vl as [|v vl IH]=>/=l FRESH i.
@@ -314,7 +347,7 @@ Section heap.
       rewrite lookup_insert_is_Some IH //. naive_solver.
   Qed.
 
-  Lemma wp_alloc N E (n:Z) Φ :
+  Lemma wp_alloc N E n Φ :
     nclose N ⊆ E → 0 < n →
     heap_ctx N ★
     ▷ (∀ l vl, l ↦★ vl ★ n = length vl ★ †l…(Z.to_nat n) ={E}=★ Φ (LitV $ LitLoc l))
@@ -327,47 +360,27 @@ Section heap.
     iPvs (own_update _ (● to_heapVal σ) with "Hvalσ") as "[Hvalσ' Hmapsto]";
       first apply (init_mem_update_val _ l vl); auto.
     iPvs (own_update _ (● hF) with "HhF") as "[HhF Hfreeable]";
-      first apply (init_mem_update_freeable l (Z.to_nat n) hF σ); auto.
+      first apply (heapFreeable_init_mem_update l (Z.to_nat n) hF σ); auto.
     iPvsIntro. iSplitL "Hσ' Hvalσ' HhF".
-    - iExists σ', _. subst σ'. iFrame. iPureIntro. by apply init_mem_rel_freeable.
+    - iExists σ', _. subst σ'. iFrame. iPureIntro.
+      subst. rewrite Nat2Z.id. apply heapFreeable_rel_init_mem; try done.
+        by destruct vl.
     - rewrite heap_freeable_eq /heap_freeable_def /auth_own. iApply "HΦ".
       iFrame. iSplit; last auto. rewrite heap_mapsto_vec_combine /auth_own. auto.
   Qed.
 
-  Lemma freeable_freed blk s (h : heapFreeableUR):
-    ✓ ({[blk := (1%Qp, s)]} ⋅ h) → h !! blk = None.
-  Proof.
-    intros Hv. specialize (Hv blk). revert Hv.
-    rewrite lookup_op lookup_insert cmra_valid_validN.
-    intros Hv. specialize (Hv O). apply exclusiveN_Some_l in Hv. done. apply _.
-  Qed.
-
-  Lemma free_mem_freeable_rel σ n h l s:
+  Lemma heapFreeable_rel_free_mem σ n h l s:
     ✓ ({[l.1 := (1%Qp, s)]} ⋅ h) →
     heapFreeable_rel σ ({[l.1 := (1%Qp, s)]} ⋅ h) →
     heapFreeable_rel (free_mem l n σ) h.
   Proof.
-    intros FREED%freeable_freed REL blk qs'. destruct (decide (blk = l.1)) as [|NEQ].
+    intros FREED%valid_heapFreeable_None REL blk qs'. destruct (decide (blk = l.1)) as [|NEQ].
     - subst. rewrite FREED. inversion 1.
     - intros Hqs'. specialize (REL blk qs').
       revert REL. rewrite -insert_singleton_op // lookup_insert_ne=>//REL.
       destruct (REL Hqs') as [? REL']. split. done. intro i. rewrite -REL'.
       clear- NEQ. revert l NEQ. induction n as [|n IH]=>//= l NEQ.
       rewrite lookup_delete_is_Some IH //. naive_solver.
-  Qed.
-
-  Lemma freeable_exclusive_is_Some_range σ l n h:
-    heapFreeable_rel σ ({[l.1 := (1%Qp, inter (l.2) n)]} ⋅ h) →
-    ✓ ({[l.1 := (1%Qp, inter (l.2) n)]} ⋅ h) →
-    ∀ m : Z, is_Some (σ !! shift_loc l m) ↔ 0 ≤ m ∧ m < n.
-  Proof.
-    intros REL FREED%freeable_freed m. unfold shift_loc.
-    edestruct (REL (l.1)) as [_ ->].
-      by rewrite -insert_singleton_op // lookup_insert.
-    destruct (decide (0 ≤ m ∧ m < n)).
-    - rewrite inter_lookup_Some; last lia. naive_solver.
-    - rewrite inter_lookup_None; last lia.
-      split. intros []%is_Some_None. naive_solver.
   Qed.
 
   Lemma free_mem_heapVal_pvs l vl σ E :
@@ -393,6 +406,7 @@ Section heap.
 
       rewrite comm. etrans. eapply auth_update, (delete_local_update _ l).
       2:rewrite lookup_insert //. apply _.
+
       assert (f !! l = None). {
         specialize (Hv l). rewrite lookup_op lookup_singleton in Hv.
         revert Hv. case: (f !! l) => //= ? /(exclusiveN_l _ (_, _, _)) //.
@@ -416,9 +430,9 @@ Section heap.
     setoid_subst. iDestruct "Hfvalid" as %Hfvalid.
     assert (vl ≠ []).
     { destruct (REL (l.1) (1%Qp, inter(l.2) (length vl))) as [EQnil ?].
-      rewrite -insert_singleton_op // ?lookup_insert //. eauto using freeable_freed.
-      intro. subst. done. }
-    iApply (wp_free_pst _ σ). by destruct vl. by eapply freeable_exclusive_is_Some_range.
+      rewrite -insert_singleton_op // ?lookup_insert //.
+      eauto using valid_heapFreeable_None. intro. subst. done. }
+    iApply (wp_free_pst _ σ). by destruct vl. by eapply valid_heapFreeable_is_Some.
     iNext. iFrame. iIntros "Hσ'". iFrame. iExists _, frameF. iFrame.
     rewrite Nat2Z.id. iSplitL "Hvalσ Hmt"; last iSplitR "".
     - iApply free_mem_heapVal_pvs. done. iFrame. done.
@@ -426,7 +440,7 @@ Section heap.
       etrans. eapply auth_update, (delete_local_update _ (l.1)).
       2:rewrite lookup_insert//. apply _.
       by rewrite delete_insert ?right_id ?left_id ?lookup_empty.
-    - iPureIntro. eauto using free_mem_freeable_rel.
+    - iPureIntro. eauto using heapFreeable_rel_free_mem.
   Qed.
 
 End heap.
