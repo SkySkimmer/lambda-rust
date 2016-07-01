@@ -443,4 +443,40 @@ Section heap.
     - iPureIntro. eauto using heapFreeable_rel_free_mem.
   Qed.
 
+  Lemma mapsto_heapVal_lookup l q v σ:
+    l↦{q}v ★ own heapVal_name (● to_heapVal σ)
+    ⊢ ■ ∃ (n:nat), σ !! l = Some (RSt n, v).
+  Proof.
+    iIntros "(Hv&Hσ)". rewrite heap_mapsto_eq /heap_mapsto_def /auth_own.
+    iCombine "Hv" "Hσ" as "Hσ".
+    iDestruct (own_valid (A:=authR heapValUR) with "Hσ") as "#Hσ".
+    iDestruct "Hσ" as %Hσ. iPureIntro. case: Hσ=>[Hσ _].
+    specialize (Hσ O). destruct Hσ as [f Hσ]. specialize (Hσ l).
+    revert Hσ. simpl. rewrite right_id !lookup_op lookup_fmap lookup_singleton.
+    case:(σ !! l)=>[[ls v']|]; case:(f !! l)=>[[[q' ls'] v'']|]; try by inversion 1.
+    - inversion 1 as [?? EQ|]. subst. destruct EQ as [[EQ1 EQ2] EQ3].
+      destruct ls as [|n], ls'; try by inversion EQ2.
+      destruct v'' as [v''|]; last by inversion EQ3.
+      simpl in EQ3. destruct (decide (v = v'')) as [|NE].
+      + subst. rewrite dec_agree_idemp in EQ3. inversion EQ3. subst. eauto.
+      + rewrite dec_agree_ne // in EQ3.
+    - inversion 1 as [?? EQ|]. subst. destruct EQ as [[EQ1 EQ2] EQ3].
+      inversion EQ3. destruct ls as [|n]. inversion EQ2. eauto.
+  Qed.
+
+  Lemma wp_read_sc N E l q v Φ :
+    nclose N ⊆ E →
+    heap_ctx N ★ l ↦{q} v ★ ▷ (l ↦{q} v ={E}=★ Φ v)
+    ⊢ WP Read ScOrd (Lit $ LitLoc l) @ E {{ Φ }}.
+  Proof.
+    iIntros {?} "(#Hinv&Hv&HΦ)". iApply wp_pvs.
+    rewrite /heap_ctx /heap_inv /auth_own.
+    iInv> N as "INV". iDestruct "INV" as {σ hF} "(Hσ&Hvalσ&HhF&%)".
+    iDestruct (mapsto_heapVal_lookup with "[#]") as %[n Hσl]. by iFrame.
+    iApply wp_read_sc_pst. done. iFrame. iNext. iIntros "Hσ".
+    iSplitR "Hv HΦ"; last by iApply "HΦ".
+    iExists σ, hF. iFrame. iPureIntro. rewrite -(insert_id σ l (RSt n, v)) //.
+    apply heapFreeable_rel_stable; try done. eauto.
+  Qed.
+
 End heap.
