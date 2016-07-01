@@ -8,7 +8,7 @@ Class WExpr {X Y} (H : X `included` Y) (e : expr X) (er : expr Y) :=
   do_wexpr : wexpr H e = er.
 Class WExprL {X Y} (H : X `included` Y) (el : list (expr X))
                    (elr : list (expr Y)) :=
-  do_wexprl : List.map (wexpr H) el = elr.
+  do_wexprl : map (wexpr H) el = elr.
 Hint Mode WExpr + + + + - : typeclass_instances.
 Hint Mode WExprL + + + + - : typeclass_instances.
 
@@ -77,7 +77,7 @@ Class WSubst {X Y} (x : string) (es : expr []) H (e : expr X) (er : expr Y) :=
   do_wsubst : wsubst x es H e = er.
 Class WSubstL {X Y} (x : string) (es : expr []) H
               (el : list (expr X)) (elr : list (expr Y)) :=
-  do_wsubstl : List.map (wsubst x es H) el = elr.
+  do_wsubstl : map (wsubst x es H) el = elr.
 Hint Mode WSubst + + + + + + - : typeclass_instances.
 Hint Mode WSubstL + + + + + + - : typeclass_instances.
 

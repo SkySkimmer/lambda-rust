@@ -27,7 +27,7 @@ Lemma wp_alloc_pst E σ n Φ :
   0 < n →
   ▷ ownP σ ★
   ▷ (∀ l σ', ■ (∀ m, σ !! (shift_loc l m) = None) ★
-             ■ (∃ vl, n = List.length vl ∧ init_mem l vl σ = σ') ★
+             ■ (∃ vl, n = length vl ∧ init_mem l vl σ = σ') ★
              ownP σ' ={E}=★ Φ (LitV $ LitLoc l))
   ⊢ WP Alloc (Lit $ LitInt n) @ E {{ Φ }}.
 Proof.
@@ -35,7 +35,7 @@ Proof.
   set (φ (e' : expr []) σ' ef := ∃ l,
           ef = None ∧ e' = Lit (LitLoc l) ∧
           (∀ m, σ !! (shift_loc l m) = None) ∧
-          (∃ vl, n = List.length vl ∧ init_mem l vl σ = σ')).
+          (∃ vl, n = length vl ∧ init_mem l vl σ = σ')).
   iApply (wp_lift_atomic_head_step _ φ σ);
     try (by simpl; eauto).
   { intros; subst φ; inv_head_step; eauto 8. }
@@ -48,18 +48,17 @@ Lemma wp_free_pst E σ l n Φ :
   0 < n →
   (∀ m, is_Some (σ !! (shift_loc l m)) ↔ (0 ≤ m < n)) →
   ▷ ownP σ ★
-  ▷ (∀ l σ', ■ free_mem_spec l n σ σ' ∧ ownP σ'
-             ={E}=★ Φ (LitV $ LitUnit))
+  ▷ (ownP (free_mem l (Z.to_nat n) σ) ={E}=★ Φ (LitV $ LitUnit))
   ⊢ WP Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
   iIntros {??}  "[HP HΦ]".
   set (φ (e' : expr []) σ' ef :=
-          ef = None ∧ e' = Lit LitUnit ∧ free_mem_spec l n σ σ').
+          ef = None ∧ e' = Lit LitUnit ∧ σ' = free_mem l (Z.to_nat n) σ).
   iApply (wp_lift_atomic_head_step _ φ σ); try (by simpl; eauto).
-  { intros; subst φ; inv_head_step; eauto 8 using free_mem_sound. }
+  { intros; subst φ; inv_head_step; eauto. }
   iFrame "HP". iNext. iIntros {v2 σ2 ef} "[Hφ HP]".
-  iDestruct "Hφ" as %(-> & [= <-]%of_to_val_flip & ?); simpl.
-  iSplit; last done. iApply "HΦ". repeat iSplit; auto.
+  iDestruct "Hφ" as %(-> & [= <-]%of_to_val_flip & ->); simpl.
+  iSplit; last done. iApply ("HΦ" with "HP").
 Qed.
 
 Lemma wp_read_sc_pst E σ l v Φ :
@@ -176,7 +175,7 @@ Qed.
 
 Lemma wp_rec E f xl erec erec' e el Φ :
   e = Rec f xl erec →
-  List.Forall (λ ei, is_Some (to_val ei)) el →
+  Forall (λ ei, is_Some (to_val ei)) el →
   subst_l xl el erec = Some erec' →
   ▷ WP subst f e erec' @ E {{ Φ }} ⊢ WP App e el @ E {{ Φ }}.
 Proof.
@@ -196,7 +195,7 @@ Qed.
 
 Lemma wp_case E i e el Φ :
   0 ≤ i →
-  List.nth_error el (Z.to_nat i) = Some e →
+  nth_error el (Z.to_nat i) = Some e →
   ▷ WP e @ E {{ Φ }} ⊢ WP Case (Lit $ LitInt i) el @ E {{ Φ }}.
 Proof.
   intros. rewrite -(wp_lift_pure_det_head_step (Case _ _) e None) ?right_id //.

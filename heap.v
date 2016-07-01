@@ -10,17 +10,17 @@ Definition lock_stateR : cmraT := csumR (exclR unitC) natR.
 Definition heapValUR : ucmraT :=
   gmapUR loc (prodR (prodR fracR lock_stateR) (dec_agreeR val)).
 
-Definition heapFreeUR : ucmraT :=
+Definition heapFreeableUR : ucmraT :=
   gmapUR block (prodR fracR (gmapR Z (exclR unitC))).
 
 Class heapG Σ := HeapG {
   heapVal_inG :> authG lrust_lang Σ heapValUR;
-  heapFree_inG :> authG lrust_lang Σ heapFreeUR;
+  heapFreeable_inG :> authG lrust_lang Σ heapFreeableUR;
   heapVal_name : gname;
-  heapFree_name : gname
+  heapFreeable_name : gname
 }.
 Definition heapValGF : gFunctor := authGF heapValUR.
-Definition heapFreeGF : gFunctor := authGF heapFreeUR.
+Definition heapFreeableGF : gFunctor := authGF heapFreeableUR.
 
 Definition of_lock_state (x : lock_state) : lock_stateR :=
   match x with
@@ -29,9 +29,15 @@ Definition of_lock_state (x : lock_state) : lock_stateR :=
   end.
 Definition to_heapVal : state → heapValUR :=
   fmap (λ v, (1%Qp, of_lock_state (v.1), DecAgree (v.2))).
-Definition heapFree_rel (σ : state) (heapFree : heapFreeUR) : Prop :=
-  ∀ blk q s, heapFree !! blk = Some(q, s) →
-  s ≠ ∅ ∧ ∀ i, is_Some (σ !! (blk, i)) ↔ is_Some (s !! i).
+Definition heapFreeable_rel (σ : state) (heapFreeable : heapFreeableUR) : Prop :=
+  ∀ blk qs, heapFreeable !! blk ≡ Some qs →
+  qs.2 ≠ ∅ ∧ ∀ i, is_Some (σ !! (blk, i)) ↔ is_Some (qs.2 !! i).
+
+Instance heapFreeable_rel_proper σ : Proper ((≡) ==> (↔)) (heapFreeable_rel σ).
+Proof.
+  intros x y Hxy. unfold heapFreeable_rel. split; intros H blk qs.
+  rewrite -Hxy. apply H. rewrite Hxy. apply H.
+Qed.
 
 Section definitions.
   Context `{i : heapG Σ}.
@@ -53,15 +59,16 @@ Section definitions.
     | S n => <[i0 := Excl ()]>(inter (i0+1) n)
     end.
   Definition heap_freeable_def (l : loc) (q : Qp) (n: nat) : iPropG lrust_lang Σ :=
-    auth_own heapFree_name {[ l.1 := (q, inter (l.2) n) ]}.
+    auth_own heapFreeable_name {[ l.1 := (q, inter (l.2) n) ]}.
   Definition heap_freeable_aux : { x | x = @heap_freeable_def }. by eexists. Qed.
   Definition heap_freeable := proj1_sig heap_freeable_aux.
   Definition heap_freeable_eq : @heap_freeable = @heap_freeable_def :=
     proj2_sig heap_freeable_aux.
 
   Definition heap_inv : iPropG lrust_lang Σ :=
-    (∃ σ heapFree, ownP σ ★ own heapVal_name (● to_heapVal σ)
-               ★ own heapFree_name (● heapFree) ★ ■ heapFree_rel σ heapFree)%I.
+    (∃ (σ:state) heapFreeable, ownP σ ★ own heapVal_name (● to_heapVal σ)
+                                      ★ own heapFreeable_name (● heapFreeable)
+                                      ★ ■ heapFreeable_rel σ heapFreeable)%I.
   Definition heap_ctx (N : namespace) := inv N heap_inv.
 
   Global Instance heap_ctx_persistent N : PersistentP (heap_ctx N).
@@ -96,23 +103,24 @@ Section heap.
   Lemma to_heap_valid σ : ✓ to_heapVal σ.
   Proof. intros l. rewrite lookup_fmap. case (σ !! l)=>[[[|n] v]|]//=. Qed.
   Lemma heap_alloc N E σ :
-    authG lrust_lang Σ heapValUR → authG lrust_lang Σ heapFreeUR →
+    authG lrust_lang Σ heapValUR → authG lrust_lang Σ heapFreeableUR →
     nclose N ⊆ E →
     ownP σ ={E}=> ∃ _ : heapG Σ, heap_ctx N.
   Proof.
     iIntros {???} "Hσ".
     iPvs (own_alloc (● to_heapVal σ)) as {vγ} "Hvγ".
     { split; last apply to_heap_valid. intro. apply ucmra_unit_leastN. }
-    iPvs (own_alloc (● (∅ : heapFreeUR))) as {fγ} "Hfγ".
+    iPvs (own_alloc (● (∅ : heapFreeableUR))) as {fγ} "Hfγ".
     { split. intro. apply ucmra_unit_leastN. apply ucmra_unit_valid. }
     set (HeapG _ _ _ vγ fγ). unfold heap_ctx. iExists _.
     iPvs (inv_alloc N E heap_inv with "[-]") as "HN"; try done.
-    iNext. iExists _, _. iFrame. iPureIntro. intros ???. by rewrite lookup_empty.
+    iNext. iExists _, _. iFrame. iPureIntro. intros ??. rewrite lookup_empty.
+    inversion 1.
   Qed.
 
   Context `{heapG Σ}.
 
-  (** General properties of mapsto *)
+  (** General properties of mapsto and freeable *)
   Global Instance heap_mapsto_timeless l q v : TimelessP (l↦{q}v).
   Proof. rewrite heap_mapsto_eq /heap_mapsto_def. apply _. Qed.
 
@@ -120,6 +128,9 @@ Section heap.
   Proof.
     unfold heap_mapsto_vec, imap. generalize O. induction vl=>/=; apply _.
   Qed.
+
+  Global Instance heap_freeable_timeless q l n : TimelessP (†{q}l…n).
+  Proof. rewrite heap_freeable_eq /heap_freeable_def. apply _. Qed.
 
   Lemma heap_mapsto_op_eq l q1 q2 v : l ↦{q1} v ★ l ↦{q2} v ⊣⊢ l ↦{q1+q2} v.
   Proof.
@@ -178,18 +189,25 @@ Section heap.
     l ↦★{q} vl ⊣⊢ (l ↦★{q/2} vl ★ l ↦★{q/2} vl).
   Proof. by rewrite heap_mapsto_vec_op_eq Qp_div_2. Qed.
 
-  Lemma heap_mapsto_vec_auth l q vl:
-    vl ≠ [] →
+  Lemma heap_mapsto_vec_combine l q vl:
     l ↦★{q} vl ⊣⊢
+      vl = [] ∨
       auth_own heapVal_name (big_op (imap
         (λ i v, {[shift_loc l i := (q, Cinr 0%nat, DecAgree v)]}) vl)).
   Proof.
     rewrite /heap_mapsto_vec heap_mapsto_eq /heap_mapsto_def.
-    revert l. induction vl as [|v vl IH]=>// l _. destruct (decide (vl = [])).
-    - subst. simpl. by rewrite !right_id.
-    - rewrite !imap_cons auth_own_op /=.
-      erewrite imap_ext, (IH (shift_loc l 1)), imap_ext; [done| |done|];
-        simpl; intros i v'; rewrite shift_loc_assoc; repeat f_equiv; lia.
+    revert l. induction vl as [|v vl IH]=>l.
+    { apply equiv_spec. simpl. split; iIntros; auto. }
+    assert (v :: vl = [] ⊣⊢ (False:iPropG lrust_lang Σ)) as ->.
+    { apply equiv_spec; split; iIntros "%"; done. }
+    rewrite left_id !imap_cons /=. destruct (decide (vl = [])).
+    { subst. by rewrite !right_id. }
+    erewrite auth_own_op, imap_ext, (IH (shift_loc l 1)), imap_ext.
+    - assert (vl = [] ⊣⊢ (False:iPropG lrust_lang Σ)) as ->.
+      { apply equiv_spec; split; iIntros "%"; done. }
+        by rewrite left_id.
+    - intros. rewrite shift_loc_assoc /=. repeat f_equiv; lia.
+    - intros. simpl. rewrite shift_loc_assoc. repeat f_equiv; lia.
   Qed.
 
   Lemma inter_lookup_Some i j (n:nat):
@@ -247,49 +265,50 @@ Section heap.
         by apply auth_update, alloc_unit_singleton_local_update.
   Qed.
 
-  Lemma fresh_block_heap_free σ l heapFree:
-    (∀ m : Z, σ !! shift_loc l m = None) → heapFree_rel σ heapFree →
-    heapFree !! l.1 = None.
+  Lemma fresh_block_heap_freeable σ l h:
+    (∀ m : Z, σ !! shift_loc l m = None) → heapFreeable_rel σ h →
+    h !! l.1 = None.
   Proof.
-    intros FRESH REL. apply eq_None_not_Some; intros [[q s] [=[Hsne REL']%REL]].
+    intros FRESH REL. apply eq_None_not_Some. intros [[q s] Hqs].
+    apply (reflexive_eq (R:=equiv)), REL in Hqs. destruct Hqs as [Hsne REL'].
     destruct (map_choose s) as [i Hi%REL']; first done.
     specialize (FRESH (i-l.2)). rewrite /shift_loc Zplus_minus in FRESH.
     rewrite FRESH in Hi. by eapply is_Some_None.
   Qed.
 
-  Lemma init_mem_update_free (l:loc) n heapFree σ:
-    (∀ m : Z, σ !! shift_loc l m = None) → heapFree_rel σ heapFree →
-    ● heapFree ~~>
-      ● ({[l.1 := (1%Qp, inter (l.2) n)]} ⋅ heapFree) ⋅
-      ◯ {[l.1 := (1%Qp, inter (l.2) n)]}.
+  Lemma init_mem_update_freeable (l:loc) n h σ:
+    (∀ m : Z, σ !! shift_loc l m = None) → heapFreeable_rel σ h →
+    ● h ~~>
+    ● ({[l.1 := (1%Qp, inter (l.2) n)]}⋅h)⋅◯ {[l.1 := (1%Qp, inter (l.2) n)]}.
   Proof.
     intros FRESH REL.
     etrans; last apply auth_update, alloc_unit_singleton_local_update.
     - rewrite right_id left_id. reflexivity.
-    - simpl. eauto using fresh_block_heap_free.
+    - simpl. eauto using fresh_block_heap_freeable.
     - split. done. apply inter_valid.
   Qed.
 
-  Lemma init_mem_rel_free (l:loc) n heapFree vl σ:
-    0 < n → heapFree_rel σ heapFree →
-    (∀ m : Z, σ !! shift_loc l m = None) →
+  Lemma init_mem_rel_freeable (l:loc) n h vl σ:
+    0 < n → heapFreeable_rel σ h → (∀ m : Z, σ !! shift_loc l m = None) →
     n = Datatypes.length vl →
-    heapFree_rel (init_mem l vl σ)
-                 ({[l.1 := (1%Qp, inter (l.2) (Z.to_nat n))]} ⋅ heapFree).
+    heapFreeable_rel (init_mem l vl σ)
+                     ({[l.1 := (1%Qp, inter (l.2) (Z.to_nat n))]} ⋅ h).
   Proof.
-    intros Hn REL FRESH Hlen blk q s. destruct (decide (l.1 = blk)) as [EQ|NEQ].
-    - subst blk. rewrite lookup_op lookup_insert (fresh_block_heap_free σ)=>//.
-      intros [=]. subst. rewrite Nat2Z.id. split.
-      + destruct (List.length vl). lia. intros EQ%(f_equal (lookup (l.2))).
-        by rewrite lookup_insert lookup_empty in EQ.
-      + revert l FRESH. clear. induction vl as [|v vl IH]=>/=l FRESH i.
+    intros Hn REL FRESH Hlen blk qs. destruct (decide (l.1 = blk)) as [|NEQ].
+    - subst.
+      rewrite lookup_op lookup_insert (fresh_block_heap_freeable σ) // Nat2Z.id.
+      inversion 1. subst. split.
+      + destruct (length vl). lia.
+        intros EQ%(f_equal (lookup (l.2)))%(reflexive_eq (R:=equiv)).
+        setoid_subst. rewrite lookup_insert lookup_empty in EQ. inversion EQ.
+      + setoid_subst. clear -FRESH. revert l FRESH. induction vl as [|v vl IH]=>/=l FRESH i.
         * specialize (FRESH (i-l.2)). rewrite /shift_loc Zplus_minus in FRESH.
           rewrite lookup_empty FRESH. by split; intros []%is_Some_None.
         * rewrite !lookup_insert_is_Some IH /=;
                   last by intros; rewrite shift_loc_assoc.
           destruct l. simpl. split; intros [|[]]; naive_solver congruence.
     - rewrite lookup_op lookup_insert_ne // lookup_empty.
-      specialize (REL blk). revert REL. case: (heapFree !! blk); last done.
+      specialize (REL blk). revert REL. case: (h !! blk); last inversion 2.
       move=>? REL /REL [Hse Hs]. split. done. intros i. rewrite -Hs.
       clear -NEQ. revert l NEQ. induction vl as [|v vl IH]=>//= l NEQ.
       rewrite lookup_insert_is_Some IH //. naive_solver.
@@ -302,18 +321,112 @@ Section heap.
     ⊢ WP Alloc (Lit $ LitInt n) @ E {{ Φ }}.
   Proof.
     iIntros {??} "[#Hinv HΦ]". rewrite /heap_ctx /heap_inv. iApply wp_pvs.
-    iInv> N as "INV". iDestruct "INV" as {σ heapFree} "(Hσ&Hvalσ&Hfree&%)".
+    iInv> N as "INV". iDestruct "INV" as {σ hF} "(Hσ&Hvalσ&HhF&%)".
     iApply wp_alloc_pst =>//. iNext. iFrame "Hσ".
     iIntros {l σ'} "(%&#Hσσ'&Hσ')". iDestruct "Hσσ'" as %(vl&HvlLen&Hvl).
     iPvs (own_update _ (● to_heapVal σ) with "Hvalσ") as "[Hvalσ' Hmapsto]";
       first apply (init_mem_update_val _ l vl); auto.
-    iPvs (own_update _ (● heapFree) with "Hfree") as "[Hfree' Hfreeable]";
-      first apply (init_mem_update_free l (Z.to_nat n) heapFree σ); auto.
-    iPvsIntro. iSplitL "Hσ' Hvalσ' Hfree'".
-    - iExists σ', _. subst σ'. iFrame. iPureIntro. by apply init_mem_rel_free.
+    iPvs (own_update _ (● hF) with "HhF") as "[HhF Hfreeable]";
+      first apply (init_mem_update_freeable l (Z.to_nat n) hF σ); auto.
+    iPvsIntro. iSplitL "Hσ' Hvalσ' HhF".
+    - iExists σ', _. subst σ'. iFrame. iPureIntro. by apply init_mem_rel_freeable.
     - rewrite heap_freeable_eq /heap_freeable_def /auth_own. iApply "HΦ".
-      iFrame. iSplit; last auto. rewrite heap_mapsto_vec_auth /auth_own //.
-      destruct vl; simpl in *. lia. done.
+      iFrame. iSplit; last auto. rewrite heap_mapsto_vec_combine /auth_own. auto.
+  Qed.
+
+  Lemma freeable_freed blk s (h : heapFreeableUR):
+    ✓ ({[blk := (1%Qp, s)]} ⋅ h) → h !! blk = None.
+  Proof.
+    intros Hv. specialize (Hv blk). revert Hv.
+    rewrite lookup_op lookup_insert cmra_valid_validN.
+    intros Hv. specialize (Hv O). apply exclusiveN_Some_l in Hv. done. apply _.
+  Qed.
+
+  Lemma free_mem_freeable_rel σ n h l s:
+    ✓ ({[l.1 := (1%Qp, s)]} ⋅ h) →
+    heapFreeable_rel σ ({[l.1 := (1%Qp, s)]} ⋅ h) →
+    heapFreeable_rel (free_mem l n σ) h.
+  Proof.
+    intros FREED%freeable_freed REL blk qs'. destruct (decide (blk = l.1)) as [|NEQ].
+    - subst. rewrite FREED. inversion 1.
+    - intros Hqs'. specialize (REL blk qs').
+      revert REL. rewrite -insert_singleton_op // lookup_insert_ne=>//REL.
+      destruct (REL Hqs') as [? REL']. split. done. intro i. rewrite -REL'.
+      clear- NEQ. revert l NEQ. induction n as [|n IH]=>//= l NEQ.
+      rewrite lookup_delete_is_Some IH //. naive_solver.
+  Qed.
+
+  Lemma freeable_exclusive_is_Some_range σ l n h:
+    heapFreeable_rel σ ({[l.1 := (1%Qp, inter (l.2) n)]} ⋅ h) →
+    ✓ ({[l.1 := (1%Qp, inter (l.2) n)]} ⋅ h) →
+    ∀ m : Z, is_Some (σ !! shift_loc l m) ↔ 0 ≤ m ∧ m < n.
+  Proof.
+    intros REL FREED%freeable_freed m. unfold shift_loc.
+    edestruct (REL (l.1)) as [_ ->].
+      by rewrite -insert_singleton_op // lookup_insert.
+    destruct (decide (0 ≤ m ∧ m < n)).
+    - rewrite inter_lookup_Some; last lia. naive_solver.
+    - rewrite inter_lookup_None; last lia.
+      split. intros []%is_Some_None. naive_solver.
+  Qed.
+
+  Lemma free_mem_heapVal_pvs l vl σ E :
+    vl ≠ [] →
+    l ↦★ vl ★ own heapVal_name (● to_heapVal σ)
+    ⊢ |={E}=> own heapVal_name (● to_heapVal (free_mem l (Datatypes.length vl) σ)).
+  Proof.
+    iIntros {Hvlnil} "[Hvl Hσ]". rewrite heap_mapsto_vec_combine /auth_own.
+    iDestruct "Hvl" as "[%|Hvl]"; first done. iCombine "Hvl" "Hσ" as "Hσ".
+    iApply (own_update _ _ (● to_heapVal _) with "Hσ"). clear. revert l.
+    induction vl as [|v vl IH]=>l. by rewrite left_id.
+    rewrite imap_cons /= auth_frag_op -assoc. etrans.
+    - apply cmra_update_op. reflexivity. erewrite imap_ext. apply (IH (shift_loc l 1)).
+      move=> i x /=. rewrite shift_loc_assoc. repeat f_equiv. lia.
+    - clear IH. unfold to_heapVal. rewrite fmap_delete.
+      apply cmra_update_valid0. intros [[f Hf%timeless] Hv]; last apply _.
+      revert Hf Hv. rewrite shift_loc_0 right_id =>/= Hf. rewrite {1 2}Hf=>Hv.
+
+      (* FIXME : make "rewrite Hf" work. *)
+      eapply cmra_update_proper. reflexivity.
+      apply Auth_proper, reflexivity. apply Some_proper, Excl_proper.
+      rewrite Hf. reflexivity.
+
+      rewrite comm. etrans. eapply auth_update, (delete_local_update _ l).
+      2:rewrite lookup_insert //. apply _.
+      assert (f !! l = None). {
+        specialize (Hv l). rewrite lookup_op lookup_singleton in Hv.
+        revert Hv. case: (f !! l) => //= ? /(exclusiveN_l _ (_, _, _)) //.
+      }
+      by rewrite -insert_singleton_op // delete_singleton delete_insert // right_id left_id.
+  Qed.
+
+  Lemma wp_free N E (n:Z) l vl Φ :
+    nclose N ⊆ E →
+    n = length vl →
+    heap_ctx N ★ l ↦★ vl ★ †l…(length vl) ★
+    ▷ (|={E}=> Φ (LitV LitUnit))
+    ⊢ WP Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E {{ Φ }}.
+  Proof.
+    iIntros {??} "(#Hinv&Hmt&Hf&HΦ)". rewrite /heap_ctx /heap_inv. iApply wp_pvs.
+    iInv> N as "INV". iDestruct "INV" as {σ hF} "(Hσ&Hvalσ&HhF&REL)".
+    iDestruct "REL" as %REL. rewrite heap_freeable_eq /heap_freeable_def /auth_own.
+    iCombine "Hf" "HhF" as "HhF". iDestruct (own_valid _ with "#HhF") as "Hfvalid".
+    rewrite auth_validI /=. iDestruct "Hfvalid" as "[Hfle Hfvalid]".
+    iDestruct "Hfle" as {frameF} "Hfle". rewrite right_id. iDestruct "Hfle" as "%".
+    setoid_subst. iDestruct "Hfvalid" as %Hfvalid.
+    assert (vl ≠ []).
+    { destruct (REL (l.1) (1%Qp, inter(l.2) (length vl))) as [EQnil ?].
+      rewrite -insert_singleton_op // ?lookup_insert //. eauto using freeable_freed.
+      intro. subst. done. }
+    iApply (wp_free_pst _ σ). by destruct vl. by eapply freeable_exclusive_is_Some_range.
+    iNext. iFrame. iIntros "Hσ'". iFrame. iExists _, frameF. iFrame.
+    rewrite Nat2Z.id. iSplitL "Hvalσ Hmt"; last iSplitR "".
+    - iApply free_mem_heapVal_pvs. done. iFrame. done.
+    - iApply (own_update _ _ (● frameF) with "HhF"). rewrite comm.
+      etrans. eapply auth_update, (delete_local_update _ (l.1)).
+      2:rewrite lookup_insert//. apply _.
+      by rewrite delete_insert ?right_id ?left_id ?lookup_empty.
+    - iPureIntro. eauto using free_mem_freeable_rel.
   Qed.
 
 End heap.

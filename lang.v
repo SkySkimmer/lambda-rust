@@ -117,7 +117,7 @@ Definition fill_item (Ki : ectx_item) (e : expr []) : expr [] :=
   | BinOpLCtx op e2 => BinOp op e e2
   | BinOpRCtx op v1 => BinOp op (of_val v1) e
   | AppLCtx e2 => App e e2
-  | AppRCtx v vl el => App (of_val v) (List.app (List.map of_val vl) (e :: el))
+  | AppRCtx v vl el => App (of_val v) (map of_val vl ++ e :: el)
   | ReadCtx o => Read o e
   | WriteLCtx o e2 => Write o e e2
   | WriteRCtx o v1 => Write o (of_val v1) e
@@ -137,13 +137,13 @@ Program Fixpoint wexpr {X Y} (H : X `included` Y) (e : expr X) : expr Y :=
   | Lit l => Lit l
   | Rec f xl e => Rec f xl (wexpr _ e)
   | BinOp op e1 e2 => BinOp op (wexpr H e1) (wexpr H e2)
-  | App e el => App (wexpr H e) (List.map (wexpr H) el)
+  | App e el => App (wexpr H e) (map (wexpr H) el)
   | Read o e => Read o (wexpr H e)
   | Write o e1 e2 => Write o (wexpr H e1) (wexpr H e2)
   | CAS e0 e1 e2 => CAS (wexpr H e0) (wexpr H e1) (wexpr H e2)
   | Alloc e => Alloc (wexpr H e)
   | Free e1 e2 => Free (wexpr H e1) (wexpr H e2)
-  | Case e el => Case (wexpr H e) (List.map (wexpr H) el)
+  | Case e el => Case (wexpr H e) (map (wexpr H) el)
   | Fork e => Fork (wexpr H e)
   end.
 Solve Obligations with set_solver.
@@ -173,13 +173,13 @@ Program Fixpoint wsubst {X Y} (x : string) (es : expr [])
                 | right Hfy => wexpr (wsubst_rec_false_prf H Hfy) e
                 end
   | BinOp op e1 e2 => BinOp op (wsubst x es H e1) (wsubst x es H e2)
-  | App e el => App (wsubst x es H e) (List.map (wsubst x es H) el)
+  | App e el => App (wsubst x es H e) (map (wsubst x es H) el)
   | Read o e => Read o (wsubst x es H e)
   | Write o e1 e2 => Write o (wsubst x es H e1) (wsubst x es H e2)
   | CAS e0 e1 e2 => CAS (wsubst x es H e0) (wsubst x es H e1) (wsubst x es H e2)
   | Alloc e => Alloc (wsubst x es H e)
   | Free e1 e2 => Free (wsubst x es H e1) (wsubst x es H e2)
-  | Case e el => Case (wsubst x es H e) (List.map (wsubst x es H) el)
+  | Case e el => Case (wsubst x es H e) (map (wsubst x es H) el)
   | Fork e => Fork (wsubst x es H e)
   end.
 Solve Obligations with set_solver.
@@ -187,8 +187,8 @@ Solve Obligations with set_solver.
 Definition subst {X} (x : string) (es : expr []) (e : expr (x :: X)) : expr X :=
   wsubst x es (λ z, id) e.
 Fixpoint subst_l {X} (xl : list string) (esl : list (expr [])) :
-                     expr (List.app xl X) → option (expr X) :=
-  match xl, esl return expr (List.app xl X) → option (expr X) with
+                     expr (xl ++ X) → option (expr X) :=
+  match xl, esl return expr (xl ++ X) → option (expr X) with
   | [], [] => λ e, Some e
   | x::xl, es::esl => λ e, subst_l xl esl (subst x es e)
   | _, _ => λ _, None
@@ -220,7 +220,7 @@ Fixpoint init_mem (l:loc) (init:list val) (σ:state) : state :=
 Fixpoint free_mem (l:loc) (n:nat) (σ:state) : state :=
   match n with
   | O => σ
-  | S n => free_mem l n (delete (shift_loc l n) σ)
+  | S n => delete l (free_mem (shift_loc l 1) n σ)
   end.
 
 Inductive head_step : expr [] → state → expr [] → state → option (expr []) → Prop :=
@@ -228,7 +228,7 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
     bin_op_eval op l1 l2 = Some l' →
     head_step (BinOp op (Lit l1) (Lit l2)) σ (Lit l') σ None
 | BetaS f xl e e' el σ:
-    List.Forall (λ ei, is_Some (to_val ei)) el →
+    Forall (λ ei, is_Some (to_val ei)) el →
     subst_l xl el e = Some e' →
     head_step (App (Rec f xl e) el) σ (subst f (Rec f xl e) e') σ None
 | ReadScS l v σ:
@@ -275,7 +275,7 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
 | AllocS n l init σ :
     0 < n →
     (∀ m, σ !! (shift_loc l m) = None) →
-    Z.of_nat (List.length init) = n →
+    Z.of_nat (length init) = n →
     head_step (Alloc $ Lit $ LitInt n) σ
               (Lit $ LitLoc l) (init_mem l init σ) None
 | FreeS n l σ :
@@ -286,7 +286,7 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
               None
 | CaseS i el e σ :
     0 ≤ i →
-    List.nth_error el (Z.to_nat i) = Some e →
+    nth_error el (Z.to_nat i) = Some e →
     head_step (Case (Lit $ LitInt i) el) σ e σ None
 | ForkS e σ:
     head_step (Fork e) σ (Lit LitUnit) σ (Some e).
@@ -477,25 +477,6 @@ Proof.
     { induction lst; simpl; inversion 1; subst; set_solver. }
     rewrite -not_elem_of_dom -elem_of_elements=>/FOLD. apply is_fresh.
   - rewrite repeat_length. apply Z2Nat.id. lia.
-Qed.
-
-Definition free_mem_spec (l:loc) (n:Z) (σ σ':state) : Prop :=
-  (∀ l', l'.1 ≠ l.1 → σ !! l' =  σ' !! l') ∧
-  (∀ m, σ' !! (shift_loc l m) = None).
-
-Lemma free_mem_sound l n σ:
-  0 < n →
-  (∀ m, is_Some (σ !! (shift_loc l m)) ↔ (0 ≤ m < n)) →
-  free_mem_spec l n σ (free_mem l (Z.to_nat n) σ).
-Proof.
-  intro. rewrite -(Z2Nat.id n) ?Nat2Z.id. 2:lia.
-  unfold free_mem_spec. revert σ. induction (Z.to_nat n) as [|n' IH] =>/= σ Hσ.
-  - split. auto. intro m. rewrite eq_None_not_Some Hσ. lia.
-  - destruct (IH (delete (shift_loc l n') σ)) as [IH1 IH2].
-    { intro m. rewrite lookup_delete_is_Some Hσ.
-      clear; destruct (decide (m = n')); naive_solver lia. }
-    split. 2:done.
-    intros l' Hl'. rewrite -IH1 ?lookup_delete_ne //. clear -Hl'; naive_solver.
 Qed.
 
 (** Equality and other typeclass stuff *)
