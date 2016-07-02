@@ -80,23 +80,18 @@ Proof.
   intros; inv_head_step; eauto using to_of_val.
 Qed.
 
-Lemma wp_read_na_pst E1 E2 σ l n v Φ :
+Lemma wp_read_na_pst E1 E2 l Φ :
   E2 ⊆ E1 →
-  σ !! l = Some(RSt $ n, v) →
-  (|={E1,E2}=> ▷ ownP σ ★
-               ▷ (ownP (<[l:=(RSt $ S n, v)]>σ) ={E2,E1}=★
-                  WP Read InOrd (Lit $ LitLoc l) @ E1 {{ Φ }}))
+  (|={E1,E2}=> ∃ σ n v, σ !! l = Some(RSt $ n, v) ∧
+     ▷ ownP σ ★
+     ▷ (ownP (<[l:=(RSt $ S n, v)]>σ) ={E2,E1}=★
+          WP Read InOrd (Lit $ LitLoc l) @ E1 {{ Φ }}))
   ⊢ WP Read NaOrd (Lit $ LitLoc l) @ E1 {{ Φ }}.
 Proof.
-  iIntros {??} "HΦP".
-  set (φ (e' : expr []) σ' ef :=
-         ef = None ∧ e' = Read InOrd (Lit $ LitLoc l) ∧ σ' = <[l:=(RSt $ S n, v)]>σ).
-  iApply (wp_lift_head_step E1 E2 φ _ _ σ); auto.
-  { intros. subst φ. inv_head_step. auto. }
-  subst φ. iPvs "HΦP"; first set_solver. iPvsIntro. iNext.
-  iDestruct "HΦP" as "[HΦ HP]". iFrame "HΦ". iIntros {e2 σ2 ef} "[#Hφ HΦ]".
-  iDestruct "Hφ" as %(->&->&->). iPvs ("HP" with "HΦ"); first set_solver.
-  by rewrite right_id.
+  iIntros {?} "HΦP". iApply (wp_lift_head_step E1 E2); auto.
+  iPvs "HΦP" as {σ n v} "(%&HΦ&HP)"; first set_solver. iPvsIntro.
+  iExists σ. iSplit. done. iFrame. iNext. iIntros {e2 σ2 ef} "[% HΦ]".
+  inv_head_step. rewrite right_id. iApply ("HP" with "HΦ").
 Qed.
 
 Lemma wp_write_sc_pst E σ l e v v' Φ :
@@ -123,24 +118,20 @@ Proof.
   intros; inv_head_step; eauto.
 Qed.
 
-Lemma wp_write_na_pst E1 E2 σ l e v v' Φ :
+Lemma wp_write_na_pst E1 E2 l e v Φ :
   to_val e = Some v →
   E2 ⊆ E1 →
-  σ !! l = Some(RSt 0, v') →
-  (|={E1,E2}=> ▷ ownP σ ★
-               ▷ (ownP (<[l:=(WSt, v')]>σ) ={E2,E1}=★
-                  WP Write InOrd (Lit $ LitLoc l) e @ E1 {{ Φ }}))
+  (|={E1,E2}=> ∃ σ v', σ !! l = Some(RSt 0, v') ∧
+     ▷ ownP σ ★
+     ▷ (ownP (<[l:=(WSt, v')]>σ) ={E2,E1}=★
+       WP Write InOrd (Lit $ LitLoc l) e @ E1 {{ Φ }}))
   ⊢ WP Write NaOrd (Lit $ LitLoc l) e @ E1 {{ Φ }}.
 Proof.
-  iIntros {???} "HΦP".
-  set (φ (e' : expr []) σ' ef :=
-         ef = None ∧ e' = Write InOrd (Lit $ LitLoc l) e ∧ σ' = <[l:=(WSt, v')]>σ).
-  iApply (wp_lift_head_step E1 E2 φ _ _ σ); auto.
-  { intros. subst φ. inv_head_step. auto. }
-  subst φ. iPvs "HΦP"; first set_solver. iPvsIntro. iNext.
-  iDestruct "HΦP" as "[HΦ HP]". iFrame "HΦ".
-  iIntros {e2 σ2 ef} "[#Hφ HΦ]". iDestruct "Hφ" as %(->&->&->).
-  iPvs ("HP" with "HΦ"); first set_solver. by rewrite right_id.
+  iIntros {??} "HΦP".
+  iApply (wp_lift_head_step E1 E2); auto.
+  iPvs "HΦP" as {σ v'} "(%&HΦ&HP)"; first set_solver. iPvsIntro.
+  iExists σ. iSplit. done. iFrame. iNext. iIntros {e2 σ2 ef} "[% HΦ]".
+  inv_head_step. rewrite right_id. iApply ("HP" with "HΦ").
 Qed.
 
 Lemma wp_cas_fail_pst E σ l z1 z2 z' Φ :
