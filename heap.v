@@ -616,7 +616,7 @@ Section heap.
 
   Lemma wp_write_na N E l e v v' Φ :
     nclose N ⊆ E → to_val e = Some v →
-    heap_ctx N ★ l ↦ v' ★ ▷ (l ↦ v ={E}=★ Φ (LitV LitUnit))
+    heap_ctx N ★ l ↦ v' ★ ▷ ▷ (l ↦ v ={E}=★ Φ (LitV LitUnit))
     ⊢ WP Write NaOrd (Lit $ LitLoc l) e @ E {{ Φ }}.
   Proof.
     iIntros {??} "(#Hinv&Hv&HΦ)". iApply wp_pvs.
