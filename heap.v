@@ -638,18 +638,17 @@ Section heap.
       iIntros "Hlv". by iApply "HΦ".
   Qed.
 
-  Lemma wp_cas_fail N E l z' z1 z2 Φ :
+  Lemma wp_cas_fail N E l q z' z1 z2 Φ :
     nclose N ⊆ E → z' ≠ z1 →
-    heap_ctx N ★ l ↦ (LitV (LitInt z'))
-               ★ ▷ (l ↦ (LitV (LitInt z')) ={E}=★ Φ (LitV (LitInt 0)))
+    heap_ctx N ★ l ↦{q} (LitV (LitInt z'))
+               ★ ▷ (l ↦{q} (LitV (LitInt z')) ={E}=★ Φ (LitV (LitInt 0)))
     ⊢ WP CAS (Lit (LitLoc l)) (Lit $ LitInt z1) (Lit $ LitInt z2) @ E {{ Φ }}.
   Proof.
     iIntros {? Hz1z'} "(#Hinv&Hv&HΦ)". iApply wp_pvs.
     rewrite /heap_ctx /heap_inv /auth_own heap_mapsto_eq /heap_mapsto_def.
     iInv> N as "INV". iDestruct "INV" as {σ hF} "(Hσ&Hvalσ&HhF&%)".
-    iDestruct (mapsto_heapVal_lookup with "[#]") as %(n&Hσl&EQ). by iFrame.
-    specialize (EQ (reflexivity _)). subst.
-    iApply wp_cas_fail_pst; try done. iFrame. iNext. iIntros "Hσ".
+    iDestruct (mapsto_heapVal_lookup with "[#]") as %(n&Hσl&_). by iFrame.
+    iApply wp_cas_fail_pst. by eapply Hσl. try done. iFrame. iNext. iIntros "Hσ".
     iSplitR "Hv HΦ"; last by iApply "HΦ". iExists _, hF. by iFrame.
   Qed.
 

@@ -134,8 +134,8 @@ Proof.
   inv_head_step. rewrite right_id. iApply ("HP" with "HΦ").
 Qed.
 
-Lemma wp_cas_fail_pst E σ l z1 z2 z' Φ :
-  σ !! l = Some (RSt 0, LitV $ LitInt z') → z' ≠ z1 →
+Lemma wp_cas_fail_pst E σ l n z1 z2 z' Φ :
+  σ !! l = Some (RSt n, LitV $ LitInt z') → z' ≠ z1 →
   ▷ ownP σ ★ ▷ (ownP σ ={E}=★ Φ (LitV $ LitInt 0))
   ⊢ WP CAS (Lit $ LitLoc l) (Lit $ LitInt z1) (Lit $ LitInt z2) @ E {{ Φ }}.
 Proof.

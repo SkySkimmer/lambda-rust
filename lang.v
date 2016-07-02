@@ -262,8 +262,8 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
     head_step (Write InOrd (Lit $ LitLoc l) e) σ
               (Lit LitUnit) (<[l:=(RSt 0, v)]>σ)
               None
-| CasFailS l z1 z2 zl σ :
-    σ !! l = Some (RSt 0, LitV $ LitInt zl) →
+| CasFailS l n z1 z2 zl σ :
+    σ !! l = Some (RSt n, LitV $ LitInt zl) →
     zl ≠ z1 →
     head_step (CAS (Lit $ LitLoc l) (Lit $ LitInt z1) (Lit $ LitInt z2)) σ
               (Lit $ lit_of_bool false) σ  None
