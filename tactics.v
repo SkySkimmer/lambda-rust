@@ -10,6 +10,9 @@ Ltac inv_head_step :=
   repeat match goal with
   | _ => progress simplify_map_eq/= (* simplify memory stuff *)
   | H : to_val _ = Some _ |- _ => apply of_to_val in H
+  | H : Lit _ = of_val ?v |- _ =>
+    apply (f_equal (to_val)) in H; rewrite to_of_val in H;
+    injection H; clear H; intro
   | H : context [to_val (of_val _)] |- _ => rewrite to_of_val in H
   | H : head_step ?e _ _ _ _ |- _ =>
      try (is_var e; fail 1); (* inversion yields many goals if [e] is a variable

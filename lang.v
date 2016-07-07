@@ -14,7 +14,7 @@ Inductive base_lit : Set :=
 Inductive bin_op : Set :=
 | PlusOp | MinusOp | LeOp | ProjOp.
 Inductive order : Set :=
-| ScOrd | NaOrd | InOrd.
+| ScOrd | Na1Ord | Na2Ord.
 
 (** A typeclass for whether a variable is bound in a given
    context. Making this a typeclass means we can use typeclass search
@@ -223,6 +223,18 @@ Fixpoint free_mem (l:loc) (n:nat) (σ:state) : state :=
   | S n => delete l (free_mem (shift_loc l 1) n σ)
   end.
 
+Definition value_eq (σ : state) (v1 v2 : val) : option bool :=
+  match v1, v2 with
+  | LitV (LitInt z1), LitV (LitInt z2) => Some (bool_decide (z1 = z2))
+  | LitV (LitLoc l1), LitV (LitLoc l2) =>
+    if bool_decide (l1 = l2) then Some true
+    else match σ !! l1, σ !! l2 with
+         | Some _, Some _ => Some false
+         | _, _ => None
+         end
+  | _, _ => None
+  end.
+
 Inductive head_step : expr [] → state → expr [] → state → option (expr []) → Prop :=
 | BinOpS op l1 l2 l' σ :
     bin_op_eval op l1 l2 = Some l' →
@@ -236,12 +248,12 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
     head_step (Read ScOrd (Lit $ LitLoc l)) σ (of_val v) σ None
 | ReadNaS l n v σ:
     σ !! l = Some (RSt n, v) →
-    head_step (Read NaOrd (Lit $ LitLoc l)) σ
-              (Read InOrd (Lit $ LitLoc l)) (<[l:=(RSt $ S n, v)]>σ)
+    head_step (Read Na1Ord (Lit $ LitLoc l)) σ
+              (Read Na2Ord (Lit $ LitLoc l)) (<[l:=(RSt $ S n, v)]>σ)
               None
 | ReadInS l n v σ:
     σ !! l = Some (RSt $ S n, v) →
-    head_step (Read InOrd (Lit $ LitLoc l)) σ
+    head_step (Read Na2Ord (Lit $ LitLoc l)) σ
               (of_val v) (<[l:=(RSt n, v)]>σ)
               None
 | WriteScS l e v v' σ:
@@ -253,24 +265,26 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
 | WriteNaS l e v' σ:
     is_Some (to_val e) →
     σ !! l = Some (RSt 0, v') →
-    head_step (Write NaOrd (Lit $ LitLoc l) e) σ
-              (Write InOrd (Lit $ LitLoc l) e) (<[l:=(WSt, v')]>σ)
+    head_step (Write Na1Ord (Lit $ LitLoc l) e) σ
+              (Write Na2Ord (Lit $ LitLoc l) e) (<[l:=(WSt, v')]>σ)
               None
 | WriteInS l e v v' σ:
     to_val e = Some v →
     σ !! l = Some (WSt, v') →
-    head_step (Write InOrd (Lit $ LitLoc l) e) σ
+    head_step (Write Na2Ord (Lit $ LitLoc l) e) σ
               (Lit LitUnit) (<[l:=(RSt 0, v)]>σ)
               None
-| CasFailS l n z1 z2 zl σ :
-    σ !! l = Some (RSt n, LitV $ LitInt zl) →
-    zl ≠ z1 →
-    head_step (CAS (Lit $ LitLoc l) (Lit $ LitInt z1) (Lit $ LitInt z2)) σ
-              (Lit $ lit_of_bool false) σ  None
-| CasSucS l z1 z2 σ :
-    σ !! l = Some (RSt 0, LitV $ LitInt z1) →
-    head_step (CAS (Lit $ LitLoc l) (Lit $ LitInt z1) (Lit $ LitInt z2)) σ
-              (Lit $ lit_of_bool true) (<[l:=(RSt 0, LitV $ LitInt z2)]>σ)
+| CasFailS l n e1 v1 e2 vl σ :
+    to_val e1 = Some v1 → is_Some (to_val e2) →
+    σ !! l = Some (RSt n, vl) →
+    value_eq σ v1 vl = Some false →
+    head_step (CAS (Lit $ LitLoc l) e1 e2) σ (Lit $ lit_of_bool false) σ  None
+| CasSucS l e1 v1 e2 v2 vl σ :
+    to_val e1 = Some v1 → to_val e2 = Some v2 →
+    σ !! l = Some (RSt 0, vl) →
+    value_eq σ v1 vl = Some true →
+    head_step (CAS (Lit $ LitLoc l) e1 e2) σ
+              (Lit $ lit_of_bool true) (<[l:=(RSt 0, v2)]>σ)
               None
 | AllocS n l init σ :
     0 < n →
@@ -294,8 +308,8 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
 (** Atomic expressions *)
 Definition atomic (e: expr []) : bool :=
   match e with
-  | Read (ScOrd | InOrd) e | Alloc e => bool_decide (is_Some (to_val e))
-  | Write (ScOrd | InOrd) e1 e2 | Free e1 e2 =>
+  | Read (ScOrd | Na2Ord) e | Alloc e => bool_decide (is_Some (to_val e))
+  | Write (ScOrd | Na2Ord) e1 e2 | Free e1 e2 =>
     bool_decide (is_Some (to_val e1) ∧ is_Some (to_val e2))
   | CAS e0 e1 e2 =>
     bool_decide (is_Some (to_val e0) ∧ is_Some (to_val e1) ∧ is_Some (to_val e2))
