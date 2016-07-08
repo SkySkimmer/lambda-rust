@@ -17,8 +17,8 @@ Inductive order : Set :=
 | ScOrd | Na1Ord | Na2Ord.
 
 Inductive binder := BAnon | BNamed : string → binder.
-Delimit Scope binder_scope with bind.
-Bind Scope binder_scope with binder.
+Delimit Scope lrust_binder_scope with RustB.
+Bind Scope lrust_binder_scope with binder.
 
 Definition cons_binder (mx : binder) (X : list string) : list string :=
   match mx with BAnon => X | BNamed x => x :: X end.
@@ -83,25 +83,28 @@ Inductive expr (X : list string) :=
 | Case (e : expr X) (el : list (expr X))
 | Fork (e : expr X).
 
-Bind Scope rust_expr_scope with expr.
-Bind Scope rust_expr_scope with list expr.
-Delimit Scope rust_expr_scope with Rust.
+Bind Scope lrust_expr_scope with expr.
+Bind Scope lrust_expr_scope with list expr.
+Delimit Scope lrust_expr_scope with RustE.
 Arguments Var {_} _ {_}.
 Arguments Lit {_} _.
-Arguments Rec {_} _ _ _%Rust.
-Arguments BinOp {_} _ _%Rust _%Rust.
-Arguments App {_} _%Rust _%Rust.
-Arguments Read {_} _ _%Rust.
-Arguments Write {_} _ _%Rust _%Rust.
-Arguments CAS {_} _%Rust _%Rust _%Rust.
-Arguments Alloc {_} _%Rust.
-Arguments Free {_} _%Rust _%Rust.
-Arguments Case {_} _%Rust _%Rust.
-Arguments Fork {_} _%Rust.
+Arguments Rec {_} _ _ _%RustE.
+Arguments BinOp {_} _ _%RustE _%RustE.
+Arguments App {_} _%RustE _%RustE.
+Arguments Read {_} _ _%RustE.
+Arguments Write {_} _ _%RustE _%RustE.
+Arguments CAS {_} _%RustE _%RustE _%RustE.
+Arguments Alloc {_} _%RustE.
+Arguments Free {_} _%RustE _%RustE.
+Arguments Case {_} _%RustE _%RustE.
+Arguments Fork {_} _%RustE.
 
 Inductive val :=
 | LitV (l : base_lit)
 | RecV (f : binder) (xl : list binder) (e : expr (xl +b+ f :b: [])).
+
+Bind Scope lrust_val_scope with val.
+Delimit Scope lrust_val_scope with RustV.
 
 Definition of_val (v : val) : expr [] :=
   match v with
