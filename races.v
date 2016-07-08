@@ -1,4 +1,5 @@
-From iris.program_logic Require Import adequacy.
+From iris.program_logic Require Export hoare.
+From iris.program_logic Require Import ownership adequacy.
 From lrust Require Import tactics.
 From iris.prelude Require Import gmap.
 
@@ -212,4 +213,16 @@ Proof.
   match goal with
   | H : <[l:=_]> σ !! l = _ |- _ => by rewrite lookup_insert in H
   end.
+Qed.
+
+Corollary wp_nonracing Σ E (Φ : val -> iPropG lrust_lang Σ) e1 t2 σ1 m σ2 :
+  ✓ m →
+  (ownP σ1 ★ ownG m ⊢ WP e1 @ E {{ Φ }}) →
+  rtc step ([e1], σ1) (t2, σ2) →
+  nonracing_threadpool t2 σ2.
+Proof.
+  intros. apply safe_nonracing. intros el' σ' e' ?? He'.
+  destruct (wp_adequacy_reducible E Φ e1 e' el' σ1 m σ') as [He''|]; try done.
+  etrans; eassumption.
+  rewrite /language.to_val /= He' in He''. by edestruct @is_Some_None.
 Qed.
