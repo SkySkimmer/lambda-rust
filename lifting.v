@@ -153,7 +153,7 @@ Lemma wp_rec E f xl erec erec' e el Φ :
   e = Rec f xl erec →
   Forall (λ ei, is_Some (to_val ei)) el →
   subst_l xl el erec = Some erec' →
-  ▷ WP subst f e erec' @ E {{ Φ }} ⊢ WP App e el @ E {{ Φ }}.
+  ▷ WP subst' f e erec' @ E {{ Φ }} ⊢ WP App e el @ E {{ Φ }}.
 Proof.
   iIntros {???} "?". iApply wp_lift_pure_det_head_step; subst; eauto.
   by intros; inv_head_step; eauto. iNext. by iFrame.

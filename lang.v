@@ -16,6 +16,32 @@ Inductive bin_op : Set :=
 Inductive order : Set :=
 | ScOrd | Na1Ord | Na2Ord.
 
+Inductive binder := BAnon | BNamed : string → binder.
+Delimit Scope binder_scope with bind.
+Bind Scope binder_scope with binder.
+
+Definition cons_binder (mx : binder) (X : list string) : list string :=
+  match mx with BAnon => X | BNamed x => x :: X end.
+Infix ":b:" := cons_binder (at level 60, right associativity).
+Fixpoint app_binder (mxl : list binder) (X : list string) : list string :=
+  match mxl with [] => X | b :: mxl => b :b: app_binder mxl X end.
+Infix "+b+" := app_binder (at level 60, right associativity).
+Instance binder_dec_eq (x1 x2 : binder) : Decision (x1 = x2).
+Proof. solve_decision. Defined.
+
+Instance set_unfold_cons_binder x mx X P :
+  SetUnfold (x ∈ X) P → SetUnfold (x ∈ mx :b: X) (BNamed x = mx ∨ P).
+Proof.
+  constructor. rewrite -(set_unfold (x ∈ X) P).
+  destruct mx; rewrite /= ?elem_of_cons; naive_solver.
+Qed.
+Instance set_unfold_app_binder x mxl X P :
+  SetUnfold (x ∈ X) P → SetUnfold (x ∈ mxl +b+ X) (BNamed x ∈ mxl ∨ P).
+Proof.
+  constructor. rewrite -(set_unfold (x ∈ X) P).
+  induction mxl as [|?? IH]; set_solver.
+Qed.
+
 (** A typeclass for whether a variable is bound in a given
    context. Making this a typeclass means we can use typeclass search
    to program solving these constraints, so this becomes extensible.
@@ -46,7 +72,7 @@ Inductive expr (X : list string) :=
      sure that proofs never block computation. *)
 | Var (x : string) `{VarBound x X}
 | Lit (l : base_lit)
-| Rec (f : string) (xl : list string) (e : expr (xl ++ f :: X))
+| Rec (f : binder) (xl : list binder) (e : expr (xl +b+ f :b: X))
 | BinOp (op : bin_op) (e1 e2 : expr X)
 | App (e : expr X) (el : list (expr X))
 | Read (o : order) (e : expr X)
@@ -75,7 +101,7 @@ Arguments Fork {_} _%Rust.
 
 Inductive val :=
 | LitV (l : base_lit)
-| RecV (f : string) (xl : list string) (e : expr (xl ++ [f])).
+| RecV (f : binder) (xl : list binder) (e : expr (xl +b+ f :b: [])).
 
 Definition of_val (v : val) : expr [] :=
   match v with
@@ -153,13 +179,13 @@ Definition wexpr' {X} (e : expr []) : expr X := wexpr (included_nil _) e.
 Definition of_val' {X} (v : val) : expr X := wexpr (included_nil _) (of_val v).
 
 Lemma wsubst_rec_true_prf {X Y x} (H : X `included` x :: Y)
-      {f} {xl : list string} (Hfxl : x ≠ f ∧ x ∉ xl) :
-  xl ++ f :: X `included` x :: xl ++ f :: Y.
+      {f} {xl : list binder} (Hfxl : BNamed x ≠ f ∧ BNamed x ∉ xl) :
+  xl +b+ f :b: X `included` x :: xl +b+ f :b: Y.
 Proof. set_solver. Qed.
 
 Lemma wsubst_rec_false_prf {X Y x} (H : X `included` x :: Y)
-      {f} {xl : list string} (Hfxl : ¬ (x ≠ f ∧ x ∉ xl)) :
-  xl ++ f :: X `included` xl ++ f :: Y.
+      {f} {xl : list binder} (Hfxl : ¬ (BNamed x ≠ f ∧ BNamed x ∉ xl)) :
+  xl +b+ f :b: X `included` xl +b+ f :b: Y.
 Proof. move: Hfxl=>/not_and_l [/dec_stable|/dec_stable]; set_solver. Qed.
 
 Program Fixpoint wsubst {X Y} (x : string) (es : expr [])
@@ -168,7 +194,7 @@ Program Fixpoint wsubst {X Y} (x : string) (es : expr [])
   | Var y _ => if decide (x = y) then wexpr' es else @Var _ y _
   | Lit l => Lit l
   | Rec f xl e =>
-     Rec f xl $ match decide (x ≠ f ∧ x ∉ xl) return _ with
+     Rec f xl $ match decide (BNamed x ≠ f ∧ BNamed x ∉ xl) return _ with
                 | left Hfy => wsubst x es (wsubst_rec_true_prf H Hfy) e
                 | right Hfy => wexpr (wsubst_rec_false_prf H Hfy) e
                 end
@@ -186,11 +212,13 @@ Solve Obligations with set_solver.
 
 Definition subst {X} (x : string) (es : expr []) (e : expr (x :: X)) : expr X :=
   wsubst x es (λ z, id) e.
-Fixpoint subst_l {X} (xl : list string) (esl : list (expr [])) :
-                     expr (xl ++ X) → option (expr X) :=
-  match xl, esl return expr (xl ++ X) → option (expr X) with
+Definition subst' {X} (mx : binder) (es : expr []) : expr (mx :b: X) → expr X :=
+  match mx with BNamed x => subst x es | BAnon => id end.
+Fixpoint subst_l {X} (xl : list binder) (esl : list (expr [])) :
+                     expr (xl +b+ X) → option (expr X) :=
+  match xl, esl with
   | [], [] => λ e, Some e
-  | x::xl, es::esl => λ e, subst_l xl esl (subst x es e)
+  | x::xl, es::esl => λ e, subst_l xl esl (subst' x es e)
   | _, _ => λ _, None
   end.
 
@@ -242,7 +270,7 @@ Inductive head_step : expr [] → state → expr [] → state → option (expr [
 | BetaS f xl e e' el σ:
     Forall (λ ei, is_Some (to_val ei)) el →
     subst_l xl el e = Some e' →
-    head_step (App (Rec f xl e) el) σ (subst f (Rec f xl e) e') σ None
+    head_step (App (Rec f xl e) el) σ (subst' f (Rec f xl e) e') σ None
 | ReadScS l n v σ:
     σ !! l = Some (RSt n, v) →
     head_step (Read ScOrd (Lit $ LitLoc l)) σ (of_val v) σ None

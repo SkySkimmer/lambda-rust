@@ -100,16 +100,16 @@ Hint Extern 0 (WSubst ?x ?v _ (Var ?y) _) => first
   | apply do_wsubst_var_eq ] : typeclass_instances.
 
 (** Rec *)
-Lemma do_wsubst_rec_true {X Y x es f} {xl:list string} {e}
-      {H : X `included` x :: Y} (Hfy : x ≠ f ∧ x ∉ xl) er :
+Lemma do_wsubst_rec_true {X Y x es f} {xl:list binder} {e}
+      {H : X `included` x :: Y} (Hfy : BNamed x ≠ f ∧ BNamed x ∉ xl) er :
   WSubst x es (wsubst_rec_true_prf H Hfy) e er →
   WSubst x es H (Rec f xl e) (Rec f xl er).
 Proof.
   intros ?; red; f_equal/=; case_decide; last done.
   by etrans; [apply wsubst_proof_irrel|].
 Qed.
-Lemma do_wsubst_rec_false {X Y x es f} {xl:list string} {e}
-      {H : X `included` x :: Y} (Hfy : ¬(x ≠ f ∧ x ∉ xl)) er :
+Lemma do_wsubst_rec_false {X Y x es f} {xl:list binder} {e}
+      {H : X `included` x :: Y} (Hfy : ¬(BNamed x ≠ f ∧ BNamed x ∉ xl)) er :
   WExpr (wsubst_rec_false_prf H Hfy) e er →
   WSubst x es H (Rec f xl e) (Rec f xl er).
 Proof.
