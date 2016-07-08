@@ -161,10 +161,11 @@ Qed.
 
 Lemma wp_bin_op E op l1 l2 l' Φ :
   bin_op_eval op l1 l2 = Some l' →
-  ▷ Φ (LitV l') ⊢ WP BinOp op (Lit l1) (Lit l2) @ E {{ Φ }}.
+  ▷ (|={E}=> Φ (LitV l')) ⊢ WP BinOp op (Lit l1) (Lit l2) @ E {{ Φ }}.
 Proof.
-  iIntros {?} "?". iApply wp_lift_pure_det_head_step; eauto.
-  by intros; inv_head_step; eauto. iNext. rewrite right_id. by iApply wp_value.
+  iIntros {?} "H". iApply wp_lift_pure_det_head_step; eauto.
+ by intros; inv_head_step; eauto.
+ iNext. rewrite right_id. iPvs "H". by iApply wp_value.
 Qed.
 
 Lemma wp_case E i e el Φ :
