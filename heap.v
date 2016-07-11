@@ -328,7 +328,7 @@ Section heap.
     vl ≠ [] → (∀ m : Z, σ !! shift_loc l m = None) →
     heapFreeable_rel σ h →
     heapFreeable_rel (init_mem l vl σ)
-                     ({[l.1 := (1%Qp, inter (l.2) (Datatypes.length vl))]} ⋅ h).
+                     ({[l.1 := (1%Qp, inter (l.2) (length vl))]} ⋅ h).
   Proof.
     intros Hvlnil FRESH REL blk qs. destruct (decide (l.1 = blk)) as [|NEQ].
     - subst.
@@ -389,7 +389,7 @@ Section heap.
   Lemma free_mem_heapVal_pvs l vl σ E :
     vl ≠ [] →
     l ↦★ vl ★ own heapVal_name (● to_heapVal σ)
-    ⊢ |={E}=> own heapVal_name (● to_heapVal (free_mem l (Datatypes.length vl) σ)).
+    ⊢ |={E}=> own heapVal_name (● to_heapVal (free_mem l (length vl) σ)).
   Proof.
     iIntros {Hvlnil} "[Hvl Hσ]". rewrite heap_mapsto_vec_combine /auth_own.
     iDestruct "Hvl" as "[%|Hvl]"; first done. iCombine "Hvl" "Hσ" as "Hσ".
