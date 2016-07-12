@@ -58,7 +58,8 @@ Ltac reshape_expr e tac :=
   | Free ?e1 ?e2 => reshape_val e1 ltac:(fun v1 => go (FreeRCtx v1 :: K) e2)
   | Free ?e1 ?e2 => go (FreeLCtx e2 :: K) e1
   | Case ?e ?el => go (CaseCtx el :: K) e
-  end in go (@nil ectx_item) e.
+  end
+  in go (@nil ectx_item) e.
 
 (** The tactic [do_head_step tac] solves goals of the shape [head_reducible] and
 [head_step] by performing a reduction step and uses [tac] to solve any
