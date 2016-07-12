@@ -39,9 +39,7 @@ Ltac reshape_expr e tac :=
   | BinOp ?op ?e1 ?e2 =>
      reshape_val e1 ltac:(fun v1 => go (BinOpRCtx op v1 :: K) e2)
   | BinOp ?op ?e1 ?e2 => go (BinOpLCtx op e2 :: K) e1
-  (* TODO *)
-  (* | App ?e ?el => *)
-  (*   reshape_val e ltac:(fun v => go (AppRCtx v :: K) el) *)
+  | App ?e ?el => reshape_val e ltac:(fun v => go_params K v [] el)
   | App ?e ?el => go (AppLCtx el :: K) e
   | Read ?o ?e => go (ReadCtx o :: K) e
   | Write ?o ?e1 ?e2 =>
@@ -55,7 +53,13 @@ Ltac reshape_expr e tac :=
   | Free ?e1 ?e2 => reshape_val e1 ltac:(fun v1 => go (FreeRCtx v1 :: K) e2)
   | Free ?e1 ?e2 => go (FreeLCtx e2 :: K) e1
   | Case ?e ?el => go (CaseCtx el :: K) e
-  end in go (@nil ectx_item) e.
+  end
+  with go_params K f vl el :=
+  match el with
+  | e :: el => go (AppRCtx f (reverse vl) el :: K) e
+  | e :: el => reshape_val e ltac:(fun v => go_params K f (v::vl) el)
+  end
+  in go (@nil ectx_item) e.
 
 (** The tactic [do_head_step tac] solves goals of the shape [head_reducible] and
 [head_step] by performing a reduction step and uses [tac] to solve any
