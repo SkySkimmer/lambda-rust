@@ -43,25 +43,46 @@ Notation "'if:' e1 'then' e2 'else' e3" := (If e1%RustE e2%RustE e3%RustE)
 Notation "()" := LitUnit : lrust_val_scope.
 Notation "* e" := (Read Na1Ord e%RustE)
   (at level 9, right associativity) : lrust_expr_scope.
+Notation "*ˢᶜ e" := (Read ScOrd e%RustE)
+  (at level 9, right associativity) : lrust_expr_scope.
 Notation "e1 + e2" := (BinOp PlusOp e1%RustE e2%RustE)
   (at level 50, left associativity) : lrust_expr_scope.
 Notation "e1 - e2" := (BinOp MinusOp e1%RustE e2%RustE)
   (at level 50, left associativity) : lrust_expr_scope.
 Notation "e1 ≤ e2" := (BinOp LeOp e1%RustE e2%RustE)
   (at level 70) : lrust_expr_scope.
-Notation "e1 := e2" := (Write Na1Ord e1%RustE e2%RustE)
+(* The unicode ← is already part of the notation "_ ← _; _" for bind. *)
+Notation "e1 <-ˢᶜ e2" := (Write ScOrd e1%RustE e2%RustE)
   (at level 80) : lrust_expr_scope.
-Notation "'rec:' f xl := e" := (Rec f%RustB xl%RustB e%RustE)
-  (at level 102, f at level 1, xl at level 1, e at level 200) : lrust_expr_scope.
-Notation "'rec:' f xl := e" := (RecV f%RustB xl%RustB e%RustE)
-  (at level 102, f at level 1, xl at level 1, e at level 200) : lrust_val_scope.
+Notation "e1 <- e2" := (Write Na1Ord e1%RustE e2%RustE)
+  (at level 80) : lrust_expr_scope.
+Notation "'rec:' f [ x1 ; .. ; xn ] := e" :=
+  (Rec f%RustB ( @cons binder x1%RustB ( .. (@cons binder xn%RustB nil) ..)) e%RustE)
+  (at level 102, f at level 1, x1 at level 1, xn at level 1, e at level 200) : lrust_expr_scope.
+Notation "'rec:' f [ x1 ; .. ; xn ] := e" :=
+  (RecV f%RustB ( @cons binder x1%RustB ( .. (@cons binder xn%RustB nil) ..)) e%RustE)
+  (at level 102, f at level 1, x1 at level 1, xn at level 1, e at level 200) : lrust_val_scope.
+Notation "'rec:' f [ ] := e" := (Rec f%RustB nil e%RustE)
+  (at level 102, f at level 1, e at level 200) : lrust_expr_scope.
+Notation "'rec:' f [ ] := e" := (RecV f%RustB nil e%RustE)
+  (at level 102, f at level 1, e at level 200) : lrust_val_scope.
+Notation "e1 +ₗ e2" := (BinOp ProjOp e1%RustE e2%RustE)
+  (at level 50, left associativity) : lrust_expr_scope.
 
 (** Derived notions, in order of declaration. The notations for let and seq
 are stated explicitly instead of relying on the Notations Let and Seq as
 defined above. This is needed because App is now a coercion, and these
 notations are otherwise not pretty printed back accordingly. *)
-Notation "λ: xl , e" := (Lam xl%RustB e%RustE)
-  (at level 102, xl at level 1, e at level 200) : lrust_expr_scope.
+Notation "λ: [ x1 ; .. ; xn ] , e" :=
+  (Lam ( @cons binder x1%RustB ( .. (@cons binder xn%RustB nil) ..)) e%RustE)
+  (at level 102, x1 at level 1, xn at level 1, e at level 200) : lrust_expr_scope.
+Notation "λ: [ x1 ; .. ; xn ] , e" :=
+  (LamV ( @cons binder x1%RustB ( .. (@cons binder xn%RustB nil) ..)) e%RustE)
+  (at level 102, x1 at level 1, xn at level 1, e at level 200) : lrust_val_scope.
+Notation "λ: [ ] , e" := (Lam nil e%RustE)
+  (at level 102, e at level 200) : lrust_expr_scope.
+Notation "λ: [ ] , e" := (LamV nil e%RustE)
+  (at level 102, e at level 200) : lrust_val_scope.
 
 Notation "'let:' x := e1 'in' e2" := (Lam [x%RustB] e2%RustE [e1%RustE])
   (at level 102, x at level 1, e1, e2 at level 200) : lrust_expr_scope.

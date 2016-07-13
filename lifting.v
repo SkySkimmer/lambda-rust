@@ -31,8 +31,8 @@ Lemma wp_alloc_pst E σ n Φ :
              ownP σ' ={E}=★ Φ (LitV $ LitLoc l))
   ⊢ WP Alloc (Lit $ LitInt n) @ E {{ Φ }}.
 Proof.
-  iIntros {?}  "[HP HΦ]". iApply (wp_lift_atomic_head_step _ σ); eauto.
-  iFrame "HP". iNext. iIntros {v2 σ2 ef} "[% HP]". inv_head_step.
+  iIntros (?)  "[HP HΦ]". iApply (wp_lift_atomic_head_step _ σ); eauto.
+  iFrame "HP". iNext. iIntros (v2 σ2 ef) "[% HP]". inv_head_step.
   rewrite right_id. iApply "HΦ". iFrame. eauto.
 Qed.
 
@@ -43,8 +43,8 @@ Lemma wp_free_pst E σ l n Φ :
   ▷ (ownP (free_mem l (Z.to_nat n) σ) ={E}=★ Φ (LitV $ LitUnit))
   ⊢ WP Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
-  iIntros {??}  "[HP HΦ]". iApply (wp_lift_atomic_head_step _ σ); eauto.
-  iFrame "HP". iNext. iIntros {v2 σ2 ef} "[% HP]". inv_head_step.
+  iIntros (??)  "[HP HΦ]". iApply (wp_lift_atomic_head_step _ σ); eauto.
+  iFrame "HP". iNext. iIntros (v2 σ2 ef) "[% HP]". inv_head_step.
   rewrite right_id. by iApply "HΦ".
 Qed.
 
@@ -52,20 +52,20 @@ Lemma wp_read_sc_pst E σ l n v Φ :
   σ !! l = Some (RSt n, v) →
   ▷ ownP σ ★ ▷ (ownP σ ={E}=★ Φ v) ⊢ WP Read ScOrd (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
-  iIntros {?} "[??]". iApply wp_lift_atomic_det_head_step; eauto.
+  iIntros (?) "[??]". iApply wp_lift_atomic_det_head_step; eauto.
   by intros; inv_head_step; eauto using to_of_val. by rewrite right_id; iFrame.
 Qed.
 
-Lemma wp_read_in_pst E σ l n v Φ :
+Lemma wp_read_na2_pst E σ l n v Φ :
   σ !! l = Some(RSt $ S n, v) →
   ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt n, v)]>σ) ={E}=★ Φ v)
   ⊢ WP Read Na2Ord (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
-  iIntros {?} "[??]". iApply wp_lift_atomic_det_head_step; eauto.
+  iIntros (?) "[??]". iApply wp_lift_atomic_det_head_step; eauto.
   by intros; inv_head_step; eauto using to_of_val. by rewrite right_id; iFrame.
 Qed.
 
-Lemma wp_read_na_pst E1 E2 l Φ :
+Lemma wp_read_na1_pst E1 E2 l Φ :
   E2 ⊆ E1 →
   (|={E1,E2}=> ∃ σ n v, σ !! l = Some(RSt $ n, v) ∧
      ▷ ownP σ ★
@@ -73,9 +73,9 @@ Lemma wp_read_na_pst E1 E2 l Φ :
           WP Read Na2Ord (Lit $ LitLoc l) @ E1 {{ Φ }}))
   ⊢ WP Read Na1Ord (Lit $ LitLoc l) @ E1 {{ Φ }}.
 Proof.
-  iIntros {?} "HΦP". iApply (wp_lift_head_step E1 E2); auto.
-  iPvs "HΦP" as {σ n v} "(%&HΦ&HP)"; first set_solver. iPvsIntro.
-  iExists σ. iSplit. done. iFrame. iNext. iIntros {e2 σ2 ef} "[% HΦ]".
+  iIntros (?) "HΦP". iApply (wp_lift_head_step E1 E2); auto.
+  iPvs "HΦP" as (σ n v) "(%&HΦ&HP)"; first set_solver. iPvsIntro.
+  iExists σ. iSplit. done. iFrame. iNext. iIntros (e2 σ2 ef) "[% HΦ]".
   inv_head_step. rewrite right_id. iApply ("HP" with "HΦ").
 Qed.
 
@@ -85,21 +85,21 @@ Lemma wp_write_sc_pst E σ l e v v' Φ :
   ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, v)]>σ) ={E}=★ Φ (LitV LitUnit))
   ⊢ WP Write ScOrd (Lit $ LitLoc l) e @ E {{ Φ }}.
 Proof.
-  iIntros {??} "[??]". iApply wp_lift_atomic_det_head_step; simpl; eauto.
+  iIntros (??) "[??]". iApply wp_lift_atomic_det_head_step; simpl; eauto.
   by intros; inv_head_step; eauto. by rewrite right_id; iFrame.
 Qed.
 
-Lemma wp_write_in_pst E σ l e v v' Φ :
+Lemma wp_write_na2_pst E σ l e v v' Φ :
   to_val e = Some v →
   σ !! l = Some(WSt, v') →
   ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, v)]>σ) ={E}=★ Φ (LitV LitUnit))
   ⊢ WP Write Na2Ord (Lit $ LitLoc l) e @ E {{ Φ }}.
 Proof.
-  iIntros {??} "[??]". iApply wp_lift_atomic_det_head_step; simpl; eauto.
+  iIntros (??) "[??]". iApply wp_lift_atomic_det_head_step; simpl; eauto.
   by intros; inv_head_step; eauto. by rewrite right_id; iFrame.
 Qed.
 
-Lemma wp_write_na_pst E1 E2 l e v Φ :
+Lemma wp_write_na1_pst E1 E2 l e v Φ :
   to_val e = Some v →
   E2 ⊆ E1 →
   (|={E1,E2}=> ∃ σ v', σ !! l = Some(RSt 0, v') ∧
@@ -108,10 +108,10 @@ Lemma wp_write_na_pst E1 E2 l e v Φ :
        WP Write Na2Ord (Lit $ LitLoc l) e @ E1 {{ Φ }}))
   ⊢ WP Write Na1Ord (Lit $ LitLoc l) e @ E1 {{ Φ }}.
 Proof.
-  iIntros {??} "HΦP".
+  iIntros (??) "HΦP".
   iApply (wp_lift_head_step E1 E2); auto.
-  iPvs "HΦP" as {σ v'} "(%&HΦ&HP)"; first set_solver. iPvsIntro.
-  iExists σ. iSplit. done. iFrame. iNext. iIntros {e2 σ2 ef} "[% HΦ]".
+  iPvs "HΦP" as (σ v') "(%&HΦ&HP)"; first set_solver. iPvsIntro.
+  iExists σ. iSplit. done. iFrame. iNext. iIntros (e2 σ2 ef) "[% HΦ]".
   inv_head_step. rewrite right_id. iApply ("HP" with "HΦ").
 Qed.
 
@@ -122,7 +122,7 @@ Lemma wp_cas_fail_pst E σ l n e1 v1 e2 v2 vl Φ :
   ▷ ownP σ ★ ▷ (ownP σ ={E}=★ Φ (LitV $ LitInt 0))
   ⊢ WP CAS (Lit $ LitLoc l) e1 e2 @ E {{ Φ }}.
 Proof.
-  iIntros {????} "[HP HΦ]".
+  iIntros (????) "[HP HΦ]".
   iApply wp_lift_atomic_det_head_step; try by simpl; eauto 10.
     by intros; inv_head_step; eauto.
   iFrame. iNext. by rewrite right_id.
@@ -135,7 +135,7 @@ Lemma wp_cas_suc_pst E σ l e1 v1 e2 v2 vl Φ :
   ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, v2)]>σ) ={E}=★ Φ (LitV $ LitInt 1))
   ⊢ WP CAS (Lit $ LitLoc l) e1 e2 @ E {{ Φ }}.
 Proof.
-  iIntros {????} "[HP HΦ]".
+  iIntros (????) "[HP HΦ]".
   iApply wp_lift_atomic_det_head_step; try by simpl; eauto 10.
     by intros; inv_head_step; eauto.
   iFrame. iNext. by rewrite right_id.
@@ -155,7 +155,7 @@ Lemma wp_rec E f xl erec erec' e el Φ :
   subst_l xl el erec = Some erec' →
   ▷ WP subst' f e erec' @ E {{ Φ }} ⊢ WP App e el @ E {{ Φ }}.
 Proof.
-  iIntros {???} "?". iApply wp_lift_pure_det_head_step; subst; eauto.
+  iIntros (???) "?". iApply wp_lift_pure_det_head_step; subst; eauto.
   by intros; inv_head_step; eauto. iNext. by iFrame.
 Qed.
 
@@ -163,7 +163,7 @@ Lemma wp_bin_op E op l1 l2 l' Φ :
   bin_op_eval op l1 l2 = Some l' →
   ▷ (|={E}=> Φ (LitV l')) ⊢ WP BinOp op (Lit l1) (Lit l2) @ E {{ Φ }}.
 Proof.
-  iIntros {?} "H". iApply wp_lift_pure_det_head_step; eauto.
+  iIntros (?) "H". iApply wp_lift_pure_det_head_step; eauto.
  by intros; inv_head_step; eauto.
  iNext. rewrite right_id. iPvs "H". by iApply wp_value.
 Qed.
@@ -173,7 +173,7 @@ Lemma wp_case E i e el Φ :
   nth_error el (Z.to_nat i) = Some e →
   ▷ WP e @ E {{ Φ }} ⊢ WP Case (Lit $ LitInt i) el @ E {{ Φ }}.
 Proof.
-  iIntros {??} "?". iApply wp_lift_pure_det_head_step; eauto.
+  iIntros (??) "?". iApply wp_lift_pure_det_head_step; eauto.
   by intros; inv_head_step; eauto. iNext. by iFrame.
 Qed.
 End lifting.

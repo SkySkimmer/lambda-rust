@@ -119,7 +119,7 @@ Qed.
 
 Ltac bool_decide_no_check := apply (bool_decide_unpack _); vm_cast_no_check I.
 Hint Extern 0 (WSubst ?x ?v _ (Rec ?f ?xl ?e) _) =>
-  match eval vm_compute in (bool_decide (x ≠ f ∧ x ∉ xl)) with
+  match eval vm_compute in (bool_decide (BNamed x ≠ f ∧ BNamed x ∉ xl)) with
   | true => eapply (do_wsubst_rec_true ltac:(bool_decide_no_check))
   | false => eapply (do_wsubst_rec_false ltac:(bool_decide_no_check))
   end : typeclass_instances.
@@ -141,6 +141,13 @@ Section wsubst.
 Context {X Y} (x : string) (es : expr []) (H : X `included` x :: Y).
 Notation Sub := (WSubst x es H).
 Notation SubL := (WSubstL x es H).
+
+(* List constructors *)
+Global Instance do_wsubstl_nil : SubL [] [].
+Proof. done. Qed.
+Global Instance do_wsubstl_cons {h q hr qr} :
+  Sub h hr → SubL q qr → SubL (h::q) (hr::qr).
+Proof. by intros; red; f_equal/=. Qed.
 
 (* Ground terms *)
 Global Instance do_wsubst_lit l : Sub (Lit l) (Lit l).
@@ -178,8 +185,11 @@ Proof. done. Qed.
 
 Ltac simpl_subst :=
   repeat match goal with
-  | |- context [subst ?x ?es ?e] => progress rewrite (@do_subst _ x es e)
-  | |- _ => progress csimpl
+  | |- context [subst ?x ?es ?e] =>
+    match e with
+    | context [subst _ _ _] => fail 2
+    end || (progress rewrite (@do_subst _ x es e))
+  | |- _ => progress cbn [subst_l subst']
   end.
 Arguments wexpr : simpl never.
 Arguments subst : simpl never.

@@ -1,9 +1,12 @@
 -Q . lrust
+derived.v
+heap.v
 lang.v
+lifting.v
+memcpy.v
+notation.v
+proofmode.v
+races.v
 substitution.v
 tactics.v
-lifting.v
-heap.v
-races.v
-derived.v
-notation.v
+wp_tactics.v
