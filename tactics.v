@@ -33,13 +33,18 @@ Ltac reshape_val e tac :=
   end in let v := go e in first [tac v | fail 2].
 
 Ltac reshape_expr e tac :=
-  let rec go K e :=
+  let rec go_fun K f vs es :=
+    match es with
+    | ?e :: ?es => reshape_val e ltac:(fun v => go_fun K f (v :: vs) es)
+    | ?e :: ?es => go (AppRCtx f (reverse vs) es :: K) e
+    end
+  with go K e :=
   match e with
   | _ => tac (reverse K) e
   | BinOp ?op ?e1 ?e2 =>
      reshape_val e1 ltac:(fun v1 => go (BinOpRCtx op v1 :: K) e2)
   | BinOp ?op ?e1 ?e2 => go (BinOpLCtx op e2 :: K) e1
-  | App ?e ?el => reshape_val e ltac:(fun v => go_params K v (@nil val) el)
+  | App ?e ?el => reshape_val e ltac:(fun f => go_fun K f (@nil val) el)
   | App ?e ?el => go (AppLCtx el :: K) e
   | Read ?o ?e => go (ReadCtx o :: K) e
   | Write ?o ?e1 ?e2 =>
@@ -53,11 +58,6 @@ Ltac reshape_expr e tac :=
   | Free ?e1 ?e2 => reshape_val e1 ltac:(fun v1 => go (FreeRCtx v1 :: K) e2)
   | Free ?e1 ?e2 => go (FreeLCtx e2 :: K) e1
   | Case ?e ?el => go (CaseCtx el :: K) e
-  end
-  with go_params K f vl el :=
-  match el with
-  | ?e :: ?el => go (AppRCtx f (reverse vl) el :: K) e
-  | ?e :: ?el => reshape_val e ltac:(fun v => go_params K f (v::vl) el)
   end
   in go (@nil ectx_item) e.
 
