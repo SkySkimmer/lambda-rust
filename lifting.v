@@ -146,14 +146,15 @@ Proof.
   by intros; inv_head_step; eauto. iNext. iFrame. by iApply wp_value.
 Qed.
 
-Lemma wp_rec E f xl erec erec' el Φ :
+Lemma wp_rec E e f xl erec erec' el Φ :
+  e = Rec f xl erec → (* to avoids recursive calls being unfolded *)
   Forall (λ ei, is_Some (to_val ei)) el →
   Closed (f :b: xl +b+ []) erec →
   subst_l xl el erec = Some erec' →
-  ▷ WP subst' f (Rec f xl erec) erec' @ E {{ Φ }}
-  ⊢ WP App (Rec f xl erec) el @ E {{ Φ }}.
+  ▷ WP subst' f e erec' @ E {{ Φ }}
+  ⊢ WP App e el @ E {{ Φ }}.
 Proof.
-  iIntros (???) "?". iApply wp_lift_pure_det_head_step; subst; eauto.
+  iIntros (-> ???) "?". iApply wp_lift_pure_det_head_step; subst; eauto.
   by intros; inv_head_step; eauto. iNext. by iFrame.
 Qed.
 
