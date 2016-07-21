@@ -4,7 +4,7 @@ From lrust Require Import heap proofmode.
 Definition memcpy : val :=
   (rec: "memcpy" ["dst";"len";"src"] :=
      if: "len" ≤ #0 then #()
-     else "dst" +ₗ #0 <- * ("src" +ₗ #0);;
+     else "dst" <- * "src";;
           "memcpy" ["dst" +ₗ #1 ; "len" - #1 ; "src" +ₗ #1]).
 Opaque memcpy.
 
@@ -22,13 +22,11 @@ Proof.
   iLöb (n l1 l2 vl1 vl2 Hvl1 Hvl2) as "IH". wp_rec. wp_op=> ?; wp_if.
   - iApply "HΦ". assert (n = O) by lia; subst.
     destruct vl1, vl2; try discriminate. by iFrame.
-  - revert Hvl1 Hvl2. destruct vl1 as [|v1 vl1], vl2 as [|v2 vl2], n as [|n];
-                        try discriminate.
-    intros [= Hvl1] [= Hvl2]; rewrite -!heap_mapsto_vec_cons_op.
+  - destruct vl1 as [|v1 vl1], vl2 as [|v2 vl2], n as [|n]; try discriminate.
+    revert Hvl1 Hvl2. intros [= Hvl1] [= Hvl2]; rewrite -!heap_mapsto_vec_cons_op.
     iDestruct "Hl1" as "[Hv1 Hl1]". iDestruct "Hl2" as "[Hv2 Hl2]".
-    do 2 wp_op; rewrite !shift_loc_0. wp_read; wp_write.
-    replace (Z.pos (Pos.of_succ_nat n)) with (n+1) by lia.
+    wp_read; wp_write. replace (Z.pos (Pos.of_succ_nat n)) with (n+1) by lia.
     do 3 wp_op. rewrite Z.add_simpl_r.
     iApply ("IH" with "[%] [%] Hl1 Hl2"); try done.
-    iIntros "> [Hl1 Hl2]"; iApply "HΦ"; by iFrame.
+    iIntros ">[Hl1 Hl2]"; iApply "HΦ"; by iFrame.
 Qed.
