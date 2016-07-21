@@ -1,5 +1,5 @@
 From iris.algebra Require Export upred_tactics.
-From lrust Require Export tactics derived substitution.
+From lrust Require Export tactics derived.
 Import uPred.
 
 (** wp-specific helper tactics *)

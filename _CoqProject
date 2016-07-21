@@ -7,6 +7,5 @@ memcpy.v
 notation.v
 proofmode.v
 races.v
-substitution.v
 tactics.v
 wp_tactics.v

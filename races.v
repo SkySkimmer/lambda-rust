@@ -5,8 +5,7 @@ From iris.prelude Require Import gmap.
 
 Inductive access_kind : Type := ReadAcc | WriteAcc | FreeAcc.
 
-Inductive next_access_head :
-  expr [] → state → access_kind * order → loc → Prop :=
+Inductive next_access_head : expr → state → access_kind * order → loc → Prop :=
 | Access_read ord l σ :
     next_access_head (Read ord (Lit $ LitLoc l)) σ (ReadAcc, ord) l
 | Access_write ord l e σ :
@@ -25,12 +24,12 @@ Inductive next_access_head :
     next_access_head (Free (Lit $ LitInt n) (Lit $ LitLoc l))
                      σ (FreeAcc, Na2Ord) (shift_loc l i).
 
-Definition next_access_thread
-           (e: expr [])(σ : state)  (a : access_kind * order) (l : loc) : Prop :=
+Definition next_access_thread (e: expr) (σ : state)
+           (a : access_kind * order) (l : loc) : Prop :=
   ∃ K e', next_access_head e' σ a l ∧ e = fill K e'.
 
-Definition next_accesses_threadpool (el: list (expr [])) (σ : state)
-                                    (a1 a2 : access_kind * order) (l : loc): Prop :=
+Definition next_accesses_threadpool (el: list expr) (σ : state)
+           (a1 a2 : access_kind * order) (l : loc): Prop :=
   ∃ t1 e1 t2 e2 t3, el = t1 ++ e1 :: t2 ++ e2 :: t3 ∧
                     next_access_thread e1 σ a1 l ∧ next_access_thread e2 σ a2 l.
 
@@ -41,7 +40,7 @@ Definition nonracing_accesses (a1 a2 : access_kind * order) : Prop :=
   | _, _ => False
   end.
 
-Definition nonracing_threadpool (el : list (expr [])) σ : Prop :=
+Definition nonracing_threadpool (el : list expr) σ : Prop :=
   ∀ l a1 a2, next_accesses_threadpool el σ a1 a2 l →
              nonracing_accesses a1 a2.
 
@@ -86,8 +85,8 @@ Lemma next_access_head_Na1Ord_step e1 e2 ef σ1 σ2 a l :
   head_step e1 σ1 e2 σ2 ef →
   next_access_head e2 σ2 (a, Na2Ord) l.
 Proof.
-  intros Ha Hstep. inversion Ha; subst; clear Ha; inv_head_step;
-  by constructor.
+  intros Ha Hstep. inversion Ha; subst; clear Ha; inv_head_step; constructor.
+  by rewrite to_of_val.
 Qed.
 
 Lemma next_access_head_Na1Ord_concurent_step e1 e1' e2 e'f σ σ' a1 a2 l :
