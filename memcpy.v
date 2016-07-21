@@ -6,6 +6,7 @@ Definition memcpy : val :=
      if: "len" ≤ #0 then #()
      else "dst" <- * "src";;
           "memcpy" ["dst" +ₗ #1 ; "len" - #1 ; "src" +ₗ #1]).
+Opaque memcpy.
 
 Notation "e1 <-{ n } * e2" := (memcpy [e1%RustE ; #(LitInt n) ; e2%RustE])%RustE
   (at level 80) : lrust_expr_scope.
@@ -31,5 +32,5 @@ Proof.
     wp_read; wp_write. replace (Z.pos (Pos.of_succ_nat n)) with (n+1) by lia.
     do 3 wp_op. rewrite Z.add_simpl_r.
     iApply ("IH" with "[%] [%] Hl1 Hl2"); try done.
-    iIntros ">[Hl1 Hl2]"; iApply "HΦ"; by iFrame.
+    iIntros "> [Hl1 Hl2]"; iApply "HΦ"; by iFrame.
 Qed.
