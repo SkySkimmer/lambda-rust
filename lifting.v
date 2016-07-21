@@ -10,7 +10,7 @@ Section lifting.
 Context {Σ : iFunctor}.
 Implicit Types P Q : iProp lrust_lang Σ.
 Implicit Types Φ : val → iProp lrust_lang Σ.
-Implicit Types ef : option (expr []).
+Implicit Types ef : option expr.
 
 (** Bind. This bundles some arguments that wp_ectx_bind leaves as indices. *)
 Lemma wp_bind {E e} K Φ :
@@ -31,7 +31,7 @@ Lemma wp_alloc_pst E σ n Φ :
              ownP σ' ={E}=★ Φ (LitV $ LitLoc l))
   ⊢ WP Alloc (Lit $ LitInt n) @ E {{ Φ }}.
 Proof.
-  iIntros (?)  "[HP HΦ]". iApply (wp_lift_atomic_head_step _ σ); eauto.
+  iIntros (?)  "[HP HΦ]". iApply (wp_lift_atomic_head_step _ σ); eauto with fsaV.
   iFrame "HP". iNext. iIntros (v2 σ2 ef) "[% HP]". inv_head_step.
   rewrite right_id. iApply "HΦ". iFrame. eauto.
 Qed.
@@ -43,7 +43,7 @@ Lemma wp_free_pst E σ l n Φ :
   ▷ (ownP (free_mem l (Z.to_nat n) σ) ={E}=★ Φ (LitV $ LitUnit))
   ⊢ WP Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
-  iIntros (??)  "[HP HΦ]". iApply (wp_lift_atomic_head_step _ σ); eauto.
+  iIntros (??)  "[HP HΦ]". iApply (wp_lift_atomic_head_step _ σ); eauto with fsaV.
   iFrame "HP". iNext. iIntros (v2 σ2 ef) "[% HP]". inv_head_step.
   rewrite right_id. by iApply "HΦ".
 Qed.
@@ -52,7 +52,7 @@ Lemma wp_read_sc_pst E σ l n v Φ :
   σ !! l = Some (RSt n, v) →
   ▷ ownP σ ★ ▷ (ownP σ ={E}=★ Φ v) ⊢ WP Read ScOrd (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
-  iIntros (?) "[??]". iApply wp_lift_atomic_det_head_step; eauto.
+  iIntros (?) "[??]". iApply wp_lift_atomic_det_head_step; eauto with fsaV.
   by intros; inv_head_step; eauto using to_of_val. by rewrite right_id; iFrame.
 Qed.
 
@@ -61,7 +61,7 @@ Lemma wp_read_na2_pst E σ l n v Φ :
   ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt n, v)]>σ) ={E}=★ Φ v)
   ⊢ WP Read Na2Ord (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
-  iIntros (?) "[??]". iApply wp_lift_atomic_det_head_step; eauto.
+  iIntros (?) "[??]". iApply wp_lift_atomic_det_head_step; eauto with fsaV.
   by intros; inv_head_step; eauto using to_of_val. by rewrite right_id; iFrame.
 Qed.
 
@@ -79,64 +79,61 @@ Proof.
   inv_head_step. rewrite right_id. iApply ("HP" with "HΦ").
 Qed.
 
-Lemma wp_write_sc_pst E σ l e v v' Φ :
-  to_val e = Some v →
+Lemma wp_write_sc_pst E σ l v v' Φ :
   σ !! l = Some (RSt 0, v') →
   ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, v)]>σ) ={E}=★ Φ (LitV LitUnit))
-  ⊢ WP Write ScOrd (Lit $ LitLoc l) e @ E {{ Φ }}.
+  ⊢ WP Write ScOrd (Lit $ LitLoc l) (of_val v) @ E {{ Φ }}.
 Proof.
-  iIntros (??) "[??]". iApply wp_lift_atomic_det_head_step; simpl; eauto.
+  iIntros (?) "[??]". iApply wp_lift_atomic_det_head_step; eauto with fsaV.
   by intros; inv_head_step; eauto. by rewrite right_id; iFrame.
 Qed.
 
-Lemma wp_write_na2_pst E σ l e v v' Φ :
-  to_val e = Some v →
+Lemma wp_write_na2_pst E σ l v v' Φ :
   σ !! l = Some(WSt, v') →
   ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, v)]>σ) ={E}=★ Φ (LitV LitUnit))
-  ⊢ WP Write Na2Ord (Lit $ LitLoc l) e @ E {{ Φ }}.
+  ⊢ WP Write Na2Ord (Lit $ LitLoc l) (of_val v) @ E {{ Φ }}.
 Proof.
-  iIntros (??) "[??]". iApply wp_lift_atomic_det_head_step; simpl; eauto.
+  iIntros (?) "[??]". iApply wp_lift_atomic_det_head_step; eauto with fsaV.
   by intros; inv_head_step; eauto. by rewrite right_id; iFrame.
 Qed.
 
-Lemma wp_write_na1_pst E1 E2 l e v Φ :
-  to_val e = Some v →
+Lemma wp_write_na1_pst E1 E2 l v Φ :
   E2 ⊆ E1 →
   (|={E1,E2}=> ∃ σ v', σ !! l = Some(RSt 0, v') ∧
      ▷ ownP σ ★
      ▷ (ownP (<[l:=(WSt, v')]>σ) ={E2,E1}=★
-       WP Write Na2Ord (Lit $ LitLoc l) e @ E1 {{ Φ }}))
-  ⊢ WP Write Na1Ord (Lit $ LitLoc l) e @ E1 {{ Φ }}.
+       WP Write Na2Ord (Lit $ LitLoc l) (of_val v) @ E1 {{ Φ }}))
+  ⊢ WP Write Na1Ord (Lit $ LitLoc l) (of_val v) @ E1 {{ Φ }}.
 Proof.
-  iIntros (??) "HΦP".
+  iIntros (?) "HΦP".
   iApply (wp_lift_head_step E1 E2); auto.
   iPvs "HΦP" as (σ v') "(%&HΦ&HP)"; first set_solver. iPvsIntro.
   iExists σ. iSplit. done. iFrame. iNext. iIntros (e2 σ2 ef) "[% HΦ]".
   inv_head_step. rewrite right_id. iApply ("HP" with "HΦ").
 Qed.
 
-Lemma wp_cas_fail_pst E σ l n e1 v1 e2 v2 vl Φ :
-  to_val e1 = Some v1 → to_val e2 = Some v2 →
+Lemma wp_cas_fail_pst E σ l n e1 v1 v2 vl Φ :
+  to_val e1 = Some v1 →
   σ !! l = Some (RSt n, vl) →
   value_eq σ v1 vl = Some false →
   ▷ ownP σ ★ ▷ (ownP σ ={E}=★ Φ (LitV $ LitInt 0))
-  ⊢ WP CAS (Lit $ LitLoc l) e1 e2 @ E {{ Φ }}.
+  ⊢ WP CAS (Lit $ LitLoc l) e1 (of_val v2) @ E {{ Φ }}.
 Proof.
-  iIntros (????) "[HP HΦ]".
-  iApply wp_lift_atomic_det_head_step; try by simpl; eauto 10.
+  iIntros (?%of_to_val ??) "[HP HΦ]". subst.
+  iApply wp_lift_atomic_det_head_step; eauto with fsaV.
     by intros; inv_head_step; eauto.
   iFrame. iNext. by rewrite right_id.
 Qed.
 
-Lemma wp_cas_suc_pst E σ l e1 v1 e2 v2 vl Φ :
-  to_val e1 = Some v1 → to_val e2 = Some v2 →
+Lemma wp_cas_suc_pst E σ l e1 v1 v2 vl Φ :
+  to_val e1 = Some v1 →
   σ !! l = Some (RSt 0, vl) →
   value_eq σ v1 vl = Some true →
   ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, v2)]>σ) ={E}=★ Φ (LitV $ LitInt 1))
-  ⊢ WP CAS (Lit $ LitLoc l) e1 e2 @ E {{ Φ }}.
+  ⊢ WP CAS (Lit $ LitLoc l) e1 (of_val v2) @ E {{ Φ }}.
 Proof.
-  iIntros (????) "[HP HΦ]".
-  iApply wp_lift_atomic_det_head_step; try by simpl; eauto 10.
+  iIntros (?%of_to_val ??) "[HP HΦ]". subst.
+  iApply wp_lift_atomic_det_head_step; eauto with fsaV.
     by intros; inv_head_step; eauto.
   iFrame. iNext. by rewrite right_id.
 Qed.
@@ -149,11 +146,12 @@ Proof.
   by intros; inv_head_step; eauto. iNext. iFrame. by iApply wp_value.
 Qed.
 
-Lemma wp_rec E f xl erec erec' e el Φ :
-  e = Rec f xl erec →
+Lemma wp_rec E f xl erec erec' el Φ :
   Forall (λ ei, is_Some (to_val ei)) el →
+  Closed (f :b: xl +b+ []) erec →
   subst_l xl el erec = Some erec' →
-  ▷ WP subst' f e erec' @ E {{ Φ }} ⊢ WP App e el @ E {{ Φ }}.
+  ▷ WP subst' f (Rec f xl erec) erec' @ E {{ Φ }}
+  ⊢ WP App (Rec f xl erec) el @ E {{ Φ }}.
 Proof.
   iIntros (???) "?". iApply wp_lift_pure_det_head_step; subst; eauto.
   by intros; inv_head_step; eauto. iNext. by iFrame.
@@ -164,8 +162,8 @@ Lemma wp_bin_op E op l1 l2 l' Φ :
   ▷ (|={E}=> Φ (LitV l')) ⊢ WP BinOp op (Lit l1) (Lit l2) @ E {{ Φ }}.
 Proof.
   iIntros (?) "H". iApply wp_lift_pure_det_head_step; eauto.
- by intros; inv_head_step; eauto.
- iNext. rewrite right_id. iPvs "H". by iApply wp_value.
+  by intros; inv_head_step; eauto.
+  iNext. rewrite right_id. iPvs "H". by iApply wp_value.
 Qed.
 
 Lemma wp_case E i e el Φ :

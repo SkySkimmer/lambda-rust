@@ -3,9 +3,9 @@ From lrust Require Import heap proofmode.
 
 Definition memcpy : val :=
   (rec: "memcpy" ["dst";"len";"src"] :=
-     if: '"len" ≤ #0 then #()
-     else '"dst" +ₗ #0 <- * ('"src" +ₗ #0);;
-          '"memcpy" ['"dst" +ₗ #1 ; '"len" - #1 ; '"src" +ₗ #1]).
+     if: "len" ≤ #0 then #()
+     else "dst" +ₗ #0 <- * ("src" +ₗ #0);;
+          "memcpy" ["dst" +ₗ #1 ; "len" - #1 ; "src" +ₗ #1]).
 Opaque memcpy.
 
 Notation "e1 <-{ n } * e2" := (memcpy [e1%RustE ; #(LitInt n) ; e2%RustE])%RustE
@@ -20,8 +20,10 @@ Lemma wp_memcpy `{heapG Σ} N E l1 l2 vl1 vl2 q n Φ:
 Proof.
   iIntros (? Hvl1 Hvl2) "(#Hinv&Hl1&Hl2&HΦ)".
   iLöb (n l1 l2 vl1 vl2 Hvl1 Hvl2) as "IH". wp_rec. wp_op=> ?; wp_if.
-  - iApply "HΦ". assert (n = O) by lia; subst; destruct vl1, vl2; try discriminate. by iFrame.
-  - revert Hvl1 Hvl2. destruct vl1 as [|v1 vl1], vl2 as [|v2 vl2], n as [|n]; try discriminate.
+  - iApply "HΦ". assert (n = O) by lia; subst.
+    destruct vl1, vl2; try discriminate. by iFrame.
+  - revert Hvl1 Hvl2. destruct vl1 as [|v1 vl1], vl2 as [|v2 vl2], n as [|n];
+                        try discriminate.
     intros [= Hvl1] [= Hvl2]; rewrite -!heap_mapsto_vec_cons_op.
     iDestruct "Hl1" as "[Hv1 Hl1]". iDestruct "Hl2" as "[Hv2 Hl2]".
     do 2 wp_op; rewrite !shift_loc_0. wp_read; wp_write.

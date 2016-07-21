@@ -23,19 +23,22 @@ Implicit Types Φ : val → iProp lrust_lang Σ.
 (** Proof rules for the sugar *)
 Lemma wp_lam E xl e e' el Φ :
   Forall (λ ei, is_Some (to_val ei)) el →
+  Closed (xl +b+ []) e →
   subst_l xl el e = Some e' →
   ▷ WP e' @ E {{ Φ }} ⊢ WP App (Lam xl e) el @ E {{ Φ }}.
-Proof. iIntros (??) "?". by iApply (wp_rec _ BAnon). Qed.
+Proof. iIntros (???) "?". by iApply (wp_rec _ BAnon). Qed.
 
 Lemma wp_let E x e1 e2 v Φ :
   to_val e1 = Some v →
+  Closed (x :b: []) e2 →
   ▷ WP subst' x e1 e2 @ E {{ Φ }} ⊢ WP Let x e1 e2 @ E {{ Φ }}.
 Proof. eauto using wp_lam. Qed.
 
 Lemma wp_seq E e1 e2 v Φ :
   to_val e1 = Some v →
+  Closed [] e2 →
   ▷ WP e2 @ E {{ Φ }} ⊢ WP Seq e1 e2 @ E {{ Φ }}.
-Proof. iIntros (?) "?". by iApply (wp_let _ BAnon). Qed.
+Proof. iIntros (??) "?". by iApply (wp_let _ BAnon). Qed.
 
 Lemma wp_skip E Φ : ▷ Φ (LitV LitUnit) ⊢ WP Skip @ E {{ Φ }}.
 Proof. iIntros. iApply wp_seq. done. iNext. by iApply wp_value. Qed.
