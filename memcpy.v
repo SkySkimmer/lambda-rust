@@ -6,9 +6,12 @@ Definition memcpy : val :=
      if: '"len" ≤ #0 then #()
      else '"dst" +ₗ #0 <- * ('"src" +ₗ #0);;
           '"memcpy" ['"dst" +ₗ #1 ; '"len" - #1 ; '"src" +ₗ #1]).
-Opaque memcpy.
 
 Notation "e1 <-{ n } * e2" := (memcpy [e1%RustE ; #(LitInt n) ; e2%RustE])%RustE
+  (at level 80) : lrust_expr_scope.
+
+Notation "e1 <-[ i ]{ n } * e2" :=
+  (e1%RustE <-[i] ☇ ;; e1+ₗ#1 <-{n} *e2)%RustE
   (at level 80) : lrust_expr_scope.
 
 Lemma wp_memcpy `{heapG Σ} N E l1 l2 vl1 vl2 q n Φ:

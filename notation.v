@@ -93,3 +93,8 @@ Notation "'let:' x := e1 'in' e2" := (LamV [x%RustB] e2%RustE [e1%RustE])
   (at level 102, x at level 1, e1, e2 at level 200) : lrust_val_scope.
 Notation "e1 ;; e2" := (LamV [BAnon] e2%RustE [e1%RustE])
   (at level 100, e2 at level 200, format "e1  ;;  e2") : lrust_val_scope.
+
+Notation "e1 <-[ i ] '☇'" := (e1 <- #i)%RustE
+  (only parsing, at level 80) : lrust_expr_scope.
+Notation "e1 <-[ i ] e2" := (e1<-[i] ☇ ;; e1+ₗ#1 <- e2)%RustE
+ (at level 80) : lrust_expr_scope.
