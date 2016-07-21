@@ -595,7 +595,7 @@ Section heap.
     heap_ctx N ★ ▷ l ↦ v' ★ ▷ (l ↦ v ={E}=★ Φ (LitV LitUnit))
     ⊢ WP Write ScOrd (Lit $ LitLoc l) e @ E {{ Φ }}.
   Proof.
-    iIntros (? ?%of_to_val) "(#Hinv&Hv&HΦ)". subst. iApply wp_pvs. iTimeless "Hv".
+    iIntros (? <-%of_to_val) "(#Hinv&Hv&HΦ)". iApply wp_pvs. iTimeless "Hv".
     rewrite /heap_ctx /heap_inv /auth_own heap_mapsto_eq /heap_mapsto_def.
     iInv> N as (σ hF) "(Hσ&Hvalσ&HhF&%)".
     iDestruct (mapsto_heapVal_lookup l (RSt 0) 1 v' σ with "[#]") as %(n&Hσl&EQ).
@@ -612,7 +612,7 @@ Section heap.
     heap_ctx N ★ heap_mapsto_st WSt l 1%Qp v' ★ ▷ (l ↦ v ={E}=★ Φ (LitV LitUnit))
     ⊢ WP Write Na2Ord (Lit $ LitLoc l) e @ E {{ Φ }}.
   Proof.
-    iIntros (? ?%of_to_val) "(#Hinv&Hv&HΦ)". subst. iApply wp_pvs.
+    iIntros (? <-%of_to_val) "(#Hinv&Hv&HΦ)". iApply wp_pvs.
     rewrite /heap_ctx /heap_inv /auth_own heap_mapsto_eq /heap_mapsto_def.
     iInv> N as (σ hF) "(Hσ&Hvalσ&HhF&%)".
     iDestruct (mapsto_heapVal_lookup l WSt 1 v' σ with "[#]") as %(n&Hσl&EQ).
@@ -629,7 +629,7 @@ Section heap.
     heap_ctx N ★ ▷ l ↦ v' ★ ▷ (l ↦ v ={E}=★ Φ (LitV LitUnit))
     ⊢ WP Write Na1Ord (Lit $ LitLoc l) e @ E {{ Φ }}.
   Proof.
-    iIntros (? ?%of_to_val) "(#Hinv&Hv&HΦ)". subst. iApply wp_pvs. iTimeless "Hv".
+    iIntros (? <-%of_to_val) "(#Hinv&Hv&HΦ)". iApply wp_pvs. iTimeless "Hv".
     rewrite /heap_ctx /heap_inv /auth_own.
     iDestruct (inv_open E N _ with "Hinv") as (E') "[% Hinvpvs]"; first done.
     iApply (wp_write_na1_pst E E'). by set_solver.
@@ -653,7 +653,7 @@ Section heap.
                ★ ▷ (l ↦{q} (LitV $ LitInt zl) ={E}=★ Φ (LitV $ LitInt 0))
     ⊢ WP CAS (Lit $ LitLoc l) (Lit $ LitInt z1) e2 @ E {{ Φ }}.
   Proof.
-    iIntros (??%of_to_val ?) "(#Hinv&Hv&HΦ)". subst. iApply wp_pvs. iTimeless "Hv".
+    iIntros (? <-%of_to_val ?) "(#Hinv&Hv&HΦ)". iApply wp_pvs. iTimeless "Hv".
     rewrite /heap_ctx /heap_inv /auth_own heap_mapsto_eq /heap_mapsto_def.
     iInv> N as (σ hF) "(Hσ&Hvalσ&HhF&%)".
     iDestruct (mapsto_heapVal_lookup l (RSt 0) q with "[#]") as %(n&Hσl&_). by iFrame.
@@ -669,7 +669,7 @@ Section heap.
                     ={E}=★ Φ (LitV $ LitInt 0))
     ⊢ WP CAS (Lit $ LitLoc l) (Lit $ LitLoc l1) e2 @ E {{ Φ }}.
   Proof.
-    iIntros (??%of_to_val ?) "(#Hinv&Hl&Hl'&Hl1&HΦ)". subst. iApply wp_pvs.
+    iIntros (? <-%of_to_val ?) "(#Hinv&Hl&Hl'&Hl1&HΦ)". subst. iApply wp_pvs.
     iTimeless "Hl". iTimeless "Hl'". iTimeless "Hl1".
     rewrite /heap_ctx /heap_inv /auth_own heap_mapsto_eq /heap_mapsto_def.
     iInv> N as (σ hF) "(Hσ&Hvalσ&HhF&%)".
@@ -687,7 +687,7 @@ Section heap.
                ★ ▷ (l ↦ v2 ={E}=★ Φ (LitV $ LitInt 1))
     ⊢ WP CAS (Lit $ LitLoc l) (Lit $ LitInt z1) e2 @ E {{ Φ }}.
   Proof.
-    iIntros (??%of_to_val) "(#Hinv&Hv&HΦ)". subst. iApply wp_pvs. iTimeless "Hv".
+    iIntros (? <-%of_to_val) "(#Hinv&Hv&HΦ)". subst. iApply wp_pvs. iTimeless "Hv".
     rewrite /heap_ctx /heap_inv /auth_own heap_mapsto_eq /heap_mapsto_def.
     iInv> N as (σ hF) "(Hσ&Hvalσ&HhF&%)".
     iDestruct (mapsto_heapVal_lookup l (RSt 0) 1 with "[#]") as %(n&Hσl&EQ).
@@ -705,7 +705,7 @@ Section heap.
                ★ ▷ (l ↦ v2 ={E}=★ Φ (LitV $ LitInt 1))
     ⊢ WP CAS (Lit $ LitLoc l) (Lit $ LitLoc l1) e2 @ E {{ Φ }}.
   Proof.
-    iIntros (??%of_to_val) "(#Hinv&Hv&HΦ)". subst. iApply wp_pvs. iTimeless "Hv".
+    iIntros (? <-%of_to_val) "(#Hinv&Hv&HΦ)". subst. iApply wp_pvs. iTimeless "Hv".
     rewrite /heap_ctx /heap_inv /auth_own heap_mapsto_eq /heap_mapsto_def.
     iInv> N as (σ hF) "(Hσ&Hvalσ&HhF&%)".
     iDestruct (mapsto_heapVal_lookup l (RSt 0) 1 with "[#]") as %(n&Hσl&EQ).
