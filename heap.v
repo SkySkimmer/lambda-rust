@@ -84,11 +84,11 @@ Instance: Params (@heap_freeable) 5.
 Instance: Params (@heap_ctx) 2.
 
 Notation "l ↦{ q } v" := (heap_mapsto l q v)
-  (at level 20, q at level 50, format "l ↦{ q } v") : uPred_scope.
+  (at level 20, q at level 50, format "l  ↦{ q }  v") : uPred_scope.
 Notation "l ↦ v" := (heap_mapsto l 1 v) (at level 20) : uPred_scope.
 
 Notation "l ↦★{ q } vl" := (heap_mapsto_vec l q vl)
-  (at level 20, q at level 50, format "l ↦★{ q }  vl") : uPred_scope.
+  (at level 20, q at level 50, format "l  ↦★{ q }  vl") : uPred_scope.
 Notation "l ↦★ vl" := (heap_mapsto_vec l 1 vl) (at level 20) : uPred_scope.
 
 Notation "†{ q } l … n" := (heap_freeable l q n)
