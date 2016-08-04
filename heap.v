@@ -457,18 +457,13 @@ Section heap.
   Qed.
 
   Lemma mapsto_heapVal_lookup l ls q v σ:
-    let globst n' :=
-        match ls with
-        | RSt n => RSt (n+n')
-        | WSt => WSt
-        end
-    in
     auth_own heapVal_name {[ l := (q, of_lock_state ls, DecAgree v) ]} ★
     own heapVal_name (● to_heapVal σ)
-    ⊢ ■ ∃ (n':nat), σ !! l = Some (globst n', v) ∧ (q = 1%Qp → n' = O).
+    ⊢ ■ ∃ (n':nat), σ !! l =
+          Some (match ls with RSt n => RSt (n+n') | WSt => WSt end, v)
+        ∧ (q = 1%Qp → n' = O).
   Proof.
-    iIntros (globst) "(Hv&Hσ)". rewrite /auth_own /globst.
-    iCombine "Hv" "Hσ" as "Hσ".
+    iIntros "(Hv&Hσ)". rewrite /auth_own. iCombine "Hv" "Hσ" as "Hσ".
     iDestruct (own_valid (A:=authR heapValUR) with "Hσ") as "#Hσ".
     iDestruct "Hσ" as %Hσ. iPureIntro. case: Hσ=>[Hσ _]. specialize (Hσ O).
     destruct Hσ as [f Hσ]. specialize (Hσ l). revert Hσ. simpl.
