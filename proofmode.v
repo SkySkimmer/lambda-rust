@@ -6,11 +6,10 @@ Import uPred.
 Ltac wp_strip_later ::= iNext.
 
 Section heap.
-Context {Σ : gFunctors} `{heapG Σ}.
-Implicit Types N : namespace.
-Implicit Types P Q : iPropG lrust_lang Σ.
-Implicit Types Φ : val → iPropG lrust_lang Σ.
-Implicit Types Δ : envs (iResUR lrust_lang (globalF Σ)).
+Context `{heapG Σ}.
+Implicit Types P Q : iProp Σ.
+Implicit Types Φ : val → iProp Σ.
+Implicit Types Δ : envs (iResUR Σ).
 
 Global Instance into_sep_mapsto l q v :
   IntoSep false (l ↦{q} v) (l ↦{q/2} v) (l ↦{q/2} v).
@@ -20,8 +19,8 @@ Global Instance into_sep_mapsto_vec l q vl :
   IntoSep false (l ↦★{q} vl) (l ↦★{q/2} vl) (l ↦★{q/2} vl).
 Proof. by rewrite /IntoSep heap_mapsto_vec_op_split. Qed.
 
-Lemma tac_wp_alloc Δ Δ' N E j1 j2 n Φ :
-  (Δ ⊢ heap_ctx N) → nclose N ⊆ E → 0 < n →
+Lemma tac_wp_alloc Δ Δ' E j1 j2 n Φ :
+  (Δ ⊢ heap_ctx) → nclose heapN ⊆ E → 0 < n →
   IntoLaterEnvs Δ Δ' →
   (∀ l vl, n = length vl → ∃ Δ'',
     envs_app false (Esnoc (Esnoc Enil j1 (l ↦★ vl)) j2 (†l…(Z.to_nat n))) Δ'
@@ -38,8 +37,8 @@ Proof.
   rewrite envs_app_sound //; simpl. by rewrite right_id HΔ'.
 Qed.
 
-Lemma tac_wp_read Δ Δ' N E i l q v o Φ :
-  (Δ ⊢ heap_ctx N) → nclose N ⊆ E → o = Na1Ord ∨ o = ScOrd →
+Lemma tac_wp_read Δ Δ' E i l q v o Φ :
+  (Δ ⊢ heap_ctx) → nclose heapN ⊆ E → o = Na1Ord ∨ o = ScOrd →
   IntoLaterEnvs Δ Δ' →
   envs_lookup i Δ' = Some (false, l ↦{q} v)%I →
   (Δ' ⊢ |={E}=> Φ v) →
@@ -54,9 +53,9 @@ Proof.
       by apply later_mono, sep_mono_r, wand_mono.
 Qed.
 
-Lemma tac_wp_write Δ Δ' Δ'' N E i l v e v' o Φ :
+Lemma tac_wp_write Δ Δ' Δ'' E i l v e v' o Φ :
   to_val e = Some v' →
-  (Δ ⊢ heap_ctx N) → nclose N ⊆ E → o = Na1Ord ∨ o = ScOrd →
+  (Δ ⊢ heap_ctx) → nclose heapN ⊆ E → o = Na1Ord ∨ o = ScOrd →
   IntoLaterEnvs Δ Δ' →
   envs_lookup i Δ' = Some (false, l ↦ v)%I →
   envs_simple_replace i false (Esnoc Enil i (l ↦ v')) Δ' = Some Δ'' →

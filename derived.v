@@ -16,9 +16,9 @@ Notation Newlft := (Lit LitUnit) (only parsing).
 Notation Endlft := (Seq Skip Skip) (only parsing).
 
 Section derived.
-Context {Σ : iFunctor}.
-Implicit Types P Q : iProp lrust_lang Σ.
-Implicit Types Φ : val → iProp lrust_lang Σ.
+Context `{irisG lrust_lang Σ}.
+Implicit Types P Q : iProp Σ.
+Implicit Types Φ : val → iProp Σ.
 
 (** Proof rules for the sugar *)
 Lemma wp_lam E xl e e' el Φ :

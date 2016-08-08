@@ -140,7 +140,7 @@ Proof.
     by destruct a1; simpl in *; subst. }
   assert (Hrtc_step1:
     rtc step (t1 ++ fill K1 e1 :: t2 ++ fill K2 e2 :: t3, σ)
-        (t1 ++ fill K1 e1' :: t2 ++ fill K2 e2 :: t3 ++ option_list ef1, σ1')).
+        (t1 ++ fill K1 e1' :: t2 ++ fill K2 e2 :: t3 ++ ef1, σ1')).
   { eapply rtc_l, rtc_refl. eapply step_atomic, Ectx_step, Hstep1; try  done.
     by rewrite -assoc. }
   assert (Hrede1: a1.2 = Na1Ord → head_reducible e1' σ1').
@@ -160,7 +160,7 @@ Proof.
     by destruct a2; simpl in *; subst. }
   assert (Hrtc_step2:
     rtc step (t1 ++ fill K1 e1 :: t2 ++ fill K2 e2 :: t3, σ)
-        (t1 ++ fill K1 e1 :: t2 ++ fill K2 e2' :: t3 ++ option_list ef2, σ2')).
+        (t1 ++ fill K1 e1 :: t2 ++ fill K2 e2' :: t3 ++ ef2, σ2')).
   { eapply rtc_l, rtc_refl. rewrite app_comm_cons assoc.
     eapply step_atomic, Ectx_step, Hstep2; try done. by rewrite -assoc. }
   assert (Hrede2: a2.2 = Na1Ord → head_reducible e2' σ2').
@@ -214,14 +214,12 @@ Proof.
   end.
 Qed.
 
-Corollary wp_nonracing Σ E (Φ : val -> iPropG lrust_lang Σ) e1 t2 σ1 m σ2 :
-  ✓ m →
-  (ownP σ1 ★ ownG m ⊢ WP e1 @ E {{ Φ }}) →
+Corollary adequate_nonracing e1 t2 σ1 σ2 φ :
+  adequate e1 σ1 φ →
   rtc step ([e1], σ1) (t2, σ2) →
   nonracing_threadpool t2 σ2.
 Proof.
-  intros. apply safe_nonracing. intros el' σ' e' ?? He'.
-  destruct (wp_adequacy_reducible E Φ e1 e' el' σ1 m σ') as [He''|]; try done.
-  etrans; eassumption.
+  intros [_ Had] Hrtc. apply safe_nonracing. intros el' σ' e' ?? He'.
+  edestruct (Had el' σ' e') as [He''|]; try done. etrans; eassumption.
   rewrite /language.to_val /= He' in He''. by edestruct @is_Some_None.
 Qed.

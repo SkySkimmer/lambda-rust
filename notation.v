@@ -1,6 +1,6 @@
 From lrust Require Export derived.
 
-Arguments wp {_ _} _ _%RustE _.
+Arguments wp {_ _ _} _ _%RustE _.
 
 Notation "'WP' e @ E {{ Φ } }" := (wp E e%RustE Φ)
   (at level 20, e, Φ at level 200,

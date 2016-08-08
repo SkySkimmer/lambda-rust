@@ -219,76 +219,76 @@ Definition value_eq (σ : state) (v1 v2 : val) : option bool :=
   | _, _ => None
   end.
 
-Inductive head_step : expr → state → expr → state → option expr → Prop :=
+Inductive head_step : expr → state → expr → state → list expr → Prop :=
 | BinOpS op l1 l2 l' σ :
     bin_op_eval op l1 l2 = Some l' →
-    head_step (BinOp op (Lit l1) (Lit l2)) σ (Lit l') σ None
+    head_step (BinOp op (Lit l1) (Lit l2)) σ (Lit l') σ []
 | BetaS f xl e e' el σ:
     Forall (λ ei, is_Some (to_val ei)) el →
     Closed (f :b: xl +b+ []) e →
     subst_l xl el e = Some e' →
-    head_step (App (Rec f xl e) el) σ (subst' f (Rec f xl e) e') σ None
+    head_step (App (Rec f xl e) el) σ (subst' f (Rec f xl e) e') σ []
 | ReadScS l n v σ:
     σ !! l = Some (RSt n, v) →
-    head_step (Read ScOrd (Lit $ LitLoc l)) σ (of_val v) σ None
+    head_step (Read ScOrd (Lit $ LitLoc l)) σ (of_val v) σ []
 | ReadNa1S l n v σ:
     σ !! l = Some (RSt n, v) →
     head_step (Read Na1Ord (Lit $ LitLoc l)) σ
               (Read Na2Ord (Lit $ LitLoc l)) (<[l:=(RSt $ S n, v)]>σ)
-              None
+              []
 | ReadNa2S l n v σ:
     σ !! l = Some (RSt $ S n, v) →
     head_step (Read Na2Ord (Lit $ LitLoc l)) σ
               (of_val v) (<[l:=(RSt n, v)]>σ)
-              None
+              []
 | WriteScS l e v v' σ:
     to_val e = Some v →
     σ !! l = Some (RSt 0, v') →
     head_step (Write ScOrd (Lit $ LitLoc l) e) σ
               (Lit LitUnit) (<[l:=(RSt 0, v)]>σ)
-              None
+              []
 | WriteNa1S l e v v' σ:
     to_val e = Some v →
     σ !! l = Some (RSt 0, v') →
     head_step (Write Na1Ord (Lit $ LitLoc l) e) σ
               (Write Na2Ord (Lit $ LitLoc l) e) (<[l:=(WSt, v')]>σ)
-              None
+              []
 | WriteNa2S l e v v' σ:
     to_val e = Some v →
     σ !! l = Some (WSt, v') →
     head_step (Write Na2Ord (Lit $ LitLoc l) e) σ
               (Lit LitUnit) (<[l:=(RSt 0, v)]>σ)
-              None
+              []
 | CasFailS l n e1 v1 e2 v2 vl σ :
     to_val e1 = Some v1 → to_val e2 = Some v2 →
     σ !! l = Some (RSt n, vl) →
     value_eq σ v1 vl = Some false →
-    head_step (CAS (Lit $ LitLoc l) e1 e2) σ (Lit $ lit_of_bool false) σ  None
+    head_step (CAS (Lit $ LitLoc l) e1 e2) σ (Lit $ lit_of_bool false) σ  []
 | CasSucS l e1 v1 e2 v2 vl σ :
     to_val e1 = Some v1 → to_val e2 = Some v2 →
     σ !! l = Some (RSt 0, vl) →
     value_eq σ v1 vl = Some true →
     head_step (CAS (Lit $ LitLoc l) e1 e2) σ
               (Lit $ lit_of_bool true) (<[l:=(RSt 0, v2)]>σ)
-              None
+              []
 | AllocS n l init σ :
     0 < n →
     (∀ m, σ !! (shift_loc l m) = None) →
     Z.of_nat (length init) = n →
     head_step (Alloc $ Lit $ LitInt n) σ
-              (Lit $ LitLoc l) (init_mem l init σ) None
+              (Lit $ LitLoc l) (init_mem l init σ) []
 | FreeS n l σ :
     0 < n →
     (∀ m, is_Some (σ !! (shift_loc l m)) ↔ 0 ≤ m < n) →
     head_step (Free (Lit $ LitInt n) (Lit $ LitLoc l)) σ
               (Lit LitUnit) (free_mem l (Z.to_nat n) σ)
-              None
+              []
 | CaseS i el e σ :
     0 ≤ i →
     nth_error el (Z.to_nat i) = Some e →
-    head_step (Case (Lit $ LitInt i) el) σ e σ None
+    head_step (Case (Lit $ LitInt i) el) σ e σ []
 | ForkS e σ:
-    head_step (Fork e) σ (Lit LitUnit) σ (Some e).
+    head_step (Fork e) σ (Lit LitUnit) σ [e].
 
 (** Basic properties about the language *)
 Lemma to_of_val v : to_val (of_val v) = Some v.
@@ -363,7 +363,7 @@ Lemma alloc_fresh n σ :
   let l := (fresh_block σ, 0) in
   let init := repeat (LitV $ LitInt 0) (Z.to_nat n) in
   0 < n →
-  head_step (Alloc $ Lit $ LitInt n) σ (Lit $ LitLoc l) (init_mem l init σ) None.
+  head_step (Alloc $ Lit $ LitInt n) σ (Lit $ LitLoc l) (init_mem l init σ) [].
 Proof.
   intros l init Hn. apply AllocS. auto.
   - clear init n Hn. unfold l, fresh_block. intro m.

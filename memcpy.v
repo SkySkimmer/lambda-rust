@@ -16,10 +16,10 @@ Notation "e1 <-[ i ]{ n } * e2" :=
   (at level 80, n, i at next level,
    format "e1  <-[ i ]{ n }  * e2") : lrust_expr_scope.
 
-Lemma wp_memcpy `{heapG Σ} N E l1 l2 vl1 vl2 q n Φ:
-  nclose N ⊆ E →
+Lemma wp_memcpy `{heapG Σ} E l1 l2 vl1 vl2 q n Φ:
+  nclose heapN ⊆ E →
   length vl1 = n → length vl2 = n →
-  heap_ctx N ★ l1 ↦★ vl1 ★ l2 ↦★{q} vl2 ★
+  heap_ctx ★ l1 ↦★ vl1 ★ l2 ↦★{q} vl2 ★
   ▷ (l1 ↦★ vl2 ★ l2 ↦★{q} vl2 ={E}=★ Φ #())
   ⊢ WP #l1 <-{n} *#l2 @ E {{ Φ }}.
 Proof.
@@ -33,5 +33,5 @@ Proof.
     wp_read; wp_write. replace (Z.pos (Pos.of_succ_nat n)) with (n+1) by lia.
     do 3 wp_op. rewrite Z.add_simpl_r.
     iApply ("IH" with "[%] [%] Hl1 Hl2"); try done.
-    iIntros "> [Hl1 Hl2]"; iApply "HΦ"; by iFrame.
+    iIntros "!> [Hl1 Hl2]"; iApply "HΦ"; by iFrame.
 Qed.
