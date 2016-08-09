@@ -1,4 +1,5 @@
 -Q . lrust
+adequacy.v
 derived.v
 heap.v
 lang.v
