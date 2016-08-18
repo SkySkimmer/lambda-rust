@@ -1,7 +1,7 @@
 From lrust Require Export lifting.
-From iris.algebra Require Import upred_big_op gmap cmra_big_op frac dec_agree csum.
-From iris.program_logic Require Export invariants ghost_ownership.
-From iris.program_logic Require Import ownership auth.
+From iris.algebra Require Import upred_big_op cmra_big_op gmap frac dec_agree.
+From iris.algebra Require Import csum excl auth.
+From iris.program_logic Require Export invariants ownership.
 From iris.proofmode Require Export weakestpre invariants.
 Import uPred.
 
@@ -17,13 +17,14 @@ Definition heapFreeableUR : ucmraT :=
 
 Class heapG Σ := HeapG {
   heapG_iris_inG :> irisG lrust_lang Σ;
-  heapVal_inG :> authG Σ heapValUR;
-  heapFreeable_inG :> authG Σ heapFreeableUR;
+  heapVal_inG :> inG Σ (authR heapValUR);
+  heapFreeable_inG :> inG Σ (authR heapFreeableUR);
   heapVal_name : gname;
   heapFreeable_name : gname
 }.
-Definition heapValΣ : gFunctors := authΣ heapValUR.
-Definition heapFreeableΣ : gFunctors := authΣ heapFreeableUR.
+Definition heapΣ : gFunctors :=
+  #[GFunctor (constRF (heapValUR)); GFunctor (constRF (heapFreeableUR));
+    irisΣ lrust_lang].
 
 Definition of_lock_state (x : lock_state) : lock_stateR :=
   match x with
@@ -124,7 +125,7 @@ Section heap.
 
   Lemma heap_mapsto_op_eq l q1 q2 v : l ↦{q1} v ★ l ↦{q2} v ⊣⊢ l ↦{q1+q2} v.
   Proof.
-    by rewrite heap_mapsto_eq -auth_own_op op_singleton pair_op dec_agree_idemp.
+    by rewrite heap_mapsto_eq -own_op -auth_frag_op op_singleton pair_op dec_agree_idemp.
   Qed.
 
   Lemma heap_mapsto_vec_op_eq l q1 q2 vl :
@@ -141,9 +142,9 @@ Section heap.
   Proof.
     destruct (decide (v1 = v2)) as [->|].
     { by rewrite heap_mapsto_op_eq pure_equiv // left_id. }
-    rewrite heap_mapsto_eq -auth_own_op op_singleton pair_op dec_agree_ne //.
+    rewrite heap_mapsto_eq -own_op -auth_frag_op op_singleton pair_op dec_agree_ne //.
     apply (anti_symm (⊢)); last by apply pure_elim_l.
-    rewrite auth_own_valid gmap_validI (forall_elim l) lookup_singleton.
+    rewrite own_valid auth_validI /= gmap_validI (forall_elim l) lookup_singleton.
     rewrite option_validI prod_validI !discrete_valid. by apply pure_elim_r.
   Qed.
 
@@ -235,8 +236,8 @@ Section heap.
   Lemma heap_freeable_op_eq l q1 q2 n n' :
     †{q1}l…n ★ †{q2}(shift_loc l n)…n' ⊣⊢ †{q1+q2}(l)…(n+n').
   Proof.
-    by rewrite heap_freeable_eq /heap_freeable_def -auth_own_op op_singleton
-               pair_op inter_op.
+    by rewrite heap_freeable_eq /heap_freeable_def -own_op -auth_frag_op
+            op_singleton pair_op inter_op.
   Qed.
 
   (** Properties about heapFreeable_rel and heapFreeable *)
