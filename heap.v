@@ -23,7 +23,8 @@ Class heapG Σ := HeapG {
   heapFreeable_name : gname
 }.
 Definition heapΣ : gFunctors :=
-  #[GFunctor (constRF (heapValUR)); GFunctor (constRF (heapFreeableUR));
+  #[GFunctor (constRF (heapValUR));
+    GFunctor (constRF (heapFreeableUR));
     irisΣ lrust_lang].
 
 Definition of_lock_state (x : lock_state) : lock_stateR :=
@@ -38,13 +39,10 @@ Definition heapFreeable_rel (σ : state) (hF : heapFreeableUR) : Prop :=
   qs.2 ≠ ∅ ∧ ∀ i, is_Some (σ !! (blk, i)) ↔ is_Some (qs.2 !! i).
 
 Instance heapFreeable_rel_proper σ : Proper ((≡) ==> (↔)) (heapFreeable_rel σ).
-Proof.
-  intros x y Hxy. unfold heapFreeable_rel. split; intros H blk qs.
-  rewrite -Hxy. apply H. rewrite Hxy. apply H.
-Qed.
+Proof. solve_proper. Qed.
 
 Section definitions.
-  Context `{i : heapG Σ}.
+  Context `{heapG Σ}.
 
   Definition heap_mapsto_st (st : lock_state)
              (l : loc) (q : Qp) (v: val) : iProp Σ :=
@@ -56,9 +54,8 @@ Section definitions.
   Definition heap_mapsto_eq : @heap_mapsto = @heap_mapsto_def :=
     proj2_sig heap_mapsto_aux.
 
-  Definition heap_mapsto_vec (l : loc) (q : Qp) (vl : list val) :
-    iProp Σ :=
-    ([★] imap (fun i v => heap_mapsto (shift_loc l i) q v) vl)%I.
+  Definition heap_mapsto_vec (l : loc) (q : Qp) (vl : list val) : iProp Σ :=
+    ([★ list] i ↦ v ∈ vl, heap_mapsto (shift_loc l i) q v)%I.
 
   Fixpoint inter (i0 : Z) (n : nat) : gmapR Z (exclR unitC) :=
     match n with
@@ -76,7 +73,7 @@ Section definitions.
     (∃ (σ:state) hF, ownP σ ★ own heapVal_name (● to_heapVal σ)
                             ★ own heapFreeable_name (● hF)
                             ★ ■ heapFreeable_rel σ hF)%I.
-  Definition heap_ctx := inv heapN heap_inv.
+  Definition heap_ctx : iProp Σ := inv heapN heap_inv.
 
   Global Instance heap_ctx_persistent : PersistentP heap_ctx.
   Proof. apply _. Qed.
@@ -116,9 +113,7 @@ Section heap.
   Proof. rewrite heap_mapsto_eq /heap_mapsto_def. apply _. Qed.
 
   Global Instance heap_mapsto_vec_timeless l q vl : TimelessP (l ↦★{q} vl).
-  Proof.
-    unfold heap_mapsto_vec, imap. generalize O. induction vl=>/=; apply _.
-  Qed.
+  Proof. apply _. Qed.
 
   Global Instance heap_freeable_timeless q l n : TimelessP (†{q}l…n).
   Proof. rewrite heap_freeable_eq /heap_freeable_def. apply _. Qed.
@@ -126,15 +121,6 @@ Section heap.
   Lemma heap_mapsto_op_eq l q1 q2 v : l ↦{q1} v ★ l ↦{q2} v ⊣⊢ l ↦{q1+q2} v.
   Proof.
     by rewrite heap_mapsto_eq -own_op -auth_frag_op op_singleton pair_op dec_agree_idemp.
-  Qed.
-
-  Lemma heap_mapsto_vec_op_eq l q1 q2 vl :
-    l ↦★{q1} vl ★ l ↦★{q2} vl ⊣⊢ l ↦★{q1+q2} vl.
-  Proof.
-    unfold heap_mapsto_vec, imap. generalize O. induction vl as [|v vl IH]=>/= n.
-    - apply right_id, _.
-    - rewrite -IH -heap_mapsto_op_eq equiv_spec.
-      by split; iIntros "[[??][??]]"; iFrame.
   Qed.
 
   Lemma heap_mapsto_op l q1 q2 v1 v2 :
@@ -148,38 +134,42 @@ Section heap.
     rewrite option_validI prod_validI !discrete_valid. by apply pure_elim_r.
   Qed.
 
+  Lemma heap_mapsto_vec_nil l q : l ↦★{q} [] ⊣⊢ True.
+  Proof. by rewrite /heap_mapsto_vec big_sepL_nil. Qed.
+
+  Lemma heap_mapsto_vec_app l q vl1 vl2 :
+    l ↦★{q} (vl1 ++ vl2) ⊣⊢ l ↦★{q} vl1 ★ shift_loc l (length vl1) ↦★{q} vl2.
+  Proof.
+    rewrite /heap_mapsto_vec big_sepL_app.
+    do 2 f_equiv. intros k v. by rewrite shift_loc_assoc Nat2Z.inj_add.
+  Qed.
+
+  Lemma heap_mapsto_vec_singleton l q v : l ↦★{q} [v] ⊣⊢ l ↦{q} v.
+  Proof. by rewrite /heap_mapsto_vec big_sepL_singleton /= shift_loc_0. Qed.
+
+  Lemma heap_mapsto_vec_cons l q v vl:
+    l ↦★{q} (v :: vl) ⊣⊢ l ↦{q} v ★ shift_loc l 1 ↦★{q} vl.
+  Proof.
+    by rewrite (heap_mapsto_vec_app l q [v] vl) heap_mapsto_vec_singleton.
+  Qed.
+
+  Lemma heap_mapsto_vec_op_eq l q1 q2 vl :
+    l ↦★{q1} vl ★ l ↦★{q2} vl ⊣⊢ l ↦★{q1+q2} vl.
+  Proof.
+    rewrite /heap_mapsto_vec -big_sepL_sepL. by setoid_rewrite heap_mapsto_op_eq.
+  Qed.
+
   Lemma heap_mapsto_vec_op l q1 q2 vl1 vl2 :
     length vl1 = length vl2 →
     l ↦★{q1} vl1 ★ l ↦★{q2} vl2 ⊣⊢ vl1 = vl2 ∧ l ↦★{q1+q2} vl1.
   Proof.
-    unfold heap_mapsto_vec, imap. generalize O. revert vl2.
-    induction vl1 as [|v1 vl1 IH]=>[][|v2 vl2]n/=; try done.
-    - rewrite equiv_spec. split; iIntros; auto.
-    - assert (∀ A B C D : iProp Σ, (A ★ B) ★ (C ★ D) ⊣⊢ (A ★ C) ★ (B ★ D)) as ->.
-      { by intros; rewrite equiv_spec; split; iIntros "[[??][??]]"; iFrame. }
-      intros [=?]. rewrite heap_mapsto_op IH // equiv_spec; split.
-      + iIntros "[[%?][%?]]". subst. iSplit. auto. by iFrame.
-      + iIntros "[#Heq[Hv Hvl]]". iDestruct "Heq" as %[=->->]. iSplitL "Hv"; auto.
-  Qed.
-
-  Lemma heap_mapsto_vec_app_op l q vl1 vl2 :
-    l ↦★{q} vl1 ★ (shift_loc l (length vl1)) ↦★{q} vl2 ⊣⊢ l ↦★{q} (vl1++vl2).
-  Proof.
-    unfold heap_mapsto_vec, imap. generalize O. induction vl1 as [|v1 vl1 IH]=>n/=.
-    - by rewrite left_id shift_loc_0.
-    - rewrite -IH assoc. f_equiv. clear IH. revert n.
-      induction vl2 as [|v2 vl2 IH]=>n //=.
-      rewrite !shift_loc_assoc IH. apply reflexive_eq. repeat (lia||f_equal).
-  Qed.
-
-  Lemma heap_mapsto_vec_singleton l q v :
-    l ↦★{q} [v] ⊣⊢ l ↦{q} v.
-  Proof. by rewrite /heap_mapsto_vec /= right_id shift_loc_0. Qed.
-
-  Lemma heap_mapsto_vec_cons_op l q v vl:
-    l ↦{q} v ★ (shift_loc l 1) ↦★{q} vl ⊣⊢ l ↦★{q} (v::vl).
-  Proof.
-    by rewrite -(heap_mapsto_vec_app_op l q [v] vl) heap_mapsto_vec_singleton.
+    iIntros (Hlen%Forall2_same_length); iSplit.
+    - revert l. induction Hlen as [|v1 v2 vl1 vl2 _ _ IH]=> l.
+      { rewrite !heap_mapsto_vec_nil. iIntros "_"; auto. }
+      rewrite !heap_mapsto_vec_cons. iIntros "[[Hv1 Hvl1] [Hv2 Hvl2]]".
+      iDestruct (IH (shift_loc l 1) with "[Hvl1 Hvl2]") as "[% $]"; subst; first by iFrame.
+      rewrite (inj_iff (:: vl2)). iApply heap_mapsto_op. by iFrame.
+    - iIntros "[% Hl]"; subst. by iApply heap_mapsto_vec_op_eq.
   Qed.
 
   Lemma heap_mapsto_op_split l q v : l ↦{q} v ⊣⊢ (l ↦{q/2} v ★ l ↦{q/2} v).
@@ -195,19 +185,19 @@ Section heap.
       own heapVal_name (◯ big_op (imap
         (λ i v, {[shift_loc l i := (q, Cinr 0%nat, DecAgree v)]}) vl)).
   Proof.
-    rewrite /heap_mapsto_vec heap_mapsto_eq /heap_mapsto_def.
     revert l. induction vl as [|v vl IH]=>l.
-    { apply equiv_spec. simpl. split; iIntros; auto. }
-    assert (v :: vl = [] ⊣⊢ (False:iProp Σ)) as ->.
-    { apply equiv_spec; split; iIntros "%"; done. }
-    rewrite left_id !imap_cons /=. destruct (decide (vl = [])).
-    { subst. by rewrite !right_id. }
-    erewrite auth_frag_op, own_op, imap_ext, (IH (shift_loc l 1)), imap_ext.
-    - assert (vl = [] ⊣⊢ (False:iProp Σ)) as ->.
-      { apply equiv_spec; split; iIntros "%"; done. }
-        by rewrite left_id.
-    - intros. rewrite shift_loc_assoc /=. repeat f_equiv; lia.
-    - intros. simpl. rewrite shift_loc_assoc. repeat f_equal; lia.
+    { rewrite heap_mapsto_vec_nil /=. iSplit; iIntros; auto. }
+    rewrite heap_mapsto_vec_cons imap_cons /= IH auth_frag_op. clear IH. iSplit.
+    - iIntros "[Hv [%|Hvl]]"; subst; iRight.
+      { simpl. by rewrite /= right_id shift_loc_0 heap_mapsto_eq. }
+      iSplitL "Hv"; first by rewrite shift_loc_0 heap_mapsto_eq.
+      erewrite imap_ext; [done|]. intros k v'' _; simpl.
+      by rewrite shift_loc_assoc Z.add_1_l -Nat2Z.inj_succ.
+    -iIntros "[%|[Hv Hvl]]"; simplify_eq.
+     iSplitL "Hv"; first by rewrite shift_loc_0 heap_mapsto_eq.
+     destruct vl as [|v' vl]; first eauto.
+     iRight. erewrite imap_ext; [done|]. intros k v'' _; simpl.
+     by rewrite shift_loc_assoc Z.add_1_l -Nat2Z.inj_succ.
   Qed.
 
   Lemma inter_lookup_Some i j (n:nat):
