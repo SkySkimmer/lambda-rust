@@ -11,13 +11,13 @@ Implicit Types P Q : iProp Σ.
 Implicit Types Φ : val → iProp Σ.
 Implicit Types Δ : envs (iResUR Σ).
 
-Global Instance into_sep_mapsto l q v :
-  IntoSep false (l ↦{q} v) (l ↦{q/2} v) (l ↦{q/2} v).
-Proof. by rewrite /IntoSep heap_mapsto_op_split. Qed.
+Global Instance into_and_mapsto l q v :
+  IntoAnd false (l ↦{q} v) (l ↦{q/2} v) (l ↦{q/2} v).
+Proof. by rewrite /IntoAnd heap_mapsto_op_split. Qed.
 
-Global Instance into_sep_mapsto_vec l q vl :
-  IntoSep false (l ↦★{q} vl) (l ↦★{q/2} vl) (l ↦★{q/2} vl).
-Proof. by rewrite /IntoSep heap_mapsto_vec_op_split. Qed.
+Global Instance into_and_mapsto_vec l q vl :
+  IntoAnd false (l ↦★{q} vl) (l ↦★{q/2} vl) (l ↦★{q/2} vl).
+Proof. by rewrite /IntoAnd heap_mapsto_vec_op_split. Qed.
 
 Lemma tac_wp_alloc Δ Δ' E j1 j2 n Φ :
   (Δ ⊢ heap_ctx) → nclose heapN ⊆ E → 0 < n →
