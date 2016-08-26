@@ -1,4 +1,4 @@
-From iris.program_logic Require Export ectx_language ectxi_language.
+From iris.program_logic Require Export language ectx_language ectxi_language.
 From iris.algebra Require Export cofe.
 From iris.prelude Require Export strings.
 From iris.prelude Require Import gmap.
@@ -56,21 +56,9 @@ Inductive expr :=
 | Case (e : expr) (el : list expr)
 | Fork (e : expr).
 
-Bind Scope lrust_expr_scope with expr.
-Bind Scope lrust_expr_scope with list expr.
-Delimit Scope lrust_expr_scope with RustE.
-Arguments Var _.
-Arguments Lit _.
-Arguments Rec _ _ _%RustE.
-Arguments BinOp _ _%RustE _%RustE.
-Arguments App _%RustE _%RustE.
-Arguments Read _ _%RustE.
-Arguments Write _ _%RustE _%RustE.
-Arguments CAS _%RustE _%RustE _%RustE.
-Arguments Alloc _%RustE.
-Arguments Free _%RustE _%RustE.
-Arguments Case _%RustE _%RustE.
-Arguments Fork _%RustE.
+Bind Scope expr_scope with expr.
+Arguments App _%E _%E.
+Arguments Case _%E _%E.
 
 Fixpoint is_closed (X : list string) (e : expr) : bool :=
   match e with
@@ -94,8 +82,7 @@ Inductive val :=
 | LitV (l : base_lit)
 | RecV (f : binder) (xl : list binder) (e : expr) `{Closed (f :b: xl +b+ []) e}.
 
-Bind Scope lrust_val_scope with val.
-Delimit Scope lrust_val_scope with RustV.
+Bind Scope val_scope with val.
 
 Definition of_val (v : val) : expr :=
   match v with

@@ -23,8 +23,8 @@ Class heapG Σ := HeapG {
   heapFreeable_name : gname
 }.
 Definition heapΣ : gFunctors :=
-  #[GFunctor (constRF (heapValUR));
-    GFunctor (constRF (heapFreeableUR));
+  #[GFunctor (constRF heapValUR);
+    GFunctor (constRF heapFreeableUR);
     irisΣ lrust_lang].
 
 Definition of_lock_state (x : lock_state) : lock_stateR :=
@@ -286,7 +286,7 @@ Section heap.
     - rewrite imap_cons. simpl. etrans. apply (IH (shift_loc l 1)).
       { intros. by rewrite shift_loc_assoc. }
       rewrite auth_frag_op assoc. apply cmra_update_op; last first.
-      { erewrite imap_ext. reflexivity. move=>i x/=. rewrite shift_loc_assoc.
+      { erewrite imap_ext. reflexivity. move=>i x/= _. rewrite shift_loc_assoc.
         f_equal. f_equal. lia. }
       assert (Hinit: (to_heapVal (init_mem (shift_loc l 1) vl σ)) !! l = None).
       { clear-FRESH. rewrite lookup_fmap fmap_None.
@@ -384,7 +384,7 @@ Section heap.
     induction vl as [|v vl IH]=>l. by rewrite left_id.
     rewrite imap_cons /= auth_frag_op -assoc. etrans.
     - apply cmra_update_op. reflexivity. erewrite imap_ext. apply (IH (shift_loc l 1)).
-      move=> i x /=. rewrite shift_loc_assoc. repeat f_equiv. lia.
+      move=> i x /= _. rewrite shift_loc_assoc. repeat f_equiv. lia.
     - clear IH. unfold to_heapVal. rewrite fmap_delete.
       apply cmra_update_valid0. intros [[f Hf%timeless] Hv]; last apply _.
       revert Hf Hv. rewrite shift_loc_0 right_id =>/= Hf. rewrite {1 2}Hf=>Hv.
