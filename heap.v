@@ -1,8 +1,8 @@
-From lrust Require Export lifting.
 From iris.algebra Require Import upred_big_op cmra_big_op gmap frac dec_agree.
 From iris.algebra Require Import csum excl auth.
 From iris.program_logic Require Export invariants ownership.
 From iris.proofmode Require Export weakestpre invariants.
+From lrust Require Export lifting.
 Import uPred.
 
 Definition lock_stateR : cmraT := csumR (exclR unitC) natR.
@@ -91,6 +91,11 @@ Notation "l ↦ v" := (heap_mapsto l 1 v) (at level 20) : uPred_scope.
 Notation "l ↦★{ q } vl" := (heap_mapsto_vec l q vl)
   (at level 20, q at level 50, format "l  ↦★{ q }  vl") : uPred_scope.
 Notation "l ↦★ vl" := (heap_mapsto_vec l 1 vl) (at level 20) : uPred_scope.
+
+Notation "l ↦★{ q }: P" := (∃ vl, l ↦★{ q } vl ∧ P vl)%I
+  (at level 20, q at level 50, format "l  ↦★{ q }:  P") : uPred_scope.
+Notation "l ↦★: P " := (∃ vl, l ↦★ vl ∧ P vl)%I
+  (at level 20, format "l  ↦★:  P") : uPred_scope.
 
 Notation "†{ q } l … n" := (heap_freeable l q n)
   (at level 20, q at level 50, format "†{ q } l … n") : uPred_scope.

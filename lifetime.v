@@ -30,15 +30,17 @@ Parameter lft_pers_borrow_own :
 
 (*** Notations  *)
 
-Notation "[ κ ]{ q }" := (lft_own κ q) : uPred_scope.
-Notation "[† κ ]" := (lft_dead κ) : uPred_scope.
+Notation "[ κ ]{ q }" := (lft_own κ q)
+  (format "[ κ ]{ q }"): uPred_scope.
+Notation "[† κ ]" := (lft_dead κ)
+  (format "[† κ ]"): uPred_scope.
 Infix "⊑" := lft_incl (at level 70) : uPred_scope.
 Notation "κ ∋ P" := (lft_extract κ P)
   (at level 75, right associativity) : uPred_scope.
 Notation "&{ κ } P" := (lft_borrow κ P)
-  (at level 20, right associativity) : uPred_scope.
+  (format "&{ κ } P", at level 20, right associativity) : uPred_scope.
 Notation "&frac{ κ } P" := (lft_frac_borrow κ P)
-  (at level 20, right associativity) : uPred_scope.
+  (format "&frac{ κ } P", at level 20, right associativity) : uPred_scope.
 
 Section lft.
   Context `{irisG Λ Σ, lifetimeG Σ}.
@@ -77,9 +79,9 @@ Section lft.
 
   (** Creating borrows and using them  *)
   Axiom lft_borrow_create :
-    ∀ `(nclose lftN ⊆ E) κ P, lft κ ⊢ ▷ P ={E}=> &{κ}P ★ κ ∋ P.
+    ∀ `(nclose lftN ⊆ E) κ P, lft κ ⊢ ▷ P ={E}=> &{κ} P ★ κ ∋ P.
   Axiom lft_borrow_split :
-    ∀ `(nclose lftN ⊆ E) κ P Q, &{κ} (P ★ Q) ={E}=> &{κ}P ★ &{κ}Q.
+    ∀ `(nclose lftN ⊆ E) κ P Q, &{κ}(P ★ Q) ={E}=> &{κ}P ★ &{κ}Q.
   Axiom lft_borrow_combine :
     ∀ `(nclose lftN ⊆ E) κ P Q, &{κ}P ★ &{κ}Q ={E}=> &{κ}(P ★ Q).
   Axiom lft_borrow_open :
@@ -163,7 +165,7 @@ Definition lft_shr_borrow `{irisG Λ Σ, lifetimeG Σ} (κ : lifetime)
                   ★ inv N (lft_pers_borrow_own i κ'))%I.
 
 Notation "&shr{ κ | N } P" := (lft_shr_borrow κ N P)
-  (at level 20, right associativity) : uPred_scope.
+  (format "&shr{ κ | N } P", at level 20, right associativity) : uPred_scope.
 
 Section shared_borrows.
   Context `{irisG Λ Σ, lifetimeG Σ} (N : namespace).
@@ -186,10 +188,9 @@ Section shared_borrows.
   Proof.
     iIntros (??) "#HP!#Hκ".
     iDestruct "HP" as (κ' i) "(#Hord&%&#Hpers&#Hinv)". iInv N as ">Hown" "Hclose".
-    iVs (lft_incl_trade with "Hord Hκ") as (q') "(Hκ'&Hclose')".
-      by auto using ndisj_subseteq_difference.
+    iVs (lft_incl_trade with "Hord Hκ") as (q') "(Hκ'&Hclose')". solve_ndisj.
     iVs (lft_pers_borrow_open with "Hpers [Hown Hκ']") as "[? Hclose'']".
-      by auto using ndisj_subseteq_difference. by iFrame.
+      solve_ndisj. by iFrame.
     iFrame. iIntros "!==>HP". iVs ("Hclose''" with "HP") as "[Hown Hκ]".
     iVs ("Hclose'" with "Hκ"). iFrame. iApply "Hclose". auto.
   Qed.
@@ -212,7 +213,7 @@ Definition lft_tl_borrow `{irisG Λ Σ, lifetimeG Σ, thread_localG Σ}
                   ★ tl_inv tid N (lft_pers_borrow_own i κ'))%I.
 
 Notation "&tl{ κ | tid | N } P" := (lft_tl_borrow κ tid N P)
-  (at level 20, right associativity) : uPred_scope.
+  (format "&tl{ κ | tid | N } P", at level 20, right associativity) : uPred_scope.
 
 Section tl_borrows.
   Context `{irisG Λ Σ, lifetimeG Σ, thread_localG Σ}
