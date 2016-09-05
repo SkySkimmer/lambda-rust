@@ -141,8 +141,8 @@ Section lft.
       &{κ}P ★ [κ]{q} ={E}=> ▷ P ★ (▷ P ={E}=★ &{κ}P ★ [κ]{q}).
   Proof.
     iIntros (?) "H". iVs (lft_borrow_open with "H") as "[HP Hopen]". done.
-    iVsIntro. iFrame. iIntros "HP".
-    iVs (lft_borrow_close with "[HP Hopen]"). done. by iFrame "HP". done.
+    iIntros "!==> {$HP} HP". iVs (lft_borrow_close with "[HP Hopen]").
+      done. by iFrame "HP". done.
   Qed.
 
   Lemma lft_mkincl' E κ κ' q :
@@ -189,9 +189,9 @@ Section shared_borrows.
     iIntros (??) "#HP!#Hκ".
     iDestruct "HP" as (κ' i) "(#Hord&%&#Hpers&#Hinv)". iInv N as ">Hown" "Hclose".
     iVs (lft_incl_trade with "Hord Hκ") as (q') "(Hκ'&Hclose')". solve_ndisj.
-    iVs (lft_pers_borrow_open with "Hpers [Hown Hκ']") as "[? Hclose'']".
+    iVs (lft_pers_borrow_open with "Hpers [Hown Hκ']") as "[HP Hclose'']".
       solve_ndisj. by iFrame.
-    iFrame. iIntros "!==>HP". iVs ("Hclose''" with "HP") as "[Hown Hκ]".
+    iIntros "{$HP}!==>HP". iVs ("Hclose''" with "HP") as "[Hown Hκ]".
     iVs ("Hclose'" with "Hκ"). iFrame. iApply "Hclose". auto.
   Qed.
 
@@ -240,10 +240,11 @@ Section tl_borrows.
     iDestruct "HP" as (κ' i) "(#Hord&%&#Hpers&#Hinv)".
     iVs (tl_inv_open with "Hinv Htlown") as "(>Hown&Htlown&Hclose)"; try done.
     iVs (lft_incl_trade with "Hord Hκ") as (q') "(Hκ'&Hclose')". done.
-    iVs (lft_pers_borrow_open with "Hpers [Hown Hκ']") as "[? Hclose'']".
+    iVs (lft_pers_borrow_open with "Hpers [Hown Hκ']") as "[HP Hclose'']".
       done. by iFrame.
-    iFrame. iIntros "!==>[HP Htlown]". iVs ("Hclose''" with "HP") as "[Hown Hκ]".
-    iVs ("Hclose'" with "Hκ"). iFrame. iApply "Hclose". by iFrame.
+    iIntros "{$HP $Htlown}!==>[HP Htlown]".
+    iVs ("Hclose''" with "HP") as "[Hown Hκ]". iVs ("Hclose'" with "Hκ").
+    iFrame. iApply "Hclose". by iFrame.
   Qed.
 
   Lemma lft_tl_borrow_incl κ κ' P :

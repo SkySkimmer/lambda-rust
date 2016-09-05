@@ -11,3 +11,4 @@ races.v
 tactics.v
 wp_tactics.v
 lifetime.v
+types.v

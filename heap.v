@@ -92,9 +92,9 @@ Notation "l ↦★{ q } vl" := (heap_mapsto_vec l q vl)
   (at level 20, q at level 50, format "l  ↦★{ q }  vl") : uPred_scope.
 Notation "l ↦★ vl" := (heap_mapsto_vec l 1 vl) (at level 20) : uPred_scope.
 
-Notation "l ↦★{ q }: P" := (∃ vl, l ↦★{ q } vl ∧ P vl)%I
+Notation "l ↦★{ q }: P" := (∃ vl, l ↦★{ q } vl ★ P vl)%I
   (at level 20, q at level 50, format "l  ↦★{ q }:  P") : uPred_scope.
-Notation "l ↦★: P " := (∃ vl, l ↦★ vl ∧ P vl)%I
+Notation "l ↦★: P " := (∃ vl, l ↦★ vl ★ P vl)%I
   (at level 20, format "l  ↦★:  P") : uPred_scope.
 
 Notation "†{ q } l … n" := (heap_freeable l q n)
