@@ -102,11 +102,11 @@ Section lft.
 
   (** Lifetime inclusion  *)
   Axiom lft_mkincl :
-    ∀ `(nclose lftN ⊆ E) κ κ' q, lft κ ⊢ &{κ'} [κ]{q} ={E}=> κ' ⊑ κ.
+    ∀ `(nclose lftN ⊆ E) κ κ' q, &{κ'} [κ]{q} ={E}=> κ' ⊑ κ.
   Axiom lft_incl_refl : ∀ κ, True ⊢ κ ⊑ κ.
   Axiom lft_incl_trans : ∀ κ κ' κ'', κ ⊑ κ' ∧ κ' ⊑ κ'' ⊢ κ ⊑ κ''.
-  Axiom lft_incl_trade : ∀ `(nclose lftN ⊆ E)κ κ' q, κ ⊑ κ' ⊢
-      [κ]{q} ={E}=> ∃ q', [κ']{q'} ★ ([κ']{q'} ={E}=★ [κ]{q}).
+  Axiom lft_incl_trade : ∀ `(nclose lftN ⊆ E) κ κ' q,
+      κ ⊑ κ' ⊢ [κ]{q} ={E}=> ∃ q', [κ']{q'} ★ ([κ']{q'} ={E}=★ [κ]{q}).
   Axiom lft_borrow_incl : ∀ κ κ' P, κ' ⊑ κ ⊢ &{κ}P → &{κ'}P.
 
   (** Extraction  *)
@@ -114,7 +114,6 @@ Section lft.
   Axiom lft_extract_combine :
     ∀ `(nclose lftN ⊆ E) κ P Q, κ ∋ P ★ κ ∋ Q ={E}=> κ ∋ (P ★ Q).
   Axiom lft_extract_out : ∀ `(nclose lftN ⊆ E) κ P, [†κ] ⊢ κ ∋ P ={E}=> ▷ P.
-
 
   (** Fractured borrows  *)
   (* TODO : I think an arbitrary mask is ok here. Not sure. *)
