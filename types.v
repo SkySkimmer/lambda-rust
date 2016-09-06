@@ -22,8 +22,7 @@ Section defs.
          where N is open. This should not be harmful, since sharing
          typically creates invariants, which does not need the mask. *)
       ty_share E N κ l tid q : nclose N ⊥ mgmtE → mgmtE ⊆ E →
-        lft κ ⊢ &{κ} (l ↦★: ty_own tid) ★ [κ]{q}
-                ={E}=> ty_shr κ tid N l ★ [κ]{q};
+        &{κ} (l ↦★: ty_own tid) ★ [κ]{q} ={E}=> ty_shr κ tid N l ★ [κ]{q};
       ty_shr_mono κ κ' tid E E' l : E ⊆ E' →
         κ' ⊑ κ ⊢ ty_shr κ tid E l → ty_shr κ' tid E' l;
       ty_shr_acc κ tid E E' l q :
@@ -55,7 +54,7 @@ Section defs.
   Next Obligation. apply st_size_eq. Qed.
   Next Obligation. apply st_dup_dup. Qed.
   Next Obligation.
-    intros st E N κ l tid q ??. iIntros "#Hκ !# [Hmt Hlft]".
+    intros st E N κ l tid q ??. iIntros "[Hmt Hlft]".
     iVs (lft_borrow_fracture with "[Hmt]"); last by iFrame. done.
   Qed.
   Next Obligation.
@@ -115,6 +114,8 @@ Section types.
   Next Obligation. iIntros (tid vl) "H". iDestruct "H" as (z) "%". by subst. Qed.
   Next Obligation. iIntros (tid vl _) "H". auto. Qed.
 
+  (* TODO own and uniq_borrow are very similar. They could probably
+     somehow share some bits..  *)
   Program Definition own (q:Qp) (ty:type) :=
     {| ty_size := 1; ty_dup := false;
        ty_own tid vl :=
@@ -127,13 +128,11 @@ Section types.
   Next Obligation.
     iIntros (q ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
   Qed.
-  Next Obligation. intros _ _ _ _ []. Qed.
+  Next Obligation. done. Qed.
   Next Obligation.
-    intros q ty E N κ l tid q' ?? =>/=.
-    iIntros "#Hκ!#[Hshr Hq']".
+    intros q ty E N κ l tid q' ?? =>/=. iIntros "[Hshr Hq']".
     iVs (lft_borrow_open with "[Hshr Hq']") as "[Hown Hob]". set_solver. by iFrame.
-    iDestruct "Hown" as (vl) "[Hmt Hvl]". iDestruct "Hvl" as (l') "(>%&Hf&Hown)".
-    subst.
+    iDestruct "Hown" as (vl) "[Hmt Hvl]". iDestruct "Hvl" as (l') "(>%&Hf&Hown)". subst.
     iVs (lft_open_borrow_contravar with "[Hob Hf]") as "Hob". set_solver.
     { iSplitR "Hob"; last done. iIntros "!>[Hmt1 Hmt2]!==>!>". iExists [ #l' ].
       rewrite heap_mapsto_vec_singleton. iSplitL "Hmt1"; first done.
@@ -144,22 +143,21 @@ Section types.
     iVs (lft_borrow_split with "Hb") as "[Hb1 Hb2]". set_solver.
     iVs (lft_borrow_fracture _ _ (λ q, l ↦{q} #l')%I with "Hb1") as "Hbf".
     rewrite lft_borrow_persist.
-    iDestruct "Hb2" as (κ' i) "(#Hord&#Hpb&Hpbown)".
-    iVs (inv_alloc N _ (lft_pers_borrow_own i κ' ∨ ty_shr ty κ tid N l')%I
+    iDestruct "Hb2" as (κ0 i) "(#Hord&#Hpb&Hpbown)".
+    iVs (inv_alloc N _ (lft_pers_borrow_own i κ0 ∨ ty_shr ty κ tid N l')%I
          with "[Hpbown]") as "#Hinv"; first by eauto.
-    iIntros "!==>{$Htok}". iExists l'. iFrame.
-    iIntros (q'') "!#Htok". iVs (inv_open with "Hinv") as "[[>Hbtok|#Hshr] Hclose]".
-      set_solver.
+    iIntros "!==>{$Htok}". iExists l'. iFrame. iIntros (q'') "!#Htok".
+    iVs (inv_open with "Hinv") as "[[>Hbtok|#Hshr] Hclose]". set_solver.
     - replace ((nclose N ∪ mgmtE) ∖ N) with mgmtE by set_solver.
       iAssert (&{κ}▷ l' ↦★: ty_own ty tid)%I with "[Hbtok]" as "Hb".
-      { rewrite lft_borrow_persist. eauto. }
+      { iApply lft_borrow_persist. eauto. }
       iVs (lft_borrow_open with "[Hb Htok]") as "[Hown Hob]". set_solver. by iFrame.
       iVs (lft_open_borrow_contravar with "[Hob]") as "Hob". set_solver.
       { iSplitR "Hob"; last done. instantiate (1:=(l' ↦★: ty_own ty tid)%I). eauto 10. }
       iIntros "!==>!>".
       iVs (lft_borrow_close with "[Hown Hob]") as "[Hb Htok]". set_solver.
         by iFrame "Hown".
-      iVs (ty.(ty_share) with "Hκ [Hb Htok]") as "[#Hshr Htok]"; try done. by iFrame.
+      iVs (ty.(ty_share) with "[Hb Htok]") as "[#Hshr Htok]"; try done. by iFrame.
       iVs ("Hclose" with "[]") as "_"; by eauto.
     - replace ((nclose N ∪ mgmtE) ∖ N) with mgmtE by set_solver.
       iIntros "!==>!>". iVs ("Hclose" with "[]") as "_"; by eauto.
@@ -177,6 +175,76 @@ Section types.
     iApply (ty.(ty_shr_mono) with "Hκ"); last done. done.
   Qed.
   Next Obligation. done. Qed.
+
+  Program Definition uniq_borrow (κ:lifetime) (ty:type) :=
+    {| ty_size := 1; ty_dup := false;
+       ty_own tid vl :=
+         (∃ l:loc, vl = [ #l ] ★ &{κ} l ↦★: ty.(ty_own) tid)%I;
+       ty_shr κ' tid E l :=
+         (∃ l':loc, &frac{κ'}(λ q', l ↦{q'} #l') ★
+            ∀ q' κ'', □ (κ'' ⊑ κ ★ κ'' ⊑ κ' ★ [κ'']{q'} →
+               |={E ∪ mgmtE, mgmtE}▷=> ty.(ty_shr) κ'' tid E l' ★ [κ'']{q'}))%I
+    |}.
+  Next Obligation.
+    iIntros (q ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
+  Qed.
+  Next Obligation. done. Qed.
+  Next Obligation.
+    intros κ ty E N κ' l tid q' ?? =>/=. iIntros "[Hshr Hq']".
+    iVs (lft_borrow_open with "[Hshr Hq']") as "[Hown Hob]". set_solver. by iFrame.
+    iDestruct "Hown" as (vl) "[Hmt Hvl]". iDestruct "Hvl" as (l') "(>%&Hown)". subst.
+    iVs (lft_open_borrow_contravar with "[Hob]") as "Hob". set_solver.
+    { iSplitR "Hob"; last done. iIntros "!>[Hmt1 Hmt2]!==>!>". iExists [ #l' ].
+      rewrite heap_mapsto_vec_singleton. iSplitL "Hmt1"; first done.
+      iExists _. by iSplitR "Hmt2". }
+    iVs (lft_borrow_close with "[Hmt Hown Hob]") as "[Hb Htok]". set_solver.
+    { rewrite heap_mapsto_vec_singleton. iSplitR "Hob"; last done.
+      by iIntros "!>{$Hmt$Hown}". }
+    iVs (lft_borrow_split with "Hb") as "[Hb1 Hb2]". set_solver.
+    iVs (lft_borrow_fracture _ _ (λ q, l ↦{q} #l')%I with "Hb1") as "Hbf".
+    rewrite lft_borrow_persist.
+    iDestruct "Hb2" as (κ0 i) "(#Hord&#Hpb&Hpbown)".
+    iVs (inv_alloc N _ (lft_pers_borrow_own i κ0 ∨ ty_shr ty κ' tid N l')%I
+         with "[Hpbown]") as "#Hinv"; first by eauto.
+    iIntros "!==>{$Htok}". iExists l'. iFrame.
+    iIntros (q'' κ'') "!#(#Hκ''κ & #Hκ''κ' & Htok)".
+    iVs (inv_open with "Hinv") as "[[>Hbtok|#Hshr] Hclose]". set_solver.
+    - replace ((nclose N ∪ mgmtE) ∖ N) with mgmtE by set_solver.
+      iAssert (&{κ''}&{κ} l' ↦★: ty_own ty tid)%I with "[Hbtok]" as "Hb".
+      { iApply lft_borrow_persist. iExists κ0, i. iFrame "★ #".
+        iApply lft_incl_trans. eauto. }
+      iVs (lft_borrow_open with "[Hb Htok]") as "[Hown Hob]". set_solver. by iFrame.
+      iIntros "!==>!>".
+      iVs (lft_borrow_unnest with "Hκ''κ [Hown Hob]") as "[Htok Hb]". set_solver. by iFrame.
+      iVs (ty.(ty_share) with "[Hb Htok]") as "[#Hshr Htok]"; try done. by iFrame.
+      iVs ("Hclose" with "[]") as "_".
+      (* FIXME : the "global sharing protocol" that we used for [own]
+         does not work here, because we do not know at the beginning
+         at which lifetime we will need the sharing.
+
+         This seems somewhat similar to the RefCell problem: we would
+         need a lifetime that would be the union of κ and κ'. *)
+      admit.
+      by eauto.
+    - replace ((nclose N ∪ mgmtE) ∖ N) with mgmtE by set_solver.
+      iIntros "!==>!>". iVs ("Hclose" with "[]") as "_". by eauto.
+      iIntros "!==>{$Htok}". by iApply (ty.(ty_shr_mono) with "Hκ''κ'").
+  Admitted.
+  Next Obligation.
+    intros κ0 ty κ κ' tid E E' l ?. iIntros "#Hκ #H".
+    iDestruct "H" as (l') "[Hfb Hvs]". iExists l'.
+    iSplit. by iApply (lft_frac_borrow_incl with "[]").
+    iIntros (q' κ'') "!#(#Hκ0 & #Hκ' & Htok)".
+    iApply (pvs_trans _ (E ∪ mgmtE)). iApply pvs_intro'. set_solver.
+    iIntros "Hclose'". iVs ("Hvs" $! q' κ'' with "[Htok]") as "Hclose".
+    { iFrame. iSplit. done. iApply lft_incl_trans. eauto. }
+    iIntros "!==>!>". iVs "Hclose" as "[Hshr Htok]". iVs "Hclose'".
+    iIntros "!==>{$Htok}". iApply (ty.(ty_shr_mono) with "[] Hshr"). done.
+    iApply lft_incl_refl.
+  Qed.
+  Next Obligation. done. Qed.
+
+
 
 End types.
 
