@@ -1,3 +1,4 @@
+From iris.algebra Require Import upred_big_op.
 From iris.program_logic Require Export viewshifts pviewshifts.
 From iris.program_logic Require Import invariants namespaces thread_local.
 From iris.prelude Require Import strings.
@@ -60,12 +61,25 @@ Section lft.
   Axiom lft_incl_persistent : ∀ κ κ', PersistentP (κ ⊑ κ').
   Global Existing Instance lft_incl_persistent.
 
+  Axiom lft_extract_proper : ∀ κ, Proper ((⊣⊢) ==> (⊣⊢)) (lft_extract κ).
+  Global Existing Instance lft_extract_proper.
+
+  Axiom lft_borrow_proper : ∀ κ, Proper ((⊣⊢) ==> (⊣⊢)) (lft_borrow κ).
+  Global Existing Instance lft_borrow_proper.
+
+  Axiom lft_open_borrow_proper :
+    ∀ κ q, Proper ((⊣⊢) ==> (⊣⊢)) (lft_open_borrow κ q).
+  Global Existing Instance lft_open_borrow_proper.
+
   Axiom lft_frac_borrow_persistent : ∀ κ P, PersistentP (lft_frac_borrow κ P).
   Global Existing Instance lft_frac_borrow_persistent.
 
   Axiom lft_pers_borrow_persistent :
     ∀ κ i P, PersistentP (lft_pers_borrow κ i P).
   Global Existing Instance lft_pers_borrow_persistent.
+  Axiom lft_pers_borrow_proper :
+    ∀ κ i, Proper ((⊣⊢) ==> (⊣⊢)) (lft_pers_borrow κ i).
+  Global Existing Instance lft_pers_borrow_proper.
 
   Axiom lft_pers_borrow_own_timeless :
     ∀ i κ, TimelessP (lft_pers_borrow_own i κ).
@@ -92,7 +106,7 @@ Section lft.
       ▷ P ★ lft_open_borrow κ q P ={E}=> &{κ}P ★ [κ]{q}.
   Axiom lft_open_borrow_contravar :
     ∀ `(nclose lftN ⊆ E) κ P Q q,
-      ▷ (▷Q ={⊤ ∖ nclose lftN}=★ ▷P) ★ lft_open_borrow κ q P
+      lft_open_borrow κ q P ★ ▷ (▷Q ={⊤ ∖ nclose lftN}=★ ▷P)
       ={E}=> lft_open_borrow κ q Q.
   Axiom lft_reborrow :
     ∀ `(nclose lftN ⊆ E) κ κ' P, κ' ⊑ κ ⊢ &{κ}P ={E}=> &{κ'}P ★ κ' ∋ &{κ}P.
@@ -139,6 +153,13 @@ Section lft.
 
   (*** Derived lemmas  *)
 
+  Lemma lft_own_split κ q : [κ]{q} ⊣⊢ ([κ]{q/2} ★ [κ]{q/2}).
+  Proof. by rewrite lft_own_op Qp_div_2. Qed.
+
+  Global Instance into_and_lft_own κ q :
+    IntoAnd false ([κ]{q}) ([κ]{q/2}) ([κ]{q/2}).
+  Proof. by rewrite /IntoAnd lft_own_split. Qed.
+
   Lemma lft_borrow_open' E κ P q :
     nclose lftN ⊆ E →
       &{κ}P ★ [κ]{q} ={E}=> ▷ P ★ (▷ P ={E}=★ &{κ}P ★ [κ]{q}).
@@ -155,6 +176,24 @@ Section lft.
     iIntros (?) "[#Hκ#Hκ']!#?".
     iVs (lft_borrow_create with "Hκ' [-]") as "[??]". done. by iFrame.
     iFrame. by iApply (lft_mkincl with "Hκ [-]").
+  Qed.
+
+  Lemma lft_borrow_close_stronger `(nclose lftN ⊆ E) κ P Q q :
+    ▷ Q ★ lft_open_borrow κ q P ★ ▷ (▷Q ={⊤ ∖ nclose lftN}=★ ▷P)
+      ={E}=> &{κ}Q ★ [κ]{q}.
+  Proof.
+    iIntros "[HP Hvsob]".
+    iVs (lft_open_borrow_contravar with "Hvsob"). set_solver.
+    iApply (lft_borrow_close with "[-]"). set_solver. by iSplitL "HP".
+  Qed.
+
+  Lemma lft_borrow_big_sepL_split `(nclose lftN ⊆ E) {A} κ Φ (l : list A) :
+    &{κ}([★ list] k↦y ∈ l, Φ k y) ={E}=> [★ list] k↦y ∈ l, &{κ}(Φ k y).
+  Proof.
+    revert Φ. induction l=>Φ; iIntros. by rewrite !big_sepL_nil.
+    rewrite !big_sepL_cons.
+    iVs (lft_borrow_split with "[-]") as "[??]"; try done.
+    iFrame. by iVs (IHl with "[-]").
   Qed.
 
 End lft.
@@ -174,8 +213,10 @@ Section shared_borrows.
   Context `{irisG Λ Σ, lifetimeG Σ}
           (κ : lifetime) (N : namespace) (P : iProp Σ).
 
-  Instance lft_shr_borrow_persistent :
-    PersistentP (&shr{κ | N} P) := _.
+  Global Instance lft_shr_borrow_proper :
+    Proper ((⊣⊢) ==> (⊣⊢)) (lft_shr_borrow κ N).
+  Proof. solve_proper. Qed.
+  Global Instance lft_shr_borrow_persistent : PersistentP (&shr{κ | N} P) := _.
 
   Lemma lft_borrow_share E :
     lftN ⊥ N → &{κ}P ={E}=> &shr{κ|N}P.
@@ -229,8 +270,13 @@ Section tl_borrows.
   Context `{irisG Λ Σ, lifetimeG Σ, thread_localG Σ}
           (κ : lifetime) (tid : thread_id) (N : namespace) (P : iProp Σ).
 
-  Instance lft_tl_borrow_persistent :
-    PersistentP (&tl{κ|tid|N} P) := _.
+  Global Instance lft_tl_borrow_persistent : PersistentP (&tl{κ|tid|N} P) := _.
+  Global Instance lft_tl_borrow_proper :
+    Proper ((⊣⊢) ==> (⊣⊢)) (lft_tl_borrow κ tid N).
+  Proof.
+    intros P1 P2 EQ. apply uPred.exist_proper. intros κ'.
+    apply uPred.exist_proper. intros i. by rewrite EQ.
+  Qed.
 
   Lemma lft_borrow_share_tl E :
     lftN ⊥ N → &{κ}P ={E}=> &tl{κ|tid|N}P.
