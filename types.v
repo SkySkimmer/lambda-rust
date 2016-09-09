@@ -132,7 +132,7 @@ Section types.
                                  ★ ▷ l ↦★: ty.(ty_own) tid)%I;
        ty_shr κ tid N l :=
          (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ★
-            ∀ q', □ ([κ]{q'} →|={mgmtE ∪ N, mgmtE}▷=> ty.(ty_shr) κ tid N l' ★ [κ]{q'}))%I
+            ∀ q', [κ]{q'} ={mgmtE ∪ N, mgmtE}▷=> ty.(ty_shr) κ tid N l' ★ [κ]{q'})%I
     |}.
   Next Obligation.
     iIntros (q ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
@@ -183,8 +183,8 @@ Section types.
          (∃ l:loc, vl = [ #l ] ★ &{κ} l ↦★: ty.(ty_own) tid)%I;
        ty_shr κ' tid N l :=
          (∃ l':loc, &frac{κ'}(λ q', l ↦{q'} #l') ★
-            ∀ q' κ'', □ (κ'' ⊑ κ ★ κ'' ⊑ κ' ★ [κ'']{q'} →
-               |={mgmtE ∪ N, mgmtE}▷=> ty.(ty_shr) κ'' tid N l' ★ [κ'']{q'}))%I
+            ∀ q' κ'', κ'' ⊑ κ ★ κ'' ⊑ κ' ★ [κ'']{q'}
+               ={mgmtE ∪ N, mgmtE}▷=> ty.(ty_shr) κ'' tid N l' ★ [κ'']{q'})%I
     |}.
   Next Obligation.
     iIntros (q ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
