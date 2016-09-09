@@ -1,4 +1,3 @@
-From Coq Require Import Qcanon.
 From iris.algebra Require Import upred_big_op.
 From iris.program_logic Require Import thread_local.
 From lrust Require Export notation.
@@ -268,6 +267,36 @@ Section types.
     iDestruct (IH with "[-]") as %->; auto.
   Qed.
 
+  Lemma split_prod_mt tid tyl l q :
+    (∃ vl, l ↦★{q} vl ★ (∃ vll, vl = concat vll ★ length tyl = length vll
+       ★ ([★ list] tyvl ∈ combine tyl vll, ty_own (tyvl.1) tid (tyvl.2))))%I
+    ≡ ([★ list] tyoffs ∈ combine_accu_size tyl 0,
+         shift_loc l (tyoffs.2) ↦★{q}: ty_own (tyoffs.1) tid)%I.
+  Proof.
+    rewrite -{1}(shift_loc_0 l). change 0%Z with (Z.of_nat 0).
+    generalize 0%nat. induction tyl as [|ty tyl IH]=>/= offs.
+    - iSplit; iIntros "_". by iApply big_sepL_nil.
+      iExists []. iSplit. by iApply heap_mapsto_vec_nil.
+      iExists []. repeat iSplit; try done. by iApply big_sepL_nil.
+    - rewrite big_sepL_cons -IH. iSplit.
+      + iIntros "H". iDestruct "H" as (vl) "[Hmt H]".
+        iDestruct "H" as ([|vl0 vll]) "(%&Hlen&Hown)";
+          iDestruct "Hlen" as %Hlen; inversion Hlen; subst.
+        rewrite big_sepL_cons heap_mapsto_vec_app/=.
+        iDestruct "Hmt" as "[Hmth Hmtq]"; iDestruct "Hown" as "[Hownh Hownq]".
+        iDestruct (ty.(ty_size_eq) with "#Hownh") as %->.
+        iSplitL "Hmth Hownh". iExists vl0. by iFrame.
+        iExists (concat vll). iSplitL "Hmtq"; last by eauto.
+        by rewrite shift_loc_assoc Nat2Z.inj_add.
+      + iIntros "[Hmth H]". iDestruct "H" as (vl) "[Hmtq H]".
+        iDestruct "H" as (vll) "(%&Hlen&Hownq)". subst.
+        iDestruct "Hmth" as (vlh) "[Hmth Hownh]". iDestruct "Hlen" as %->.
+        iExists (vlh ++ concat vll).
+        rewrite heap_mapsto_vec_app shift_loc_assoc Nat2Z.inj_add.
+        iDestruct (ty.(ty_size_eq) with "#Hownh") as %->. iFrame.
+        iExists (vlh :: vll). rewrite big_sepL_cons. iFrame. auto.
+  Qed.
+
   Fixpoint nat_rec_shift {A : Type} (x : A) (f : nat → A → A) (n0 n : nat) :=
     match n with
     | O => x
@@ -318,42 +347,13 @@ Section types.
         rewrite big_sepL_cons/=. iFrame. iSplit; iPureIntro; congruence.
   Qed.
   Next Obligation.
-    intros tyl E N κ l tid q ??. iIntros "[Hown Htok]".
-    match goal with
-    | |- context [(&{κ}(?P))%I] =>
-      assert (P ⊣⊢ [★ list] i↦tyoffs ∈ combine_accu_size tyl 0,
-              (shift_loc l (tyoffs.2)) ↦★: ty_own (tyoffs.1) tid) as ->
-    end.
-    { rewrite -{1}(shift_loc_0 l). change 0%Z with (Z.of_nat 0).
-      generalize 0%nat. induction tyl as [|ty tyl IH]=>/= offs.
-      - iSplit; iIntros "_". by iApply big_sepL_nil.
-        iExists []. iSplit. by iApply heap_mapsto_vec_nil.
-        iExists []. repeat iSplit; try done. by iApply big_sepL_nil.
-      - rewrite big_sepL_cons -IH. iSplit.
-        + iIntros "H". iDestruct "H" as (vl) "[Hmt H]".
-          iDestruct "H" as ([|vl0 vll]) "(%&Hlen&Hown)";
-            iDestruct "Hlen" as %Hlen; inversion Hlen; subst.
-          rewrite big_sepL_cons heap_mapsto_vec_app/=.
-          iDestruct "Hmt" as "[Hmth Hmtq]"; iDestruct "Hown" as "[Hownh Hownq]".
-          iDestruct (ty.(ty_size_eq) with "#Hownh") as %->.
-          iSplitL "Hmth Hownh". iExists vl0. by iFrame.
-          iExists (concat vll). iSplitL "Hmtq"; last by eauto.
-          by rewrite shift_loc_assoc Nat2Z.inj_add.
-        + iIntros "[Hmth H]". iDestruct "H" as (vl) "[Hmtq H]".
-          iDestruct "H" as (vll) "(%&Hlen&Hownq)". subst.
-          iDestruct "Hmth" as (vlh) "[Hmth Hownh]". iDestruct "Hlen" as %->.
-          iExists (vlh ++ concat vll).
-          rewrite heap_mapsto_vec_app shift_loc_assoc Nat2Z.inj_add.
-          iDestruct (ty.(ty_size_eq) with "#Hownh") as %->. iFrame.
-          iExists (vlh :: vll). rewrite big_sepL_cons. iFrame. auto. }
-    iVs (lft_borrow_big_sepL_split with "Hown") as "Hown". set_solver.
-    (* FIXME : revert the (empty) proofmode context in the induction hypothesis. *)
-    iRevert "Htok Hown".
+    intros tyl E N κ l tid q ??. rewrite split_prod_mt.
     change (ndot (A:=nat)) with (λ N i, N .@ (0+i)%nat). generalize O at 3.
     induction (combine_accu_size tyl 0) as [|[ty offs] ll IH].
-    - iIntros (?) "$ _ !==>". by rewrite big_sepL_nil.
-    - iIntros (i) "Htoks Hown". iDestruct (big_sepL_cons with "Hown") as "[Hownh Hownq]".
-      iVs (IH (S i)%nat with "[] Htoks Hownq") as "[#Hshrq Htoks]". done.
+    - iIntros (?) "[_ $] !==>". by rewrite big_sepL_nil.
+    - iIntros (i) "[Hown Htoks]". rewrite big_sepL_cons.
+      iVs (lft_borrow_split with "Hown") as "[Hownh Hownq]". set_solver.
+      iVs (IH (S i)%nat with "[Htoks Hownq]") as "[#Hshrq Htoks]". by iFrame.
       iVs (ty.(ty_share) _ (N .@ (i+0)%nat) with "[Hownh Htoks]") as "[#Hshrh $]".
         solve_ndisj. done. by iFrame.
       iVsIntro. rewrite big_sepL_cons. iFrame "#".
@@ -364,81 +364,34 @@ Section types.
     iSplit; last done. iIntros "!#*/=_#H'". by iApply (ty_shr_mono with "Hκ").
   Qed.
   Next Obligation.
-    intros tyl κ tid N E l q ?? DUP. simpl.
-    rewrite -{-1}(shift_loc_0 l). change 0%Z with (Z.of_nat 0). generalize 0%nat.
+    intros tyl κ tid N E l q ?? DUP. setoid_rewrite split_prod_mt.
+    generalize 0%nat.
     change (ndot (A:=nat)) with (λ N i, N .@ (0+i)%nat).
     destruct (split_prod_namespace tid N (length tyl)) as [Ef [EQ _]].
     setoid_rewrite ->EQ. clear EQ. generalize 0%nat.
     revert q. induction tyl as [|tyh tyq IH].
-    - iIntros (q i offs) "_!#$!==>". iExists 1%Qp. iSplitR; last by eauto.
-      iNext. iExists []. rewrite heap_mapsto_vec_nil. iSplit; first done.
-      simpl. iExists []. rewrite big_sepL_nil. eauto.
+    - iIntros (q i offs) "_!#$!==>". iExists 1%Qp. rewrite big_sepL_nil. auto.
     - simpl in DUP. destruct (andb_prop_elim _ _ DUP) as [DUPh DUPq]. simpl.
       iIntros (q i offs) "#Hshr!#([Htokh Htokq]&Htlf&Htlh&Htlq)".
       rewrite big_sepL_cons Nat.add_0_r.
       iDestruct "Hshr" as "[Hshrh Hshrq]". setoid_rewrite <-Nat.add_succ_comm.
       iVs (IH with "Hshrq [Htokq Htlf Htlq]") as (q'q) "[Hownq Hcloseq]". done. by iFrame.
-      iDestruct "Hownq" as (vlq) "[Hmtq Hownq]".
-      iDestruct "Hownq" as (vllq) "(>%&>%&Hownq)". subst vlq.
-      iDestruct (uPred.later_mono _ (_ = _) with "#Hownq") as ">Hlenvlq".
-        by apply list_ty_type_eq.
-      iDestruct "Hlenvlq" as %Hlenvlq.
       iVs (tyh.(ty_shr_acc) with "Hshrh [Htokh Htlh]") as (q'h) "[Hownh Hcloseh]"; try done.
       by pose proof (nclose_subseteq N i); set_solver. by iFrame.
-      iDestruct "Hownh" as (vlh) "[Hmth Hownh]".
-      iDestruct (uPred.later_mono _ (_ = _) with "#Hownh") as ">Hlenvlh". apply ty_size_eq.
-      iDestruct "Hlenvlh" as %Hlenvlh.
-      (** TODO : extract and simplify this arithmetic proof. *)
-      assert (∃ q' q'0h q'0q, q'h = q' + q'0h ∧ q'q = q' + q'0q)%Qp
-        as (q' & q'0h & q'0q & -> & ->).
-      { destruct (Qc_le_dec q'h q'q) as [LE0|LE0%Qclt_nge%Qclt_le_weak].
-        - destruct (q'q - q'h / 2)%Qp as [q'0q|] eqn:EQ; unfold Qp_minus in EQ;
-            destruct decide as [LT|LE%Qcnot_lt_le] in EQ; inversion EQ.
-          + exists (q'h / 2)%Qp, (q'h / 2)%Qp, q'0q. split; apply Qp_eq.
-            by rewrite Qp_div_2. subst; simpl; ring.
-          + apply (Qcplus_le_mono_r _ _ (-(q'h/2))%Qc) in LE0.
-            eapply Qcle_trans in LE; last apply LE0.
-            replace (q'h - q'h / 2)%Qc with (Qcmult q'h (1 - 1/2))%Qc in LE by ring.
-            replace 0%Qc with (Qcmult 0 (1-1/2)) in LE by ring.
-            by apply Qcmult_lt_0_le_reg_r, Qcle_not_lt in LE.
-        - destruct (q'h - q'q / 2)%Qp as [q'0h|] eqn:EQ; unfold Qp_minus in EQ;
-            destruct decide as [LT|LE%Qcnot_lt_le] in EQ; inversion EQ.
-          + exists (q'q / 2)%Qp, q'0h, (q'q / 2)%Qp. split; apply Qp_eq.
-            subst; simpl; ring. by rewrite Qp_div_2.
-          + apply (Qcplus_le_mono_r _ _ (-(q'q/2))%Qc) in LE0.
-            eapply Qcle_trans in LE; last apply LE0.
-            replace (q'q - q'q / 2)%Qc with (Qcmult q'q (1 - 1/2))%Qc in LE by ring.
-            replace 0%Qc with (Qcmult 0 (1-1/2)) in LE by ring.
-            by apply Qcmult_lt_0_le_reg_r, Qcle_not_lt in LE. }
-      iExists q'. iVsIntro. rewrite -!heap_mapsto_vec_op_eq.
-      iDestruct "Hmth" as "[Hmth0 Hmth1]". iDestruct "Hmtq" as "[Hmtq0 Hmtq1]".
-      iSplitR "Hcloseq Hcloseh Hmtq1 Hmth1".
-      + iNext. iExists (vlh ++ concat vllq). iDestruct (ty_size_eq with "#Hownh") as %Hlenh.
-        iSplitL "Hmtq0 Hmth0".
-        rewrite heap_mapsto_vec_app shift_loc_assoc Nat2Z.inj_add Hlenh; by iFrame.
-        iExists (vlh::vllq). iSplit. done. iSplit. iPureIntro; simpl; congruence.
-        rewrite big_sepL_cons. by iFrame.
-      + iIntros "H". iDestruct "H" as (vl) "[Hmt H]".
-        iDestruct "H" as ([|vllh' vllq']) "(>%&>%&Hown)". done. subst.
-        rewrite big_sepL_cons. iDestruct "Hown" as "[Hownh Hownq]".
-        iDestruct (uPred.later_mono _ (_ = _) with "#Hownq") as ">Hlenvlq'".
-          apply list_ty_type_eq; simpl in *; congruence.
-        iDestruct "Hlenvlq'" as %Hlenvlq'.
-        rewrite heap_mapsto_vec_app. iDestruct "Hmt" as "[Hmth0 Hmtq0]".
-        iCombine "Hmth0" "Hmth1" as "Hmth".
-        iDestruct (uPred.later_mono _ (_ = _) with "#Hownh") as ">Hlenvlh'".
-        apply ty_size_eq. iDestruct "Hlenvlh'" as %Hlenvlh'.
-        rewrite heap_mapsto_vec_op; last first. simpl in *; congruence.
-        iDestruct "Hmth" as "[>% Hmth]". subst.
-        iVs ("Hcloseh" with "[Hmth Hownh]") as "[Htokh $]".
-        { iNext. iExists _. by iFrame. }
-        iCombine "Hmtq0" "Hmtq1" as "Hmtq".
-        rewrite shift_loc_assoc Hlenvlh Nat2Z.inj_add heap_mapsto_vec_op; last congruence.
-        iDestruct "Hmtq" as "[>% Hmtq]".
-        iVs ("Hcloseq" with "[-Htokh]") as "[Htokq $]".
-        { iNext. iExists _. iFrame. iExists _. iFrame. iSplit. done.
-          simpl in *. iPureIntro. congruence. }
-        rewrite (lft_own_split _ q). by iFrame.
+      destruct (Qp_lower_bound q'h q'q) as (q' & q'0h & q'0q & -> & ->).
+      iExists q'. iVsIntro. rewrite big_sepL_cons.
+      rewrite -heap_mapsto_vec_prop_op; last apply ty_size_eq.
+      iDestruct "Hownh" as "[Hownh0 Hownh1]".
+      rewrite (big_sepL_proper (λ _ x, _ ↦★{_}: _)%I); last first.
+      { intros. rewrite -heap_mapsto_vec_prop_op; last apply ty_size_eq.
+        instantiate (1:=λ _ y, _). simpl. reflexivity. }
+      rewrite big_sepL_sepL. iDestruct "Hownq" as "[Hownq0 Hownq1]".
+      iSplitR "Hcloseq Hcloseh Hownh1 Hownq1".
+      + iNext. by iFrame.
+      + iIntros "[Hh Hq]". rewrite (lft_own_split κ q).
+        iVs ("Hcloseh" with "[Hh Hownh1]") as "($&$)". iNext. by iFrame.
+        iVs ("Hcloseq" with "[Hq Hownq1]") as "($&$&$)". iNext. by iFrame.
+        done.
   Qed.
 
 End types.

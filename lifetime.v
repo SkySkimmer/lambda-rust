@@ -187,15 +187,6 @@ Section lft.
     iApply (lft_borrow_close with "[-]"). set_solver. by iSplitL "HP".
   Qed.
 
-  Lemma lft_borrow_big_sepL_split `(nclose lftN ⊆ E) {A} κ Φ (l : list A) :
-    &{κ}([★ list] k↦y ∈ l, Φ k y) ={E}=> [★ list] k↦y ∈ l, &{κ}(Φ k y).
-  Proof.
-    revert Φ. induction l=>Φ; iIntros. by rewrite !big_sepL_nil.
-    rewrite !big_sepL_cons.
-    iVs (lft_borrow_split with "[-]") as "[??]"; try done.
-    iFrame. by iVs (IHl with "[-]").
-  Qed.
-
 End lft.
 
 (*** Derived notions  *)

@@ -177,6 +177,22 @@ Section heap.
     - iIntros "[% Hl]"; subst. by iApply heap_mapsto_vec_op_eq.
   Qed.
 
+  Lemma heap_mapsto_vec_prop_op l q1 q2 n (Φ : list val → iProp Σ) :
+    (∀ vl, Φ vl ⊢ length vl = n) →
+    l ↦★{q1}: Φ ★ l ↦★{q2}: (λ vl, length vl = n) ⊣⊢ l ↦★{q1+q2}: Φ.
+  Proof.
+    intros Hlen. iSplit.
+    - iIntros "[Hmt1 Hmt2]".
+      iDestruct "Hmt1" as (vl) "[Hmt1 Hown]". iDestruct "Hmt2" as (vl') "[Hmt2 %]".
+      iDestruct (Hlen with "#Hown") as %?.
+      iCombine "Hmt1" "Hmt2" as "Hmt". rewrite heap_mapsto_vec_op; last congruence.
+      iDestruct "Hmt" as "[_ Hmt]". iExists vl. by iFrame.
+    - iIntros "Hmt". setoid_rewrite <-heap_mapsto_vec_op_eq.
+      iDestruct "Hmt" as (vl) "[[Hmt1 Hmt2] Hown]".
+      iDestruct (Hlen with "#Hown") as %?.
+      iSplitL "Hmt1 Hown"; iExists _; by iFrame.
+  Qed.
+
   Lemma heap_mapsto_op_split l q v : l ↦{q} v ⊣⊢ (l ↦{q/2} v ★ l ↦{q/2} v).
   Proof. by rewrite heap_mapsto_op_eq Qp_div_2. Qed.
 
