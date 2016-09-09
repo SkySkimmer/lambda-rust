@@ -386,12 +386,11 @@ Section types.
       { intros. rewrite -heap_mapsto_vec_prop_op; last apply ty_size_eq.
         instantiate (1:=λ _ y, _). simpl. reflexivity. }
       rewrite big_sepL_sepL. iDestruct "Hownq" as "[Hownq0 Hownq1]".
-      iSplitR "Hcloseq Hcloseh Hownh1 Hownq1".
-      + iNext. by iFrame.
-      + iIntros "[Hh Hq]". rewrite (lft_own_split κ q).
-        iVs ("Hcloseh" with "[Hh Hownh1]") as "($&$)". iNext. by iFrame.
-        iVs ("Hcloseq" with "[Hq Hownq1]") as "($&$&$)". iNext. by iFrame.
-        done.
+      iSplitL "Hownh0 Hownq0". iNext. by iFrame.
+      iIntros "[Hh Hq]". rewrite (lft_own_split κ q).
+      iVs ("Hcloseh" with "[Hh Hownh1]") as "($&$)". iNext. by iFrame.
+      iVs ("Hcloseq" with "[Hq Hownq1]") as "($&$&$)". iNext. by iFrame.
+      done.
   Qed.
 
 End types.
