@@ -284,7 +284,7 @@ Section types.
           iDestruct "Hlen" as %Hlen; inversion Hlen; subst.
         rewrite big_sepL_cons heap_mapsto_vec_app/=.
         iDestruct "Hmt" as "[Hmth Hmtq]"; iDestruct "Hown" as "[Hownh Hownq]".
-        iDestruct (ty.(ty_size_eq) with "#Hownh") as %->.
+        iDestruct (ty.(ty_size_eq) with "Hownh") as %->.
         iSplitL "Hmth Hownh". iExists vl0. by iFrame.
         iExists (concat vll). iSplitL "Hmtq"; last by eauto.
         by rewrite shift_loc_assoc Nat2Z.inj_add.
@@ -293,7 +293,7 @@ Section types.
         iDestruct "Hmth" as (vlh) "[Hmth Hownh]". iDestruct "Hlen" as %->.
         iExists (vlh ++ concat vll).
         rewrite heap_mapsto_vec_app shift_loc_assoc Nat2Z.inj_add.
-        iDestruct (ty.(ty_size_eq) with "#Hownh") as %->. iFrame.
+        iDestruct (ty.(ty_size_eq) with "Hownh") as %->. iFrame.
         iExists (vlh :: vll). rewrite big_sepL_cons. iFrame. auto.
   Qed.
 

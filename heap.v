@@ -184,12 +184,12 @@ Section heap.
     intros Hlen. iSplit.
     - iIntros "[Hmt1 Hmt2]".
       iDestruct "Hmt1" as (vl) "[Hmt1 Hown]". iDestruct "Hmt2" as (vl') "[Hmt2 %]".
-      iDestruct (Hlen with "#Hown") as %?.
+      iDestruct (Hlen with "Hown") as %?.
       iCombine "Hmt1" "Hmt2" as "Hmt". rewrite heap_mapsto_vec_op; last congruence.
       iDestruct "Hmt" as "[_ Hmt]". iExists vl. by iFrame.
     - iIntros "Hmt". setoid_rewrite <-heap_mapsto_vec_op_eq.
       iDestruct "Hmt" as (vl) "[[Hmt1 Hmt2] Hown]".
-      iDestruct (Hlen with "#Hown") as %?.
+      iDestruct (Hlen with "Hown") as %?.
       iSplitL "Hmt1 Hown"; iExists _; by iFrame.
   Qed.
 
@@ -435,7 +435,7 @@ Section heap.
     iIntros (??) "(#Hinv&Hmt&Hf&HΦ)". rewrite /heap_ctx /heap_inv.
     iInv heapN as (σ hF) ">(Hσ&Hvalσ&HhF&REL)" "Hclose". iDestruct "REL" as %REL.
     rewrite heap_freeable_eq /heap_freeable_def.
-    iCombine "Hf" "HhF" as "HhF". iDestruct (own_valid _ with "#HhF") as "Hfvalid".
+    iCombine "Hf" "HhF" as "HhF". iDestruct (own_valid _ with "HhF") as "#Hfvalid".
     rewrite auth_validI /=. iDestruct "Hfvalid" as "[Hfle Hfvalid]".
     iDestruct "Hfle" as (frameF) "Hfle". rewrite right_id. iDestruct "Hfle" as "%".
     setoid_subst. iDestruct "Hfvalid" as %Hfvalid.
@@ -463,8 +463,8 @@ Section heap.
         ∧ (q = 1%Qp → n' = O).
   Proof.
     iIntros "(Hv&Hσ)". iCombine "Hv" "Hσ" as "Hσ".
-    iDestruct (own_valid (A:=authR heapValUR) with "Hσ") as "#Hσ".
-    iDestruct "Hσ" as %Hσ. iPureIntro. case: Hσ=>[Hσ _]. specialize (Hσ O).
+    iDestruct (own_valid (A:=authR heapValUR) with "Hσ") as %Hσ.
+    iPureIntro. case: Hσ=>[Hσ _]. specialize (Hσ O).
     destruct Hσ as [f Hσ]. specialize (Hσ l). revert Hσ. simpl.
     rewrite right_id !lookup_op lookup_fmap lookup_singleton.
     case:(σ !! l)=>[[ls' v']|]; case:(f !! l)=>[[[q' ls''] v'']|]; try by inversion 1.
@@ -490,7 +490,7 @@ Section heap.
     iIntros (?) "(#Hinv&>Hv&HΦ)".
     rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
     iInv heapN as (σ hF) ">(Hσ&Hvalσ&HhF&%)" "Hclose".
-    iDestruct (mapsto_heapVal_lookup l (RSt 0) q v σ with "[#]") as %(n&Hσl&_).
+    iDestruct (mapsto_heapVal_lookup l (RSt 0) q v σ with "[-]") as %(n&Hσl&_).
       by iFrame.
     iApply wp_read_sc_pst. done. iFrame. iIntros "!>Hσ!==>".
     iVs ("Hclose" with "[-Hv HΦ]"); last by iApply "HΦ".
@@ -531,7 +531,7 @@ Section heap.
   Proof.
     iIntros (?) "(#Hinv&Hv&HΦ)". rewrite /heap_ctx /heap_inv.
     iInv heapN as (σ hF) ">(Hσ&Hvalσ&HhF&%)" "Hclose".
-    iDestruct (mapsto_heapVal_lookup l (RSt 1) q v σ with "[#]") as %(n&Hσl&_).
+    iDestruct (mapsto_heapVal_lookup l (RSt 1) q v σ with "[-]") as %(n&Hσl&_).
       by iFrame.
     iApply wp_read_na2_pst. done. iFrame. iIntros "!>Hσ!==>".
     iVs (read_vs with "[Hvalσ Hv]") as "[Hvalσ Hv]". by apply Hσl. by iFrame.
@@ -548,7 +548,7 @@ Section heap.
     iApply (wp_read_na1_pst E).
     iVs (inv_open E heapN _ with "Hinv") as "[>INV Hclose]"; first done.
     iDestruct "INV" as (σ hF) "(Hσ&Hvalσ&HhF&%)".
-    iDestruct (mapsto_heapVal_lookup l (RSt 0) q v σ with "[#]") as %(n&Hσl&_).
+    iDestruct (mapsto_heapVal_lookup l (RSt 0) q v σ with "[-]") as %(n&Hσl&_).
       by rewrite heap_mapsto_eq; iFrame.
     iVs (read_vs _ 0 1 with "[Hvalσ Hv]") as "[Hvalσ Hv]". done.
       by rewrite heap_mapsto_eq; iFrame.
@@ -589,7 +589,7 @@ Section heap.
     iIntros (? <-%of_to_val) "(#Hinv&>Hv&HΦ)".
     rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
     iInv heapN as (σ hF) ">(Hσ&Hvalσ&HhF&%)" "Hclose".
-    iDestruct (mapsto_heapVal_lookup l (RSt 0) 1 v' σ with "[#]") as %(n&Hσl&EQ).
+    iDestruct (mapsto_heapVal_lookup l (RSt 0) 1 v' σ with "[-]") as %(n&Hσl&EQ).
       by iFrame.
     specialize (EQ (reflexivity _)). subst.
     iApply wp_write_sc_pst; try done. iFrame. iIntros "!>Hσ!==>".
@@ -606,7 +606,7 @@ Section heap.
     iIntros (? <-%of_to_val) "(#Hinv&Hv&HΦ)".
     rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
     iInv heapN as (σ hF) ">(Hσ&Hvalσ&HhF&%)" "Hclose".
-    iDestruct (mapsto_heapVal_lookup l WSt 1 v' σ with "[#]") as %(n&Hσl&EQ).
+    iDestruct (mapsto_heapVal_lookup l WSt 1 v' σ with "[-]") as %(n&Hσl&EQ).
       by iFrame.
     specialize (EQ (reflexivity _)). subst.
     iApply wp_write_na2_pst. done. iFrame. iIntros "!>Hσ!==>".
@@ -624,7 +624,7 @@ Section heap.
     iApply (wp_write_na1_pst E).
     iVs (inv_open E heapN _ with "Hinv") as "[>INV Hclose]"; first done.
     iDestruct "INV" as (σ hF) "(Hσ&Hvalσ&HhF&%)".
-    iDestruct (mapsto_heapVal_lookup l (RSt 0) 1 v' σ with "[#]") as %(n&Hσl&EQ).
+    iDestruct (mapsto_heapVal_lookup l (RSt 0) 1 v' σ with "[-]") as %(n&Hσl&EQ).
       by rewrite heap_mapsto_eq; iFrame.
     specialize (EQ (reflexivity _)). subst.
     iVs (write_vs with "[Hvalσ Hv]") as "[Hvalσ Hv]". done.
@@ -646,7 +646,7 @@ Section heap.
     iIntros (? <-%of_to_val ?) "(#Hinv&>Hv&HΦ)".
     rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
     iInv heapN as (σ hF) ">(Hσ&Hvalσ&HhF&%)" "Hclose".
-    iDestruct (mapsto_heapVal_lookup l (RSt 0) q with "[#]") as %(n&Hσl&_). by iFrame.
+    iDestruct (mapsto_heapVal_lookup l (RSt 0) q with "[-]") as %(n&Hσl&_). by iFrame.
     iApply wp_cas_fail_pst; eauto. by rewrite /= bool_decide_false. iFrame.
     iIntros "!>Hσ!==>". iVs ("Hclose" with "[-Hv HΦ]"); last by iApply "HΦ".
     iNext. iExists _, hF. iFrame. eauto using heapFreeable_rel_stable.
@@ -662,9 +662,9 @@ Section heap.
     iIntros (? <-%of_to_val ?) "(#Hinv&>Hl&>Hl'&>Hl1&HΦ)".
     rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
     iInv heapN as (σ hF) ">(Hσ&Hvalσ&HhF&%)" "Hclose".
-    iDestruct (mapsto_heapVal_lookup l (RSt 0) q with "[#]") as %(n&Hσl&_). by iFrame.
-    iDestruct (mapsto_heapVal_lookup l' (RSt 0) q' with "[#]") as %(n'&Hσl'&_). by iFrame.
-    iDestruct (mapsto_heapVal_lookup l1 (RSt 0) q1 with "[#]") as %(n1&Hσl1&_). by iFrame.
+    iDestruct (mapsto_heapVal_lookup l (RSt 0) q with "[-]") as %(n&Hσl&_). by iFrame.
+    iDestruct (mapsto_heapVal_lookup l' (RSt 0) q' with "[-]") as %(n'&Hσl'&_). by iFrame.
+    iDestruct (mapsto_heapVal_lookup l1 (RSt 0) q1 with "[-]") as %(n1&Hσl1&_). by iFrame.
     iApply wp_cas_fail_pst; eauto. by rewrite /= bool_decide_false // Hσl1 Hσl'.
     iFrame. iIntros "!>Hσ!==>".
     iVs ("Hclose" with "[-Hl Hl' Hl1 HΦ]"); last by iApply "HΦ"; iFrame.
@@ -680,7 +680,7 @@ Section heap.
     iIntros (? <-%of_to_val) "(#Hinv&>Hv&HΦ)".
     rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
     iInv heapN as (σ hF) ">(Hσ&Hvalσ&HhF&%)" "Hclose".
-    iDestruct (mapsto_heapVal_lookup l (RSt 0) 1 with "[#]") as %(n&Hσl&EQ).
+    iDestruct (mapsto_heapVal_lookup l (RSt 0) 1 with "[-]") as %(n&Hσl&EQ).
       by iFrame. rewrite EQ // in Hσl.
     iApply wp_cas_suc_pst; eauto. by rewrite /= bool_decide_true.
     iFrame. iIntros "!>Hσ!==>".
@@ -698,7 +698,7 @@ Section heap.
     iIntros (? <-%of_to_val) "(#Hinv&>Hv&HΦ)".
     rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
     iInv heapN as (σ hF) ">(Hσ&Hvalσ&HhF&%)" "Hclose".
-    iDestruct (mapsto_heapVal_lookup l (RSt 0) 1 with "[#]") as %(n&Hσl&EQ).
+    iDestruct (mapsto_heapVal_lookup l (RSt 0) 1 with "[-]") as %(n&Hσl&EQ).
       by iFrame. rewrite EQ // in Hσl.
     iApply wp_cas_suc_pst; eauto. by rewrite /= bool_decide_true.
     iFrame. iIntros "!>Hσ!==>".
