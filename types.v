@@ -1,5 +1,5 @@
 From iris.algebra Require Import upred_big_op.
-From iris.program_logic Require Import thread_local.
+From iris.program_logic Require Import hoare thread_local.
 From lrust Require Export notation.
 From lrust Require Import lifetime heap.
 
@@ -9,6 +9,8 @@ Definition lrustN := nroot .@ "lrust".
 Section defs.
 
   Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
+
+  Definition perm := thread_id → iProp Σ.
 
   Record type :=
     { ty_size : nat; ty_dup : bool;
@@ -471,6 +473,47 @@ Section types.
         - iDestruct "H" as "[]". }
       iApply ("Hclose'" with "Hownq").
   Qed.
+
+  Program Definition undef (n : nat) :=
+    ty_of_st {| st_size := n; st_dup := true; st_own tid vl := (length vl = n)%I |}.
+  Next Obligation. done. Qed.
+  Next Obligation. iIntros (n tid vl _) "H"; by iSplit. Qed.
+
+  Program Definition cont {n : nat} (perm : vec val n → perm (Σ := Σ)):=
+    ty_of_st {| st_size := 1; st_dup := false;
+       st_own tid vl := (∃ f xl e Hcl, vl = [@RecV f xl e Hcl] ★
+          ∀ vl tid, perm vl tid -★ tl_own tid ⊤
+                    -★ WP e (map of_val (vec_to_list vl)) {{λ _, False}})%I |}.
+  Next Obligation.
+    iIntros (n perm tid vl) "H". iDestruct "H" as (f xl e Hcl) "[% _]". by subst.
+  Qed.
+  Next Obligation. done. Qed.
+
+  Program Definition fn {n : nat} (perm : vec val n → perm (Σ := Σ)):=
+    ty_of_st {| st_size := 1; st_dup := true;
+       st_own tid vl := (∃ f xl e Hcl, vl = [@RecV f xl e Hcl] ★
+          ∀ vl tid, {{ perm vl tid ★ tl_own tid ⊤ }}
+                      e (map of_val (vec_to_list vl))
+                    {{λ _, False}})%I |}.
+  Next Obligation.
+    iIntros (n perm tid vl) "H". iDestruct "H" as (f xl e Hcl) "[% _]". by subst.
+  Qed.
+  Next Obligation. iIntros (n perm tid vl _) "#H". by iSplit. Qed.
+
+  Program Definition forall_ty {A : Type} n dup (ty : A -> type) {_:Inhabited A}
+          (Hsz : ∀ x, (ty x).(ty_size) = n) (Hdup : ∀ x, (ty x).(ty_dup) = dup) :=
+    ty_of_st {| st_size := n; st_dup := dup;
+                st_own tid vl := (∀ x, (ty x).(ty_own) tid vl)%I |}.
+  Next Obligation.
+    intros A n dup ty ? Hn Hdup tid vl. iIntros "H". iSpecialize ("H" $! inhabitant).
+    rewrite -(Hn inhabitant). by iApply ty_size_eq.
+  Qed.
+  Next Obligation.
+    intros A n [] ty ? Hn Hdup tid vl [].
+    (* FIXME: A quantified assertion is not necessarilly dupicable if
+       its contents is.*)
+    admit.
+  Admitted.
 
 End types.
 
