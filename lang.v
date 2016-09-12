@@ -56,7 +56,6 @@ Inductive expr :=
 | Case (e : expr) (el : list expr)
 | Fork (e : expr).
 
-Bind Scope expr_scope with expr.
 Arguments App _%E _%E.
 Arguments Case _%E _%E.
 

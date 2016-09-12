@@ -1,7 +1,6 @@
 From iris.algebra Require Import upred_big_op.
 From iris.program_logic Require Import hoare thread_local.
-From lrust Require Export notation.
-From lrust Require Import lifetime heap.
+From lrust Require Export notation lifetime heap.
 
 Definition mgmtE := nclose tlN ∪ lftN.
 Definition lrustN := nroot .@ "lrust".
@@ -10,6 +9,7 @@ Section defs.
 
   Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
 
+  (* [perm] is defined here instead of perm.v in order to define [cont] *)
   Definition perm := thread_id → iProp Σ.
 
   Record type :=
@@ -42,54 +42,58 @@ Section defs.
           [κ]{q} ★ tl_own tid N ={E}=> ∃ q', ▷l ↦★{q'}: ty_own tid ★
              (▷l ↦★{q'}: ty_own tid ={E}=★ [κ]{q} ★ tl_own tid N)
     }.
-
   Global Existing Instance ty_shr_persistent.
 
-  Definition ty_incl (ty1 ty2 : type) :=
-    ((□ ∀ tid vl, ty1.(ty_own) tid vl → ty2.(ty_own) tid vl) ∧
-     (□ ∀ κ tid E l, ty1.(ty_shr) κ tid E l → ty2.(ty_shr) κ tid E l))%I.
-
   Record simple_type :=
-    { st_size : nat; st_dup : bool;
+    { st_size : nat;
       st_own : thread_id → list val → iProp Σ;
 
       st_size_eq tid vl : st_own tid vl ⊢ length vl = st_size;
-      st_dup_dup tid vl : st_dup → st_own tid vl ⊢ st_own tid vl ★ st_own tid vl
-    }.
+      st_own_persistent tid vl : PersistentP (st_own tid vl) }.
+  Global Existing Instance st_own_persistent.
 
   Program Definition ty_of_st (st : simple_type) : type :=
-    {| ty_size := st.(st_size); ty_dup := st.(st_dup);
+    {| ty_size := st.(st_size); ty_dup := true;
        ty_own := st.(st_own);
-       ty_shr := λ κ tid _ l, (&frac{κ} λ q, l ↦★{q}: st.(st_own) tid)%I
+       ty_shr := λ κ tid _ l,
+                 (∃ vl, (&frac{κ} λ q, l ↦★{q} vl) ★ ▷ st.(st_own) tid vl)%I
     |}.
   Next Obligation. apply st_size_eq. Qed.
-  Next Obligation. apply st_dup_dup. Qed.
+  Next Obligation. iIntros (st tid vl _) "H". eauto. Qed.
   Next Obligation.
-    intros st E N κ l tid q ??. iIntros "Hmt Hlft". iFrame.
-    by iApply lft_borrow_fracture.
+    intros st E N κ l tid q ??. iIntros "Hmt Htok".
+    iVs (lft_borrow_exists with "Hmt Htok") as (vl) "[Hmt Htok]". set_solver.
+    iVs (lft_borrow_split with "Hmt") as "[Hmt Hown]". set_solver.
+    iVs (lft_borrow_persistent with "Hown Htok") as "[Hown $]". set_solver.
+    iExists vl. iFrame. by iApply lft_borrow_fracture.
   Qed.
   Next Obligation.
-    iIntros (st κ κ' tid N l) "#Hord". by iApply lft_frac_borrow_incl.
+    iIntros (st κ κ' tid N l) "#Hord H". iDestruct "H" as (vl) "[Hf Hown]".
+    iExists vl. iFrame. by iApply (lft_frac_borrow_incl with "Hord").
   Qed.
   Next Obligation.
-    intros st κ tid N E l q ???.  iIntros "#Hshr!#[Hlft Htlown]".
-    iVs (lft_frac_borrow_open with "[] Hshr Hlft"); [set_solver| |by iFrame].
-    iIntros "!#". iIntros (q1 q2). iSplit; iIntros "H".
-    - iDestruct "H" as (vl) "[Hq1q2 Hown]".
-      iDestruct (st_dup_dup with "Hown") as "[Hown1 Hown2]". done.
-      rewrite -heap_mapsto_vec_op_eq. iDestruct "Hq1q2" as "[Hq1 Hq2]".
-        by iSplitL "Hq1 Hown1"; iExists _; iFrame.
-    - iDestruct "H" as "[H1 H2]".
-      iDestruct "H1" as (vl1) "[Hq1 Hown1]".
-      iDestruct "H2" as (vl2) "[Hq2 Hown2]".
-      iAssert (length vl1 = length vl2)%I with "[#]" as "%".
-      { iDestruct (st_size_eq with "Hown2") as %->.
-        iApply (st_size_eq with "Hown1"). }
-      iCombine "Hq1" "Hq2" as "Hq1q2". rewrite heap_mapsto_vec_op; last done.
-      iDestruct "Hq1q2" as "[% Hq1q2]". subst vl2. iExists vl1. by iFrame.
+    intros st κ tid N E l q ???.  iIntros "#Hshr!#[Hlft $]".
+    iDestruct "Hshr" as (vl) "[Hf Hown]".
+    iVs (lft_frac_borrow_open with "[] Hf Hlft") as (q') "[Hmt Hclose]";
+      first set_solver.
+    - iIntros "!#". iIntros (q1 q2). rewrite heap_mapsto_vec_op_eq.
+      iSplit; auto.
+    - iVsIntro. rewrite {1}heap_mapsto_vec_op_split. iExists _.
+      iDestruct "Hmt" as "[Hmt1 Hmt2]". iSplitL "Hmt1".
+      + iNext. iExists _. by iFrame.
+      + iIntros "Hmt1". iDestruct "Hmt1" as (vl') "[Hmt1 #Hown']".
+        iAssert (▷ (length vl = length vl'))%I as ">%".
+        { iNext.
+          iDestruct (st_size_eq with "Hown") as %->.
+          iDestruct (st_size_eq with "Hown'") as %->. done. }
+        iCombine "Hmt1" "Hmt2" as "Hmt". rewrite heap_mapsto_vec_op // Qp_div_2.
+        iDestruct "Hmt" as "[>% Hmt]". subst. by iApply "Hclose".
   Qed.
 
 End defs.
+
+Delimit Scope lrust_type_scope with T.
+Bind Scope lrust_type_scope with type.
 
 Module Types.
 Section types.
@@ -98,36 +102,44 @@ Section types.
   Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
 
   Program Definition bot :=
-    ty_of_st {| st_size := 1; st_dup := true; st_own tid vl := False%I |}.
+    {| ty_size := 0; ty_dup := true;
+       ty_own tid vl := False%I; ty_shr κ tid N l := False%I |}.
   Next Obligation. iIntros (tid vl) "[]". Qed.
-  Next Obligation. iIntros (tid vl _) "[]". Qed.
+  Next Obligation. iIntros (???) "[]". Qed.
+  Next Obligation.
+    iIntros (????????) "Hb Htok".
+    iVs (lft_borrow_exists with "Hb Htok") as (vl) "[Hb Htok]". set_solver.
+    iVs (lft_borrow_split with "Hb") as "[_ Hb]". set_solver.
+    iVs (lft_borrow_persistent with "Hb Htok") as "[>[] _]". set_solver.
+  Qed.
+  Next Obligation. iIntros (?????) "_ []". Qed.
+  Next Obligation. intros. iIntros "[]". Qed.
 
   Program Definition unit :=
-    ty_of_st {| st_size := 0;  st_dup := true; st_own tid vl := (vl = [])%I |}.
-  Next Obligation. iIntros (tid vl) "%". by subst. Qed.
-  Next Obligation. iIntros (tid vl _) "%". auto. Qed.
+    ty_of_st {| st_size := 0; st_own tid vl := (vl = [])%I |}.
+  Next Obligation. iIntros (tid vl) "%". simpl. by subst. Qed.
 
   Program Definition bool :=
-    ty_of_st {| st_size := 1; st_dup := true;
-       st_own tid vl := (∃ z:bool, vl = [ #z ])%I
-    |}.
+    ty_of_st {| st_size := 1; st_own tid vl := (∃ z:bool, vl = [ #z ])%I |}.
   Next Obligation. iIntros (tid vl) "H". iDestruct "H" as (z) "%". by subst. Qed.
-  Next Obligation. iIntros (tid vl _) "H". auto. Qed.
 
   Program Definition int :=
-    ty_of_st {| st_size := 1; st_dup := true;
-       st_own tid vl := (∃ z:Z, vl = [ #z ])%I
-    |}.
+    ty_of_st {| st_size := 1; st_own tid vl := (∃ z:Z, vl = [ #z ])%I |}.
   Next Obligation. iIntros (tid vl) "H". iDestruct "H" as (z) "%". by subst. Qed.
-  Next Obligation. iIntros (tid vl _) "H". auto. Qed.
 
   (* TODO own and uniq_borrow are very similar. They could probably
      somehow share some bits..  *)
   Program Definition own (q : Qp) (ty : type) :=
     {| ty_size := 1; ty_dup := false;
        ty_own tid vl :=
-         (∃ l:loc, vl = [ #l ] ★ †{q}l…ty.(ty_size)
-                                 ★ ▷ l ↦★: ty.(ty_own) tid)%I;
+         (* We put a later in front of the †{q}, because we cannot use
+            [ty_size_eq] on [ty] at step index 0, which would in turn
+            prevent us to prove [ty_incl_own].
+
+            Since this assertion is timeless, this should not cause
+            problems. *)
+         (∃ l:loc, vl = [ #l ] ★ ▷ †{q}l…ty.(ty_size)
+                               ★ ▷ l ↦★: ty.(ty_own) tid)%I;
        ty_shr κ tid N l :=
          (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ★
             ∀ q', [κ]{q'} ={mgmtE ∪ N, mgmtE}▷=> ty.(ty_shr) κ tid N l' ★ [κ]{q'})%I
@@ -238,13 +250,12 @@ Section types.
   Next Obligation. done. Qed.
 
   Program Definition shared_borrow (κ : lifetime) (ty : type) :=
-    ty_of_st {| st_size := 1; st_dup := true;
-      st_own tid vl := (∃ l:loc, vl = [ #l ] ★ ty.(ty_shr) κ tid lrustN l)%I
+    ty_of_st {| st_size := 1;
+       st_own tid vl := (∃ l:loc, vl = [ #l ] ★ ty.(ty_shr) κ tid lrustN l)%I;
     |}.
   Next Obligation.
     iIntros (κ ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
   Qed.
-  Next Obligation. iIntros (κ ty tid vl _) "H". auto. Qed.
 
   Fixpoint combine_accu_size (tyl : list type) (accu : nat) :=
     match tyl with
@@ -404,7 +415,22 @@ Section types.
       iExists (#i::vl). rewrite heap_mapsto_vec_cons. iFrame. eauto.
   Qed.
 
-  Program Definition sum n (tyl : list type) (Hsz : Forall ((= n) ∘ ty_size) tyl) :=
+  Class LstTySize (n : nat) (tyl : list type) :=
+    size_eq : Forall ((= n) ∘ ty_size) tyl.
+  Instance LstTySize_nil n : LstTySize n nil := List.Forall_nil _.
+  Hint Extern 1 (LstTySize _ (_ :: _)) =>
+    apply List.Forall_cons; [reflexivity|].
+
+  Lemma sum_size_eq n tid i tyl vl {Hn : LstTySize n tyl} :
+    ty_own (nth i tyl bot) tid vl ⊢ length vl = n.
+  Proof.
+    iIntros "Hown". iDestruct (ty_size_eq with "Hown") as %->.
+    revert Hn. rewrite /LstTySize List.Forall_forall /= =>Hn.
+    edestruct nth_in_or_default as [| ->]. by eauto.
+    iDestruct "Hown" as "[]".
+  Qed.
+
+  Program Definition sum {n} (tyl : list type) {_:LstTySize n tyl} :=
     {| ty_size := S n; ty_dup := forallb ty_dup tyl;
        ty_own tid vl :=
          (∃ (i : nat) vl', vl = #i :: vl' ★ (nth i tyl bot).(ty_own) tid vl')%I;
@@ -414,10 +440,7 @@ Section types.
     |}.
   Next Obligation.
     iIntros (n tyl Hn tid vl) "Hown". iDestruct "Hown" as (i vl') "(%&Hown)". subst.
-    simpl. iDestruct (ty_size_eq with "Hown") as %->.
-    rewrite ->List.Forall_forall in Hn. simpl in Hn.
-    edestruct nth_in_or_default as [| ->]. by eauto.
-    iDestruct "Hown" as "[]".
+    simpl. by iDestruct (sum_size_eq with "Hown") as %->.
   Qed.
   Next Obligation.
     iIntros (n tyl Hn tid vl Hdup%Is_true_eq_true) "Hown".
@@ -452,11 +475,8 @@ Section types.
       rewrite ->forallb_forall in Hdup. auto using Is_true_eq_left. }
     destruct (Qp_lower_bound q'1 q'2) as (q' & q'01 & q'02 & -> & ->).
     iExists q'. iVsIntro.
-    rewrite -{1}heap_mapsto_op_eq -{1}heap_mapsto_vec_prop_op; last first.
-    { iIntros (vl) "H". iDestruct (ty_size_eq with "H") as %->.
-      edestruct nth_in_or_default as [| ->].
-      - rewrite ->List.Forall_forall in Hn. by rewrite Hn.
-      - iDestruct "H" as "[]". }
+    rewrite -{1}heap_mapsto_op_eq -{1}heap_mapsto_vec_prop_op;
+      last (by intros; apply sum_size_eq, Hn).
     iDestruct "Hownq" as "[Hownq1 Hownq2]". iDestruct "Hown" as "[Hown1 Hown2]".
     iSplitL "Hown1 Hownq1".
     - iNext. iExists i. by iFrame.
@@ -466,31 +486,30 @@ Section types.
       iDestruct "Hown" as "[>#Hi Hown]". iDestruct "Hi" as %[= ->%Z_of_nat_inj].
       iVs ("Hclose" with "Hown") as "$".
       iCombine "Hownq1" "Hownq2" as "Hownq".
-      rewrite heap_mapsto_vec_prop_op; last first.
-      { iIntros (vl) "H". iDestruct (ty_size_eq with "H") as %->.
-        edestruct nth_in_or_default as [| ->].
-        - rewrite ->List.Forall_forall in Hn. by rewrite Hn.
-        - iDestruct "H" as "[]". }
+      rewrite heap_mapsto_vec_prop_op; last (by intros; apply sum_size_eq, Hn).
       iApply ("Hclose'" with "Hownq").
   Qed.
 
   Program Definition undef (n : nat) :=
-    ty_of_st {| st_size := n; st_dup := true; st_own tid vl := (length vl = n)%I |}.
+    ty_of_st {| st_size := n; st_own tid vl := (length vl = n)%I |}.
   Next Obligation. done. Qed.
-  Next Obligation. iIntros (n tid vl _) "H"; by iSplit. Qed.
 
   Program Definition cont {n : nat} (perm : vec val n → perm (Σ := Σ)):=
-    ty_of_st {| st_size := 1; st_dup := false;
-       st_own tid vl := (∃ f xl e Hcl, vl = [@RecV f xl e Hcl] ★
+    {| ty_size := 1; ty_dup := false;
+       ty_own tid vl := (∃ f xl e Hcl, vl = [@RecV f xl e Hcl] ★
           ∀ vl tid, perm vl tid -★ tl_own tid ⊤
-                    -★ WP e (map of_val (vec_to_list vl)) {{λ _, False}})%I |}.
+                    -★ WP e (map of_val (vec_to_list vl)) {{λ _, False}})%I;
+       ty_shr κ tid N l := True%I |}.
   Next Obligation.
     iIntros (n perm tid vl) "H". iDestruct "H" as (f xl e Hcl) "[% _]". by subst.
   Qed.
   Next Obligation. done. Qed.
+  Next Obligation. intros. by iIntros "_ $". Qed.
+  Next Obligation. intros. by iIntros "_ _". Qed.
+  Next Obligation. done. Qed.
 
   Program Definition fn {n : nat} (perm : vec val n → perm (Σ := Σ)):=
-    ty_of_st {| st_size := 1; st_dup := true;
+    ty_of_st {| st_size := 1;
        st_own tid vl := (∃ f xl e Hcl, vl = [@RecV f xl e Hcl] ★
           ∀ vl tid, {{ perm vl tid ★ tl_own tid ⊤ }}
                       e (map of_val (vec_to_list vl))
@@ -498,23 +517,39 @@ Section types.
   Next Obligation.
     iIntros (n perm tid vl) "H". iDestruct "H" as (f xl e Hcl) "[% _]". by subst.
   Qed.
-  Next Obligation. iIntros (n perm tid vl _) "#H". by iSplit. Qed.
 
-  Program Definition forall_ty {A : Type} n dup (ty : A -> type) {_:Inhabited A}
-          (Hsz : ∀ x, (ty x).(ty_size) = n) (Hdup : ∀ x, (ty x).(ty_dup) = dup) :=
-    ty_of_st {| st_size := n; st_dup := dup;
-                st_own tid vl := (∀ x, (ty x).(ty_own) tid vl)%I |}.
-  Next Obligation.
-    intros A n dup ty ? Hn Hdup tid vl. iIntros "H". iSpecialize ("H" $! inhabitant).
-    rewrite -(Hn inhabitant). by iApply ty_size_eq.
-  Qed.
-  Next Obligation.
-    intros A n [] ty ? Hn Hdup tid vl [].
-    (* FIXME: A quantified assertion is not necessarilly dupicable if
-       its contents is.*)
-    admit.
-  Admitted.
+  (* TODO *)
+  (* Program Definition forall_ty {A : Type} n dup (ty : A -> type) {_:Inhabited A} *)
+  (*         (Hsz : ∀ x, (ty x).(ty_size) = n) (Hdup : ∀ x, (ty x).(ty_dup) = dup) := *)
+  (*   ty_of_st {| st_size := n; st_dup := dup; *)
+  (*               st_own tid vl := (∀ x, (ty x).(ty_own) tid vl)%I |}. *)
+  (* Next Obligation. *)
+  (*   intros A n dup ty ? Hn Hdup tid vl. iIntros "H". iSpecialize ("H" $! inhabitant). *)
+  (*   rewrite -(Hn inhabitant). by iApply ty_size_eq. *)
+  (* Qed. *)
+  (* Next Obligation. *)
+  (*   intros A n [] ty ? Hn Hdup tid vl []. *)
+  (*   (* FIXME: A quantified assertion is not necessarilly dupicable if *)
+  (*      its contents is.*) *)
+  (*   admit. *)
+  (* Admitted. *)
 
 End types.
 
 End Types.
+
+Import Types.
+
+Notation "!" := bot : lrust_type_scope.
+Notation "&uniq{ κ } ty" := (uniq_borrow κ ty)
+  (format "&uniq{ κ } ty", at level 20, right associativity) : lrust_type_scope.
+Notation "&shr{ κ } ty" := (shared_borrow κ ty)
+  (format "&shr{ κ } ty", at level 20, right associativity) : lrust_type_scope.
+Notation "( ty1 * ty2 * .. * tyn )" :=
+  (product (cons ty1 (cons ty2 ( .. (cons tyn nil) .. ))))
+  (format "( ty1 * ty2 * .. * tyn )") : lrust_type_scope.
+Notation "( ty1 + ty2 + .. + tyn )" :=
+  (sum (cons ty1 (cons ty2 ( .. (cons tyn nil) .. ))))
+  (format "( ty1 + ty2 + .. + tyn )") : lrust_type_scope.
+
+(* TODO : notation for forall *)
