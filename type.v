@@ -419,7 +419,7 @@ Section types.
     size_eq : Forall ((= n) ∘ ty_size) tyl.
   Instance LstTySize_nil n : LstTySize n nil := List.Forall_nil _.
   Hint Extern 1 (LstTySize _ (_ :: _)) =>
-    apply List.Forall_cons; [reflexivity|].
+    apply List.Forall_cons; [reflexivity|] : typeclass_instances.
 
   Lemma sum_size_eq n tid i tyl vl {Hn : LstTySize n tyl} :
     ty_own (nth i tyl bot) tid vl ⊢ length vl = n.
@@ -490,32 +490,35 @@ Section types.
       iApply ("Hclose'" with "Hownq").
   Qed.
 
-  Program Definition undef (n : nat) :=
+  Program Definition uninit (n : nat) :=
     ty_of_st {| st_size := n; st_own tid vl := (length vl = n)%I |}.
   Next Obligation. done. Qed.
 
-  Program Definition cont {n : nat} (perm : vec val n → perm (Σ := Σ)):=
+  (* TODO : For now, functions and closures are not Sync nor
+     Send. This means they cannot be called in another thread than the
+     one that created it.
+     We will need Send and Sync closures when dealing with
+     multithreading (spawn needs a Send closure). *)
+  Program Definition cont {n : nat} (ρ : vec val n → @perm Σ) :=
     {| ty_size := 1; ty_dup := false;
-       ty_own tid vl := (∃ f xl e Hcl, vl = [@RecV f xl e Hcl] ★
-          ∀ vl tid, perm vl tid -★ tl_own tid ⊤
-                    -★ WP e (map of_val (vec_to_list vl)) {{λ _, False}})%I;
+       ty_own tid vl := (∃ f, vl = [f] ★
+          ∀ vl, ▷ ρ vl tid -★ tl_own tid ⊤
+                 -★ WP f (map of_val vl) {{λ _, False}})%I;
        ty_shr κ tid N l := True%I |}.
   Next Obligation.
-    iIntros (n perm tid vl) "H". iDestruct "H" as (f xl e Hcl) "[% _]". by subst.
+    iIntros (n ρ tid vl) "H". iDestruct "H" as (f) "[% _]". by subst.
   Qed.
   Next Obligation. done. Qed.
   Next Obligation. intros. by iIntros "_ $". Qed.
   Next Obligation. intros. by iIntros "_ _". Qed.
   Next Obligation. done. Qed.
 
-  Program Definition fn {n : nat} (perm : vec val n → perm (Σ := Σ)):=
+  Program Definition fn {n : nat} (ρ : vec val n → @perm Σ):=
     ty_of_st {| st_size := 1;
-       st_own tid vl := (∃ f xl e Hcl, vl = [@RecV f xl e Hcl] ★
-          ∀ vl tid, {{ perm vl tid ★ tl_own tid ⊤ }}
-                      e (map of_val (vec_to_list vl))
-                    {{λ _, False}})%I |}.
+       st_own tid vl := (∃ f, vl = [f] ★
+          ∀ vl, {{ ▷ ρ vl tid ★ tl_own tid ⊤ }} f (map of_val vl) {{λ _, False}})%I |}.
   Next Obligation.
-    iIntros (n perm tid vl) "H". iDestruct "H" as (f xl e Hcl) "[% _]". by subst.
+    iIntros (n ρ tid vl) "H". iDestruct "H" as (f) "[% _]". by subst.
   Qed.
 
   (* TODO *)
@@ -545,11 +548,13 @@ Notation "&uniq{ κ } ty" := (uniq_borrow κ ty)
   (format "&uniq{ κ } ty", at level 20, right associativity) : lrust_type_scope.
 Notation "&shr{ κ } ty" := (shared_borrow κ ty)
   (format "&shr{ κ } ty", at level 20, right associativity) : lrust_type_scope.
+
+(* FIXME : these notations do not work. *)
 Notation "( ty1 * ty2 * .. * tyn )" :=
   (product (cons ty1 (cons ty2 ( .. (cons tyn nil) .. ))))
-  (format "( ty1 * ty2 * .. * tyn )") : lrust_type_scope.
+  (format "( ty1  *  ty2  *  ..  *  tyn )") : lrust_type_scope.
 Notation "( ty1 + ty2 + .. + tyn )" :=
   (sum (cons ty1 (cons ty2 ( .. (cons tyn nil) .. ))))
-  (format "( ty1 + ty2 + .. + tyn )") : lrust_type_scope.
+  (format "( ty1  +  ty2  +  ..  +  tyn )") : lrust_type_scope.
 
 (* TODO : notation for forall *)
