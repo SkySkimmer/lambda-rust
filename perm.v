@@ -7,8 +7,8 @@ Bind Scope perm_scope with perm.
 
 (* TODO : find a better place for this. *)
 Definition valuable := option val.
-Definition proj_valuable (n : Z) :=
-  (≫= λ v, match v with LitV (LitLoc l) => Some (shift_loc l n) | _ => None end).
+Definition proj_valuable (n : Z) : valuable → valuable :=
+  (≫= λ v, match v with LitV (LitLoc l) => Some (#(shift_loc l n)) | _ => None end).
 
 Module Perm.
 

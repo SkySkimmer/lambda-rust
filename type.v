@@ -255,10 +255,10 @@ Section types.
     iIntros (κ ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
   Qed.
 
-  Fixpoint combine_accu_size (tyl : list type) (accu : nat) :=
+  Fixpoint combine_offs (tyl : list type) (accu : nat) :=
     match tyl with
     | [] => []
-    | ty :: q => (ty, accu) :: combine_accu_size q (accu + ty.(ty_size))
+    | ty :: q => (ty, accu) :: combine_offs q (accu + ty.(ty_size))
     end.
 
   Lemma list_ty_type_eq tid (tyl : list type) (vll : list (list val)) :
@@ -277,7 +277,7 @@ Section types.
     (l ↦★{q}: λ vl,
        ∃ vll, vl = concat vll ★ length tyl = length vll
          ★ [★ list] tyvl ∈ combine tyl vll, ty_own (tyvl.1) tid (tyvl.2))%I
-    ⊣⊢ [★ list] tyoffs ∈ combine_accu_size tyl 0,
+    ⊣⊢ [★ list] tyoffs ∈ combine_offs tyl 0,
          shift_loc l (tyoffs.2) ↦★{q}: ty_own (tyoffs.1) tid.
   Proof.
     rewrite -{1}(shift_loc_0 l). change 0%Z with (Z.of_nat 0).
@@ -331,7 +331,7 @@ Section types.
          (∃ vll, vl = concat vll ★ length tyl = length vll ★
                  [★ list] tyvl ∈ combine tyl vll, tyvl.1.(ty_own) tid (tyvl.2))%I;
        ty_shr κ tid N l :=
-         ([★ list] i ↦ tyoffs ∈ combine_accu_size tyl 0,
+         ([★ list] i ↦ tyoffs ∈ combine_offs tyl 0,
            tyoffs.1.(ty_shr) κ tid (N .@ i) (shift_loc l (tyoffs.2)))%I
     |}.
   Next Obligation.
@@ -350,7 +350,7 @@ Section types.
   Next Obligation.
     intros tyl E N κ l tid q ??. rewrite split_prod_mt.
     change (ndot (A:=nat)) with (λ N i, N .@ (0+i)%nat). generalize O at 3.
-    induction (combine_accu_size tyl 0) as [|[ty offs] ll IH].
+    induction (combine_offs tyl 0) as [|[ty offs] ll IH].
     - iIntros (?) "_$!==>". by rewrite big_sepL_nil.
     - iIntros (i) "Hown Htoks". rewrite big_sepL_cons.
       iVs (lft_borrow_split with "Hown") as "[Hownh Hownq]". set_solver.
