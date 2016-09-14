@@ -19,9 +19,7 @@ Section ty_incl.
                   ty2.(ty_shr) κ tid E l ★ ty1.(ty_size) = ty2.(ty_size)).
 
   Global Instance ty_incl_refl ρ : Reflexive (ty_incl ρ).
-  Proof.
-    iIntros (ty tid) "_!==>". iSplit; iIntros "!#"; eauto.
-  Qed.
+  Proof. iIntros (ty tid) "_!==>". iSplit; iIntros "!#"; eauto. Qed.
 
   Lemma ty_incl_trans ρ θ ty1 ty2 ty3 :
     ty_incl ρ ty1 ty2 → ty_incl θ ty2 ty3 → ty_incl (ρ ★ θ) ty1 ty3.
@@ -37,11 +35,15 @@ Section ty_incl.
   Qed.
 
   Lemma ty_incl_weaken ρ θ ty1 ty2 :
-    perm_incl ρ θ → ty_incl θ ty1 ty2 → ty_incl ρ ty1 ty2.
+    ρ ⇒ θ → ty_incl θ ty1 ty2 → ty_incl ρ ty1 ty2.
   Proof. iIntros (Hρθ Hρ' tid) "H". iVs (Hρθ with "H"). by iApply Hρ'. Qed.
 
-  Global Instance ty_incl_trans' ρ: Duplicable ρ → Transitive (ty_incl ρ).
-  Proof. intros ??????. eauto using ty_incl_weaken, ty_incl_trans. Qed.
+  Global Instance ty_incl_preorder ρ: Duplicable ρ → PreOrder (ty_incl ρ).
+  Proof.
+    split.
+    - apply _.
+    - intros ?????. eauto using ty_incl_weaken, ty_incl_trans.
+  Qed.
 
   Lemma ty_incl_bot ρ ty : ty_incl ρ ! ty.
   Proof. iIntros (tid) "_!==>". iSplit; iIntros "!#*/=[]". Qed.
@@ -197,30 +199,42 @@ Section ty_incl.
   (* FIXME : idem : cannot combine the fractured borrow. *)
   Admitted.
 
-  (* Lemma ty_incl_cont_frame {n} ρ ρ1 ρ2 : *)
-  (*   Duplicable ρ → (∀ vl : vec val n, perm_incl (ρ ★ ρ2 vl) (ρ1 vl)) → *)
-  (*   ty_incl ρ (cont ρ1) (cont ρ2). *)
-  (* Proof. *)
-  (*   iIntros (? Hρ1ρ2 tid) "Hρ". *)
-  (*   iVs (inv_alloc lrustN _ (ρ tid) with "[Hρ]") as "#INV". by auto. *)
-  (*   iIntros "!==>". iSplit; iIntros "!#*H"; last by auto. *)
-  (*   iDestruct "H" as (f xl e ?) "[% Hwp]". subst. iExists _, _, _, _. iSplit. done. *)
-  (*   iIntros (vl) "Htl Hown". *)
-  (*   iApply pvs_wp. iInv lrustN as "Hρ" "Hclose". *)
+  Lemma ty_incl_cont {n} ρ ρ1 ρ2 :
+    Duplicable ρ → (∀ vl : vec val n, ρ ★ ρ2 vl ⇒ ρ1 vl) →
+    ty_incl ρ (cont ρ1) (cont ρ2).
+  Proof.
+    iIntros (? Hρ1ρ2 tid) "Hρ".
+    iVs (inv_alloc lrustN _ (ρ tid) with "[Hρ]") as "#INV". by auto.
+    iIntros "!==>". iSplit; iIntros "!#*H"; last by auto.
+    iDestruct "H" as (f) "[% Hwp]". subst. iExists _. iSplit. done.
+    iIntros (vl) "Htl Hown".
+    iApply pvs_wp. iInv lrustN as "Hρ" "Hclose".
+    (* FIXME : we need some kind of "Invariant of duplicable
+       propositions" that we can open several times. *)
+    admit.
+  Admitted.
 
-  (*   iSplit; last by iIntros "{Hρ}!#*_"; auto. *)
-  (*   (* FIXME : I do not know how to prove this. Should we put this *)
-  (*      under a view modality and then put Hρ in an invariant? *) *)
-  (*   admit. *)
-  (* Admitted. *)
+  Lemma ty_incl_fn {n} ρ ρ1 ρ2 :
+    Duplicable ρ → (∀ vl : vec val n, ρ ★ ρ2 vl ⇒ ρ1 vl) →
+    ty_incl ρ (fn ρ1) (fn ρ2).
+    (* FIXME : idem. *)
+    admit.
+  Admitted.
 
-  (* Lemma ty_incl_fn_frame {n} ρ ρ1 ρ2 : *)
-  (*   Duplicable ρ → (∀ vl : vec val n, perm_incl (ρ ★ ρ2 vl) (ρ1 vl)) → *)
-  (*   ty_incl ρ (fn ρ1) (fn ρ2). *)
-  (*   (* FIXME : idem. *) *)
-  (*   admit. *)
-  (* Admitted. *)
+  Lemma ty_incl_fn_cont {n} ρ ρf : ty_incl ρ (fn ρf) (cont (n:=n) ρf).
+  Proof.
+    iIntros (tid) "_!==>". iSplit; iIntros "!#*H"; last by iSplit.
+    iDestruct "H" as (f) "[%#H]". subst. iExists _. iSplit. done.
+    iIntros (vl) "Hρf Htl". iApply "H". by iFrame.
+  Qed.
 
   (* TODO : forall, when we will have figured out the right definition. *)
+
+  Lemma ty_incl_perm_incl ρ ty1 ty2 v :
+    ty_incl ρ ty1 ty2 → ρ ★ v ◁ ty1 ⇒ v ◁ ty2.
+  Proof.
+    iIntros (Hincl tid) "[Hρ Hty1]". iVs (Hincl with "Hρ") as "[#Hownincl _]".
+    by iApply "Hownincl".
+  Qed.
 
 End ty_incl.
