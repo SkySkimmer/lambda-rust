@@ -100,9 +100,21 @@ Section types.
 
   Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
 
-  Program Definition bot :=
-    ty_of_st {| st_size := 0; st_own tid vl := False%I |}.
+  (* [emp] cannot be defined using [ty_of_st], because the least we
+     would be able to prove from its [ty_shr] would be [▷ False], but
+     we really need [False] to prove [ty_incl_emp]. *)
+  Program Definition emp :=
+    {| ty_size := 0; ty_dup := true;
+       ty_own tid vl := False%I; ty_shr κ tid N l := False%I |}.
   Next Obligation. iIntros (tid vl) "[]". Qed.
+  Next Obligation.
+    iIntros (????????) "Hb Htok".
+    iVs (lft_borrow_exists with "Hb Htok") as (vl) "[Hb Htok]". set_solver.
+    iVs (lft_borrow_split with "Hb") as "[_ Hb]". set_solver.
+    iVs (lft_borrow_persistent with "Hb Htok") as "[>[] _]". set_solver.
+  Qed.
+  Next Obligation. iIntros (?????) "_ []". Qed.
+  Next Obligation. intros. iIntros "[]". Qed.
 
   Program Definition unit :=
     ty_of_st {| st_size := 0; st_own tid vl := (vl = [])%I |}.
@@ -387,8 +399,8 @@ Section types.
 
   Lemma split_sum_mt l tid q tyl :
     (l ↦★{q}: λ vl,
-         ∃ (i : nat) vl', vl = #i :: vl' ★ ty_own (nth i tyl bot) tid vl')%I
-    ⊣⊢ ∃ (i : nat), l ↦{q} #i ★ shift_loc l 1 ↦★{q}: ty_own (nth i tyl bot) tid.
+         ∃ (i : nat) vl', vl = #i :: vl' ★ ty_own (nth i tyl emp) tid vl')%I
+    ⊣⊢ ∃ (i : nat), l ↦{q} #i ★ shift_loc l 1 ↦★{q}: ty_own (nth i tyl emp) tid.
   Proof.
     iSplit; iIntros "H".
     - iDestruct "H" as (vl) "[Hmt Hown]". iDestruct "Hown" as (i vl') "(%&Hown)". subst.
@@ -405,7 +417,7 @@ Section types.
     apply List.Forall_cons; [reflexivity|] : typeclass_instances.
 
   Lemma sum_size_eq n tid i tyl vl {Hn : LstTySize n tyl} :
-    ty_own (nth i tyl bot) tid vl ⊢ length vl = n.
+    ty_own (nth i tyl emp) tid vl ⊢ length vl = n.
   Proof.
     iIntros "Hown". iDestruct (ty_size_eq with "Hown") as %->.
     revert Hn. rewrite /LstTySize List.Forall_forall /= =>Hn.
@@ -416,14 +428,14 @@ Section types.
   Program Definition sum {n} (tyl : list type) {_:LstTySize n tyl} :=
     {| ty_size := S n; ty_dup := forallb ty_dup tyl;
        ty_own tid vl :=
-         (∃ (i : nat) vl', vl = #i :: vl' ★ (nth i tyl bot).(ty_own) tid vl')%I;
+         (∃ (i : nat) vl', vl = #i :: vl' ★ (nth i tyl emp).(ty_own) tid vl')%I;
        ty_shr κ tid N l :=
          (∃ (i : nat), (&frac{κ} λ q, l ↦{q} #i) ★
-               (nth i tyl bot).(ty_shr) κ tid N (shift_loc l 1))%I
+               (nth i tyl emp).(ty_shr) κ tid N (shift_loc l 1))%I
     |}.
   Next Obligation.
     intros n tyl Hn tid vl Hdup%Is_true_eq_true.
-    cut (∀ i vl', PersistentP (ty_own (nth i tyl bot) tid vl')). apply _.
+    cut (∀ i vl', PersistentP (ty_own (nth i tyl emp) tid vl')). apply _.
     intros. apply ty_dup_persistent. edestruct nth_in_or_default as [| ->]; last done.
     rewrite ->forallb_forall in Hdup. auto using Is_true_eq_left.
   Qed.
@@ -435,14 +447,14 @@ Section types.
     intros n tyl Hn E N κ l tid q ??. iIntros "Hown Htok". rewrite split_sum_mt.
     iVs (lft_borrow_exists with "Hown Htok") as (i) "[Hown Htok]". set_solver.
     iVs (lft_borrow_split with "Hown") as "[Hmt Hown]". set_solver.
-    iVs ((nth i tyl bot).(ty_share) with "Hown Htok") as "[#Hshr Htok]"; try done.
+    iVs ((nth i tyl emp).(ty_share) with "Hown Htok") as "[#Hshr Htok]"; try done.
     iFrame. iExists i. iFrame "#". by iApply lft_borrow_fracture.
   Qed.
   Next Obligation.
     intros n tyl Hn κ κ' tid N l. iIntros "#Hord H".
     iDestruct "H" as (i) "[Hown0 Hown]". iExists i. iSplitL "Hown0".
     by iApply (lft_frac_borrow_incl with "Hord").
-    by iApply ((nth i tyl bot).(ty_shr_mono) with "Hord").
+    by iApply ((nth i tyl emp).(ty_shr_mono) with "Hord").
   Qed.
   Next Obligation.
     intros n tyl Hn κ tid N E l q ?? Hdup%Is_true_eq_true.
@@ -450,7 +462,7 @@ Section types.
     setoid_rewrite split_sum_mt. iDestruct "H" as (i) "[Hshr0 Hshr]".
     iVs (lft_frac_borrow_open with "[] Hshr0 Htok1") as (q'1) "[Hown Hclose]". set_solver.
     { iIntros "!#". iIntros (q1 q2). rewrite heap_mapsto_op_eq. iSplit; eauto. }
-    iVs ((nth i tyl bot).(ty_shr_acc) with "Hshr [Htok2 Htl]")
+    iVs ((nth i tyl emp).(ty_shr_acc) with "Hshr [Htok2 Htl]")
       as (q'2) "[Hownq Hclose']"; try done; [|by iFrame|].
     { edestruct nth_in_or_default as [| ->]; last done.
       rewrite ->forallb_forall in Hdup. auto using Is_true_eq_left. }
@@ -524,7 +536,7 @@ End Types.
 
 Import Types.
 
-Notation "!" := bot : lrust_type_scope.
+Notation "!" := emp : lrust_type_scope.
 Notation "&uniq{ κ } ty" := (uniq_borrow κ ty)
   (format "&uniq{ κ } ty", at level 20, right associativity) : lrust_type_scope.
 Notation "&shr{ κ } ty" := (shared_borrow κ ty)

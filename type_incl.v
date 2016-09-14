@@ -44,7 +44,7 @@ Section ty_incl.
     eauto using ty_incl_weaken, ty_incl_trans, perm_incl_duplicable.
   Qed.
 
-  Lemma ty_incl_bot ρ ty : ty_incl ρ ! ty.
+  Lemma ty_incl_emp ρ ty : ty_incl ρ ! ty.
   Proof. iIntros (tid) "_!==>". iSplit; iIntros "!#*/=[]". Qed.
 
   Lemma ty_incl_own ρ ty1 ty2 q :
