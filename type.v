@@ -19,11 +19,10 @@ Section defs.
          used with anything else than namespaces. *)
       ty_shr : lifetime → thread_id → namespace → loc → iProp Σ;
 
+      ty_dup_persistent tid vl : ty_dup → PersistentP (ty_own tid vl);
       ty_shr_persistent κ tid N l : PersistentP (ty_shr κ tid N l);
 
       ty_size_eq tid vl : ty_own tid vl ⊢ length vl = ty_size;
-      ty_dup_dup tid vl E :
-        ty_dup → ty_own tid vl ={E}=> ty_own tid vl ★ ty_own tid vl;
       (* The mask for starting the sharing does /not/ include the
          namespace N, for allowing more flexibility for the user of
          this type (typically for the [own] type). AFAIK, there is no
@@ -43,7 +42,7 @@ Section defs.
           [κ]{q} ★ tl_own tid N ={E}=> ∃ q', ▷l ↦★{q'}: ty_own tid ★
              (▷l ↦★{q'}: ty_own tid ={E}=★ [κ]{q} ★ tl_own tid N)
     }.
-  Global Existing Instance ty_shr_persistent.
+  Global Existing Instances ty_shr_persistent ty_dup_persistent.
 
   Record simple_type :=
     { st_size : nat;
@@ -60,7 +59,6 @@ Section defs.
                  (∃ vl, (&frac{κ} λ q, l ↦★{q} vl) ★ ▷ st.(st_own) tid vl)%I
     |}.
   Next Obligation. apply st_size_eq. Qed.
-  Next Obligation. iIntros (st tid vl E _) "H". eauto. Qed.
   Next Obligation.
     intros st E N κ l tid q ??. iIntros "Hmt Htok".
     iVs (lft_borrow_exists with "Hmt Htok") as (vl) "[Hmt Htok]". set_solver.
@@ -106,7 +104,6 @@ Section types.
     {| ty_size := 0; ty_dup := true;
        ty_own tid vl := False%I; ty_shr κ tid N l := False%I |}.
   Next Obligation. iIntros (tid vl) "[]". Qed.
-  Next Obligation. iIntros (????) "[]". Qed.
   Next Obligation.
     iIntros (????????) "Hb Htok".
     iVs (lft_borrow_exists with "Hb Htok") as (vl) "[Hb Htok]". set_solver.
@@ -145,10 +142,10 @@ Section types.
          (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ★
             ∀ q', [κ]{q'} ={mgmtE ∪ N, mgmtE}▷=> ty.(ty_shr) κ tid N l' ★ [κ]{q'})%I
     |}.
+  Next Obligation. done. Qed.
   Next Obligation.
     iIntros (q ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
   Qed.
-  Next Obligation. done. Qed.
   Next Obligation.
     intros q ty E N κ l tid q' ?? =>/=. iIntros "Hshr Htok".
     iVs (lft_borrow_exists with "Hshr Htok") as (vl) "[Hb Htok]". set_solver.
@@ -197,10 +194,10 @@ Section types.
             ∀ q' κ'', κ'' ⊑ κ ★ κ'' ⊑ κ' ★ [κ'']{q'}
                ={mgmtE ∪ N, mgmtE}▷=> ty.(ty_shr) κ'' tid N l' ★ [κ'']{q'})%I
     |}.
+  Next Obligation. done. Qed.
   Next Obligation.
     iIntros (q ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
   Qed.
-  Next Obligation. done. Qed.
   Next Obligation.
     intros κ ty E N κ' l tid q' ?? =>/=. iIntros "Hshr Htok".
     iVs (lft_borrow_exists with "Hshr Htok") as (vl) "[Hb Htok]". set_solver.
@@ -338,23 +335,17 @@ Section types.
            tyoffs.1.(ty_shr) κ tid (N .@ i) (shift_loc l (tyoffs.2)))%I
     |}.
   Next Obligation.
-    iIntros (tyl tid vl) "Hown". iDestruct "Hown" as (vll) "(%&%&Hown)".
-    subst. by iApply (list_ty_type_eq with "Hown").
+    intros tyl tid vl Hfa.
+    cut (∀ vll, PersistentP ([★ list] tyvl ∈ combine tyl vll,
+                             ty_own (tyvl.1) tid (tyvl.2))). by apply _.
+    clear vl. induction tyl as [|ty tyl IH]=>[|[|vl vll]]; try by apply _.
+    edestruct andb_prop_elim as [Hduph Hdupq]. by apply Hfa.
+    rewrite /PersistentP /= big_sepL_cons.
+    iIntros "?". by iApply persistentP.
   Qed.
   Next Obligation.
-    induction tyl as [|ty tyq IH]; iIntros (tid vl E Hfa) "H";
-      iDestruct "H" as ([|vl0 vlq]) "(%&#Hlen&Hown)"; subst vl;
-      iDestruct "Hlen" as %Hlen; inversion Hlen; simpl in *.
-    - iIntros "!==>". iSplit; iExists []; by repeat iSplit.
-    - apply andb_prop_elim in Hfa. destruct Hfa as [Hfah Hfaq].
-      iDestruct (big_sepL_cons with "Hown") as "[Hh Hq]".
-      iVs (ty_dup_dup with "Hh") as "[Hh1 Hh2]". done.
-      iVs (IH tid (concat vlq) _ Hfaq with "[Hq]") as "[Hq1 Hq2]". by eauto.
-      iVsIntro. iSplitL "Hh1 Hq1".
-      + iDestruct "Hq1" as (vllq) "(%&%&?)". iExists (vl0::vllq).
-        rewrite big_sepL_cons/=. iFrame. iSplit; iPureIntro; congruence.
-      + iDestruct "Hq2" as (vllq) "(%&%&?)". iExists (vl0::vllq).
-        rewrite big_sepL_cons/=. iFrame. iSplit; iPureIntro; congruence.
+    iIntros (tyl tid vl) "Hown". iDestruct "Hown" as (vll) "(%&%&Hown)".
+    subst. by iApply (list_ty_type_eq with "Hown").
   Qed.
   Next Obligation.
     intros tyl E N κ l tid q ??. rewrite split_prod_mt.
@@ -385,7 +376,7 @@ Section types.
       iIntros (q i offs) "#Hshr!#([Htokh Htokq]&Htlf&Htlh&Htlq)".
       rewrite big_sepL_cons Nat.add_0_r.
       iDestruct "Hshr" as "[Hshrh Hshrq]". setoid_rewrite <-Nat.add_succ_comm.
-      iVs (IH with "Hshrq [Htokq Htlf Htlq]") as (q'q) "[Hownq Hcloseq]". done. by iFrame.
+      iVs (IH with "Hshrq [Htokq Htlf Htlq]") as (q'q) "[Hownq Hcloseq]". by iFrame.
       iVs (tyh.(ty_shr_acc) with "Hshrh [Htokh Htlh]") as (q'h) "[Hownh Hcloseh]"; try done.
       by pose proof (nclose_subseteq N i); set_solver. by iFrame.
       destruct (Qp_lower_bound q'h q'q) as (q' & q'0h & q'0q & -> & ->).
@@ -440,16 +431,14 @@ Section types.
                (nth i tyl bot).(ty_shr) κ tid N (shift_loc l 1))%I
     |}.
   Next Obligation.
-    iIntros (n tyl Hn tid vl) "Hown". iDestruct "Hown" as (i vl') "(%&Hown)". subst.
-    simpl. by iDestruct (sum_size_eq with "Hown") as %->.
+    intros n tyl Hn tid vl Hdup%Is_true_eq_true.
+    cut (∀ i vl', PersistentP (ty_own (nth i tyl bot) tid vl')). apply _.
+    intros. apply ty_dup_persistent. edestruct nth_in_or_default as [| ->]; last done.
+    rewrite ->forallb_forall in Hdup. auto using Is_true_eq_left.
   Qed.
   Next Obligation.
-    iIntros (n tyl Hn tid vl E Hdup%Is_true_eq_true) "Hown".
-    iDestruct "Hown" as (i vl') "[% Hown]". subst.
-    iVs ((nth i tyl bot).(ty_dup_dup) with "Hown") as "[Hown1 Hown2]".
-    - edestruct nth_in_or_default as [| ->]; last done.
-      rewrite ->forallb_forall in Hdup. auto using Is_true_eq_left.
-    - iSplitR "Hown1"; eauto.
+    iIntros (n tyl Hn tid vl) "Hown". iDestruct "Hown" as (i vl') "(%&Hown)". subst.
+    simpl. by iDestruct (sum_size_eq with "Hown") as %->.
   Qed.
   Next Obligation.
     intros n tyl Hn E N κ l tid q ??. iIntros "Hown Htok". rewrite split_sum_mt.
@@ -503,13 +492,13 @@ Section types.
   Program Definition cont {n : nat} (ρ : vec val n → @perm Σ) :=
     {| ty_size := 1; ty_dup := false;
        ty_own tid vl := (∃ f, vl = [f] ★
-          ∀ vl, ▷ ρ vl tid -★ tl_own tid ⊤
+          ∀ vl, ρ vl tid -★ tl_own tid ⊤
                  -★ WP f (map of_val vl) {{λ _, False}})%I;
        ty_shr κ tid N l := True%I |}.
+  Next Obligation. done. Qed.
   Next Obligation.
     iIntros (n ρ tid vl) "H". iDestruct "H" as (f) "[% _]". by subst.
   Qed.
-  Next Obligation. done. Qed.
   Next Obligation. intros. by iIntros "_ $". Qed.
   Next Obligation. intros. by iIntros "_ _". Qed.
   Next Obligation. done. Qed.
@@ -517,7 +506,7 @@ Section types.
   Program Definition fn {n : nat} (ρ : vec val n → @perm Σ):=
     ty_of_st {| st_size := 1;
        st_own tid vl := (∃ f, vl = [f] ★
-          ∀ vl, {{ ▷ ρ vl tid ★ tl_own tid ⊤ }} f (map of_val vl) {{λ _, False}})%I |}.
+          ∀ vl, {{ ρ vl tid ★ tl_own tid ⊤ }} f (map of_val vl) {{λ _, False}})%I |}.
   Next Obligation.
     iIntros (n ρ tid vl) "H". iDestruct "H" as (f) "[% _]". by subst.
   Qed.

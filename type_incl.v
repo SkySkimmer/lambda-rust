@@ -1,5 +1,5 @@
 From iris.algebra Require Import upred_big_op.
-From iris.program_logic Require Import thread_local.
+From iris.program_logic Require Import thread_local hoare.
 From lrust Require Export type perm_incl.
 
 Import Types.
@@ -40,9 +40,8 @@ Section ty_incl.
 
   Global Instance ty_incl_preorder ρ: Duplicable ρ → PreOrder (ty_incl ρ).
   Proof.
-    split.
-    - apply _.
-    - intros ?????. eauto using ty_incl_weaken, ty_incl_trans.
+    split. apply _.
+    eauto using ty_incl_weaken, ty_incl_trans, perm_incl_duplicable.
   Qed.
 
   Lemma ty_incl_bot ρ ty : ty_incl ρ ! ty.
@@ -87,34 +86,37 @@ Section ty_incl.
       by iApply (ty_shr_mono with "Hincl Hty").
   Qed.
 
+  (* We have the additional hypothesis that ρ should be duplicable.
+     The only way I can see to circumvent this limitation is to deeply
+     embed permissions (and their inclusion). Not sure this is worth it. *)
   Lemma ty_incl_prod ρ tyl1 tyl2 :
     Duplicable ρ → Forall2 (ty_incl ρ) tyl1 tyl2 →
     ty_incl ρ (product tyl1) (product tyl2).
   Proof.
-    intros Hρ HFA. eapply ty_incl_weaken. apply Hρ.
-    iIntros (tid) "[Hρ1 Hρ2]". iSplitL "Hρ1".
+    intros Hρ HFA. iIntros (tid) "#Hρ". iSplitL "".
     - assert (Himpl : ρ tid ={⊤}=>
          □ (∀ vll, length tyl1 = length vll →
                ([★ list] tyvl ∈ combine tyl1 vll, ty_own (tyvl.1) tid (tyvl.2))
              → ([★ list] tyvl ∈ combine tyl2 vll, ty_own (tyvl.1) tid (tyvl.2)))).
       { induction HFA as [|ty1 ty2 tyl1 tyl2 Hincl HFA IH].
         - iIntros "_!==>!#* _ _". by rewrite big_sepL_nil.
-        - iIntros "Hρ". iVs (Hρ with "Hρ") as "[Hρ1 Hρ2]".
-          iVs (IH with "Hρ1") as "#Hqimpl". iVs (Hincl with "Hρ2") as "[#Hhimpl _]".
-          iIntros "!==>!#*%". destruct vll as [|vlh vllq]. done. rewrite !big_sepL_cons.
+        - iIntros "#Hρ". iVs (IH with "Hρ") as "#Hqimpl".
+          iVs (Hincl with "Hρ") as "[#Hhimpl _]".
+          iIntros "!==>!#*%". destruct vll as [|vlh vllq]. done.
+          rewrite !big_sepL_cons.
           iIntros "[Hh Hq]". iSplitL "Hh". by iApply "Hhimpl".
           iApply ("Hqimpl" with "[] Hq"). iPureIntro. simpl in *. congruence. }
-      iVs (Himpl with "Hρ1") as "#Himpl". iIntros "!==>!#*H".
+      iVs (Himpl with "Hρ") as "#Himpl". iIntros "!==>!#*H".
       iDestruct "H" as (vll) "(%&%&H)". iExists _. iSplit. done. iSplit.
       by rewrite -(Forall2_length _ _ _ HFA). by iApply ("Himpl" with "[] H").
-    - rewrite /product /=. iRevert "Hρ2". generalize O.
+    - rewrite /product /=. iRevert "Hρ". generalize O.
       change (ndot (A:=nat)) with (λ N i, N .@ (0+i)%nat). generalize O.
       induction HFA as [|ty1 ty2 tyl1 tyl2 Hincl HFA IH].
       + iIntros (i offs) "_!==>!#*_/=". rewrite big_sepL_nil. eauto.
-      + iIntros (i offs) "Hρ". iVs (Hρ with "Hρ") as "[Hρ1 Hρ2]".
-        iVs (IH with "[] Hρ1") as "#Hqimpl".
-        done. (* TODO : get rid of this done by doing induction in the proof mode. *)
-        iVs (Hincl with "Hρ2") as "[_ #Hhimpl]". iIntros "!==>!#*".
+      + iIntros (i offs) "#Hρ". iVs (IH with "[] []") as "#Hqimpl".
+          by iClear "Hρ". (* TODO : get rid of this by doing induction in the proof mode. *)
+          done.
+        iVs (Hincl with "Hρ") as "[_ #Hhimpl]". iIntros "!==>!#*".
         rewrite !big_sepL_cons. iIntros "[Hh Hq]".
         setoid_rewrite <-Nat.add_succ_comm.
         iDestruct ("Hhimpl" $! _ _ _ with "Hh") as "[$ %]".
@@ -144,20 +146,18 @@ Section ty_incl.
   Admitted.
 
   Lemma ty_incl_sum ρ n tyl1 tyl2 (_ : LstTySize n tyl1) (_ : LstTySize n tyl2) :
-    Duplicable ρ →
-    Forall2 (ty_incl ρ) tyl1 tyl2 → ty_incl ρ (sum tyl1) (sum tyl2).
+    Duplicable ρ → Forall2 (ty_incl ρ) tyl1 tyl2 →
+    ty_incl ρ (sum tyl1) (sum tyl2).
   Proof.
-    iIntros (DUP FA tid) "Hρ". rewrite /sum /=.
-    iVs (DUP with "Hρ") as "[Hρ1 Hρ2]". iSplitR "Hρ2".
+    iIntros (DUP FA tid) "#Hρ". rewrite /sum /=. iSplitR "".
     - assert (Hincl : ρ tid ={⊤}=>
          (□ ∀ i vl, (nth i tyl1 !%T).(ty_own) tid vl
                   → (nth i tyl2 !%T).(ty_own) tid vl)).
       { clear -FA DUP. induction FA as [|ty1 ty2 tyl1 tyl2 Hincl _ IH].
         - iIntros "_!==>*!#". eauto.
-        - iIntros "Hρ". iVs (DUP with "Hρ") as "[Hρ1 Hρ2]".
-          iVs (IH with "Hρ1") as "#IH". iVs (Hincl with "Hρ2") as "[#Hh _]".
+        - iIntros "#Hρ".  iVs (IH with "Hρ") as "#IH". iVs (Hincl with "Hρ") as "[#Hh _]".
           iIntros "!==>*!#*Hown". destruct i as [|i]. by iApply "Hh". by iApply "IH". }
-      iVs (Hincl with "Hρ1") as "#Hincl". iIntros "!==>!#*H".
+      iVs (Hincl with "Hρ") as "#Hincl". iIntros "!==>!#*H".
       iDestruct "H" as (i vl') "[% Hown]". subst. iExists _, _. iSplit. done.
         by iApply "Hincl".
     - assert (Hincl : ρ tid ={⊤}=>
@@ -165,11 +165,11 @@ Section ty_incl.
                      → (nth i tyl2 !%T).(ty_shr) κ tid E l)).
       { clear -FA DUP. induction FA as [|ty1 ty2 tyl1 tyl2 Hincl _ IH].
         - iIntros "_!==>*!#". eauto.
-        - iIntros "Hρ". iVs (DUP with "Hρ") as "[Hρ1 Hρ2]".
-          iVs (IH with "Hρ1") as "#IH". iVs (Hincl with "Hρ2") as "[_ #Hh]".
+        - iIntros "#Hρ".
+          iVs (IH with "Hρ") as "#IH". iVs (Hincl with "Hρ") as "[_ #Hh]".
           iIntros "!==>*!#*Hown". destruct i as [|i]; last by iApply "IH".
           by iDestruct ("Hh" $! _ _ _ with "Hown") as "[$ _]". }
-      iVs (Hincl with "Hρ2") as "#Hincl". iIntros "!==>!#*H". iSplit; last done.
+      iVs (Hincl with "Hρ") as "#Hincl". iIntros "!==>!#*H". iSplit; last done.
       iDestruct "H" as (i) "[??]". iExists _. iSplit. done. by iApply "Hincl".
   Qed.
 
@@ -203,23 +203,26 @@ Section ty_incl.
     Duplicable ρ → (∀ vl : vec val n, ρ ★ ρ2 vl ⇒ ρ1 vl) →
     ty_incl ρ (cont ρ1) (cont ρ2).
   Proof.
-    iIntros (? Hρ1ρ2 tid) "Hρ".
-    iVs (inv_alloc lrustN _ (ρ tid) with "[Hρ]") as "#INV". by auto.
-    iIntros "!==>". iSplit; iIntros "!#*H"; last by auto.
+    iIntros (? Hρ1ρ2 tid) "#Hρ!==>". iSplit; iIntros "!#*H"; last by auto.
     iDestruct "H" as (f) "[% Hwp]". subst. iExists _. iSplit. done.
-    iIntros (vl) "Htl Hown".
-    iApply pvs_wp. iInv lrustN as "Hρ" "Hclose".
-    (* FIXME : we need some kind of "Invariant of duplicable
-       propositions" that we can open several times. *)
-    admit.
-  Admitted.
+    iIntros (vl) "Hρ2 Htl". iVs (Hρ1ρ2 with "[Hρ2]"). by iFrame.
+    by iApply ("Hwp" with "[-Htl] Htl").
+  Qed.
 
   Lemma ty_incl_fn {n} ρ ρ1 ρ2 :
     Duplicable ρ → (∀ vl : vec val n, ρ ★ ρ2 vl ⇒ ρ1 vl) →
     ty_incl ρ (fn ρ1) (fn ρ2).
-    (* FIXME : idem. *)
-    admit.
-  Admitted.
+  Proof.
+    iIntros (? Hρ1ρ2 tid) "#Hρ!==>". iSplit; iIntros "!#*#H".
+    - iDestruct "H" as (f) "[% Hwp]". subst. iExists _. iSplit. done.
+      iIntros (vl) "!#[Hρ2 Htl]". iVs (Hρ1ρ2 with "[Hρ2]"). by iFrame.
+      iApply "Hwp". by iFrame.
+    - iSplit; last done. simpl. iDestruct "H" as (vl0) "[? Hvl]".
+      iExists vl0. iFrame "#". iNext. iDestruct "Hvl" as (f) "[% Hwp]".
+      iExists f. iSplit. done.
+      iIntros (vl) "!#[Hρ2 Htl]". iVs (Hρ1ρ2 with "[Hρ2]"). by iFrame.
+      iApply "Hwp". by iFrame.
+  Qed.
 
   Lemma ty_incl_fn_cont {n} ρ ρf : ty_incl ρ (fn ρf) (cont (n:=n) ρf).
   Proof.
@@ -234,7 +237,7 @@ Section ty_incl.
     ty_incl ρ ty1 ty2 → ρ ★ v ◁ ty1 ⇒ v ◁ ty2.
   Proof.
     iIntros (Hincl tid) "[Hρ Hty1]". iVs (Hincl with "Hρ") as "[#Hownincl _]".
-    by iApply "Hownincl".
+    destruct v; last done. by iApply "Hownincl".
   Qed.
 
 End ty_incl.

@@ -15,9 +15,6 @@ Section defs.
   Global Instance perm_equiv : Equiv perm :=
     λ ρ1 ρ2, perm_incl ρ1 ρ2 ∧ perm_incl ρ2 ρ1.
 
-  Class Duplicable (ρ : @perm Σ) :=
-    perm_incl_duplicable : perm_incl ρ (ρ ★ ρ).
-
 End defs.
 
 Infix "⇒" := perm_incl (at level 95, no associativity) : C_scope.
@@ -76,6 +73,9 @@ Section props.
   Global Instance perm_top_left_id : LeftId (⇔) ⊤ sep.
   Proof. intros ρ. by rewrite comm right_id. Qed.
 
+  Lemma perm_incl_duplicable ρ (_ : Duplicable ρ) : ρ ⇒ ρ ★ ρ.
+  Proof. iIntros (tid) "#H!==>". by iSplit. Qed.
+
   Lemma perm_tok_plus κ q1 q2 :
     tok κ q1 ★ tok κ q2 ⇔ tok κ (q1 + q2).
   Proof.
@@ -92,30 +92,13 @@ Section props.
   Lemma perm_incl_share v κ ty :
     v ◁ &uniq{κ} ty ⇒ v ◁ &shr{κ} ty.
   Proof.
-    iIntros (tid) "Huniq". iDestruct "Huniq" as (l) "[% Hown]".
-    (* FIXME : we nee some tokens here. *)
+    iIntros (tid) "Huniq". destruct v; last done.
+    iDestruct "Huniq" as (l) "[% Hown]".
+    (* FIXME : we need some tokens here. *)
     iAssert (∃ q, [κ]{q})%I as "Htok". admit.
     iDestruct "Htok" as (q) "Htok".
     iVs (ty.(ty_share) _ lrustN with "Hown Htok") as "[Hown _]".
     admit. set_solver. iVsIntro. iExists _. iSplit. done. done.
   Admitted.
 
-  Lemma has_type_dup v ty : ty.(ty_dup) → Duplicable (v ◁ ty).
-  Proof. iIntros (Hdup tid) "H". by iApply ty_dup_dup. Qed.
-
-  Global Instance lft_incl_dup κ κ' : Duplicable (κ ⊑ κ').
-  Proof. iIntros (tid) "#H!==>". by iSplit. Qed.
-
-  Global Instance sep_dup P Q :
-    Duplicable P → Duplicable Q → Duplicable (P ★ Q).
-  Proof.
-    iIntros (HP HQ tid) "[HP HQ]".
-    iVs (HP with "HP") as "[$$]". by iApply HQ.
-  Qed.
-
-  Global Instance top_dup : Duplicable ⊤.
-  Proof. iIntros (tid) "_!==>". by iSplit. Qed.
-
 End props.
-
-Hint Extern 0 (Duplicable (_ ◁ _)) => apply has_type_dup; exact I.

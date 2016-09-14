@@ -5,14 +5,19 @@ From lrust Require Export type.
 Delimit Scope perm_scope with P.
 Bind Scope perm_scope with perm.
 
+(* TODO : find a better place for this. *)
+Definition valuable := option val.
+Definition proj_valuable (n : Z) :=
+  (≫= λ v, match v with LitV (LitLoc l) => Some (shift_loc l n) | _ => None end).
+
 Module Perm.
 
 Section perm.
 
   Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
 
-  Definition has_type (v : val) (ty : type) : perm :=
-    λ tid, ty.(ty_own) tid [v].
+  Definition has_type (v : valuable) (ty : type) : perm :=
+    λ tid, from_option (λ v, ty.(ty_own) tid [v]) False%I v.
 
   Definition extract (κ : lifetime) (ρ : perm) : perm :=
     λ tid, (κ ∋ ρ tid)%I.
@@ -52,3 +57,26 @@ Notation "∃ x .. y , P" :=
   (exist (λ x, .. (exist (λ y, P)) ..)) : perm_scope.
 
 Infix "★" := sep (at level 80, right associativity) : perm_scope.
+
+Section duplicable.
+
+  Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
+
+  Class Duplicable (ρ : @perm Σ) :=
+    duplicable_persistent tid : PersistentP (ρ tid).
+  Global Existing Instance duplicable_persistent.
+
+  Global Instance has_type_dup v ty : ty.(ty_dup) → Duplicable (v ◁ ty).
+  Proof. intros Hdup tid. apply _. Qed.
+
+  Global Instance lft_incl_dup κ κ' : Duplicable (κ ⊑ κ').
+  Proof. intros tid. apply _. Qed.
+
+  Global Instance sep_dup P Q :
+    Duplicable P → Duplicable Q → Duplicable (P ★ Q).
+  Proof. intros HP HQ tid. apply _. Qed.
+
+  Global Instance top_dup : Duplicable ⊤.
+  Proof. intros tid. apply _. Qed.
+
+End duplicable.
