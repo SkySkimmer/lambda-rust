@@ -107,7 +107,8 @@ Section props.
     iAssert (∃ q, [κ]{q})%I as "Htok". admit.
     iDestruct "Htok" as (q) "Htok".
     iVs (ty.(ty_share) _ lrustN with "Hown Htok") as "[Hown _]".
-    admit. set_solver. iVsIntro. iExists _. iSplit. done. done.
+    apply disjoint_union_l; solve_ndisj. set_solver. iVsIntro.
+    iExists _. iSplit. done. done.
   Admitted.
 
   Lemma perm_split_own_prod tyl (q : Qp) (ql : list Qp) v :
@@ -144,7 +145,7 @@ Section props.
       pose (q' := mk_Qp _ Hq').
       assert (q = q0 + q')%Qp as -> by rewrite Qp_eq -Hq //. clear Hq.
       injection Hlen. clear Hlen. intro Hlen.
-      simpl in IH|-*. rewrite -(IH q') //. split; iIntros (tid) "H".
+      simpl in IH|-*. rewrite -(IH q') //. clear IH. split; iIntros (tid) "H".
       + iDestruct "H" as (l') "(Hl'&Hf&H)". iDestruct "Hl'" as %[= Hl']. subst.
         iDestruct "H" as (vl) "[Hvl H]".
         iDestruct "H" as ([|vl0[|vl1 vll]]) "(>%&>%&Hown)"; try done. subst.

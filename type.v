@@ -101,17 +101,8 @@ Section types.
   Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
 
   Program Definition bot :=
-    {| ty_size := 0; ty_dup := true;
-       ty_own tid vl := False%I; ty_shr κ tid N l := False%I |}.
+    ty_of_st {| st_size := 0; st_own tid vl := False%I |}.
   Next Obligation. iIntros (tid vl) "[]". Qed.
-  Next Obligation.
-    iIntros (????????) "Hb Htok".
-    iVs (lft_borrow_exists with "Hb Htok") as (vl) "[Hb Htok]". set_solver.
-    iVs (lft_borrow_split with "Hb") as "[_ Hb]". set_solver.
-    iVs (lft_borrow_persistent with "Hb Htok") as "[>[] _]". set_solver.
-  Qed.
-  Next Obligation. iIntros (?????) "_ []". Qed.
-  Next Obligation. intros. iIntros "[]". Qed.
 
   Program Definition unit :=
     ty_of_st {| st_size := 0; st_own tid vl := (vl = [])%I |}.
