@@ -55,6 +55,10 @@ Section defs.
   Program Definition ty_of_st (st : simple_type) : type :=
     {| ty_size := st.(st_size); ty_dup := true;
        ty_own := st.(st_own);
+
+       (* [st.(st_own) tid vl] needs to be outside of the fractured
+          borrow, otherwise I do not knwo how to prove the shr part of
+          [lft_incl_ty_incl_shared_borrow]. *)
        ty_shr := λ κ tid _ l,
                  (∃ vl, (&frac{κ} λ q, l ↦★{q} vl) ★ ▷ st.(st_own) tid vl)%I
     |}.
