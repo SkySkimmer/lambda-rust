@@ -261,6 +261,17 @@ Section props.
     - iExists _. eauto.
   Qed.
 
+  Lemma reborrow_shr_perm_incl κ κ' v ty :
+    κ ⊑ κ' ★ v ◁ &shr{κ'}ty ⇒ v ◁ &shr{κ}ty.
+  Proof.
+    iIntros (tid) "[#Hord #Hκ']".
+    destruct v as [[[|l|]|]|];
+      try by (iDestruct "Hκ'" as "[]" || iDestruct "Hκ'" as (l) "[% _]").
+    iDestruct "Hκ'" as (l') "[EQ Hκ']". iDestruct "EQ" as %[=]. subst l'.
+    iVsIntro. iExists _. iSplit. done.
+    by iApply (ty_shr_mono with "Hord Hκ'").
+  Qed.
+
   Lemma lftincl_borrowing κ κ' q : borrowing κ ⊤ [κ']{q} (κ ⊑ κ').
   Proof.
     iIntros (tid) "#Hκ #Hord [Htok #Hκ']".
