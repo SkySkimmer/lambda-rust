@@ -16,6 +16,9 @@ Section defs.
   Global Instance perm_equiv : Equiv perm :=
     λ ρ1 ρ2, perm_incl ρ1 ρ2 ∧ perm_incl ρ2 ρ1.
 
+  Definition borrowing κ (ρ ρ1 ρ2 : perm) :=
+    ∀ tid, lft κ ⊢ ρ tid -★ ρ1 tid ={⊤}=★ ρ2 tid ★ κ ∋ ρ1 tid.
+
 End defs.
 
 Infix "⇒" := perm_incl (at level 95, no associativity) : C_scope.
@@ -153,7 +156,7 @@ Section props.
     { destruct ql as [|q0 ql]; last done. destruct q. simpl in *. by subst. }
     destruct v as [[[|l|]|]|];
       try by (destruct tyl as [|ty0 tyl], ql as [|q0 ql]; try done;
-        by split; iIntros (tid) "H";
+        by split; iIntros (tid) "H"; try done;
           [iDestruct "H" as (l) "[% _]" || iDestruct "H" as "[]" |
            iDestruct "H" as "[[]_]"]).
     destruct (@exists_last _ ql) as (ql'&q0&->). done.
@@ -174,6 +177,96 @@ Section props.
     - rewrite /= big_sepL_cons /sep -IH // !uPred.sep_exist_r uPred.sep_exist_l.
       apply uPred.exist_proper=>l0. rewrite -!assoc /=.
       by iSplit; iIntros "[$[$[$[$$]]]]".
+  Qed.
+
+  Lemma perm_split_uniq_borrow_prod tyl κ v :
+    v ◁ &uniq{κ} (product tyl) ⇒
+      foldr (λ tyoffs acc,
+             proj_valuable (Z.of_nat (tyoffs.2)) v ◁ &uniq{κ} (tyoffs.1) ★ acc)%P
+            ⊤ (combine_offs tyl 0).
+  Proof.
+    intros tid.
+    destruct v as [[[|l|]|]|];
+      iIntros "H"; try iDestruct "H" as "[]";
+        iDestruct "H" as (l0) "[EQ H]"; iDestruct "EQ" as %[=]. subst l0.
+    rewrite split_prod_mt. iRevert "H".
+    induction (combine_offs tyl 0) as [|[ty offs] ll IH]. by auto.
+    iIntros "H". rewrite big_sepL_cons /=.
+    iVs (lft_borrow_split with "H") as "[H0 H]". set_solver.
+    iVs (IH with "[] H") as "$". done.
+    iVsIntro. iExists _. eauto.
+  Qed.
+
+  Lemma perm_split_shr_borrow_prod tyl κ v :
+    v ◁ &shr{κ} (product tyl) ⇒
+      foldr (λ tyoffs acc,
+             proj_valuable (Z.of_nat (tyoffs.2)) v ◁ &shr{κ} (tyoffs.1) ★ acc)%P
+            ⊤ (combine_offs tyl 0).
+  Proof.
+    intros tid.
+    destruct v as [[[|l|]|]|];
+      iIntros "H"; try iDestruct "H" as "[]";
+        iDestruct "H" as (l0) "[EQ H]"; iDestruct "EQ" as %[=]. subst l0.
+    simpl. iVsIntro. iRevert "H".
+    change (ndot (A:=nat)) with (λ N i, N .@ (0+i)%nat). generalize O at 2.
+    induction (combine_offs tyl 0) as [|[ty offs] ll IH]. by auto.
+    iIntros (i) "H". rewrite big_sepL_cons /=. iDestruct "H" as "[H0 H]".
+    setoid_rewrite <-Nat.add_succ_comm. iDestruct (IH with "[] H") as "$". done.
+    iExists _. iSplit. done. admit.
+    (* FIXME : namespaces problem. *)
+  Admitted.
+
+  Lemma borrowing_perm_incl κ ρ ρ1 ρ2 θ :
+    borrowing κ ρ ρ1 ρ2 → ρ ★ κ ∋ θ ★ ρ1 ⇒ ρ2 ★ κ ∋ (θ ★ ρ1).
+  Proof.
+    iIntros (Hbor tid) "(Hρ&Hθ&Hρ1)".
+    iVs (Hbor with "[#] Hρ Hρ1") as "[$ ?]". by iApply lft_extract_lft.
+    iApply lft_extract_combine. set_solver. by iFrame.
+  Qed.
+
+  Lemma own_uniq_borrowing v q ty κ :
+    borrowing κ ⊤ (v ◁ own q ty) (v ◁ &uniq{κ} ty).
+  Proof.
+    iIntros (tid) "#Hκ _ Hown".
+    destruct v as [[[|l|]|]|];
+      try by (iDestruct "Hown" as "[]" || iDestruct "Hown" as (l) "[% _]").
+    iDestruct "Hown" as (l') "[EQ [Hf Hown]]". iDestruct "EQ" as %[=]. subst l'.
+    iVs (lft_borrow_create with "Hκ Hown") as "[Hbor Hextract]". done.
+    iSplitL "Hbor". by simpl; eauto.
+    assert ((Some #l ◁ own q ty)%P tid ⊣⊢
+            ▷ †{q}l…ty_size ty ★ ▷ l ↦★: ty_own ty tid) as ->.
+    { iSplit; iIntros "H/=".
+      - iDestruct "H" as (l') "[EQ [Hf Hown]]". iDestruct "EQ" as %[=]. subst l'.
+        by iFrame.
+      - iExists _. eauto. }
+    iVs (lft_borrow_create with "Hκ Hf") as "[_ Hf]". done.
+    iVs (lft_extract_combine with "[-]"). done. by iFrame.
+    (* FIXME : extraction needs to be monotone in some sense to
+       remove the later. *)
+    admit.
+  Admitted.
+
+  Lemma reborrow_uniq_borrowing κ κ' v ty :
+    borrowing κ (κ ⊑ κ') (v ◁ &uniq{κ'}ty) (v ◁ &uniq{κ}ty).
+  Proof.
+    iIntros (tid) "_ #Hord H".
+    destruct v as [[[|l|]|]|];
+      try by (iDestruct "H" as "[]" || iDestruct "H" as (l) "[% _]").
+    iDestruct "H" as (l') "[EQ H]". iDestruct "EQ" as %[=]. subst l'.
+    iVs (lft_reborrow with "Hord H") as "[H Hextr]". done.
+    iVsIntro. iSplitL "H". iExists _. by eauto.
+    iApply (lft_extract_proper with "Hextr").
+    iSplit; iIntros "H/=".
+    - iDestruct "H" as (l') "[EQ H]". iDestruct "EQ" as %[=]. by subst l'.
+    - iExists _. eauto.
+  Qed.
+
+  Lemma lftincl_borrowing κ κ' q : borrowing κ ⊤ [κ']{q} (κ ⊑ κ').
+  Proof.
+    iIntros (tid) "#Hκ #Hord [Htok #Hκ']".
+    iVs (lft_mkincl' with "[#] Htok") as "[$ H]". done. by iFrame "#".
+    iVs (lft_borrow_create with "Hκ []") as "[_ H']". done. by iNext; iApply "Hκ'".
+    iApply lft_extract_combine. done. by iFrame.
   Qed.
 
 End props.
