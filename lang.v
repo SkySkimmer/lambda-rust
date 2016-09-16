@@ -340,6 +340,13 @@ Lemma shift_loc_0:
   ∀ l, shift_loc l 0 = l.
 Proof. unfold shift_loc=>[[??]] /=. f_equal. lia. Qed.
 
+Lemma shift_loc_assoc_nat:
+  ∀ l (n n' : nat), shift_loc (shift_loc l n) n' = shift_loc l (n+n')%nat.
+Proof. unfold shift_loc=>/= l n n'. f_equal. lia. Qed.
+Lemma shift_loc_0_nat:
+  ∀ l, shift_loc l 0%nat = l.
+Proof. unfold shift_loc=>[[??]] /=. f_equal. lia. Qed.
+
 Definition fresh_block (σ : state) : block :=
   let blocklst := (elements (dom _ σ : gset loc)).*1 in
   let blockset : gset block := foldr (fun b s => {[b]} ∪ s)%C ∅ blocklst in

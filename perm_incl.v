@@ -57,6 +57,9 @@ Section props.
     iVs (B with "A") as "$". iApply (D with "B").
   Qed.
 
+  Lemma uPred_equiv_perm_equiv ρ θ : (∀ tid, ρ tid ⊣⊢ θ tid) → (ρ ⇔ θ).
+  Proof. intros Heq. split=>tid; rewrite Heq; by iIntros. Qed.
+
   Lemma perm_incl_top ρ : ρ ⇒ ⊤.
   Proof. iIntros (tid) "H". eauto. Qed.
 
@@ -111,67 +114,74 @@ Section props.
     iExists _. iSplit. done. done.
   Admitted.
 
+  Lemma split_own_prod tyl (q0: Qp) (ql : list Qp) (l : loc) tid :
+    length tyl = length ql →
+      (own (foldr Qp_plus q0 ql) (product tyl)).(ty_own) tid [ #l] ⊣⊢
+    ▷ †{q0}(shift_loc l (0 + (product tyl).(ty_size))%nat)…0 ★
+    [★ list] qtyoffs ∈ (combine ql (combine_offs tyl 0)),
+         (own (qtyoffs.1) (qtyoffs.2.1)).(ty_own)
+              tid [ #(shift_loc l (qtyoffs.2.2))].
+  Proof.
+    intros Hlen.
+    assert (REW: ∀ (l : loc) (Φ : loc → iProp Σ),
+               Φ l ⊣⊢ (∃ l0:loc, [ #l] = [ #l0] ★ Φ l0)).
+    { intros l0 Φ. iSplit; iIntros "H". eauto.
+      iDestruct "H" as (l') "[Heq H]". iDestruct "Heq" as %[=]. subst. done. }
+    setoid_rewrite <-REW. clear REW.
+    rewrite big_sepL_sepL assoc split_prod_mt big_sepL_later. apply uPred.sep_proper.
+    - rewrite -{1}(shift_loc_0_nat l). generalize 0%nat at -3. revert ql Hlen.
+      induction tyl as [|ty tyl IH]; intros [|q ql] [=] offs.
+      + by rewrite big_sepL_nil !right_id.
+      + rewrite -heap_freeable_op_eq uPred.later_sep shift_loc_assoc_nat IH //
+                Nat.add_assoc big_sepL_cons.
+        iSplit; by iIntros "($&$&$)".
+    - generalize 0%nat. revert ql Hlen.
+      induction tyl as [|ty tyl IH]; intros [|q ql] [=] offs. done.
+      rewrite !big_sepL_cons IH //.
+  Qed.
+
   Lemma perm_split_own_prod tyl (q : Qp) (ql : list Qp) v :
     length tyl = length ql →
     foldr (λ (q : Qp) acc, q + acc)%Qc 0%Qc ql = q →
     v ◁ own q (product tyl) ⇔
-      foldr (λ qtysz acc,
-             proj_valuable (Z.of_nat (qtysz.2.2)) v ◁
-                           own (qtysz.1) (qtysz.2.1) ★ acc)
+      foldr (λ qtyoffs acc,
+             proj_valuable (Z.of_nat (qtyoffs.2.2)) v ◁
+                           own (qtyoffs.1) (qtyoffs.2.1) ★ acc)
             ⊤ (combine ql (combine_offs tyl 0)).
   Proof.
-    destruct tyl as [|ty0 tyl], ql as [|q0 ql]; try done.
-    { simpl. intros _?. destruct q as [q ?]. simpl in *. by subst. }
-    destruct v as [[[|l|]|]|];
-      try by split; iIntros (tid) "H";
-        [iDestruct "H" as (l) "[% _]" || iDestruct "H" as "[]" |
-         iDestruct "H" as "[[]_]"].
-    intros [= EQ]. revert EQ.
-    rewrite -{1}(shift_loc_0 l). change 0 with (Z.of_nat 0). generalize O at 2 3.
-    revert q ty0 q0 ql. induction tyl as [|ty1 tyl IH]=>q ty0 q0 ql offs Hlen Hq;
-      destruct ql as [|q1 ql]; try done.
-    - simpl in Hq. rewrite ->Qcplus_0_r, <-Qp_eq in Hq. subst q.
-      rewrite /= right_id. split; iIntros (tid) "H!==>/="; rewrite Nat.add_0_r.
-      + iDestruct "H" as (l') "(%&?&H)". iExists l'. iSplit. done. iFrame. iNext.
-        iDestruct "H" as (vl) "[Hvl H]".
-        iDestruct "H" as ([|?[|??]]) "(%&%&?)"; try done.
-        iExists _. subst. rewrite /= app_nil_r big_sepL_singleton. by iFrame.
-      + iDestruct "H" as (l') "(%&?&Hown)". iExists l'. iSplit. done. iFrame. iNext.
-        iDestruct "Hown" as (vl) "[Hmt Hown]". iExists vl. iFrame.
-        iExists [vl]. rewrite /= app_nil_r big_sepL_singleton. iFrame. by iSplit.
-    - assert (Hq' : (0 < q1 + foldr (λ (q : Qp) acc, q + acc) 0 ql)%Qc).
-      { apply Qcplus_pos_nonneg. done. clear. induction ql. done.
-        apply Qcplus_nonneg_nonneg; last done. by apply Qclt_le_weak. }
-      pose (q' := mk_Qp _ Hq').
-      assert (q = q0 + q')%Qp as -> by rewrite Qp_eq -Hq //. clear Hq.
-      injection Hlen. clear Hlen. intro Hlen.
-      simpl in IH|-*. rewrite -(IH q') //. clear IH. split; iIntros (tid) "H".
-      + iDestruct "H" as (l') "(Hl'&Hf&H)". iDestruct "Hl'" as %[= Hl']. subst.
-        iDestruct "H" as (vl) "[Hvl H]".
-        iDestruct "H" as ([|vl0[|vl1 vll]]) "(>%&>%&Hown)"; try done. subst.
-        rewrite big_sepL_cons heap_mapsto_vec_app -heap_freeable_op_eq.
-        iDestruct "Hf" as "[Hf0 Hfq]". iDestruct "Hvl" as "[Hvl0 Hvll]".
-        iDestruct "Hown" as "[Hown0 Hown]".
-        iAssert (▷ (length vl0 = ty_size ty0))%I with "[#]" as "#>Hlenvl0".
-        { iNext. iApply (ty_size_eq with "Hown0"). }
-        iDestruct "Hlenvl0" as %Hlenvl0. iVsIntro. iSplitL "Hf0 Hvl0 Hown0".
-        * iExists _. iSplit. done. iFrame. iNext. iExists vl0. by iFrame.
-        * iExists _. iSplit. done. rewrite !shift_loc_assoc -!Nat2Z.inj_add Hlenvl0.
-          iFrame. iNext. iExists (concat (vl1 :: vll)). iFrame. iExists (_ :: _).
-          iSplit. done. iFrame. iPureIntro. simpl in *. congruence.
-      + iDestruct "H" as "[H0 H]".
-        iDestruct "H0" as (vl0) "(Heq&Hf0&Hmt0)". iDestruct "Heq" as %[= ?]. subst vl0.
-        iDestruct "H" as (vl) "(Heq&Hf&Hmt)". iDestruct "Heq" as %[= ?]. subst vl.
-        iVsIntro. iExists (shift_loc l offs). iSplit. done. iNext.
-        iSplitL "Hf Hf0".
-        * rewrite -heap_freeable_op_eq shift_loc_assoc Nat2Z.inj_add. by iFrame.
-        * iDestruct "Hmt0" as (vl0) "[Hmt0 Hown0]". iDestruct "Hmt" as (vl) "[Hmt Hown]".
-          iDestruct (ty_size_eq with "Hown0") as %<-.
-          iExists (vl0 ++ vl). iSplitL "Hmt Hmt0".
-          { rewrite heap_mapsto_vec_app shift_loc_assoc Nat2Z.inj_add. by iFrame. }
-          iDestruct "Hown" as (vll) "(%&%&Hown)". subst.
-          iExists (_ :: _). iSplit. done. iSplit. iPureIntro; simpl in *; congruence.
-          rewrite big_sepL_cons. by iFrame.
+    intros Hlen Hq.
+    assert (DEC : Decision (∃ (l : loc), v = Some #l)).
+    { destruct v as [[[]|]|]; try by right; intros [l [=]]. left; eauto. }
+    destruct DEC as [[l ->]|Hv]; last first.
+    { destruct tyl as [|ty0 tyl], ql as [|q0 ql]; try done.
+      { destruct q as [q ?]. simpl in *. by subst. }
+      destruct v as [[[|l|]|]|];
+        try by split; iIntros (tid) "H";
+          [iDestruct "H" as (l) "[% _]" || iDestruct "H" as "[]" |
+           iDestruct "H" as "[[]_]"].
+      naive_solver. }
+    destruct (@exists_last _ ql) as (ql'&q0&->).
+    { destruct ql as [|q0 ql]; last done. destruct q. simpl in *. by subst. }
+    assert (foldr Qp_plus (q0/2) (ql' ++ [q0/2]) = q)%Qp as <-.
+    { destruct q as [q Hqpos]. apply Qp_eq. simpl in *. subst. clear. induction ql'.
+      - by rewrite /fold_right /app Qp_div_2 Qcplus_0_r.
+      - by rewrite /= IHql'. }
+    revert Hlen. assert (length (ql' ++ [q0]) = length (ql' ++ [q0/2]%Qp)) as ->. 
+    { rewrite !app_length /=. lia. }
+    intros Hlen. apply uPred_equiv_perm_equiv=>tid.
+    rewrite /has_type /from_option split_own_prod //.
+    clear -Hlen. revert ql' Hlen. generalize 0%nat at -2.
+    induction tyl as [|ty tyl IH]; destruct ql' as [|q ql']=>Hlen; try done.
+    - destruct tyl; last done. clear IH Hlen.
+      rewrite big_sepL_singleton /= /sep !right_id comm uPred.sep_exist_r.
+      apply uPred.exist_proper=>l0.
+      rewrite -{3}(Qp_div_2 q0) -{3}(right_id O plus ty.(ty_size))
+              -heap_freeable_op_eq uPred.later_sep -!assoc.
+      iSplit; iIntros "[#Eq [? [? ?]]]"; iFrame "# ★";
+        iDestruct "Eq" as %[=]; subst; rewrite shift_loc_assoc_nat //.
+    - simpl in *. rewrite big_sepL_cons /sep -IH; last by congruence. clear IH.
+      rewrite !uPred.sep_exist_r !uPred.sep_exist_l. apply uPred.exist_proper=>l0.
+      rewrite -!assoc /=. by iSplit; iIntros "[$[$[$[$$]]]]".
   Qed.
 
 End props.

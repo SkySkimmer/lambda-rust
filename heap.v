@@ -146,7 +146,7 @@ Section heap.
     l ↦★{q} (vl1 ++ vl2) ⊣⊢ l ↦★{q} vl1 ★ shift_loc l (length vl1) ↦★{q} vl2.
   Proof.
     rewrite /heap_mapsto_vec big_sepL_app.
-    do 2 f_equiv. intros k v. by rewrite shift_loc_assoc Nat2Z.inj_add.
+    do 2 f_equiv. intros k v. by rewrite shift_loc_assoc_nat.
   Qed.
 
   Lemma heap_mapsto_vec_singleton l q v : l ↦★{q} [v] ⊣⊢ l ↦{q} v.
@@ -213,12 +213,12 @@ Section heap.
       { simpl. by rewrite /= right_id shift_loc_0 heap_mapsto_eq. }
       iSplitL "Hv"; first by rewrite shift_loc_0 heap_mapsto_eq.
       erewrite imap_ext; [done|]. intros k v'' _; simpl.
-      by rewrite shift_loc_assoc Z.add_1_l -Nat2Z.inj_succ.
+      by rewrite (shift_loc_assoc_nat _ 1).
     -iIntros "[%|[Hv Hvl]]"; simplify_eq.
      iSplitL "Hv"; first by rewrite shift_loc_0 heap_mapsto_eq.
      destruct vl as [|v' vl]; first eauto.
      iRight. erewrite imap_ext; [done|]. intros k v'' _; simpl.
-     by rewrite shift_loc_assoc Z.add_1_l -Nat2Z.inj_succ.
+     by rewrite (shift_loc_assoc_nat _ 1).
   Qed.
 
   Lemma inter_lookup_Some i j (n:nat):
@@ -307,8 +307,8 @@ Section heap.
     - rewrite imap_cons. simpl. etrans. apply (IH (shift_loc l 1)).
       { intros. by rewrite shift_loc_assoc. }
       rewrite auth_frag_op assoc. apply cmra_update_op; last first.
-      { erewrite imap_ext. reflexivity. move=>i x/= _. rewrite shift_loc_assoc.
-        f_equal. f_equal. lia. }
+      { erewrite imap_ext. reflexivity. move=>i x/= _.
+        by rewrite (shift_loc_assoc_nat _ 1). }
       assert (Hinit: (to_heapVal (init_mem (shift_loc l 1) vl σ)) !! l = None).
       { clear-FRESH. rewrite lookup_fmap fmap_None.
         cut (0 < 1); last lia. generalize 1. revert l FRESH.
@@ -349,7 +349,7 @@ Section heap.
         * specialize (FRESH (i-l.2)). rewrite /shift_loc Zplus_minus in FRESH.
           rewrite lookup_empty FRESH. by split; intros []%is_Some_None.
         * rewrite !lookup_insert_is_Some IH /=;
-                  last by intros; rewrite shift_loc_assoc.
+            last by intros; rewrite shift_loc_assoc.
           destruct l. simpl. split; intros [|[]]; naive_solver congruence.
     - rewrite lookup_op lookup_insert_ne // lookup_empty.
       specialize (REL blk). revert REL. case: (h !! blk); last inversion 2.
@@ -405,7 +405,7 @@ Section heap.
     induction vl as [|v vl IH]=>l. by rewrite left_id.
     rewrite imap_cons /= auth_frag_op -assoc. etrans.
     - apply cmra_update_op. reflexivity. erewrite imap_ext. apply (IH (shift_loc l 1)).
-      move=> i x /= _. rewrite shift_loc_assoc. repeat f_equiv. lia.
+      move=> i x /= _. by rewrite (shift_loc_assoc_nat _ 1).
     - clear IH. unfold to_heapVal. rewrite fmap_delete.
       apply cmra_update_valid0. intros [[f Hf%timeless] Hv]; last apply _.
       revert Hf Hv. rewrite shift_loc_0 right_id =>/= Hf. rewrite {1 2}Hf=>Hv.

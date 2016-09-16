@@ -287,8 +287,8 @@ Section types.
     ⊣⊢ [★ list] tyoffs ∈ combine_offs tyl 0,
          shift_loc l (tyoffs.2) ↦★{q}: ty_own (tyoffs.1) tid.
   Proof.
-    rewrite -{1}(shift_loc_0 l). change 0%Z with (Z.of_nat 0).
-    generalize 0%nat. induction tyl as [|ty tyl IH]=>/= offs.
+    rewrite -{1}(shift_loc_0_nat l). generalize 0%nat.
+    induction tyl as [|ty tyl IH]=>/= offs.
     - iSplit; iIntros "_". by iApply big_sepL_nil.
       iExists []. iSplit. by iApply heap_mapsto_vec_nil.
       iExists []. repeat iSplit; try done. by iApply big_sepL_nil.
@@ -301,12 +301,12 @@ Section types.
         iDestruct (ty.(ty_size_eq) with "Hownh") as %->.
         iSplitL "Hmth Hownh". iExists vl0. by iFrame.
         iExists (concat vll). iSplitL "Hmtq"; last by eauto.
-        by rewrite shift_loc_assoc Nat2Z.inj_add.
+        by rewrite shift_loc_assoc_nat.
       + iIntros "[Hmth H]". iDestruct "H" as (vl) "[Hmtq H]".
         iDestruct "H" as (vll) "(%&Hlen&Hownq)". subst.
         iDestruct "Hmth" as (vlh) "[Hmth Hownh]". iDestruct "Hlen" as %->.
         iExists (vlh ++ concat vll).
-        rewrite heap_mapsto_vec_app shift_loc_assoc Nat2Z.inj_add.
+        rewrite heap_mapsto_vec_app shift_loc_assoc_nat.
         iDestruct (ty.(ty_size_eq) with "Hownh") as %->. iFrame.
         iExists (vlh :: vll). rewrite big_sepL_cons. iFrame. auto.
   Qed.
