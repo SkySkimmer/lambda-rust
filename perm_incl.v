@@ -149,39 +149,31 @@ Section props.
                            own (qtyoffs.1) (qtyoffs.2.1) ★ acc)
             ⊤ (combine ql (combine_offs tyl 0)).
   Proof.
-    intros Hlen Hq.
-    assert (DEC : Decision (∃ (l : loc), v = Some #l)).
-    { destruct v as [[[]|]|]; try by right; intros [l [=]]. left; eauto. }
-    destruct DEC as [[l ->]|Hv]; last first.
-    { destruct tyl as [|ty0 tyl], ql as [|q0 ql]; try done.
-      { destruct q as [q ?]. simpl in *. by subst. }
-      destruct v as [[[|l|]|]|];
-        try by split; iIntros (tid) "H";
-          [iDestruct "H" as (l) "[% _]" || iDestruct "H" as "[]" |
-           iDestruct "H" as "[[]_]"].
-      naive_solver. }
-    destruct (@exists_last _ ql) as (ql'&q0&->).
+    intros Hlen Hq. assert (ql ≠ []).
     { destruct ql as [|q0 ql]; last done. destruct q. simpl in *. by subst. }
+    destruct v as [[[|l|]|]|];
+      try by (destruct tyl as [|ty0 tyl], ql as [|q0 ql]; try done;
+        by split; iIntros (tid) "H";
+          [iDestruct "H" as (l) "[% _]" || iDestruct "H" as "[]" |
+           iDestruct "H" as "[[]_]"]).
+    destruct (@exists_last _ ql) as (ql'&q0&->). done.
+    apply uPred_equiv_perm_equiv=>tid.
     assert (foldr Qp_plus (q0/2) (ql' ++ [q0/2]) = q)%Qp as <-.
-    { destruct q as [q Hqpos]. apply Qp_eq. simpl in *. subst. clear. induction ql'.
-      - by rewrite /fold_right /app Qp_div_2 Qcplus_0_r.
-      - by rewrite /= IHql'. }
-    revert Hlen. assert (length (ql' ++ [q0]) = length (ql' ++ [q0/2]%Qp)) as ->. 
-    { rewrite !app_length /=. lia. }
-    intros Hlen. apply uPred_equiv_perm_equiv=>tid.
-    rewrite /has_type /from_option split_own_prod //.
+    { destruct q as [q ?]. apply Qp_eq. simpl in *. subst. clear. induction ql'.
+      by rewrite /fold_right /app Qp_div_2 Qcplus_0_r. by rewrite /= IHql'. }
+    rewrite /has_type /from_option split_own_prod ?Hlen ?app_length //.
     clear -Hlen. revert ql' Hlen. generalize 0%nat at -2.
-    induction tyl as [|ty tyl IH]; destruct ql' as [|q ql']=>Hlen; try done.
+    induction tyl as [|ty tyl IH]; destruct ql' as [|q ql']; intros [= Hlen]; try done.
     - destruct tyl; last done. clear IH Hlen.
       rewrite big_sepL_singleton /= /sep !right_id comm uPred.sep_exist_r.
       apply uPred.exist_proper=>l0.
       rewrite -{3}(Qp_div_2 q0) -{3}(right_id O plus ty.(ty_size))
               -heap_freeable_op_eq uPred.later_sep -!assoc.
-      iSplit; iIntros "[#Eq [? [? ?]]]"; iFrame "# ★";
+      iSplit; iIntros "[#Eq[?[??]]]"; iFrame "# ★";
         iDestruct "Eq" as %[=]; subst; rewrite shift_loc_assoc_nat //.
-    - simpl in *. rewrite big_sepL_cons /sep -IH; last by congruence. clear IH.
-      rewrite !uPred.sep_exist_r !uPred.sep_exist_l. apply uPred.exist_proper=>l0.
-      rewrite -!assoc /=. by iSplit; iIntros "[$[$[$[$$]]]]".
+    - rewrite /= big_sepL_cons /sep -IH // !uPred.sep_exist_r uPred.sep_exist_l.
+      apply uPred.exist_proper=>l0. rewrite -!assoc /=.
+      by iSplit; iIntros "[$[$[$[$$]]]]".
   Qed.
 
 End props.
