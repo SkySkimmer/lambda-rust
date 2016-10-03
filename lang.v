@@ -26,7 +26,7 @@ Infix ":b:" := cons_binder (at level 60, right associativity).
 Fixpoint app_binder (mxl : list binder) (X : list string) : list string :=
   match mxl with [] => X | b :: mxl => b :b: app_binder mxl X end.
 Infix "+b+" := app_binder (at level 60, right associativity).
-Instance binder_dec_eq (x1 x2 : binder) : Decision (x1 = x2).
+Instance binder_dec_eq : EqDecision binder.
 Proof. solve_decision. Defined.
 
 Instance set_unfold_cons_binder x mx X P :
@@ -157,18 +157,18 @@ Fixpoint subst (x : string) (es : expr) (e : expr)  : expr :=
 
 Definition subst' (mx : binder) (es : expr) : expr → expr :=
   match mx with BNamed x => subst x es | BAnon => id end.
-Fixpoint subst_l (xl : list binder) (esl : list expr) : expr → option expr :=
+Fixpoint subst_l (xl : list binder) (esl : list expr) (e : expr) : option expr :=
   match xl, esl with
-  | [], [] => λ e, Some e
-  | x::xl, es::esl => λ e, subst_l xl esl (subst' x es e)
-  | _, _ => λ _, None
+  | [], [] => Some e
+  | x::xl, es::esl => subst_l xl esl (subst' x es e)
+  | _, _ => None
   end.
 
 (** The stepping relation *)
-Definition lit_of_bool (b:bool) : base_lit :=
+Definition lit_of_bool (b : bool) : base_lit :=
   LitInt (if b then 1 else 0).
 
-Definition shift_loc (l : loc) (n : Z) : loc := (l.1, l.2+n).
+Definition shift_loc (l : loc) (n : Z) : loc := (l.1, l.2 + n).
 
 Definition bin_op_eval (op : bin_op) (l1 l2 : base_lit) : option base_lit :=
   match op, l1, l2 with
@@ -183,8 +183,7 @@ Definition bin_op_eval (op : bin_op) (l1 l2 : base_lit) : option base_lit :=
 Fixpoint init_mem (l:loc) (init:list val) (σ:state) : state :=
   match init with
   | [] => σ
-  | inith :: initq =>
-    <[l:=(RSt 0, inith)]>(init_mem (shift_loc l 1) initq σ)
+  | inith :: initq => <[l:=(RSt 0, inith)]>(init_mem (shift_loc l 1) initq σ)
   end.
 
 Fixpoint free_mem (l:loc) (n:nat) (σ:state) : state :=
@@ -259,13 +258,13 @@ Inductive head_step : expr → state → expr → state → list expr → Prop :
               []
 | AllocS n l init σ :
     0 < n →
-    (∀ m, σ !! (shift_loc l m) = None) →
+    (∀ m, σ !! shift_loc l m = None) →
     Z.of_nat (length init) = n →
     head_step (Alloc $ Lit $ LitInt n) σ
               (Lit $ LitLoc l) (init_mem l init σ) []
 | FreeS n l σ :
     0 < n →
-    (∀ m, is_Some (σ !! (shift_loc l m)) ↔ 0 ≤ m < n) →
+    (∀ m, is_Some (σ !! shift_loc l m) ↔ 0 ≤ m < n) →
     head_step (Free (Lit $ LitInt n) (Lit $ LitLoc l)) σ
               (Lit LitUnit) (free_mem l (Z.to_nat n) σ)
               []
@@ -333,24 +332,70 @@ Proof.
   destruct (list_expr_val_eq_inv vl1 vl2 e1 e2 el1 el2); auto. congruence.
 Qed.
 
-Lemma shift_loc_assoc:
-  ∀ l n n', shift_loc (shift_loc l n) n' = shift_loc l (n+n').
-Proof. unfold shift_loc=>/= l n n'. f_equal. lia. Qed.
-Lemma shift_loc_0:
-  ∀ l, shift_loc l 0 = l.
-Proof. unfold shift_loc=>[[??]] /=. f_equal. lia. Qed.
+Lemma shift_loc_assoc l n n' :
+  shift_loc (shift_loc l n) n' = shift_loc l (n+n').
+Proof. rewrite /shift_loc /=. f_equal. lia. Qed.
+Lemma shift_loc_0 l : shift_loc l 0 = l.
+Proof. destruct l as [b o]. rewrite /shift_loc /=. f_equal. lia. Qed.
 
-Lemma shift_loc_assoc_nat:
-  ∀ l (n n' : nat), shift_loc (shift_loc l n) n' = shift_loc l (n+n')%nat.
-Proof. unfold shift_loc=>/= l n n'. f_equal. lia. Qed.
-Lemma shift_loc_0_nat:
-  ∀ l, shift_loc l 0%nat = l.
-Proof. unfold shift_loc=>[[??]] /=. f_equal. lia. Qed.
+Lemma shift_loc_assoc_nat l (n n' : nat) :
+  shift_loc (shift_loc l n) n' = shift_loc l (n+n')%nat.
+Proof. rewrite /shift_loc /=. f_equal. lia. Qed.
+Lemma shift_loc_0_nat l : shift_loc l 0%nat = l.
+Proof. destruct l as [b o]. rewrite /shift_loc /=. f_equal. lia. Qed.
+
+Instance shift_loc_inj l : Inj (=) (=) (shift_loc l).
+Proof. destruct l as [b o]; intros n n' [=?]; lia. Qed.
+
+Lemma shift_loc_block l n : (shift_loc l n).1 = l.1.
+Proof. done. Qed.
+
+Lemma lookup_init_mem σ (l l' : loc) vl :
+  l.1 = l'.1 → l.2 ≤ l'.2 < l.2 + length vl →
+  init_mem l vl σ !! l' = (RSt 0,) <$> vl !! Z.to_nat (l'.2 - l.2).
+Proof.
+  intros ?. destruct l' as [? n]; simplify_eq/=.
+  revert n l. induction vl as [|v vl IH]=> /= n l Hl; [lia|].
+  assert (n = l.2 ∨ l.2 + 1 ≤ n) as [->|?] by lia.
+  { by rewrite -surjective_pairing lookup_insert Z.sub_diag. }
+  rewrite lookup_insert_ne; last by destruct l; intros ?; simplify_eq/=; lia.
+  rewrite -(shift_loc_block l 1) IH /=; last lia.
+  cut (Z.to_nat (n - l.2) = S (Z.to_nat (n - (l.2 + 1)))); [by intros ->|].
+  rewrite -Z2Nat.inj_succ; last lia. f_equal; lia.
+Qed.
+
+Lemma lookup_init_mem_Some σ (l l' : loc) vl :
+  l.1 = l'.1 → l.2 ≤ l'.2 < l.2 + length vl → ∃ v,
+  vl !! Z.to_nat (l'.2 - l.2) = Some v ∧
+  init_mem l vl σ !! l' = Some (RSt 0,v).
+Proof.
+  intros. destruct (lookup_lt_is_Some_2 vl (Z.to_nat (l'.2 - l.2))) as [v Hv].
+  { rewrite -(Nat2Z.id (length vl)). apply Z2Nat.inj_lt; lia. }
+  exists v. by rewrite lookup_init_mem ?Hv.
+Qed.
+
+Lemma lookup_init_mem_ne σ (l l' : loc) vl :
+  l.1 ≠ l'.1 ∨ l'.2 < l.2 ∨ l.2 + length vl ≤ l'.2 →
+  init_mem l vl σ !! l' = σ !! l'.
+Proof.
+  revert l. induction vl as [|v vl IH]=> /= l Hl; auto.
+  rewrite -(IH (shift_loc l 1)); last (simpl; intuition lia).
+  apply lookup_insert_ne. intros ->; intuition lia.
+Qed.
 
 Definition fresh_block (σ : state) : block :=
-  let blocklst := (elements (dom _ σ : gset loc)).*1 in
-  let blockset : gset block := foldr (fun b s => {[b]} ∪ s)%C ∅ blocklst in
+  let loclst : list loc := elements (dom _ σ : gset loc) in
+  let blockset : gset block := foldr (λ l, ({[l.1]} ∪)) ∅ loclst in
   fresh blockset.
+
+Lemma is_fresh_block σ i : σ !! (fresh_block σ,i) = None.
+Proof.
+  assert (∀ (l : loc) ls (X : gset block),
+    l ∈ ls → l.1 ∈ foldr (λ l, ({[l.1]} ∪)) X ls) as help.
+  { induction 1; set_solver. }
+  rewrite /fresh_block /shift_loc /= -not_elem_of_dom -elem_of_elements.
+  move=> /(help _ _ ∅) /=. apply is_fresh.
+Qed.
 
 Lemma alloc_fresh n σ :
   let l := (fresh_block σ, 0) in
@@ -359,18 +404,25 @@ Lemma alloc_fresh n σ :
   head_step (Alloc $ Lit $ LitInt n) σ (Lit $ LitLoc l) (init_mem l init σ) [].
 Proof.
   intros l init Hn. apply AllocS. auto.
-  - clear init n Hn. unfold l, fresh_block. intro m.
-    match goal with
-    | |- context [foldr ?f ?e] =>
-      assert (FOLD:∀ lst (l:loc), l ∈ lst → l.1 ∈ (foldr f e (lst.*1)))
-    end.
-    { induction lst; simpl; inversion 1; subst; set_solver. }
-    rewrite -not_elem_of_dom -elem_of_elements=>/FOLD. apply is_fresh.
-  - rewrite repeat_length. apply Z2Nat.id. lia.
+  - intros i. apply (is_fresh_block _ i).
+  - rewrite repeat_length Z2Nat.id; lia.
+Qed.
+
+Lemma lookup_free_mem_ne σ l l' n : l.1 ≠ l'.1 → free_mem l n σ !! l' = σ !! l'.
+Proof.
+  revert l. induction n as [|n IH]=> l ? //=.
+  rewrite lookup_delete_ne; last congruence.
+  apply IH. by rewrite shift_loc_block.
+Qed.
+
+Lemma delete_free_mem σ l l' n :
+  delete l (free_mem l' n σ) = free_mem l' n (delete l σ).
+Proof.
+  revert l'. induction n as [|n IH]=> l' //=. by rewrite delete_commute IH.
 Qed.
 
 (** Closed expressions *)
-Lemma is_closed_weaken X Y e : is_closed X e → X `included` Y → is_closed Y e.
+Lemma is_closed_weaken X Y e : is_closed X e → X ⊆ Y → is_closed Y e.
 Proof.
   revert e X Y. fix 1; destruct e=>X Y/=; try naive_solver.
   - naive_solver set_solver.
@@ -381,7 +433,7 @@ Proof.
 Qed.
 
 Lemma is_closed_weaken_nil X e : is_closed [] e → is_closed X e.
-Proof. intros. by apply is_closed_weaken with [], included_nil. Qed.
+Proof. intros. by apply is_closed_weaken with [], list_subseteq_nil. Qed.
 
 Lemma is_closed_subst X e x es : is_closed X e → x ∉ X → subst x es e = e.
 Proof.
@@ -401,11 +453,11 @@ Lemma is_closed_of_val X v : is_closed X (of_val v).
 Proof. apply is_closed_weaken_nil. induction v; simpl; auto. Qed.
 
 (** Equality and other typeclass stuff *)
-Instance base_lit_dec_eq (l1 l2 : base_lit) : Decision (l1 = l2).
+Instance base_lit_dec_eq : EqDecision base_lit.
 Proof. solve_decision. Defined.
-Instance bin_op_dec_eq (op1 op2 : bin_op) : Decision (op1 = op2).
+Instance bin_op_dec_eq : EqDecision bin_op.
 Proof. solve_decision. Defined.
-Instance un_op_dec_eq (ord1 ord2 : order) : Decision (ord1 = ord2).
+Instance un_op_dec_eq : EqDecision order.
 Proof. solve_decision. Defined.
 
 Fixpoint expr_beq (e : expr) (e' : expr) : bool :=
@@ -450,13 +502,13 @@ Proof.
       specialize (expr_beq_correct el1h). naive_solver. }
     clear expr_beq_correct. naive_solver.
 Qed.
-Instance expr_dec_eq (e1 e2 : expr) : Decision (e1 = e2).
+Instance expr_dec_eq : EqDecision expr.
 Proof.
- refine (cast_if (decide (expr_beq e1 e2))); by rewrite -expr_beq_correct.
+ refine (λ e1 e2, cast_if (decide (expr_beq e1 e2))); by rewrite -expr_beq_correct.
 Defined.
-Instance val_dec_eq (v1 v2 : val) : Decision (v1 = v2).
+Instance val_dec_eq : EqDecision val.
 Proof.
- refine (cast_if (decide (of_val v1 = of_val v2))); abstract naive_solver.
+ refine (λ v1 v2, cast_if (decide (of_val v1 = of_val v2))); abstract naive_solver.
 Defined.
 
 Instance expr_inhabited : Inhabited expr := populate (Lit LitUnit).

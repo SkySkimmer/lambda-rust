@@ -23,7 +23,7 @@ Lemma wp_memcpy `{heapG Σ} E l1 l2 vl1 vl2 q n Φ:
   ▷ (l1 ↦★ vl2 ★ l2 ↦★{q} vl2 ={E}=★ Φ #()) ⊢ WP #l1 <-{n} *#l2 @ E {{ Φ }}.
 Proof.
   iIntros (? Hvl1 Hvl2) "(#Hinv&Hl1&Hl2&HΦ)".
-  iLöb (n l1 l2 vl1 vl2 Hvl1 Hvl2) as "IH". wp_rec. wp_op=> ?; wp_if.
+  iLöb as "IH" forall (n l1 l2 vl1 vl2 Hvl1 Hvl2). wp_rec. wp_op=> ?; wp_if.
   - iApply "HΦ". assert (n = O) by lia; subst.
     destruct vl1, vl2; try discriminate. by iFrame.
   - destruct vl1 as [|v1 vl1], vl2 as [|v2 vl2], n as [|n]; try discriminate.
