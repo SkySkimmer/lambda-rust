@@ -1,8 +1,7 @@
 From iris.algebra Require Import upred_big_op.
 From iris.program_logic Require Export viewshifts pviewshifts.
 From iris.program_logic Require Import invariants namespaces thread_local.
-From iris.prelude Require Import strings.
-From iris.proofmode Require Import invariants.
+From iris.proofmode Require Import tactics.
 
 Definition lftN := nroot .@ "lft".
 

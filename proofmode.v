@@ -1,5 +1,5 @@
 From iris.proofmode Require Import coq_tactics.
-From iris.proofmode Require Export weakestpre.
+From iris.proofmode Require Export tactics.
 From lrust Require Export wp_tactics heap.
 Import uPred.
 

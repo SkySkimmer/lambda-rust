@@ -1,5 +1,5 @@
 From iris.program_logic Require Import thread_local.
-From iris.proofmode Require Import invariants.
+From iris.proofmode Require Import tactics.
 From lrust Require Export type.
 
 Delimit Scope perm_scope with P.

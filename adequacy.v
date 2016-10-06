@@ -3,8 +3,6 @@ From lrust Require Export heap.
 From iris.algebra Require Import auth.
 From iris.program_logic Require Import ownership.
 From lrust Require Import proofmode notation.
-From iris.proofmode Require Import tactics weakestpre.
-From iris.prelude Require Import fin_maps.
 
 Class heapPreG Σ := HeapPreG {
   heap_preG_iris :> irisPreG lrust_lang Σ;

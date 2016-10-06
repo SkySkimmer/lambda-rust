@@ -1,5 +1,5 @@
 From lrust Require Export lifting.
-From iris.proofmode Require Import weakestpre.
+From iris.proofmode Require Import tactics.
 Import uPred.
 
 (** Define some derived forms, and derived lemmas about them. *)

@@ -2,7 +2,7 @@ From iris.program_logic Require Export weakestpre.
 From iris.program_logic Require Import ownership ectx_lifting. (* for ownP *)
 From lrust Require Export lang.
 From lrust Require Import tactics.
-From iris.proofmode Require Import weakestpre.
+From iris.proofmode Require Import tactics.
 Import uPred.
 Local Hint Extern 0 (head_reducible _ _) => do_head_step eauto 2.
 
