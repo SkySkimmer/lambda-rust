@@ -1,5 +1,5 @@
 From iris.program_logic Require Export hoare.
-From iris.program_logic Require Import ownership adequacy.
+From iris.program_logic Require Import adequacy.
 From lrust Require Import tactics.
 From iris.prelude Require Import gmap.
 

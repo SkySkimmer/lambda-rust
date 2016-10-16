@@ -1,6 +1,6 @@
 From iris.algebra Require Import upred_big_op cmra_big_op gmap frac dec_agree.
 From iris.algebra Require Import csum excl auth.
-From iris.program_logic Require Export invariants ownership.
+From iris.program_logic Require Export invariants wsat.
 From iris.proofmode Require Export tactics.
 From lrust Require Export lifting.
 Import uPred.
@@ -468,8 +468,8 @@ Section heap.
     iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
     iDestruct (heap_mapsto_lookup with "[$Hvalσ $Hv]") as %[n Hσl].
     iVs (heap_read_vs _ 0 1 with "[$Hvalσ $Hv]") as "[Hvalσ Hv]"; first done.
-    iApply pvs_intro'; [set_solver|iIntros "Hclose'"].
-    iExists σ, n, v. iFrame. iSplit; [done|]. iIntros "!> Hσ".
+    iVs (pvs_intro_mask' (E∖heapN) ∅) as "Hclose'"; first set_solver.
+    iVsIntro. iExists σ, n, v. iFrame. iSplit; [done|]. iIntros "!> Hσ".
     iVs "Hclose'" as "_". iVs ("Hclose" with "[Hσ Hvalσ HhF]") as "_".
     { iNext. iExists _, _. iFrame. eauto using heap_freeable_rel_stable. }
     iVsIntro. clear dependent n σ hF.
@@ -519,8 +519,8 @@ Section heap.
     iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
     iDestruct (heap_mapsto_lookup_1 with "[$Hvalσ $Hv]") as %?.
     iVs (heap_write_vs with "[$Hvalσ $Hv]") as "[Hvalσ Hv]"; first done.
-    iApply pvs_intro'; [set_solver|iIntros "Hclose'"].
-    iExists σ, v'. iSplit; [done|]. iIntros "{$Hσ} !> Hσ".
+    iVs (pvs_intro_mask' (E∖heapN) ∅) as "Hclose'"; first set_solver.
+    iVsIntro. iExists σ, v'. iSplit; [done|]. iIntros "{$Hσ} !> Hσ".
     iVs "Hclose'" as "_". iVs ("Hclose" with "[Hσ Hvalσ HhF]") as "_".
     { iNext. iExists _, _. iFrame. eauto using heap_freeable_rel_stable. }
     iVsIntro. clear dependent σ hF.

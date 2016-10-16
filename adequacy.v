@@ -1,7 +1,6 @@
 From iris.program_logic Require Export weakestpre adequacy.
 From lrust Require Export heap.
 From iris.algebra Require Import auth.
-From iris.program_logic Require Import ownership.
 From lrust Require Import proofmode notation.
 
 Class heapPreG Σ := HeapPreG {
