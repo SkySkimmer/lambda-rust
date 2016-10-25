@@ -230,15 +230,10 @@ Section props.
     iDestruct "Hown" as (l') "[EQ [Hf Hown]]". iDestruct "EQ" as %[=]. subst l'.
     iVs (lft_borrow_create with "Hκ Hown") as "[Hbor Hextract]". done.
     iSplitL "Hbor". by simpl; eauto.
-    assert ((Some #l ◁ own q ty)%P tid ⊣⊢
-            ▷ †{q}l…ty_size ty ★ ▷ l ↦★: ty_own ty tid) as ->.
-    { iSplit; iIntros "H/=".
-      - iDestruct "H" as (l') "[EQ [Hf Hown]]". iDestruct "EQ" as %[=]. subst l'.
-        by iFrame.
-      - iExists _. eauto. }
     iVs (lft_borrow_create with "Hκ Hf") as "[_ Hf]". done.
     iVs (lft_extract_combine with "[-]"). done. by iFrame.
-    iVsIntro. iApply lft_extract_mono; last done. by iDestruct 1 as "[$$]".
+    iVsIntro. iApply lft_extract_mono; last done.
+    iIntros "H/=". iExists _. iSplit. done. by iDestruct "H" as "[$$]".
   Qed.
 
   Lemma reborrow_uniq_borrowing κ κ' v ty :
