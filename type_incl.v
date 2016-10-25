@@ -108,12 +108,11 @@ Section ty_incl.
       iVs (Himpl with "Hρ") as "#Himpl". iIntros "!==>!#*H".
       iDestruct "H" as (vll) "(%&%&H)". iExists _. iSplit. done. iSplit.
       by rewrite -(Forall2_length _ _ _ HFA). by iApply ("Himpl" with "[] H").
-    - rewrite /Π /=. iRevert "Hρ". generalize O.
-      change (ndot (A:=nat)) with (λ N i, N .@ (0+i)%nat). generalize O.
-      (* TODO : use iInduction, but we need to do it under generalization of O. *)
-      induction HFA as [|ty1 ty2 tyl1 tyl2 Hincl HFA IH].
-      + iIntros (i offs) "_!==>!#*_/=". rewrite big_sepL_nil. eauto.
-      + iIntros (i offs) "#Hρ". iVs (IH with "[] []") as "#Hqimpl". by iClear "Hρ". done.
+    - rewrite /Π /=. iRevert "Hρ". generalize O; intros offs.
+      change (ndot (A:=nat)) with (λ N i, N .@ (0+i)%nat). generalize O; intros i.
+      iInduction HFA as [|ty1 ty2 tyl1 tyl2 Hincl HFA] "IH" forall (i offs).
+      + iIntros "_!==>!#*_/=". rewrite big_sepL_nil. eauto.
+      + iIntros "#Hρ". iVs ("IH" $! _ _ with "[]") as "#Hqimpl"; try done.
         iVs (Hincl with "Hρ") as "[_ #Hhimpl]". iIntros "!==>!#*".
         rewrite !big_sepL_cons. iIntros "[Hh Hq]".
         setoid_rewrite <-Nat.add_succ_comm.
@@ -137,7 +136,7 @@ Section ty_incl.
       admit.
   Admitted.
 
-  (* TODO *)
+  (* TODO, depends on [ty_incl_prod_cons_l] *)
   Lemma ty_incl_prod_flatten ρ tyl1 tyl2 tyl3 :
     ty_incl ρ (Π(tyl1 ++ Π tyl2 :: tyl3))
               (Π(tyl1 ++ tyl2 ++ tyl3)).

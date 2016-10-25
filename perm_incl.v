@@ -203,12 +203,12 @@ Section props.
     destruct v as [[[|l|]|]|];
       iIntros "H"; try iDestruct "H" as "[]";
         iDestruct "H" as (l0) "[EQ H]"; iDestruct "EQ" as %[=]. subst l0.
-    simpl. iVsIntro. iRevert "H".
-    change (ndot (A:=nat)) with (λ N i, N .@ (0+i)%nat). generalize O at 2.
-    (* TODO : use iInduction, but we need to do it under generalization of O. *)
-    induction (combine_offs tyl 0) as [|[ty offs] ll IH]. by auto.
-    iIntros (i) "H". rewrite big_sepL_cons /=. iDestruct "H" as "[H0 H]".
-    setoid_rewrite <-Nat.add_succ_comm. iDestruct (IH with "[] H") as "$". done.
+    simpl. iVsIntro.
+    change (ndot (A:=nat)) with (λ N i, N .@ (0+i)%nat).
+    generalize O at 2; intro i.
+    iInduction (combine_offs tyl 0) as [|[ty offs] ll] "IH" forall (i). by auto.
+    rewrite big_sepL_cons /=. iDestruct "H" as "[H0 H]".
+    setoid_rewrite <-Nat.add_succ_comm. iDestruct ("IH" $! (S i) with "H") as "$".
     iExists _. iSplit. done. admit.
     (* FIXME : namespaces problem. *)
   Admitted.
