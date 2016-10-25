@@ -3,7 +3,7 @@ From lrust Require Export tactics derived.
 Import uPred.
 
 (** wp-specific helper tactics *)
-Ltac wp_bind K :=
+Ltac wp_bind_core K :=
   lazymatch eval hnf in K with
   | [] => idtac
   | _ => etrans; [|fast_by apply (wp_bind K)]; simpl
@@ -53,7 +53,7 @@ Ltac wp_finish := intros_revert ltac:(
 Tactic Notation "wp_value" :=
   lazymatch goal with
   | |- _ ⊢ wp ?E ?e ?Q => reshape_expr e ltac:(fun K e' =>
-    wp_bind K; wp_value_head) || fail "wp_value: cannot find value in" e
+    wp_bind_core K; wp_value_head) || fail "wp_value: cannot find value in" e
   | _ => fail "wp_value: not a wp"
   end.
 
@@ -63,7 +63,7 @@ Tactic Notation "wp_rec" :=
     match eval hnf in e' with App ?e1 _ =>
 (* hnf does not reduce through an of_val *)
 (*      match eval hnf in e1 with Rec _ _ _ => *)
-    wp_bind K; etrans; [|eapply wp_rec; wp_done]; simpl_subst; wp_finish
+    wp_bind_core K; etrans; [|eapply wp_rec; wp_done]; simpl_subst; wp_finish
 (*      end *) end) || fail "wp_rec: cannot find 'Rec' in" e
   | _ => fail "wp_rec: not a 'wp'"
   end.
@@ -73,7 +73,7 @@ Tactic Notation "wp_lam" :=
   | |- _ ⊢ wp ?E ?e ?Q => reshape_expr e ltac:(fun K e' =>
     match eval hnf in e' with App ?e1 _ =>
 (*    match eval hnf in e1 with Rec BAnon _ _ => *)
-    wp_bind K; etrans; [|eapply wp_lam; wp_done]; simpl_subst; wp_finish
+    wp_bind_core K; etrans; [|eapply wp_lam; wp_done]; simpl_subst; wp_finish
 (*    end *) end) || fail "wp_lam: cannot find 'Lam' in" e
   | _ => fail "wp_lam: not a 'wp'"
   end.
@@ -85,9 +85,9 @@ Tactic Notation "wp_op" :=
   lazymatch goal with
   | |- _ ⊢ wp ?E ?e ?Q => reshape_expr e ltac:(fun K e' =>
     match eval hnf in e' with
-    | BinOp LeOp _ _ => wp_bind K; apply wp_le; wp_finish
+    | BinOp LeOp _ _ => wp_bind_core K; apply wp_le; wp_finish
     | BinOp _ _ _ =>
-       wp_bind K; etrans; [|eapply wp_bin_op; try fast_done]; wp_finish
+       wp_bind_core K; etrans; [|eapply wp_bin_op; try fast_done]; wp_finish
     end) || fail "wp_op: cannot find 'BinOp' in" e
   | _ => fail "wp_op: not a 'wp'"
   end.
@@ -97,7 +97,7 @@ Tactic Notation "wp_if" :=
   | |- _ ⊢ wp ?E ?e ?Q => reshape_expr e ltac:(fun K e' =>
     match eval hnf in e' with
     | If _ _ _ =>
-      wp_bind K;
+      wp_bind_core K;
       etrans; [|eapply wp_if]; wp_finish
     end) || fail "wp_if: cannot find 'If' in" e
   | _ => fail "wp_if: not a 'wp'"
@@ -108,18 +108,18 @@ Tactic Notation "wp_case" :=
   | |- _ ⊢ wp ?E ?e ?Q => reshape_expr e ltac:(fun K e' =>
     match eval hnf in e' with
     | Case _ _ _ =>
-      wp_bind K;
+      wp_bind_core K;
       etrans; [|eapply wp_case; wp_done];
       simpl_subst; wp_finish
     end) || fail "wp_case: cannot find 'Case' in" e
   | _ => fail "wp_case: not a 'wp'"
   end.
 
-Tactic Notation "wp_focus" open_constr(efoc) :=
+Tactic Notation "wp_bind" open_constr(efoc) :=
   lazymatch goal with
   | |- _ ⊢ wp ?E ?e ?Q => reshape_expr e ltac:(fun K e' =>
     match e' with
-    | efoc => unify e' efoc; wp_bind K
-    end) || fail "wp_focus: cannot find" efoc "in" e
-  | _ => fail "wp_focus: not a 'wp'"
+    | efoc => unify e' efoc; wp_bind_core K
+    end) || fail "wp_bind: cannot find" efoc "in" e
+  | _ => fail "wp_bind: not a 'wp'"
   end.

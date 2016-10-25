@@ -76,7 +76,7 @@ End heap.
 Tactic Notation "wp_apply" open_constr(lem) :=
   lazymatch goal with
   | |- _ ⊢ wp ?E ?e ?Q => reshape_expr e ltac:(fun K e' =>
-    wp_bind K; iApply lem; try iNext)
+    wp_bind_core K; iApply lem; try iNext)
   | _ => fail "wp_apply: not a 'wp'"
   end.
 
@@ -85,7 +85,7 @@ Tactic Notation "wp_alloc" ident(l) ident(vl) "as" constr(H) constr(Hf) :=
   | |- _ ⊢ wp ?E ?e ?Q =>
     first
       [reshape_expr e ltac:(fun K e' =>
-         match eval hnf in e' with Alloc _ => wp_bind K end)
+         match eval hnf in e' with Alloc _ => wp_bind_core K end)
       |fail 1 "wp_alloc: cannot find 'Alloc' in" e];
     eapply tac_wp_alloc with _ _ H Hf;
       [iAssumption || fail "wp_alloc: cannot find heap_ctx"
@@ -107,7 +107,7 @@ Tactic Notation "wp_read" :=
   | |- _ ⊢ wp ?E ?e ?Q =>
     first
       [reshape_expr e ltac:(fun K e' =>
-         match eval hnf in e' with Read _ _ => wp_bind K end)
+         match eval hnf in e' with Read _ _ => wp_bind_core K end)
       |fail 1 "wp_read: cannot find 'Read' in" e];
     eapply tac_wp_read;
       [iAssumption || fail "wp_read: cannot find heap_ctx"
@@ -126,7 +126,7 @@ Tactic Notation "wp_write" :=
   | |- _ ⊢ wp ?E ?e ?Q =>
     first
       [reshape_expr e ltac:(fun K e' =>
-         match eval hnf in e' with Write _ _ _ => wp_bind K end)
+         match eval hnf in e' with Write _ _ _ => wp_bind_core K end)
       |fail 1 "wp_write: cannot find 'Write' in" e];
     eapply tac_wp_write;
       [let e' := match goal with |- to_val ?e' = _ => e' end in
