@@ -417,8 +417,9 @@ Section types.
   Class LstTySize (n : nat) (tyl : list type) :=
     size_eq : Forall ((= n) ∘ ty_size) tyl.
   Instance LstTySize_nil n : LstTySize n nil := List.Forall_nil _.
-  Hint Extern 1 (LstTySize _ (_ :: _)) =>
-    apply List.Forall_cons; [reflexivity|] : typeclass_instances.
+  Lemma LstTySize_cons n ty tyl :
+    ty.(ty_size) = n → LstTySize n tyl → LstTySize n (ty :: tyl).
+  Proof. intros. constructor; done. Qed.
 
   Lemma sum_size_eq n tid i tyl vl {Hn : LstTySize n tyl} :
     ty_own (nth i tyl emp) tid vl ⊢ length vl = n.
@@ -510,33 +511,22 @@ Section types.
   Next Obligation. intros. by iIntros "_ _". Qed.
   Next Obligation. done. Qed.
 
-  Program Definition fn {n : nat} (ρ : vec val n → @perm Σ):=
-    ty_of_st {| st_size := 1;
-       st_own tid vl := (∃ f, vl = [f] ★
-          ∀ vl, {{ ρ vl tid ★ tl_own tid ⊤ }} f (map of_val vl) {{λ _, False}})%I |}.
+  Program Definition fn {A : Type} {n : nat} (ρ : A -> vec val n → @perm Σ):=
+    ty_of_st {|
+        st_size := 1;
+        st_own tid vl := (∃ f, vl = [f] ★
+          ∀ x vl, {{ ρ x vl tid ★ tl_own tid ⊤ }} f (map of_val vl) {{λ _, False}})%I |}.
   Next Obligation.
-    iIntros (n ρ tid vl) "H". iDestruct "H" as (f) "[% _]". by subst.
+    iIntros (x n ρ tid vl) "H". iDestruct "H" as (f) "[% _]". by subst.
   Qed.
-
-  (* TODO *)
-  (* Program Definition forall_ty {A : Type} n dup (ty : A -> type) {_:Inhabited A} *)
-  (*         (Hsz : ∀ x, (ty x).(ty_size) = n) (Hdup : ∀ x, (ty x).(ty_dup) = dup) := *)
-  (*   ty_of_st {| st_size := n; st_dup := dup; *)
-  (*               st_own tid vl := (∀ x, (ty x).(ty_own) tid vl)%I |}. *)
-  (* Next Obligation. *)
-  (*   intros A n dup ty ? Hn Hdup tid vl. iIntros "H". iSpecialize ("H" $! inhabitant). *)
-  (*   rewrite -(Hn inhabitant). by iApply ty_size_eq. *)
-  (* Qed. *)
-  (* Next Obligation. *)
-  (*   intros A n [] ty ? Hn Hdup tid vl []. *)
-  (*   (* FIXME: A quantified assertion is not necessarilly dupicable if *)
-  (*      its contents is.*) *)
-  (*   admit. *)
-  (* Admitted. *)
 
 End types.
 
 End Types.
+
+Existing Instance Types.LstTySize_nil.
+Hint Extern 1 (Types.LstTySize _ (_ :: _)) =>
+  apply Types.LstTySize_cons; [compute; reflexivity|] : typeclass_instances.
 
 Import Types.
 
@@ -546,12 +536,8 @@ Notation "&uniq{ κ } ty" := (uniq_borrow κ ty)
 Notation "&shr{ κ } ty" := (shared_borrow κ ty)
   (format "&shr{ κ } ty", at level 20, right associativity) : lrust_type_scope.
 
-(* FIXME : these notations do not work. *)
-Notation "( ty1 * ty2 * .. * tyn )" :=
-  (product (cons ty1 (cons ty2 ( .. (cons tyn nil) .. ))))
-  (format "( ty1  *  ty2  *  ..  *  tyn )") : lrust_type_scope.
-Notation "( ty1 + ty2 + .. + tyn )" :=
-  (sum (cons ty1 (cons ty2 ( .. (cons tyn nil) .. ))))
-  (format "( ty1  +  ty2  +  ..  +  tyn )") : lrust_type_scope.
-
-(* TODO : notation for forall *)
+Notation Π := product.
+(* Σ is commonly used for the current functor. So it cannot be defined
+   as Π for products. We stick to the following form. *)
+Notation "Σ[ ty1 ; .. ; tyn ]" :=
+  (sum (cons ty1 (..(cons tyn nil)..))) : lrust_type_scope.

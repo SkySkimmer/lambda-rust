@@ -104,23 +104,20 @@ Section props.
   Lemma perm_lftincl_trans κ1 κ2 κ3 : κ1 ⊑ κ2 ★ κ2 ⊑ κ3 ⇒ κ1 ⊑ κ3.
   Proof. iIntros (tid) "[#?#?]!==>". iApply lft_incl_trans. auto. Qed.
 
-  Lemma perm_incl_share v κ ty :
-    v ◁ &uniq{κ} ty ⇒ v ◁ &shr{κ} ty.
+  Lemma perm_incl_share q v κ ty :
+    v ◁ &uniq{κ} ty ★ [κ]{q} ⇒ v ◁ &shr{κ} ty ★ [κ]{q}.
   Proof.
-    iIntros (tid) "Huniq". destruct v; last done.
+    iIntros (tid) "[Huniq [Htok Hlft]]". destruct v; last by iDestruct "Huniq" as "[]".
     iDestruct "Huniq" as (l) "[% Hown]".
-    (* FIXME : we need some tokens here. *)
-    iAssert (∃ q, [κ]{q})%I as "Htok". admit.
-    iDestruct "Htok" as (q) "Htok".
-    iVs (ty.(ty_share) _ lrustN with "Hown Htok") as "[Hown _]".
+    iVs (ty.(ty_share) _ lrustN with "Hown Htok") as "[Hown Htok]".
     apply disjoint_union_l; solve_ndisj. set_solver. iVsIntro.
-    iExists _. iSplit. done. done.
-  Admitted.
+    iFrame. iExists _. iSplit. done. done.
+  Qed.
 
   Lemma split_own_prod tyl (q0: Qp) (ql : list Qp) (l : loc) tid :
     length tyl = length ql →
-      (own (foldr Qp_plus q0 ql) (product tyl)).(ty_own) tid [ #l] ⊣⊢
-    ▷ †{q0}(shift_loc l (0 + (product tyl).(ty_size))%nat)…0 ★
+      (own (foldr Qp_plus q0 ql) (Π tyl)).(ty_own) tid [ #l] ⊣⊢
+    ▷ †{q0}(shift_loc l (0 + (Π tyl).(ty_size))%nat)…0 ★
     [★ list] qtyoffs ∈ (combine ql (combine_offs tyl 0)),
          (own (qtyoffs.1) (qtyoffs.2.1)).(ty_own)
               tid [ #(shift_loc l (qtyoffs.2.2))].
@@ -146,7 +143,7 @@ Section props.
   Lemma perm_split_own_prod tyl (q : Qp) (ql : list Qp) v :
     length tyl = length ql →
     foldr (λ (q : Qp) acc, q + acc)%Qc 0%Qc ql = q →
-    v ◁ own q (product tyl) ⇔
+    v ◁ own q (Π tyl) ⇔
       foldr (λ qtyoffs acc,
              proj_valuable (Z.of_nat (qtyoffs.2.2)) v ◁
                            own (qtyoffs.1) (qtyoffs.2.1) ★ acc)
@@ -180,7 +177,7 @@ Section props.
   Qed.
 
   Lemma perm_split_uniq_borrow_prod tyl κ v :
-    v ◁ &uniq{κ} (product tyl) ⇒
+    v ◁ &uniq{κ} (Π tyl) ⇒
       foldr (λ tyoffs acc,
              proj_valuable (Z.of_nat (tyoffs.2)) v ◁ &uniq{κ} (tyoffs.1) ★ acc)%P
             ⊤ (combine_offs tyl 0).
@@ -189,16 +186,15 @@ Section props.
     destruct v as [[[|l|]|]|];
       iIntros "H"; try iDestruct "H" as "[]";
         iDestruct "H" as (l0) "[EQ H]"; iDestruct "EQ" as %[=]. subst l0.
-    rewrite split_prod_mt. iRevert "H".
-    induction (combine_offs tyl 0) as [|[ty offs] ll IH]. by auto.
-    iIntros "H". rewrite big_sepL_cons /=.
+    rewrite split_prod_mt.
+    iInduction (combine_offs tyl 0) as [|[ty offs] ll] "IH". by auto.
+    rewrite big_sepL_cons /=.
     iVs (lft_borrow_split with "H") as "[H0 H]". set_solver.
-    iVs (IH with "[] H") as "$". done.
-    iVsIntro. iExists _. eauto.
+    iVs ("IH" with "H") as "$". iVsIntro. iExists _. eauto.
   Qed.
 
   Lemma perm_split_shr_borrow_prod tyl κ v :
-    v ◁ &shr{κ} (product tyl) ⇒
+    v ◁ &shr{κ} (Π tyl) ⇒
       foldr (λ tyoffs acc,
              proj_valuable (Z.of_nat (tyoffs.2)) v ◁ &shr{κ} (tyoffs.1) ★ acc)%P
             ⊤ (combine_offs tyl 0).
@@ -209,6 +205,7 @@ Section props.
         iDestruct "H" as (l0) "[EQ H]"; iDestruct "EQ" as %[=]. subst l0.
     simpl. iVsIntro. iRevert "H".
     change (ndot (A:=nat)) with (λ N i, N .@ (0+i)%nat). generalize O at 2.
+    (* TODO : use iInduction, but we need to do it under generalization of O. *)
     induction (combine_offs tyl 0) as [|[ty offs] ll IH]. by auto.
     iIntros (i) "H". rewrite big_sepL_cons /=. iDestruct "H" as "[H0 H]".
     setoid_rewrite <-Nat.add_succ_comm. iDestruct (IH with "[] H") as "$". done.

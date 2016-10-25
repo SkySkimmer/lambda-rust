@@ -90,8 +90,7 @@ Section ty_incl.
      The only way I can see to circumvent this limitation is to deeply
      embed permissions (and their inclusion). Not sure this is worth it. *)
   Lemma ty_incl_prod ρ tyl1 tyl2 :
-    Duplicable ρ → Forall2 (ty_incl ρ) tyl1 tyl2 →
-    ty_incl ρ (product tyl1) (product tyl2).
+    Duplicable ρ → Forall2 (ty_incl ρ) tyl1 tyl2 → ty_incl ρ (Π tyl1) (Π tyl2).
   Proof.
     intros Hρ HFA. iIntros (tid) "#Hρ". iSplitL "".
     - assert (Himpl : ρ tid ={⊤}=>
@@ -109,13 +108,12 @@ Section ty_incl.
       iVs (Himpl with "Hρ") as "#Himpl". iIntros "!==>!#*H".
       iDestruct "H" as (vll) "(%&%&H)". iExists _. iSplit. done. iSplit.
       by rewrite -(Forall2_length _ _ _ HFA). by iApply ("Himpl" with "[] H").
-    - rewrite /product /=. iRevert "Hρ". generalize O.
+    - rewrite /Π /=. iRevert "Hρ". generalize O.
       change (ndot (A:=nat)) with (λ N i, N .@ (0+i)%nat). generalize O.
+      (* TODO : use iInduction, but we need to do it under generalization of O. *)
       induction HFA as [|ty1 ty2 tyl1 tyl2 Hincl HFA IH].
       + iIntros (i offs) "_!==>!#*_/=". rewrite big_sepL_nil. eauto.
-      + iIntros (i offs) "#Hρ". iVs (IH with "[] []") as "#Hqimpl".
-          by iClear "Hρ". (* TODO : get rid of this by doing induction in the proof mode. *)
-          done.
+      + iIntros (i offs) "#Hρ". iVs (IH with "[] []") as "#Hqimpl". by iClear "Hρ". done.
         iVs (Hincl with "Hρ") as "[_ #Hhimpl]". iIntros "!==>!#*".
         rewrite !big_sepL_cons. iIntros "[Hh Hq]".
         setoid_rewrite <-Nat.add_succ_comm.
@@ -126,7 +124,7 @@ Section ty_incl.
   Qed.
 
   Lemma ty_incl_prod_cons_l ρ ty tyl :
-    ty_incl ρ (product (ty :: tyl)) (product [ty ; product tyl]).
+    ty_incl ρ (Π(ty :: tyl)) (Π[ty ; Π tyl]).
   Proof.
     iIntros (tid) "_!==>". iSplit; iIntros "!#/=".
     - iIntros (vl) "H". iDestruct "H" as ([|vlh vllq]) "(%&%&H)". done. subst.
@@ -141,8 +139,8 @@ Section ty_incl.
 
   (* TODO *)
   Lemma ty_incl_prod_flatten ρ tyl1 tyl2 tyl3 :
-    ty_incl ρ (product (tyl1 ++ product tyl2 :: tyl3))
-              (product (tyl1 ++ tyl2 ++ tyl3)).
+    ty_incl ρ (Π(tyl1 ++ Π tyl2 :: tyl3))
+              (Π(tyl1 ++ tyl2 ++ tyl3)).
   Admitted.
 
   Lemma ty_incl_sum ρ n tyl1 tyl2 (_ : LstTySize n tyl1) (_ : LstTySize n tyl2) :
@@ -174,7 +172,7 @@ Section ty_incl.
   Qed.
 
   Lemma ty_incl_uninit_split ρ n1 n2 :
-    ty_incl ρ (uninit (n1+n2)) (product [uninit n1; uninit n2]).
+    ty_incl ρ (uninit (n1+n2)) (Π[uninit n1; uninit n2]).
   Proof.
     iIntros (tid) "_!==>". iSplit; iIntros "!#*H".
     - iDestruct "H" as %Hlen. iExists [take n1 vl; drop n1 vl].
@@ -194,7 +192,7 @@ Section ty_incl.
   Admitted.
 
   Lemma ty_incl_uninit_combine ρ n1 n2 :
-    ty_incl ρ (product [uninit n1; uninit n2]) (uninit (n1+n2)).
+    ty_incl ρ (Π[uninit n1; uninit n2]) (uninit (n1+n2)).
   Proof.
   (* FIXME : idem : cannot combine the fractured borrow. *)
   Admitted.
@@ -209,29 +207,40 @@ Section ty_incl.
     by iApply ("Hwp" with "[-Htl] Htl").
   Qed.
 
-  Lemma ty_incl_fn {n} ρ ρ1 ρ2 :
-    Duplicable ρ → (∀ vl : vec val n, ρ ★ ρ2 vl ⇒ ρ1 vl) →
+  Lemma ty_incl_fn {A n} ρ ρ1 ρ2 :
+    Duplicable ρ → (∀ (x : A) (vl : vec val n), ρ ★ ρ2 x vl ⇒ ρ1 x vl) →
     ty_incl ρ (fn ρ1) (fn ρ2).
   Proof.
     iIntros (? Hρ1ρ2 tid) "#Hρ!==>". iSplit; iIntros "!#*#H".
     - iDestruct "H" as (f) "[% Hwp]". subst. iExists _. iSplit. done.
-      iIntros (vl) "!#[Hρ2 Htl]". iVs (Hρ1ρ2 with "[Hρ2]"). by iFrame.
+      iIntros (x vl) "!#[Hρ2 Htl]". iVs (Hρ1ρ2 with "[Hρ2]"). by iFrame.
       iApply "Hwp". by iFrame.
     - iSplit; last done. simpl. iDestruct "H" as (vl0) "[? Hvl]".
       iExists vl0. iFrame "#". iNext. iDestruct "Hvl" as (f) "[% Hwp]".
       iExists f. iSplit. done.
-      iIntros (vl) "!#[Hρ2 Htl]". iVs (Hρ1ρ2 with "[Hρ2]"). by iFrame.
+      iIntros (x vl) "!#[Hρ2 Htl]". iVs (Hρ1ρ2 with "[Hρ2]"). by iFrame.
       iApply "Hwp". by iFrame.
   Qed.
 
-  Lemma ty_incl_fn_cont {n} ρ ρf : ty_incl ρ (fn ρf) (cont (n:=n) ρf).
+  Lemma ty_incl_fn_cont {A n} ρ ρf (x : A) :
+    ty_incl ρ (fn ρf) (cont (n:=n) (ρf x)).
   Proof.
     iIntros (tid) "_!==>". iSplit; iIntros "!#*H"; last by iSplit.
     iDestruct "H" as (f) "[%#H]". subst. iExists _. iSplit. done.
     iIntros (vl) "Hρf Htl". iApply "H". by iFrame.
   Qed.
 
-  (* TODO : forall, when we will have figured out the right definition. *)
+  Lemma ty_incl_fn_specialize {A B n} (f : A → B) ρ ρfn :
+    ty_incl ρ (fn (n:=n) ρfn) (fn (ρfn ∘ f)).
+  Proof.
+    iIntros (tid) "_!==>". iSplit; iIntros "!#*H".
+    - iDestruct "H" as (fv) "[%#H]". subst. iExists _. iSplit. done.
+      iIntros (x vl). by iApply "H".
+    - iSplit; last done.
+      iDestruct "H" as (fvl) "[?Hown]". iExists _. iFrame. iNext.
+      iDestruct "Hown" as (fv) "[%H]". subst. iExists _. iSplit. done.
+      iIntros (x vl). by iApply "H".
+  Qed.
 
   Lemma ty_incl_perm_incl ρ ty1 ty2 v :
     ty_incl ρ ty1 ty2 → ρ ★ v ◁ ty1 ⇒ v ◁ ty2.
