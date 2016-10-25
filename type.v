@@ -5,102 +5,100 @@ From lrust Require Export notation lifetime heap.
 Definition mgmtE := nclose tlN ∪ lftN.
 Definition lrustN := nroot .@ "lrust".
 
-Section defs.
+(* [perm] is defined here instead of perm.v in order to define [cont] *)
+Definition perm {Σ} := thread_id → iProp Σ.
 
-  Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
+(* We would like to put the defintions of [type] and [simple_type] in
+   a section to generalize over [Σ] and all the [xxxG], but
+   [simple_type] would not depend on all that and this would make us
+   unable to define [ty_of_st] as a coercion... *)
 
-  (* [perm] is defined here instead of perm.v in order to define [cont] *)
-  Definition perm := thread_id → iProp Σ.
+Record type `{heapG Σ, lifetimeG Σ, thread_localG Σ} :=
+  { ty_size : nat; ty_dup : bool;
+    ty_own : thread_id → list val → iProp Σ;
+    ty_shr : lifetime → thread_id → namespace → loc → iProp Σ;
 
-  Record type :=
-    { ty_size : nat; ty_dup : bool;
-      ty_own : thread_id → list val → iProp Σ;
-      (* TODO : the document says ty_shr takes a mask, but it is never
-         used with anything else than namespaces. *)
-      ty_shr : lifetime → thread_id → namespace → loc → iProp Σ;
+    ty_dup_persistent tid vl : ty_dup → PersistentP (ty_own tid vl);
+    ty_shr_persistent κ tid N l : PersistentP (ty_shr κ tid N l);
 
-      ty_dup_persistent tid vl : ty_dup → PersistentP (ty_own tid vl);
-      ty_shr_persistent κ tid N l : PersistentP (ty_shr κ tid N l);
+    ty_size_eq tid vl : ty_own tid vl ⊢ length vl = ty_size;
+    (* The mask for starting the sharing does /not/ include the
+       namespace N, for allowing more flexibility for the user of
+       this type (typically for the [own] type). AFAIK, there is no
+       fundamental reason for this.
 
-      ty_size_eq tid vl : ty_own tid vl ⊢ length vl = ty_size;
-      (* The mask for starting the sharing does /not/ include the
-         namespace N, for allowing more flexibility for the user of
-         this type (typically for the [own] type). AFAIK, there is no
-         fundamental reason for this.
+       This should not be harmful, since sharing typically creates
+       invariants, which does not need the mask.  Moreover, it is
+       more consistent with thread-local tokens, which we do not
+       give any. *)
+    ty_share E N κ l tid q : mgmtE ⊥ nclose N → mgmtE ⊆ E →
+      &{κ} (l ↦★: ty_own tid) ⊢ [κ]{q} ={E}=★ ty_shr κ tid N l ★ [κ]{q};
+    ty_shr_mono κ κ' tid N l :
+      κ' ⊑ κ ⊢ ty_shr κ tid N l → ty_shr κ' tid N l;
+    ty_shr_acc κ tid N E l q :
+      nclose N ⊆ E → mgmtE ⊆ E → ty_dup →
+      ty_shr κ tid N l ⊢
+        [κ]{q} ★ tl_own tid N ={E}=> ∃ q', ▷l ↦★{q'}: ty_own tid ★
+           (▷l ↦★{q'}: ty_own tid ={E}=★ [κ]{q} ★ tl_own tid N)
+  }.
+Global Existing Instances ty_shr_persistent ty_dup_persistent.
 
-         This should not be harmful, since sharing typically creates
-         invariants, which does not need the mask.  Moreover, it is
-         more consistent with thread-local tokens, which we do not
-         give any. *)
-      ty_share E N κ l tid q : mgmtE ⊥ nclose N → mgmtE ⊆ E →
-        &{κ} (l ↦★: ty_own tid) ⊢ [κ]{q} ={E}=★ ty_shr κ tid N l ★ [κ]{q};
-      ty_shr_mono κ κ' tid N l :
-        κ' ⊑ κ ⊢ ty_shr κ tid N l → ty_shr κ' tid N l;
-      ty_shr_acc κ tid N E l q :
-        nclose N ⊆ E → mgmtE ⊆ E → ty_dup →
-        ty_shr κ tid N l ⊢
-          [κ]{q} ★ tl_own tid N ={E}=> ∃ q', ▷l ↦★{q'}: ty_own tid ★
-             (▷l ↦★{q'}: ty_own tid ={E}=★ [κ]{q} ★ tl_own tid N)
-    }.
-  Global Existing Instances ty_shr_persistent ty_dup_persistent.
+Record simple_type `{heapG Σ, lifetimeG Σ, thread_localG Σ} :=
+  { st_size : nat;
+    st_own : thread_id → list val → iProp Σ;
 
-  Record simple_type :=
-    { st_size : nat;
-      st_own : thread_id → list val → iProp Σ;
+    st_size_eq tid vl : st_own tid vl ⊢ length vl = st_size;
+    st_own_persistent tid vl : PersistentP (st_own tid vl) }.
+Global Existing Instance st_own_persistent.
 
-      st_size_eq tid vl : st_own tid vl ⊢ length vl = st_size;
-      st_own_persistent tid vl : PersistentP (st_own tid vl) }.
-  Global Existing Instance st_own_persistent.
+Program Coercion ty_of_st `{heapG Σ, lifetimeG Σ, thread_localG Σ}
+        (st : simple_type) : type :=
+  {| ty_size := st.(st_size); ty_dup := true;
+     ty_own := st.(st_own);
 
-  Program Definition ty_of_st (st : simple_type) : type :=
-    {| ty_size := st.(st_size); ty_dup := true;
-       ty_own := st.(st_own);
-
-       (* [st.(st_own) tid vl] needs to be outside of the fractured
-          borrow, otherwise I do not knwo how to prove the shr part of
-          [lft_incl_ty_incl_shared_borrow]. *)
-       ty_shr := λ κ tid _ l,
-                 (∃ vl, (&frac{κ} λ q, l ↦★{q} vl) ★ ▷ st.(st_own) tid vl)%I
-    |}.
-  Next Obligation. apply st_size_eq. Qed.
-  Next Obligation.
-    intros st E N κ l tid q ??. iIntros "Hmt Htok".
-    iVs (lft_borrow_exists with "Hmt Htok") as (vl) "[Hmt Htok]". set_solver.
-    iVs (lft_borrow_split with "Hmt") as "[Hmt Hown]". set_solver.
-    iVs (lft_borrow_persistent with "Hown Htok") as "[Hown $]". set_solver.
-    iExists vl. iFrame. by iApply lft_borrow_fracture.
-  Qed.
-  Next Obligation.
-    iIntros (st κ κ' tid N l) "#Hord H". iDestruct "H" as (vl) "[Hf Hown]".
-    iExists vl. iFrame. by iApply (lft_frac_borrow_incl with "Hord").
-  Qed.
-  Next Obligation.
-    intros st κ tid N E l q ???.  iIntros "#Hshr!#[Hlft $]".
-    iDestruct "Hshr" as (vl) "[Hf Hown]".
-    iVs (lft_frac_borrow_open with "[] Hf Hlft") as (q') "[Hmt Hclose]";
-      first set_solver.
-    - iIntros "!#". iIntros (q1 q2). rewrite heap_mapsto_vec_op_eq.
-      iSplit; auto.
-    - iVsIntro. rewrite {1}heap_mapsto_vec_op_split. iExists _.
-      iDestruct "Hmt" as "[Hmt1 Hmt2]". iSplitL "Hmt1".
-      + iNext. iExists _. by iFrame.
-      + iIntros "Hmt1". iDestruct "Hmt1" as (vl') "[Hmt1 #Hown']".
-        iAssert (▷ (length vl = length vl'))%I as ">%".
-        { iNext.
-          iDestruct (st_size_eq with "Hown") as %->.
-          iDestruct (st_size_eq with "Hown'") as %->. done. }
-        iCombine "Hmt1" "Hmt2" as "Hmt". rewrite heap_mapsto_vec_op // Qp_div_2.
-        iDestruct "Hmt" as "[>% Hmt]". subst. by iApply "Hclose".
-  Qed.
-
-End defs.
+     (* [st.(st_own) tid vl] needs to be outside of the fractured
+        borrow, otherwise I do not knwo how to prove the shr part of
+        [lft_incl_ty_incl_shared_borrow]. *)
+     ty_shr := λ κ tid _ l,
+               (∃ vl, (&frac{κ} λ q, l ↦★{q} vl) ★ ▷ st.(st_own) tid vl)%I
+  |}.
+Next Obligation. intros. apply st_size_eq. Qed.
+Next Obligation.
+  intros Σ ??? st E N κ l tid q ??. iIntros "Hmt Htok".
+  iVs (lft_borrow_exists with "Hmt Htok") as (vl) "[Hmt Htok]". set_solver.
+  iVs (lft_borrow_split with "Hmt") as "[Hmt Hown]". set_solver.
+  iVs (lft_borrow_persistent with "Hown Htok") as "[Hown $]". set_solver.
+  iExists vl. iFrame. by iApply lft_borrow_fracture.
+Qed.
+Next Obligation.
+  intros Σ???. iIntros (st κ κ' tid N l) "#Hord H".
+  iDestruct "H" as (vl) "[Hf Hown]".
+  iExists vl. iFrame. by iApply (lft_frac_borrow_incl with "Hord").
+Qed.
+Next Obligation.
+  intros Σ??? st κ tid N E l q ???.  iIntros "#Hshr!#[Hlft $]".
+  iDestruct "Hshr" as (vl) "[Hf Hown]".
+  iVs (lft_frac_borrow_open with "[] Hf Hlft") as (q') "[Hmt Hclose]";
+    first set_solver.
+  - iIntros "!#". iIntros (q1 q2). rewrite heap_mapsto_vec_op_eq.
+    iSplit; auto.
+  - iVsIntro. rewrite {1}heap_mapsto_vec_op_split. iExists _.
+    iDestruct "Hmt" as "[Hmt1 Hmt2]". iSplitL "Hmt1".
+    + iNext. iExists _. by iFrame.
+    + iIntros "Hmt1". iDestruct "Hmt1" as (vl') "[Hmt1 #Hown']".
+      iAssert (▷ (length vl = length vl'))%I as ">%".
+      { iNext.
+        iDestruct (st_size_eq with "Hown") as %->.
+        iDestruct (st_size_eq with "Hown'") as %->. done. }
+      iCombine "Hmt1" "Hmt2" as "Hmt". rewrite heap_mapsto_vec_op // Qp_div_2.
+      iDestruct "Hmt" as "[>% Hmt]". subst. by iApply "Hclose".
+Qed.
 
 Delimit Scope lrust_type_scope with T.
 Bind Scope lrust_type_scope with type.
 
 Module Types.
 Section types.
-  (* TODO : make ty_of_st work as a coercion. *)
 
   Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
 
@@ -120,16 +118,16 @@ Section types.
   Next Obligation. iIntros (?????) "_ []". Qed.
   Next Obligation. intros. iIntros "[]". Qed.
 
-  Program Definition unit :=
-    ty_of_st {| st_size := 0; st_own tid vl := (vl = [])%I |}.
+  Program Definition unit : type :=
+    {| st_size := 0; st_own tid vl := (vl = [])%I |}.
   Next Obligation. iIntros (tid vl) "%". simpl. by subst. Qed.
 
-  Program Definition bool :=
-    ty_of_st {| st_size := 1; st_own tid vl := (∃ z:bool, vl = [ #z ])%I |}.
+  Program Definition bool : type :=
+    {| st_size := 1; st_own tid vl := (∃ z:bool, vl = [ #z ])%I |}.
   Next Obligation. iIntros (tid vl) "H". iDestruct "H" as (z) "%". by subst. Qed.
 
-  Program Definition int :=
-    ty_of_st {| st_size := 1; st_own tid vl := (∃ z:Z, vl = [ #z ])%I |}.
+  Program Definition int : type :=
+    {| st_size := 1; st_own tid vl := (∃ z:Z, vl = [ #z ])%I |}.
   Next Obligation. iIntros (tid vl) "H". iDestruct "H" as (z) "%". by subst. Qed.
 
   (* TODO own and uniq_borrow are very similar. They could probably
@@ -254,10 +252,9 @@ Section types.
   Qed.
   Next Obligation. done. Qed.
 
-  Program Definition shared_borrow (κ : lifetime) (ty : type) :=
-    ty_of_st {| st_size := 1;
-       st_own tid vl := (∃ l:loc, vl = [ #l ] ★ ty.(ty_shr) κ tid lrustN l)%I;
-    |}.
+  Program Definition shared_borrow (κ : lifetime) (ty : type) : type :=
+    {| st_size := 1;
+       st_own tid vl := (∃ l:loc, vl = [ #l ] ★ ty.(ty_shr) κ tid lrustN l)%I |}.
   Next Obligation.
     iIntros (κ ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
   Qed.
@@ -488,8 +485,8 @@ Section types.
       iApply ("Hclose'" with "Hownq").
   Qed.
 
-  Program Definition uninit (n : nat) :=
-    ty_of_st {| st_size := n; st_own tid vl := (length vl = n)%I |}.
+  Program Definition uninit (n : nat) : type :=
+    {| st_size := n; st_own tid vl := (length vl = n)%I |}.
   Next Obligation. done. Qed.
 
   (* TODO : For now, functions and closures are not Sync nor
@@ -511,11 +508,10 @@ Section types.
   Next Obligation. intros. by iIntros "_ _". Qed.
   Next Obligation. done. Qed.
 
-  Program Definition fn {A : Type} {n : nat} (ρ : A -> vec val n → @perm Σ):=
-    ty_of_st {|
-        st_size := 1;
-        st_own tid vl := (∃ f, vl = [f] ★
-          ∀ x vl, {{ ρ x vl tid ★ tl_own tid ⊤ }} f (map of_val vl) {{λ _, False}})%I |}.
+  Program Definition fn {A n} (ρ : A -> vec val n → @perm Σ) : type :=
+    {| st_size := 1;
+       st_own tid vl := (∃ f, vl = [f] ★ ∀ x vl,
+         {{ ρ x vl tid ★ tl_own tid ⊤ }} f (map of_val vl) {{λ _, False}})%I |}.
   Next Obligation.
     iIntros (x n ρ tid vl) "H". iDestruct "H" as (f) "[% _]". by subst.
   Qed.
