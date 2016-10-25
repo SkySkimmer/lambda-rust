@@ -238,10 +238,8 @@ Section props.
       - iExists _. eauto. }
     iVs (lft_borrow_create with "Hκ Hf") as "[_ Hf]". done.
     iVs (lft_extract_combine with "[-]"). done. by iFrame.
-    (* FIXME : extraction needs to be monotone in some sense to
-       remove the later. *)
-    admit.
-  Admitted.
+    iVsIntro. iApply lft_extract_mono; last done. by iDestruct 1 as "[$$]".
+  Qed.
 
   Lemma reborrow_uniq_borrowing κ κ' v ty :
     borrowing κ (κ ⊑ κ') (v ◁ &uniq{κ'}ty) (v ◁ &uniq{κ}ty).

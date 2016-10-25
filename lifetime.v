@@ -61,7 +61,8 @@ Section lft.
   Global Existing Instance lft_incl_persistent.
 
   Axiom lft_extract_proper : ∀ κ, Proper ((⊣⊢) ==> (⊣⊢)) (lft_extract κ).
-  Global Existing Instance lft_extract_proper.
+  Axiom lft_extract_mono : ∀ κ, Proper ((⊢) ==> (⊢)) (lft_extract κ).
+  Global Existing Instances lft_extract_proper lft_extract_mono.
 
   Axiom lft_borrow_proper : ∀ κ, Proper ((⊣⊢) ==> (⊣⊢)) (lft_borrow κ).
   Global Existing Instance lft_borrow_proper.
