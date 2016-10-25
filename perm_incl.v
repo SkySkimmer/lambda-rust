@@ -145,7 +145,7 @@ Section props.
     foldr (λ (q : Qp) acc, q + acc)%Qc 0%Qc ql = q →
     v ◁ own q (Π tyl) ⇔
       foldr (λ qtyoffs acc,
-             proj_valuable (Z.of_nat (qtyoffs.2.2)) v ◁
+             Valuable.proj (Z.of_nat (qtyoffs.2.2)) v ◁
                            own (qtyoffs.1) (qtyoffs.2.1) ★ acc)
             ⊤ (combine ql (combine_offs tyl 0)).
   Proof.
@@ -179,7 +179,7 @@ Section props.
   Lemma perm_split_uniq_borrow_prod tyl κ v :
     v ◁ &uniq{κ} (Π tyl) ⇒
       foldr (λ tyoffs acc,
-             proj_valuable (Z.of_nat (tyoffs.2)) v ◁ &uniq{κ} (tyoffs.1) ★ acc)%P
+             Valuable.proj (Z.of_nat (tyoffs.2)) v ◁ &uniq{κ} (tyoffs.1) ★ acc)%P
             ⊤ (combine_offs tyl 0).
   Proof.
     intros tid.
@@ -196,7 +196,7 @@ Section props.
   Lemma perm_split_shr_borrow_prod tyl κ v :
     v ◁ &shr{κ} (Π tyl) ⇒
       foldr (λ tyoffs acc,
-             proj_valuable (Z.of_nat (tyoffs.2)) v ◁ &shr{κ} (tyoffs.1) ★ acc)%P
+             Valuable.proj (Z.of_nat (tyoffs.2)) v ◁ &shr{κ} (tyoffs.1) ★ acc)%P
             ⊤ (combine_offs tyl 0).
   Proof.
     intros tid.

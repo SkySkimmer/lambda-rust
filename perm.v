@@ -1,14 +1,9 @@
 From iris.program_logic Require Import thread_local.
 From iris.proofmode Require Import tactics.
-From lrust Require Export type.
+From lrust Require Export type valuable.
 
 Delimit Scope perm_scope with P.
 Bind Scope perm_scope with perm.
-
-(* TODO : find a better place for this. *)
-Definition valuable := option val.
-Definition proj_valuable (n : Z) : valuable → valuable :=
-  (≫= λ v, match v with LitV (LitLoc l) => Some (#(shift_loc l n)) | _ => None end).
 
 Module Perm.
 
@@ -16,7 +11,7 @@ Section perm.
 
   Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
 
-  Definition has_type (v : valuable) (ty : type) : perm :=
+  Definition has_type (v : Valuable.t) (ty : type) : perm :=
     λ tid, from_option (λ v, ty.(ty_own) tid [v]) False%I v.
 
   Definition extract (κ : lifetime) (ρ : perm) : perm :=

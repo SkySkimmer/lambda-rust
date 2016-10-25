@@ -13,5 +13,7 @@ wp_tactics.v
 lifetime.v
 type.v
 type_incl.v
+valuable.v
 perm.v
 perm_incl.v
+typing.v

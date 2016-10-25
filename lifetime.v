@@ -88,7 +88,7 @@ Section lft.
   (** Basic rules about lifetimes  *)
   Axiom lft_begin : ∀ `(nclose lftN ⊆ E), True ={E}=> ∃ κ, [κ]{1} ★ lft κ.
   (* TODO : Do we really need a full mask here ? *)
-  Axiom lft_end : ∀ κ, lft κ ⊢ [κ]{1} ={⊤,∅}=★ ▷ |={∅,⊤}=> [†κ].
+  Axiom lft_end : ∀ κ, lft κ ⊢ [κ]{1} -★ |={⊤,∅}▷=> [†κ].
   Axiom lft_own_op : ∀ κ q1 q2, [κ]{q1} ★ [κ]{q2} ⊣⊢ [κ]{q1+q2}.
 
   (** Creating borrows and using them  *)
