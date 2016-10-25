@@ -489,11 +489,6 @@ Section types.
     {| st_size := n; st_own tid vl := (length vl = n)%I |}.
   Next Obligation. done. Qed.
 
-  (* TODO : For now, functions and closures are not Sync nor
-     Send. This means they cannot be called in another thread than the
-     one that created it.
-     We will need Send and Sync closures when dealing with
-     multithreading (spawn needs a Send closure). *)
   Program Definition cont {n : nat} (ρ : vec val n → @perm Σ) :=
     {| ty_size := 1; ty_dup := false;
        ty_own tid vl := (∃ f, vl = [f] ★
@@ -508,6 +503,10 @@ Section types.
   Next Obligation. intros. by iIntros "_ _". Qed.
   Next Obligation. done. Qed.
 
+  (* TODO : For now, functions are not Send. This means they cannot be
+     called in another thread than the one that created it.  We will
+     need Send functions when dealing with multithreading ([fork]
+     needs a Send closure). *)
   Program Definition fn {A n} (ρ : A -> vec val n → @perm Σ) : type :=
     {| st_size := 1;
        st_own tid vl := (∃ f, vl = [f] ★ ∀ x vl,
