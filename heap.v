@@ -373,10 +373,10 @@ Section heap.
   Lemma wp_free E (n:Z) l vl Φ :
     nclose heapN ⊆ E →
     n = length vl →
-    heap_ctx ★ l ↦★ vl ★ †l…(length vl) ★ ▷ (|={E}=> Φ (LitV LitUnit))
+    heap_ctx ★ ▷ l ↦★ vl ★ ▷ †l…(length vl) ★ ▷ (|={E}=> Φ (LitV LitUnit))
     ⊢ WP Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E {{ Φ }}.
   Proof.
-    iIntros (??) "(#Hinv & Hmt & Hf & HΦ)". rewrite /heap_ctx /heap_inv.
+    iIntros (??) "(#Hinv & >Hmt & >Hf & HΦ)". rewrite /heap_ctx /heap_inv.
     iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & REL)" "Hclose".
     iDestruct "REL" as %REL.
     rewrite heap_freeable_eq /heap_freeable_def.

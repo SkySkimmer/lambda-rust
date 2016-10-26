@@ -37,6 +37,23 @@ Proof.
   rewrite envs_app_sound //; simpl. by rewrite right_id HΔ'.
 Qed.
 
+Lemma tac_wp_free Δ Δ' Δ'' Δ''' E i1 i2 vl (n : Z) (n' : nat) l Φ :
+  (Δ ⊢ heap_ctx) → nclose heapN ⊆ E → n = length vl →
+  IntoLaterEnvs Δ Δ' →
+  envs_lookup i1 Δ' = Some (false, l ↦★ vl)%I →
+  envs_delete i1 false Δ' = Δ'' →
+  envs_lookup i2 Δ'' = Some (false, †l…n')%I →
+  envs_delete i2 false Δ'' = Δ''' →
+  n' = length vl →
+  (Δ''' ⊢ |={E}=> Φ (LitV LitUnit)) →
+  Δ ⊢ WP Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E {{ Φ }}.
+Proof.
+  intros ?? -> ?? <- ? <- -> HΔ. rewrite -wp_free // -always_and_sep_l.
+  apply and_intro; first done.
+  rewrite into_later_env_sound -!later_sep; apply later_mono.
+  do 2 (rewrite envs_lookup_sound' //). by rewrite HΔ.
+Qed.
+
 Lemma tac_wp_read Δ Δ' E i l q v o Φ :
   (Δ ⊢ heap_ctx) → nclose heapN ⊆ E → o = Na1Ord ∨ o = ScOrd →
   IntoLaterEnvs Δ Δ' →
@@ -87,7 +104,7 @@ Tactic Notation "wp_alloc" ident(l) ident(vl) "as" constr(H) constr(Hf) :=
       [reshape_expr e ltac:(fun K e' =>
          match eval hnf in e' with Alloc _ => wp_bind_core K end)
       |fail 1 "wp_alloc: cannot find 'Alloc' in" e];
-    eapply tac_wp_alloc with _ _ H Hf;
+    eapply tac_wp_alloc with _ H Hf;
       [iAssumption || fail "wp_alloc: cannot find heap_ctx"
       |solve_ndisj
       |try fast_done
@@ -101,6 +118,29 @@ Tactic Notation "wp_alloc" ident(l) ident(vl) "as" constr(H) constr(Hf) :=
 
 Tactic Notation "wp_alloc" ident(l) ident(vl) :=
   let H := iFresh in let Hf := iFresh in wp_alloc l vl as H Hf.
+
+Tactic Notation "wp_free" :=
+  lazymatch goal with
+  | |- _ ⊢ wp ?E ?e ?Q =>
+    first
+      [reshape_expr e ltac:(fun K e' =>
+         match eval hnf in e' with Free _ _ => wp_bind_core K end)
+      |fail 1 "wp_free: cannot find 'Free' in" e];
+    eapply tac_wp_free;
+      [iAssumption || fail "wp_free: cannot find heap_ctx"
+      |solve_ndisj
+      |try fast_done
+      |apply _
+      |let l := match goal with |- _ = Some (_, (?l ↦★ _)%I) => l end in
+       iAssumptionCore || fail "wp_read: cannot find" l "↦★ ?"
+      |env_cbv; reflexivity
+      |let l := match goal with |- _ = Some (_, († ?l … _)%I) => l end in
+       iAssumptionCore || fail "wp_read: cannot find †" l "… ?"
+      |env_cbv; reflexivity
+      |try fast_done
+      |wp_finish]
+  | _ => fail "wp_free: not a 'wp'"
+  end.
 
 Tactic Notation "wp_read" :=
   lazymatch goal with
