@@ -312,4 +312,36 @@ Section typing.
       iModIntro. iExists _. eauto.
   Qed.
 
+  Lemma typed_step_deref_uniq_borrow_borrow ty e κ κ' κ'' q:
+    typed_step (Valuable.of_expr e ◁ &uniq{κ'} &uniq{κ''} ty ★ κ ⊑ κ' ★ [κ]{q} ★ κ' ⊑ κ'')
+               ( *e)
+               (λ v, v ◁ &uniq{κ'} ty ★ κ ⊑ κ' ★ [κ]{q})%P.
+  Proof.
+    iIntros (tid) "#HEAP !# [(H◁ & #H⊑1 & [Htok #Hκ'] & #H⊑2) Htl]".
+    destruct (Valuable.of_expr e) eqn:He; last by iDestruct "H◁" as "[]".
+    iDestruct "H◁" as (l) "[Heq H↦]". iDestruct "Heq" as %[=->].
+    iMod (lft_incl_trade with "H⊑1 Htok") as (q'') "[Htok Hclose]". done.
+    iMod (lft_borrow_exists with "H↦ Htok") as (vl) "[Hbor Htok]". done.
+    iMod (lft_borrow_split with "Hbor") as "[H↦ Hbor]". done.
+    iMod (lft_borrow_exists with "Hbor Htok") as (l') "[Hbor Htok]". done.
+    iMod (lft_borrow_split with "Hbor") as "[Heq Hbor]". done.
+    iMod (lft_borrow_persistent with "Heq Htok") as "[>% [Htok1 Htok2]]". done. subst.
+    iMod (lft_borrow_open with "H↦ Htok1") as "[>H↦ Hclose']". done.
+    iMod (lft_borrow_open with "Hbor Htok2") as "[Hbor Hclose'']". done.
+    rewrite heap_mapsto_vec_singleton.
+    wp_bind e. iApply Valuable.of_expr_wp. done. wp_read.
+    iMod (lft_borrow_close with "[H↦] Hclose'") as "[_ Htok1]". done. by auto.
+    iMod (lft_borrow_unnest with "H⊑2 [Hbor Hclose'']") as "[Htok2 Hbor]". done. by iFrame.
+    iCombine "Htok1" "Htok2" as "Htok". iMod ("Hclose" with "Htok") as "$". iFrame "★#".
+    iModIntro. iExists _. eauto.
+  Qed.
+
+  Lemma typed_step_deref_shr_borrow_borrow ty e κ κ' κ'' q:
+    typed_step (Valuable.of_expr e ◁ &shr{κ'} &uniq{κ''} ty ★ κ ⊑ κ' ★ [κ]{q} ★ κ' ⊑ κ'')
+               ( *e)
+               (λ v, v ◁ &shr{κ'} ty ★ κ ⊑ κ' ★ [κ]{q})%P.
+  Proof.
+    (* TODO : fix the definition of sharing unique borrows before. *)
+  Admitted.
+
 End typing.
