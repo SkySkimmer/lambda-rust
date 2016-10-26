@@ -132,10 +132,10 @@ Tactic Notation "wp_free" :=
       |try fast_done
       |apply _
       |let l := match goal with |- _ = Some (_, (?l ↦★ _)%I) => l end in
-       iAssumptionCore || fail "wp_read: cannot find" l "↦★ ?"
+       iAssumptionCore || fail "wp_free: cannot find" l "↦★ ?"
       |env_cbv; reflexivity
       |let l := match goal with |- _ = Some (_, († ?l … _)%I) => l end in
-       iAssumptionCore || fail "wp_read: cannot find †" l "… ?"
+       iAssumptionCore || fail "wp_free: cannot find †" l "… ?"
       |env_cbv; reflexivity
       |try fast_done
       |wp_finish]

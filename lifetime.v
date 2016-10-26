@@ -159,6 +159,10 @@ Section lft.
     IntoAnd false ([κ]{q}) ([κ]{q/2}) ([κ]{q/2}).
   Proof. by rewrite /IntoAnd lft_own_split. Qed.
 
+  Global Instance from_sep_lft_own κ q :
+    FromSep ([κ]{q}) ([κ]{q/2}) ([κ]{q/2}).
+  Proof. by rewrite /FromSep -lft_own_split. Qed.
+
   Lemma lft_borrow_open' E κ P q :
     nclose lftN ⊆ E →
       &{κ}P ⊢ [κ]{q} ={E}=★ ▷ P ★ (▷ P ={E}=★ &{κ}P ★ [κ]{q}).
