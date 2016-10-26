@@ -1,4 +1,3 @@
-From iris.algebra Require Export upred_tactics.
 From lrust Require Export tactics derived.
 Import uPred.
 
@@ -26,11 +25,11 @@ pvs_intro if we obtain a consecutive wp *)
 Ltac wp_strip_pvs :=
   lazymatch goal with
   | |- _ ⊢ |={?E}=> _ =>
-    etrans; [|apply pvs_intro];
+    etrans; [|apply fupd_intro];
     match goal with |- _ ⊢ wp E _ _ => simpl | _ => fail end
   end.
 
-Ltac wp_value_head := etrans; [|eapply wp_value_pvs; wp_done]; lazy beta.
+Ltac wp_value_head := etrans; [|eapply wp_value_fupd; wp_done]; lazy beta.
 
 Ltac wp_strip_later := idtac. (* a hook to be redefined later *)
 

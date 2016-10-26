@@ -75,7 +75,7 @@ Lemma wp_read_na1_pst E l Φ :
   ⊢ WP Read Na1Ord (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
   iIntros "HΦP". iApply (wp_lift_head_step E); auto.
-  iVs "HΦP" as (σ n v) "(%&HΦ&HP)". iVsIntro. iExists σ. iSplit. done. iFrame.
+  iMod "HΦP" as (σ n v) "(%&HΦ&HP)". iModIntro. iExists σ. iSplit. done. iFrame.
   iNext. iIntros (e2 σ2 ef) "[% HΦ]". inv_head_step.
   rewrite big_sepL_nil right_id. iApply ("HP" with "HΦ").
 Qed.
@@ -106,7 +106,7 @@ Lemma wp_write_na1_pst E l v Φ :
   ⊢ WP Write Na1Ord (Lit $ LitLoc l) (of_val v) @ E {{ Φ }}.
 Proof.
   iIntros "HΦP". iApply (wp_lift_head_step E); auto.
-  iVs "HΦP" as (σ v') "(%&HΦ&HP)". iVsIntro. iExists σ. iSplit. done. iFrame.
+  iMod "HΦP" as (σ v') "(%&HΦ&HP)". iModIntro. iExists σ. iSplit. done. iFrame.
   iNext. iIntros (e2 σ2 ef) "[% HΦ]". inv_head_step.
   rewrite big_sepL_nil right_id. iApply ("HP" with "HΦ").
 Qed.
@@ -162,7 +162,7 @@ Lemma wp_bin_op E op l1 l2 l' Φ :
 Proof.
   iIntros (?) "H". iApply wp_lift_pure_det_head_step; eauto.
   by intros; inv_head_step; eauto.
-  iNext. rewrite big_sepL_nil right_id. iVs "H". by iApply wp_value.
+  iNext. rewrite big_sepL_nil right_id. iMod "H". by iApply wp_value.
 Qed.
 
 Lemma wp_case E i e el Φ :

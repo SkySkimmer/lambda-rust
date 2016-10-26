@@ -1,4 +1,4 @@
-From iris.algebra Require Import upred_big_op.
+From iris.base_logic Require Import big_op.
 From iris.program_logic Require Import hoare thread_local.
 From lrust Require Export notation lifetime heap.
 
@@ -38,7 +38,7 @@ Record type `{heapG Σ, lifetimeG Σ, thread_localG Σ} :=
     ty_shr_acc κ tid N E l q :
       nclose N ⊆ E → mgmtE ⊆ E → ty_dup →
       ty_shr κ tid N l ⊢
-        [κ]{q} ★ tl_own tid N ={E}=> ∃ q', ▷l ↦★{q'}: ty_own tid ★
+        [κ]{q} ★ tl_own tid N ={E}=★ ∃ q', ▷l ↦★{q'}: ty_own tid ★
            (▷l ↦★{q'}: ty_own tid ={E}=★ [κ]{q} ★ tl_own tid N)
   }.
 Global Existing Instances ty_shr_persistent ty_dup_persistent.
@@ -65,9 +65,9 @@ Program Coercion ty_of_st `{heapG Σ, lifetimeG Σ, thread_localG Σ}
 Next Obligation. intros. apply st_size_eq. Qed.
 Next Obligation.
   intros Σ ??? st E N κ l tid q ??. iIntros "Hmt Htok".
-  iVs (lft_borrow_exists with "Hmt Htok") as (vl) "[Hmt Htok]". set_solver.
-  iVs (lft_borrow_split with "Hmt") as "[Hmt Hown]". set_solver.
-  iVs (lft_borrow_persistent with "Hown Htok") as "[Hown $]". set_solver.
+  iMod (lft_borrow_exists with "Hmt Htok") as (vl) "[Hmt Htok]". set_solver.
+  iMod (lft_borrow_split with "Hmt") as "[Hmt Hown]". set_solver.
+  iMod (lft_borrow_persistent with "Hown Htok") as "[Hown $]". set_solver.
   iExists vl. iFrame. by iApply lft_borrow_fracture.
 Qed.
 Next Obligation.
@@ -76,13 +76,13 @@ Next Obligation.
   iExists vl. iFrame. by iApply (lft_frac_borrow_incl with "Hord").
 Qed.
 Next Obligation.
-  intros Σ??? st κ tid N E l q ???.  iIntros "#Hshr!#[Hlft $]".
+  intros Σ??? st κ tid N E l q ???.  iIntros "#Hshr[Hlft $]".
   iDestruct "Hshr" as (vl) "[Hf Hown]".
-  iVs (lft_frac_borrow_open with "[] Hf Hlft") as (q') "[Hmt Hclose]";
+  iMod (lft_frac_borrow_open with "[] Hf Hlft") as (q') "[Hmt Hclose]";
     first set_solver.
   - iIntros "!#". iIntros (q1 q2). rewrite heap_mapsto_vec_op_eq.
     iSplit; auto.
-  - iVsIntro. rewrite {1}heap_mapsto_vec_op_split. iExists _.
+  - iModIntro. rewrite {1}heap_mapsto_vec_op_split. iExists _.
     iDestruct "Hmt" as "[Hmt1 Hmt2]". iSplitL "Hmt1".
     + iNext. iExists _. by iFrame.
     + iIntros "Hmt1". iDestruct "Hmt1" as (vl') "[Hmt1 #Hown']".
@@ -111,9 +111,9 @@ Section types.
   Next Obligation. iIntros (tid vl) "[]". Qed.
   Next Obligation.
     iIntros (????????) "Hb Htok".
-    iVs (lft_borrow_exists with "Hb Htok") as (vl) "[Hb Htok]". set_solver.
-    iVs (lft_borrow_split with "Hb") as "[_ Hb]". set_solver.
-    iVs (lft_borrow_persistent with "Hb Htok") as "[>[] _]". set_solver.
+    iMod (lft_borrow_exists with "Hb Htok") as (vl) "[Hb Htok]". set_solver.
+    iMod (lft_borrow_split with "Hb") as "[_ Hb]". set_solver.
+    iMod (lft_borrow_persistent with "Hb Htok") as "[>[] _]". set_solver.
   Qed.
   Next Obligation. iIntros (?????) "_ []". Qed.
   Next Obligation. intros. iIntros "[]". Qed.
@@ -145,7 +145,7 @@ Section types.
                                ★ ▷ l ↦★: ty.(ty_own) tid)%I;
        ty_shr κ tid N l :=
          (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ★
-            ∀ q', [κ]{q'} ={mgmtE ∪ N, mgmtE}▷=> ty.(ty_shr) κ tid N l' ★ [κ]{q'})%I
+            ∀ q', □ ([κ]{q'} ={mgmtE ∪ N, mgmtE}▷=★ ty.(ty_shr) κ tid N l' ★ [κ]{q'}))%I
     |}.
   Next Obligation. done. Qed.
   Next Obligation.
@@ -153,39 +153,39 @@ Section types.
   Qed.
   Next Obligation.
     intros q ty E N κ l tid q' ?? =>/=. iIntros "Hshr Htok".
-    iVs (lft_borrow_exists with "Hshr Htok") as (vl) "[Hb Htok]". set_solver.
-    iVs (lft_borrow_split with "Hb") as "[Hb1 Hb2]". set_solver.
-    iVs (lft_borrow_exists with "Hb2 Htok") as (l') "[Hb2 Htok]". set_solver.
-    iVs (lft_borrow_split with "Hb2") as "[EQ Hb2]". set_solver.
-    iVs (lft_borrow_persistent with "EQ Htok") as "[>% Htok]". set_solver. subst.
+    iMod (lft_borrow_exists with "Hshr Htok") as (vl) "[Hb Htok]". set_solver.
+    iMod (lft_borrow_split with "Hb") as "[Hb1 Hb2]". set_solver.
+    iMod (lft_borrow_exists with "Hb2 Htok") as (l') "[Hb2 Htok]". set_solver.
+    iMod (lft_borrow_split with "Hb2") as "[EQ Hb2]". set_solver.
+    iMod (lft_borrow_persistent with "EQ Htok") as "[>% Htok]". set_solver. subst.
     rewrite heap_mapsto_vec_singleton.
-    iVs (lft_borrow_split with "Hb2") as "[_ Hb2]". set_solver.
-    iVs (lft_borrow_fracture _ _ (λ q, l ↦{q} #l')%I with "Hb1") as "Hbf".
+    iMod (lft_borrow_split with "Hb2") as "[_ Hb2]". set_solver.
+    iMod (lft_borrow_fracture _ _ (λ q, l ↦{q} #l')%I with "Hb1") as "Hbf".
     rewrite lft_borrow_persist. iDestruct "Hb2" as (κ0 i) "(#Hord&#Hpb&Hpbown)".
-    iVs (inv_alloc N _ (lft_pers_borrow_own i κ0 ∨ ty_shr ty κ tid N l')%I
+    iMod (inv_alloc N _ (lft_pers_borrow_own i κ0 ∨ ty_shr ty κ tid N l')%I
          with "[Hpbown]") as "#Hinv"; first by eauto.
-    iIntros "!==>{$Htok}". iExists l'. iFrame. iIntros (q'') "!#Htok".
-    iVs (inv_open with "Hinv") as "[INV Hclose]". set_solver.
+    iIntros "!>{$Htok}". iExists l'. iFrame. iIntros (q'') "!#Htok".
+    iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
     replace ((mgmtE ∪ N) ∖ N) with mgmtE by set_solver.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
     - iAssert (&{κ}▷ l' ↦★: ty_own ty tid)%I with "[Hbtok]" as "Hb".
       { iApply lft_borrow_persist. eauto. }
-      iVs (lft_borrow_open with "Hb Htok") as "[Hown Hob]". set_solver.
-      iIntros "!==>!>".
-      iVs (lft_borrow_close_stronger with "Hown Hob []") as "[Hb Htok]".
+      iMod (lft_borrow_open with "Hb Htok") as "[Hown Hob]". set_solver.
+      iIntros "!>". iNext.
+      iMod (lft_borrow_close_stronger with "Hown Hob []") as "[Hb Htok]".
         set_solver. eauto 10.
-      iVs (ty.(ty_share) with "Hb Htok") as "[#Hshr Htok]"; try done.
-      iVs ("Hclose" with "[]") as "_"; by eauto.
-    - iIntros "!==>!>". iVs ("Hclose" with "[]") as "_"; by eauto.
+      iMod (ty.(ty_share) with "Hb Htok") as "[#Hshr Htok]"; try done.
+      iMod ("Hclose" with "[]") as "_"; by eauto.
+    - iIntros "!>". iNext. iMod ("Hclose" with "[]") as "_"; by eauto.
   Qed.
   Next Obligation.
     iIntros (_ ty κ κ' tid N l) "#Hκ #H". iDestruct "H" as (l') "[Hfb Hvs]".
     iExists l'. iSplit. by iApply (lft_frac_borrow_incl with "[]").
     iIntros (q') "!#Htok".
-    iVs (lft_incl_trade with "Hκ Htok") as (q'') "[Htok Hclose]". set_solver.
-    iVs ("Hvs" $! q'' with "Htok") as "Hvs'".
-    iIntros "!==>!>". iVs "Hvs'" as "[Hshr Htok]".
-    iVs ("Hclose" with "Htok"). iFrame.
+    iMod (lft_incl_trade with "Hκ Htok") as (q'') "[Htok Hclose]". set_solver.
+    iMod ("Hvs" $! q'' with "Htok") as "Hvs'".
+    iIntros "!>". iNext. iMod "Hvs'" as "[Hshr Htok]".
+    iMod ("Hclose" with "Htok"). iFrame.
     by iApply (ty.(ty_shr_mono) with "Hκ").
   Qed.
   Next Obligation. done. Qed.
@@ -196,8 +196,8 @@ Section types.
          (∃ l:loc, vl = [ #l ] ★ &{κ} l ↦★: ty.(ty_own) tid)%I;
        ty_shr κ' tid N l :=
          (∃ l':loc, &frac{κ'}(λ q', l ↦{q'} #l') ★
-            ∀ q' κ'', κ'' ⊑ κ ★ κ'' ⊑ κ' ★ [κ'']{q'}
-               ={mgmtE ∪ N, mgmtE}▷=> ty.(ty_shr) κ'' tid N l' ★ [κ'']{q'})%I
+            ∀ q' κ'', □ (κ'' ⊑ κ ★ κ'' ⊑ κ' ★ [κ'']{q'}
+               ={mgmtE ∪ N, mgmtE}▷=★ ty.(ty_shr) κ'' tid N l' ★ [κ'']{q'}))%I
     |}.
   Next Obligation. done. Qed.
   Next Obligation.
@@ -205,30 +205,31 @@ Section types.
   Qed.
   Next Obligation.
     intros κ ty E N κ' l tid q' ?? =>/=. iIntros "Hshr Htok".
-    iVs (lft_borrow_exists with "Hshr Htok") as (vl) "[Hb Htok]". set_solver.
-    iVs (lft_borrow_split with "Hb") as "[Hb1 Hb2]". set_solver.
-    iVs (lft_borrow_exists with "Hb2 Htok") as (l') "[Hb2 Htok]". set_solver.
-    iVs (lft_borrow_split with "Hb2") as "[EQ Hb2]". set_solver.
-    iVs (lft_borrow_persistent with "EQ Htok") as "[>% Htok]". set_solver. subst.
+    iMod (lft_borrow_exists with "Hshr Htok") as (vl) "[Hb Htok]". set_solver.
+    iMod (lft_borrow_split with "Hb") as "[Hb1 Hb2]". set_solver.
+    iMod (lft_borrow_exists with "Hb2 Htok") as (l') "[Hb2 Htok]". set_solver.
+    iMod (lft_borrow_split with "Hb2") as "[EQ Hb2]". set_solver.
+    iMod (lft_borrow_persistent with "EQ Htok") as "[>% Htok]". set_solver. subst.
     rewrite heap_mapsto_vec_singleton.
-    iVs (lft_borrow_fracture _ _ (λ q, l ↦{q} #l')%I with "Hb1") as "Hbf".
+    iMod (lft_borrow_fracture _ _ (λ q, l ↦{q} #l')%I with "Hb1") as "Hbf".
     rewrite lft_borrow_persist.
     iDestruct "Hb2" as (κ0 i) "(#Hord&#Hpb&Hpbown)".
-    iVs (inv_alloc N _ (lft_pers_borrow_own i κ0 ∨ ty_shr ty κ' tid N l')%I
+    iMod (inv_alloc N _ (lft_pers_borrow_own i κ0 ∨ ty_shr ty κ' tid N l')%I
          with "[Hpbown]") as "#Hinv"; first by eauto.
-    iIntros "!==>{$Htok}". iExists l'. iFrame.
+    iIntros "!>{$Htok}". iExists l'. iFrame.
     iIntros (q'' κ'') "!#(#Hκ''κ & #Hκ''κ' & Htok)".
-    iVs (inv_open with "Hinv") as "[INV Hclose]". set_solver.
+    iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
     replace ((mgmtE ∪ N) ∖ N) with mgmtE by set_solver.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
     - iAssert (&{κ''}&{κ} l' ↦★: ty_own ty tid)%I with "[Hbtok]" as "Hb".
       { iApply lft_borrow_persist. iExists κ0, i. iFrame "★ #".
         iApply lft_incl_trans. eauto. }
-      iVs (lft_borrow_open with "Hb Htok") as "[Hown Hob]". set_solver.
-      iIntros "!==>!>".
-      iVs (lft_borrow_unnest with "Hκ''κ [Hown Hob]") as "[Htok Hb]". set_solver. by iFrame.
-      iVs (ty.(ty_share) with "Hb Htok") as "[#Hshr Htok]"; try done.
-      iVs ("Hclose" with "[]") as "_".
+      iMod (lft_borrow_open with "Hb Htok") as "[Hown Hob]". set_solver.
+      iIntros "!>". iNext.
+      iMod (lft_borrow_unnest with "Hκ''κ [Hown Hob]") as "[Htok Hb]". set_solver.
+        by iFrame.
+      iMod (ty.(ty_share) with "Hb Htok") as "[#Hshr Htok]"; try done.
+      iMod ("Hclose" with "[]") as "_".
       (* FIXME : the "global sharing protocol" that we used for [own]
          does not work here, because we do not know at the beginning
          at which lifetime we will need the sharing.
@@ -237,17 +238,17 @@ Section types.
          need a lifetime that would be the union of κ and κ'. *)
       admit.
       by eauto.
-    - iIntros "!==>!>". iVs ("Hclose" with "[]") as "_". by eauto.
-      iIntros "!==>{$Htok}". by iApply (ty.(ty_shr_mono) with "Hκ''κ'").
+    - iIntros "!>". iNext. iMod ("Hclose" with "[]") as "_". by eauto.
+      iIntros "!>{$Htok}". by iApply (ty.(ty_shr_mono) with "Hκ''κ'").
   Admitted.
   Next Obligation.
     iIntros (κ0 ty κ κ' tid N l) "#Hκ #H". iDestruct "H" as (l') "[Hfb Hvs]".
     iExists l'. iSplit. by iApply (lft_frac_borrow_incl with "[]").
     iIntros (q' κ'') "!#(#Hκ0 & #Hκ' & Htok)".
-    iVs ("Hvs" $! q' κ'' with "[Htok]") as "Hclose".
+    iMod ("Hvs" $! q' κ'' with "[Htok]") as "Hclose".
     { iFrame. iSplit. done. iApply lft_incl_trans. eauto. }
-    iIntros "!==>!>". iVs "Hclose" as "[Hshr Htok]".
-    iIntros "!==>{$Htok}". iApply (ty.(ty_shr_mono) with "[] Hshr").
+    iIntros "!>". iNext. iMod "Hclose" as "[Hshr Htok]".
+    iIntros "!>{$Htok}". iApply (ty.(ty_shr_mono) with "[] Hshr").
     iApply lft_incl_refl.
   Qed.
   Next Obligation. done. Qed.
@@ -355,13 +356,13 @@ Section types.
     intros tyl E N κ l tid q ??. rewrite split_prod_mt.
     change (ndot (A:=nat)) with (λ N i, N .@ (0+i)%nat). generalize O at 3.
     induction (combine_offs tyl 0) as [|[ty offs] ll IH].
-    - iIntros (?) "_$!==>". by rewrite big_sepL_nil.
+    - iIntros (?) "_$!>". by rewrite big_sepL_nil.
     - iIntros (i) "Hown Htoks". rewrite big_sepL_cons.
-      iVs (lft_borrow_split with "Hown") as "[Hownh Hownq]". set_solver.
-      iVs (IH (S i)%nat with "Hownq Htoks") as "[#Hshrq Htoks]".
-      iVs (ty.(ty_share) _ (N .@ (i+0)%nat) with "Hownh Htoks") as "[#Hshrh $]".
+      iMod (lft_borrow_split with "Hown") as "[Hownh Hownq]". set_solver.
+      iMod (IH (S i)%nat with "Hownq Htoks") as "[#Hshrq Htoks]".
+      iMod (ty.(ty_share) _ (N .@ (i+0)%nat) with "Hownh Htoks") as "[#Hshrh $]".
         solve_ndisj. done.
-      iVsIntro. rewrite big_sepL_cons. iFrame "#".
+      iModIntro. rewrite big_sepL_cons. iFrame "#".
       iApply big_sepL_mono; last done. intros. by rewrite /= Nat.add_succ_r.
   Qed.
   Next Obligation.
@@ -375,16 +376,16 @@ Section types.
     destruct (split_prod_namespace tid N (length tyl)) as [Ef [EQ _]].
     setoid_rewrite ->EQ. clear EQ. generalize 0%nat.
     revert q. induction tyl as [|tyh tyq IH].
-    - iIntros (q i offs) "_!#$!==>". iExists 1%Qp. rewrite big_sepL_nil. auto.
+    - iIntros (q i offs) "_$!>". iExists 1%Qp. rewrite big_sepL_nil. auto.
     - simpl in DUP. destruct (andb_prop_elim _ _ DUP) as [DUPh DUPq]. simpl.
-      iIntros (q i offs) "#Hshr!#([Htokh Htokq]&Htlf&Htlh&Htlq)".
+      iIntros (q i offs) "#Hshr([Htokh Htokq]&Htlf&Htlh&Htlq)".
       rewrite big_sepL_cons Nat.add_0_r.
       iDestruct "Hshr" as "[Hshrh Hshrq]". setoid_rewrite <-Nat.add_succ_comm.
-      iVs (IH with "Hshrq [Htokq Htlf Htlq]") as (q'q) "[Hownq Hcloseq]". by iFrame.
-      iVs (tyh.(ty_shr_acc) with "Hshrh [Htokh Htlh]") as (q'h) "[Hownh Hcloseh]"; try done.
+      iMod (IH with "Hshrq [Htokq Htlf Htlq]") as (q'q) "[Hownq Hcloseq]". by iFrame.
+      iMod (tyh.(ty_shr_acc) with "Hshrh [Htokh Htlh]") as (q'h) "[Hownh Hcloseh]"; try done.
       by pose proof (nclose_subseteq N i); set_solver. by iFrame.
       destruct (Qp_lower_bound q'h q'q) as (q' & q'0h & q'0q & -> & ->).
-      iExists q'. iVsIntro. rewrite big_sepL_cons.
+      iExists q'. iModIntro. rewrite big_sepL_cons.
       rewrite -heap_mapsto_vec_prop_op; last apply ty_size_eq.
       iDestruct "Hownh" as "[Hownh0 Hownh1]".
       rewrite (big_sepL_proper (λ _ x, _ ↦★{_}: _)%I); last first.
@@ -393,8 +394,8 @@ Section types.
       rewrite big_sepL_sepL. iDestruct "Hownq" as "[Hownq0 Hownq1]".
       iSplitL "Hownh0 Hownq0". iNext. by iFrame.
       iIntros "[Hh Hq]". rewrite (lft_own_split κ q).
-      iVs ("Hcloseh" with "[Hh Hownh1]") as "($&$)". iNext. by iFrame.
-      iVs ("Hcloseq" with "[Hq Hownq1]") as "($&$&$)". iNext. by iFrame.
+      iMod ("Hcloseh" with "[Hh Hownh1]") as "($&$)". iNext. by iFrame.
+      iMod ("Hcloseq" with "[Hq Hownq1]") as "($&$&$)". iNext. by iFrame.
       done.
   Qed.
 
@@ -447,9 +448,9 @@ Section types.
   Qed.
   Next Obligation.
     intros n tyl Hn E N κ l tid q ??. iIntros "Hown Htok". rewrite split_sum_mt.
-    iVs (lft_borrow_exists with "Hown Htok") as (i) "[Hown Htok]". set_solver.
-    iVs (lft_borrow_split with "Hown") as "[Hmt Hown]". set_solver.
-    iVs ((nth i tyl emp).(ty_share) with "Hown Htok") as "[#Hshr Htok]"; try done.
+    iMod (lft_borrow_exists with "Hown Htok") as (i) "[Hown Htok]". set_solver.
+    iMod (lft_borrow_split with "Hown") as "[Hmt Hown]". set_solver.
+    iMod ((nth i tyl emp).(ty_share) with "Hown Htok") as "[#Hshr Htok]"; try done.
     iFrame. iExists i. iFrame "#". by iApply lft_borrow_fracture.
   Qed.
   Next Obligation.
@@ -460,16 +461,16 @@ Section types.
   Qed.
   Next Obligation.
     intros n tyl Hn κ tid N E l q ?? Hdup%Is_true_eq_true.
-    iIntros "#H!#[[Htok1 Htok2] Htl]".
+    iIntros "#H[[Htok1 Htok2] Htl]".
     setoid_rewrite split_sum_mt. iDestruct "H" as (i) "[Hshr0 Hshr]".
-    iVs (lft_frac_borrow_open with "[] Hshr0 Htok1") as (q'1) "[Hown Hclose]". set_solver.
+    iMod (lft_frac_borrow_open with "[] Hshr0 Htok1") as (q'1) "[Hown Hclose]". set_solver.
     { iIntros "!#". iIntros (q1 q2). rewrite heap_mapsto_op_eq. iSplit; eauto. }
-    iVs ((nth i tyl emp).(ty_shr_acc) with "Hshr [Htok2 Htl]")
+    iMod ((nth i tyl emp).(ty_shr_acc) with "Hshr [Htok2 Htl]")
       as (q'2) "[Hownq Hclose']"; try done; [|by iFrame|].
     { edestruct nth_in_or_default as [| ->]; last done.
       rewrite ->forallb_forall in Hdup. auto using Is_true_eq_left. }
     destruct (Qp_lower_bound q'1 q'2) as (q' & q'01 & q'02 & -> & ->).
-    iExists q'. iVsIntro.
+    iExists q'. iModIntro.
     rewrite -{1}heap_mapsto_op_eq -{1}heap_mapsto_vec_prop_op;
       last (by intros; apply sum_size_eq, Hn).
     iDestruct "Hownq" as "[Hownq1 Hownq2]". iDestruct "Hown" as "[Hown1 Hown2]".
@@ -479,7 +480,7 @@ Section types.
       rewrite (lft_own_split _ q).
       iCombine "Hown1" "Hown2" as "Hown". rewrite heap_mapsto_op.
       iDestruct "Hown" as "[>#Hi Hown]". iDestruct "Hi" as %[= ->%Z_of_nat_inj].
-      iVs ("Hclose" with "Hown") as "$".
+      iMod ("Hclose" with "Hown") as "$".
       iCombine "Hownq1" "Hownq2" as "Hownq".
       rewrite heap_mapsto_vec_prop_op; last (by intros; apply sum_size_eq, Hn).
       iApply ("Hclose'" with "Hownq").

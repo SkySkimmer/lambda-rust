@@ -133,9 +133,9 @@ Section typing.
   Lemma typed_step_newlft ρ:
     typed_step ρ Newlft (λ _, ∃ α, [α]{1} ★ α ∋ top)%P.
   Proof.
-    iIntros (tid) "_!#[_$]". wp_value. iVs lft_begin as (α) "[?#?]". done.
-    iVs (lft_borrow_create with "[][]") as "[_?]". done. done.
-    2:by iVsIntro; iExists α; iFrame. eauto.
+    iIntros (tid) "_!#[_$]". wp_value. iMod lft_begin as (α) "[?#?]". done.
+    iMod (lft_borrow_create with "[][]") as "[_?]". done. done.
+    2:by iModIntro; iExists α; iFrame. eauto.
   Qed.
 
   Lemma typed_step_endlft κ ρ:
@@ -146,14 +146,14 @@ Section typing.
     iApply (wp_wand_r _ _ (λ _, _ ★ True)%I). iSplitR "Hextr".
     iApply (wp_frame_step_l with "[-]"); try done.
     iDestruct (lft_end with "Hlft Htok") as "$". by wp_seq.
-    iIntros (v) "[#Hκ _]". iVs (lft_extract_out with "Hκ Hextr"). done.
+    iIntros (v) "[#Hκ _]". iMod (lft_extract_out with "Hκ Hextr"). done.
     by wp_seq.
   Qed.
 
   Lemma typed_step_alloc ρ (n : nat):
     0 < n → typed_step_ty ρ (Alloc #n) (own 1 (uninit n)).
   Proof.
-    iIntros (? tid) "#HEAP!#[_$]". wp_alloc l vl as "H↦" "H†". iIntros "!==>".
+    iIntros (? tid) "#HEAP!#[_$]". wp_alloc l vl as "H↦" "H†". iIntros "!>".
     iExists _. iSplit. done. iNext. rewrite Nat2Z.id. iFrame.
     apply (inj Z.of_nat) in H3. iExists _. iFrame. eauto.
   Qed.
@@ -170,7 +170,7 @@ Section typing.
   Qed.
 
   Definition consumes (ty : type) (ρ1 ρ2 : Valuable.t → perm) : Prop :=
-    ∀ (l:loc) tid, ρ1 (Some #l) tid ★ tl_own tid ⊤ ={mgmtE ∪ lrustN}=>
+    ∀ (l:loc) tid, ρ1 (Some #l) tid ★ tl_own tid ⊤ ={mgmtE ∪ lrustN}=★
       ∃ vl q, length vl = ty.(ty_size) ★ l ↦★{q} vl ★
         |={mgmtE ∪ lrustN}▷=> (ty.(ty_own) tid vl ★
            (l ↦★{q} vl ={mgmtE ∪ lrustN}=★ ρ2 (Some #l) tid ★ tl_own tid ⊤)).
@@ -185,7 +185,7 @@ Section typing.
     iDestruct "Heq" as %[=<-]. iDestruct "H↦" as (vl) "[>H↦ #Hown]".
     iAssert (▷ (length vl = ty_size ty))%I with "[#]" as ">%".
       by rewrite ty.(ty_size_eq).
-    iVsIntro. iExists _, _. iFrame "★#%". iIntros "!==>!>!==>H↦!==>".
+    iModIntro. iExists _, _. iFrame "★#%". iIntros "!>!>!>H↦!>".
     iExists _. iSplit. done. iFrame. iExists vl. eauto.
   Qed.
 
@@ -196,7 +196,7 @@ Section typing.
     iDestruct "Heq" as %[=<-]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
     iAssert (▷ (length vl = ty_size ty))%I with "[#]" as ">%".
       by rewrite ty.(ty_size_eq).
-    iVsIntro. iExists _, _. iFrame "★#%". iIntros "!==>!>!==>H↦!==>".
+    iModIntro. iExists _, _. iFrame "★#%". iIntros "!>!>!>H↦!>".
     iExists _. iSplit. done. iFrame. iExists vl. eauto.
   Qed.
 
@@ -207,7 +207,7 @@ Section typing.
     iDestruct "Heq" as %[=<-]. iDestruct "H↦" as (vl) "[>H↦ #Hown]".
     iAssert (▷ (length vl = ty_size ty))%I with "[#]" as ">%".
       by rewrite ty.(ty_size_eq).
-    iVsIntro. iExists _, _. iFrame "★#%". iIntros "!==>!>!==>H↦!==>".
+    iModIntro. iExists _, _. iFrame "★#%". iIntros "!>!>!>H↦!>".
     iExists _. iSplit. done. iFrame. iExists vl. eauto.
   Qed.
 
