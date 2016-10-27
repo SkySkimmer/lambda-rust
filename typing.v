@@ -244,7 +244,7 @@ Section typing.
 
   Lemma typed_step_deref ty ρ1 ρ2 e:
     ty.(ty_size) = 1%nat → consumes ty ρ1 ρ2 →
-    typed_step (ρ1 (Valuable.of_expr e)) ( *e) (λ v, v ◁ ty ★ ρ2 (Valuable.of_expr e))%P.
+    typed_step (ρ1 (Valuable.of_expr e)) (!e) (λ v, v ◁ ty ★ ρ2 (Valuable.of_expr e))%P.
   Proof.
     (* FIXME : I need to use [fupd_mask_mono], but I do not expect so. *)
     iIntros (Hsz Hconsumes tid) "#HEAP!#H". iApply fupd_wp. iApply fupd_mask_mono.
@@ -258,7 +258,7 @@ Section typing.
 
   Lemma typed_step_deref_uniq_borrow_own ty e κ κ' q q':
     typed_step (Valuable.of_expr e ◁ &uniq{κ} own q' ty ★ κ' ⊑ κ ★ [κ']{q})
-               ( *e)
+               (!e)
                (λ v, v ◁ &uniq{κ} ty ★ κ' ⊑ κ ★ [κ']{q})%P.
   Proof.
     iIntros (tid) "#HEAP !# [(H◁ & #H⊑ & Htok & #Hκ') Htl]".
@@ -280,7 +280,7 @@ Section typing.
 
   Lemma typed_step_deref_shr_borrow_own ty e κ κ' q q':
     typed_step (Valuable.of_expr e ◁ &shr{κ} own q' ty ★ κ' ⊑ κ ★ [κ']{q})
-               ( *e)
+               (!e)
                (λ v, v ◁ &shr{κ} ty ★ κ' ⊑ κ ★ [κ']{q})%P.
   Proof.
     iIntros (tid) "#HEAP !# [(H◁ & #H⊑ & Htok & #Hκ') Htl]".
@@ -314,7 +314,7 @@ Section typing.
 
   Lemma typed_step_deref_uniq_borrow_borrow ty e κ κ' κ'' q:
     typed_step (Valuable.of_expr e ◁ &uniq{κ'} &uniq{κ''} ty ★ κ ⊑ κ' ★ [κ]{q} ★ κ' ⊑ κ'')
-               ( *e)
+               (!e)
                (λ v, v ◁ &uniq{κ'} ty ★ κ ⊑ κ' ★ [κ]{q})%P.
   Proof.
     iIntros (tid) "#HEAP !# [(H◁ & #H⊑1 & [Htok #Hκ'] & #H⊑2) Htl]".
@@ -338,7 +338,7 @@ Section typing.
 
   Lemma typed_step_deref_shr_borrow_borrow ty e κ κ' κ'' q:
     typed_step (Valuable.of_expr e ◁ &shr{κ'} &uniq{κ''} ty ★ κ ⊑ κ' ★ [κ]{q} ★ κ' ⊑ κ'')
-               ( *e)
+               (!e)
                (λ v, v ◁ &shr{κ'} ty ★ κ ⊑ κ' ★ [κ]{q})%P.
   Proof.
     (* TODO : fix the definition of sharing unique borrows before. *)

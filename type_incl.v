@@ -44,7 +44,7 @@ Section ty_incl.
     eauto using ty_incl_weaken, ty_incl_trans, perm_incl_duplicable.
   Qed.
 
-  Lemma ty_incl_emp ρ ty : ty_incl ρ ! ty.
+  Lemma ty_incl_emp ρ ty : ty_incl ρ ∅ ty.
   Proof. iIntros (tid) "_!>". iSplit; iIntros "!#*/=[]". Qed.
 
   Lemma ty_incl_own ρ ty1 ty2 q :
@@ -148,8 +148,8 @@ Section ty_incl.
   Proof.
     iIntros (DUP FA tid) "#Hρ". rewrite /sum /=. iSplitR "".
     - assert (Hincl : ρ tid ={⊤}=★
-         (□ ∀ i vl, (nth i tyl1 !%T).(ty_own) tid vl
-                  → (nth i tyl2 !%T).(ty_own) tid vl)).
+         (□ ∀ i vl, (nth i tyl1 ∅%T).(ty_own) tid vl
+                  → (nth i tyl2 ∅%T).(ty_own) tid vl)).
       { clear -FA DUP. induction FA as [|ty1 ty2 tyl1 tyl2 Hincl _ IH].
         - iIntros "_!>*!#". eauto.
         - iIntros "#Hρ".  iMod (IH with "Hρ") as "#IH". iMod (Hincl with "Hρ") as "[#Hh _]".
@@ -158,8 +158,8 @@ Section ty_incl.
       iDestruct "H" as (i vl') "[% Hown]". subst. iExists _, _. iSplit. done.
         by iApply "Hincl".
     - assert (Hincl : ρ tid ={⊤}=★
-         (□ ∀ i κ E l, (nth i tyl1 !%T).(ty_shr) κ tid E l
-                     → (nth i tyl2 !%T).(ty_shr) κ tid E l)).
+         (□ ∀ i κ E l, (nth i tyl1 ∅%T).(ty_shr) κ tid E l
+                     → (nth i tyl2 ∅%T).(ty_shr) κ tid E l)).
       { clear -FA DUP. induction FA as [|ty1 ty2 tyl1 tyl2 Hincl _ IH].
         - iIntros "_!>*!#". eauto.
         - iIntros "#Hρ".

@@ -4,23 +4,23 @@ From lrust Require Import heap proofmode.
 Definition memcpy : val :=
   rec: "memcpy" ["dst";"len";"src"] :=
     if: "len" ≤ #0 then #()
-    else "dst" <- * "src";;
+    else "dst" <- !"src";;
          "memcpy" ["dst" +ₗ #1 ; "len" - #1 ; "src" +ₗ #1].
 Opaque memcpy.
 
-Notation "e1 <-{ n } * e2" := (App memcpy [e1%E ; Lit (LitInt n) ; e2%E])
-  (at level 80, n at next level, format "e1  <-{ n }  * e2") : expr_scope.
+Notation "e1 <-{ n } ! e2" := (App memcpy [e1%E ; Lit (LitInt n) ; e2%E])
+  (at level 80, n at next level, format "e1  <-{ n }  ! e2") : expr_scope.
 
-Notation "e1 <-[ i ]{ n } * e2" :=
-  (e1 <-[i] ☇ ;; e1+ₗ#1 <-{n} *e2)%E
+Notation "e1 <-[ i ]{ n } ! e2" :=
+  (e1 <-[i] ☇ ;; e1+ₗ#1 <-{n} !e2)%E
   (at level 80, n, i at next level,
-   format "e1  <-[ i ]{ n }  * e2") : lrust_expr_scope.
+   format "e1  <-[ i ]{ n }  ! e2") : lrust_expr_scope.
 
 Lemma wp_memcpy `{heapG Σ} E l1 l2 vl1 vl2 q n Φ:
   nclose heapN ⊆ E →
   length vl1 = n → length vl2 = n →
   heap_ctx ★ l1 ↦★ vl1 ★ l2 ↦★{q} vl2 ★
-  ▷ (l1 ↦★ vl2 ★ l2 ↦★{q} vl2 ={E}=★ Φ #()) ⊢ WP #l1 <-{n} *#l2 @ E {{ Φ }}.
+  ▷ (l1 ↦★ vl2 ★ l2 ↦★{q} vl2 ={E}=★ Φ #()) ⊢ WP #l1 <-{n} !#l2 @ E {{ Φ }}.
 Proof.
   iIntros (? Hvl1 Hvl2) "(#Hinv&Hl1&Hl2&HΦ)".
   iLöb as "IH" forall (n l1 l2 vl1 vl2 Hvl1 Hvl2). wp_rec. wp_op=> ?; wp_if.

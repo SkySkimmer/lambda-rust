@@ -526,7 +526,7 @@ Hint Extern 1 (Types.LstTySize _ (_ :: _)) =>
 
 Import Types.
 
-Notation "!" := emp : lrust_type_scope.
+Notation "∅" := emp : lrust_type_scope.
 Notation "&uniq{ κ } ty" := (uniq_borrow κ ty)
   (format "&uniq{ κ } ty", at level 20, right associativity) : lrust_type_scope.
 Notation "&shr{ κ } ty" := (shared_borrow κ ty)
