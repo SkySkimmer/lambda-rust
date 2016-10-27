@@ -23,7 +23,7 @@ Section typing.
   Definition typed_program (ρ : perm) e :=
     ∀ tid, heap_ctx ⊢  {{ ρ tid ★ tl_own tid ⊤ }} e {{ v, False }}.
 
-  Lemma typed_step_frame ρ e θ ξ:
+  Lemma typed_frame ρ e θ ξ:
     typed_step ρ e θ → typed_step (ρ ★ ξ) e (λ ν, θ ν ★ ξ)%P.
   Proof.
     iIntros (Hwt tid) "#HEAP!#[[?$]?]". iApply (Hwt with "HEAP"). by iFrame.
@@ -37,15 +37,15 @@ Section typing.
     iApply (Hwt with "HEAP"). by iFrame.
   Qed.
 
-  Lemma typed_step_bool ρ (b:Datatypes.bool) :
+  Lemma typed_bool ρ (b:Datatypes.bool) :
     typed_step_ty ρ #b bool.
   Proof. iIntros (tid) "_!#[_$]". wp_value. simpl. eauto. Qed.
 
-  Lemma typed_step_int ρ (z:Datatypes.nat) :
+  Lemma typed_int ρ (z:Datatypes.nat) :
     typed_step_ty ρ #z int.
   Proof. iIntros (tid) "_!#[_$]". wp_value. simpl. eauto. Qed.
 
-  Lemma typed_step_fn {A n} `{Duplicable _ ρ, Closed (f :b: xl +b+ []) e} θ :
+  Lemma typed_fn {A n} `{Duplicable _ ρ, Closed (f :b: xl +b+ []) e} θ :
     length xl = n →
     (∀ (a : A) (vl : vec val n) (fv : val) e',
         subst_l xl (map of_val vl) e = Some e' →
@@ -64,7 +64,7 @@ Section typing.
     iNext. iApply (He with "HEAP"). done. by iFrame "★#".
   Qed.
 
-  Lemma typed_step_cont {n} `{Closed (f :b: xl +b+ []) e} ρ θ :
+  Lemma typed_cont {n} `{Closed (f :b: xl +b+ []) e} ρ θ :
     length xl = n →
     (∀ (vl : vec val n) (fv : val) e',
         subst_l xl (map of_val vl) e = Some e' →
@@ -86,7 +86,7 @@ Section typing.
     iDestruct "Hf'" as %[=<-]. iApply ("IH'" with "Hθ Htl").
   Qed.
 
-  Lemma typed_step_valuable e ty:
+  Lemma typed_valuable e ty:
     typed_step_ty (Valuable.of_expr e ◁ ty) e ty.
   Proof.
     iIntros (tid) "_!#[H$]".
@@ -94,7 +94,7 @@ Section typing.
     by iApply Valuable.of_expr_wp.
   Qed.
 
-  Lemma typed_step_plus e1 e2 ρ1 ρ2:
+  Lemma typed_plus e1 e2 ρ1 ρ2:
     typed_step_ty ρ1 e1 int → typed_step_ty ρ2 e2 int →
     typed_step_ty (ρ1 ★ ρ2) (BinOp PlusOp e1 e2) int.
   Proof.
@@ -106,7 +106,7 @@ Section typing.
     wp_op. iFrame. by iExists _.
   Qed.
 
-  Lemma typed_step_minus e1 e2 ρ1 ρ2:
+  Lemma typed_minus e1 e2 ρ1 ρ2:
     typed_step_ty ρ1 e1 int → typed_step_ty ρ2 e2 int →
     typed_step_ty (ρ1 ★ ρ2) (BinOp MinusOp e1 e2) int.
   Proof.
@@ -118,7 +118,7 @@ Section typing.
     wp_op. iFrame. by iExists _.
   Qed.
 
-  Lemma typed_step_le e1 e2 ρ1 ρ2:
+  Lemma typed_le e1 e2 ρ1 ρ2:
     typed_step_ty ρ1 e1 int → typed_step_ty ρ2 e2 int →
     typed_step_ty (ρ1 ★ ρ2) (BinOp LeOp e1 e2) bool.
   Proof.
@@ -130,7 +130,7 @@ Section typing.
     iFrame. wp_op; intros _; by iExists _.
   Qed.
 
-  Lemma typed_step_newlft ρ:
+  Lemma typed_newlft ρ:
     typed_step ρ Newlft (λ _, ∃ α, [α]{1} ★ α ∋ top)%P.
   Proof.
     iIntros (tid) "_!#[_$]". wp_value. iMod lft_begin as (α) "[?#?]". done.
@@ -138,7 +138,7 @@ Section typing.
     2:by iModIntro; iExists α; iFrame. eauto.
   Qed.
 
-  Lemma typed_step_endlft κ ρ:
+  Lemma typed_endlft κ ρ:
     typed_step (κ ∋ ρ ★ [κ]{1}) Endlft (λ _, ρ)%P.
   Proof.
     iIntros (tid) "_!#[[Hextr [Htok #Hlft]]$]".
@@ -150,7 +150,7 @@ Section typing.
     by wp_seq.
   Qed.
 
-  Lemma typed_step_alloc ρ (n : nat):
+  Lemma typed_alloc ρ (n : nat):
     0 < n → typed_step_ty ρ (Alloc #n) (own 1 (uninit n)).
   Proof.
     iIntros (? tid) "#HEAP!#[_$]". wp_alloc l vl as "H↦" "H†". iIntros "!>".
@@ -158,7 +158,7 @@ Section typing.
     apply (inj Z.of_nat) in H3. iExists _. iFrame. eauto.
   Qed.
 
-  Lemma typed_step_free ty e:
+  Lemma typed_free ty e:
     typed_step (Valuable.of_expr e ◁ own 1 ty) (Free #ty.(ty_size) e) (λ _, top).
   Proof.
     iIntros (tid) "#HEAP!#[Hown$]".
@@ -242,7 +242,7 @@ Section typing.
     iMod ("Hclose" with "Htok") as "$". iExists _. eauto.
   Qed.
 
-  Lemma typed_step_deref ty ρ1 ρ2 e:
+  Lemma typed_deref ty ρ1 ρ2 e:
     ty.(ty_size) = 1%nat → consumes ty ρ1 ρ2 →
     typed_step (ρ1 (Valuable.of_expr e)) (!e) (λ v, v ◁ ty ★ ρ2 (Valuable.of_expr e))%P.
   Proof.
@@ -256,7 +256,7 @@ Section typing.
     by iApply "Hclose".
   Qed.
 
-  Lemma typed_step_deref_uniq_borrow_own ty e κ κ' q q':
+  Lemma typed_deref_uniq_borrow_own ty e κ κ' q q':
     typed_step (Valuable.of_expr e ◁ &uniq{κ} own q' ty ★ κ' ⊑ κ ★ [κ']{q})
                (!e)
                (λ v, v ◁ &uniq{κ} ty ★ κ' ⊑ κ ★ [κ']{q})%P.
@@ -278,7 +278,7 @@ Section typing.
     iMod ("Hclose" with "Htok"). iFrame "#★". iIntros "!>". iExists _. eauto.
   Qed.
 
-  Lemma typed_step_deref_shr_borrow_own ty e κ κ' q q':
+  Lemma typed_deref_shr_borrow_own ty e κ κ' q q':
     typed_step (Valuable.of_expr e ◁ &shr{κ} own q' ty ★ κ' ⊑ κ ★ [κ']{q})
                (!e)
                (λ v, v ◁ &shr{κ} ty ★ κ' ⊑ κ ★ [κ']{q})%P.
@@ -312,7 +312,7 @@ Section typing.
       iModIntro. iExists _. eauto.
   Qed.
 
-  Lemma typed_step_deref_uniq_borrow_borrow ty e κ κ' κ'' q:
+  Lemma typed_deref_uniq_borrow_borrow ty e κ κ' κ'' q:
     typed_step (Valuable.of_expr e ◁ &uniq{κ'} &uniq{κ''} ty ★ κ ⊑ κ' ★ [κ]{q} ★ κ' ⊑ κ'')
                (!e)
                (λ v, v ◁ &uniq{κ'} ty ★ κ ⊑ κ' ★ [κ]{q})%P.
@@ -336,7 +336,7 @@ Section typing.
     iModIntro. iExists _. eauto.
   Qed.
 
-  Lemma typed_step_deref_shr_borrow_borrow ty e κ κ' κ'' q:
+  Lemma typed_deref_shr_borrow_borrow ty e κ κ' κ'' q:
     typed_step (Valuable.of_expr e ◁ &shr{κ'} &uniq{κ''} ty ★ κ ⊑ κ' ★ [κ]{q} ★ κ' ⊑ κ'')
                (!e)
                (λ v, v ◁ &shr{κ'} ty ★ κ ⊑ κ' ★ [κ]{q})%P.
@@ -380,7 +380,7 @@ Section typing.
     iMod ("Hclose" with "Htok") as "$". iExists _. eauto.
   Qed.
 
-  Lemma typed_step_assign ρ1 ρ2 ty e1 e2:
+  Lemma typed_assign ρ1 ρ2 ty e1 e2:
     ty.(ty_size) = 1%nat →
     update ty ρ1 ρ2 →
     typed_step (ρ1 (Valuable.of_expr e1) ★ Valuable.of_expr e2 ◁ ty) (e1 <- e2)
@@ -398,7 +398,7 @@ Section typing.
     by rewrite heap_mapsto_vec_singleton.
   Qed.
 
-  Lemma typed_step_memcpy ρ1 ρ1' ρ2 ρ2' ty e1 e2:
+  Lemma typed_memcpy ρ1 ρ1' ρ2 ρ2' ty e1 e2:
     update ty ρ1' ρ1 → consumes ty ρ2' ρ2 →
     typed_step (ρ1' (Valuable.of_expr e1) ★ ρ2' (Valuable.of_expr e2))
                (e1 <-{ty.(ty_size)} !e2)
@@ -414,6 +414,43 @@ Section typing.
     iApply wp_memcpy; last iFrame "★#"; try done. iNext. iIntros "[H↦ H↦']".
     iApply fupd_mask_mono. done. iMod "Hcons" as "[Hown' Hcons]".
     iMod ("Hcons" with "H↦'") as "[$$]". iApply "Hupd". by iFrame.
+  Qed.
+
+  Lemma typed_weaken ρ1 ρ2 e:
+    typed_program ρ2 e → (ρ1 ⇒ ρ2) → typed_program ρ1 e.
+  Proof.
+    iIntros (Hρ2 Hρ12 tid) "#HEAP!#[Hρ1 Htl]".
+    iMod (Hρ12 with "Hρ1"). iApply (Hρ2 with "HEAP"). by iFrame.
+  Qed.
+
+  Lemma typed_program_exists {A} ρ θ e:
+    (∀ x:A, typed_program (ρ ★ θ x) e) →
+    typed_program (ρ ★ ∃ x, θ x) e.
+  Proof.
+    iIntros (Hwt tid) "#HEAP!#[[Hρ Hθ]?]". iDestruct "Hθ" as (x) "Hθ".
+    iApply (Hwt with "HEAP"). by iFrame.
+  Qed.
+
+  Lemma typed_step_program ρ θ e K:
+    typed_step ρ e θ →
+    (∀ v, typed_program (θ (Some v)) (fill K (of_val v))) →
+    typed_program ρ (fill K e).
+  Proof.
+    iIntros (He HK tid) "#HEAP!#[Hρ Htl]".
+    iApply wp_bind. iApply wp_wand_r. iSplitL.
+    iApply (He with "HEAP [-]"); by iFrame.
+    iIntros (v) "[Hθ Htl]". iApply (HK with "HEAP"). by iFrame.
+  Qed.
+
+  Lemma typed_if ρ e1 e2 e:
+    typed_program ρ e1 → typed_program ρ e2 →
+    typed_program (ρ ★ Valuable.of_expr e ◁ bool) (if: e then e1 else e2).
+  Proof.
+    iIntros (He1 He2 tid) "#HEAP!#[[Hρ H◁]Htl]".
+    destruct (Valuable.of_expr e) eqn:He; try iDestruct "H◁" as "[]".
+    iDestruct "H◁" as (b) "Heq". iDestruct "Heq" as %[= ->].
+    wp_bind e. iApply Valuable.of_expr_wp. done. wp_if. destruct b; iNext.
+    iApply (He1 with "HEAP"); by iFrame. iApply (He2 with "HEAP"); by iFrame.
   Qed.
 
 End typing.
