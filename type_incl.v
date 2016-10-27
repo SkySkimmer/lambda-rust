@@ -241,11 +241,11 @@ Section ty_incl.
       iIntros (x vl). by iApply "H".
   Qed.
 
-  Lemma ty_incl_perm_incl ρ ty1 ty2 v :
-    ty_incl ρ ty1 ty2 → ρ ★ v ◁ ty1 ⇒ v ◁ ty2.
+  Lemma ty_incl_perm_incl ρ ty1 ty2 ν :
+    ty_incl ρ ty1 ty2 → ρ ★ ν ◁ ty1 ⇒ ν ◁ ty2.
   Proof.
     iIntros (Hincl tid) "[Hρ Hty1]". iMod (Hincl with "Hρ") as "[#Hownincl _]".
-    destruct v; last done. by iApply "Hownincl".
+    unfold Perm.has_type. destruct (Perm.eval_expr ν); last done. by iApply "Hownincl".
   Qed.
 
 End ty_incl.

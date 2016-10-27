@@ -1,6 +1,6 @@
 From iris.program_logic Require Import thread_local.
 From iris.proofmode Require Import tactics.
-From lrust Require Export type valuable.
+From lrust Require Export type proofmode.
 
 Delimit Scope perm_scope with P.
 Bind Scope perm_scope with perm.
@@ -11,8 +11,18 @@ Section perm.
 
   Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
 
-  Definition has_type (v : Valuable.t) (ty : type) : perm :=
-    λ tid, from_option (λ v, ty.(ty_own) tid [v]) False%I v.
+  Fixpoint eval_expr (ν : expr) : option val :=
+    match ν with
+    | BinOp ProjOp e (Lit (LitInt n)) =>
+      match eval_expr e with
+      | Some (#(LitLoc l)) => Some (#(shift_loc l n))
+      | _ => None
+      end
+    | e => to_val e
+    end.
+
+  Definition has_type (ν : expr) (ty : type) : perm := λ tid,
+    from_option (λ v, ty.(ty_own) tid [v]) False%I (eval_expr ν).
 
   Definition extract (κ : lifetime) (ρ : perm) : perm :=
     λ tid, (κ ∋ ρ tid)%I.
@@ -75,3 +85,32 @@ Section duplicable.
   Proof. intros tid. apply _. Qed.
 
 End duplicable.
+
+Section has_type.
+
+  Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
+
+  Lemma has_type_value (v : val) ty tid :
+    (v ◁ ty)%P tid ⊣⊢ ty.(ty_own) tid [v].
+  Proof.
+    destruct v as [|f xl e ?]. done.
+    unfold has_type, eval_expr, of_val.
+    assert (Rec f xl e = RecV f xl e) as -> by done. by rewrite to_of_val.
+  Qed.
+
+  Lemma has_type_wp E (ν : expr) ty tid (Φ : val -> iProp _) :
+    (ν ◁ ty)%P tid ★ (∀ (v : val), eval_expr ν = Some v ★ (v ◁ ty)%P tid -★ Φ v)
+    ⊢ WP ν @ E {{ Φ }}.
+  Proof.
+    iIntros "[H◁ HΦ]". setoid_rewrite has_type_value. unfold has_type.
+    destruct (eval_expr ν) eqn:EQν; last by iDestruct "H◁" as "[]". simpl.
+    iSpecialize ("HΦ" $! v with "[$H◁]"). done.
+    iInduction ν as [| | |[] e ? [|[]| | | | | | | | | |] _| | | | | | | |] "IH"
+      forall (Φ v EQν); try done.
+    - inversion EQν. subst. wp_value. auto.
+    - wp_value. auto.
+    - wp_bind e. simpl in EQν. destruct (eval_expr e) as [[[|l|]|]|]; try done.
+      iApply ("IH" with "[] [HΦ]"). done. simpl. wp_op. inversion EQν. eauto.
+  Qed.
+
+End has_type.

@@ -9,7 +9,6 @@ Local Hint Extern 0 (head_reducible _ _) => do_head_step eauto 2.
 Section lifting.
 Context `{irisG lrust_lang Σ}.
 Implicit Types P Q : iProp Σ.
-Implicit Types Φ : val → iProp Σ.
 Implicit Types ef : option expr.
 
 (** Bind. This bundles some arguments that wp_ectx_bind leaves as indices. *)
@@ -23,48 +22,47 @@ Lemma wp_bindi {E e} Ki Φ :
 Proof. exact: weakestpre.wp_bind. Qed.
 
 (** Base axioms for core primitives of the language: Stateful reductions. *)
-Lemma wp_alloc_pst E σ n Φ :
+Lemma wp_alloc_pst E σ n:
   0 < n →
-  ▷ ownP σ ★
-  ▷ (∀ l σ', ■ (∀ m, σ !! (shift_loc l m) = None) ★
-             ■ (∃ vl, n = length vl ∧ init_mem l vl σ = σ') ★
-             ownP σ' ={E}=★ Φ (LitV $ LitLoc l))
-  ⊢ WP Alloc (Lit $ LitInt n) @ E {{ Φ }}.
+  {{{ ▷ ownP σ }}} Alloc (Lit $ LitInt n) @ E
+  {{{ l σ'; LitV $ LitLoc l,
+      ■ (∀ m, σ !! (shift_loc l m) = None) ★
+      ■ (∃ vl, n = length vl ∧ init_mem l vl σ = σ') ★
+      ownP σ' }}}.
 Proof.
-  iIntros (?)  "[HP HΦ]". iApply (wp_lift_atomic_head_step _ σ); eauto.
+  iIntros (? Φ) "[HP HΦ]". iApply (wp_lift_atomic_head_step _ σ); eauto.
   iFrame "HP". iNext. iIntros (v2 σ2 ef) "[% HP]". inv_head_step.
   rewrite big_sepL_nil right_id. by iApply "HΦ"; iFrame; eauto.
 Qed.
 
-Lemma wp_free_pst E σ l n Φ :
+Lemma wp_free_pst E σ l n :
   0 < n →
   (∀ m, is_Some (σ !! (shift_loc l m)) ↔ (0 ≤ m < n)) →
-  ▷ ownP σ ★
-  ▷ (ownP (free_mem l (Z.to_nat n) σ) ={E}=★ Φ (LitV $ LitUnit))
-  ⊢ WP Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E {{ Φ }}.
+  {{{ ▷ ownP σ }}} Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E
+  {{{ ; LitV $ LitUnit, ownP (free_mem l (Z.to_nat n) σ) }}}.
 Proof.
-  iIntros (??)  "[HP HΦ]". iApply (wp_lift_atomic_head_step _ σ); eauto.
+  iIntros (???)  "[HP HΦ]". iApply (wp_lift_atomic_head_step _ σ); eauto.
   iFrame "HP". iNext. iIntros (v2 σ2 ef) "[% HP]". inv_head_step.
   rewrite big_sepL_nil right_id. by iApply "HΦ".
 Qed.
 
-Lemma wp_read_sc_pst E σ l n v Φ :
+Lemma wp_read_sc_pst E σ l n v :
   σ !! l = Some (RSt n, v) →
-  ▷ ownP σ ★ ▷ (ownP σ ={E}=★ Φ v) ⊢ WP Read ScOrd (Lit $ LitLoc l) @ E {{ Φ }}.
+  {{{ ▷ ownP σ }}} Read ScOrd (Lit $ LitLoc l) @ E {{{ ; v, ownP σ }}}.
 Proof.
-  iIntros (?) "[??]". iApply wp_lift_atomic_det_head_step; eauto.
+  iIntros (??) "[?HΦ]". iApply wp_lift_atomic_det_head_step; eauto.
   by intros; inv_head_step; eauto using to_of_val.
-  by rewrite big_sepL_nil right_id; iFrame.
+  rewrite big_sepL_nil right_id; iFrame. iNext. iIntros "?!>". by iApply "HΦ".
 Qed.
 
-Lemma wp_read_na2_pst E σ l n v Φ :
+Lemma wp_read_na2_pst E σ l n v :
   σ !! l = Some(RSt $ S n, v) →
-  ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt n, v)]>σ) ={E}=★ Φ v)
-  ⊢ WP Read Na2Ord (Lit $ LitLoc l) @ E {{ Φ }}.
+  {{{ ▷ ownP σ }}} Read Na2Ord (Lit $ LitLoc l) @ E
+  {{{ ; v, ownP (<[l:=(RSt n, v)]>σ) }}}.
 Proof.
-  iIntros (?) "[??]". iApply wp_lift_atomic_det_head_step; eauto.
+  iIntros (??) "[?HΦ]". iApply wp_lift_atomic_det_head_step; eauto.
   by intros; inv_head_step; eauto using to_of_val.
-  by rewrite big_sepL_nil right_id; iFrame.
+  rewrite big_sepL_nil right_id; iFrame. iNext. iIntros "?!>". by iApply "HΦ".
 Qed.
 
 Lemma wp_read_na1_pst E l Φ :
@@ -80,22 +78,24 @@ Proof.
   rewrite big_sepL_nil right_id. iApply ("HP" with "HΦ").
 Qed.
 
-Lemma wp_write_sc_pst E σ l v v' Φ :
+Lemma wp_write_sc_pst E σ l v v' :
   σ !! l = Some (RSt 0, v') →
-  ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, v)]>σ) ={E}=★ Φ (LitV LitUnit))
-  ⊢ WP Write ScOrd (Lit $ LitLoc l) (of_val v) @ E {{ Φ }}.
+  {{{ ▷ ownP σ }}} Write ScOrd (Lit $ LitLoc l) (of_val v) @ E
+  {{{ ; LitV LitUnit, ownP (<[l:=(RSt 0, v)]>σ) }}}.
 Proof.
-  iIntros (?) "[??]". iApply wp_lift_atomic_det_head_step; eauto.
-  by intros; inv_head_step; eauto. by rewrite big_sepL_nil right_id; iFrame.
+  iIntros (??) "[?HΦ]". iApply wp_lift_atomic_det_head_step; eauto.
+  by intros; inv_head_step; eauto. rewrite big_sepL_nil right_id; iFrame.
+  iNext. iIntros "?!>". by iApply "HΦ".
 Qed.
 
-Lemma wp_write_na2_pst E σ l v v' Φ :
+Lemma wp_write_na2_pst E σ l v v' :
   σ !! l = Some(WSt, v') →
-  ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, v)]>σ) ={E}=★ Φ (LitV LitUnit))
-  ⊢ WP Write Na2Ord (Lit $ LitLoc l) (of_val v) @ E {{ Φ }}.
+  {{{ ▷ ownP σ }}} Write Na2Ord (Lit $ LitLoc l) (of_val v) @ E
+  {{{ ; LitV LitUnit, ownP (<[l:=(RSt 0, v)]>σ) }}}.
 Proof.
-  iIntros (?) "[??]". iApply wp_lift_atomic_det_head_step; eauto.
-  by intros; inv_head_step; eauto. by rewrite big_sepL_nil right_id; iFrame.
+  iIntros (??) "[?HΦ]". iApply wp_lift_atomic_det_head_step; eauto.
+  by intros; inv_head_step; eauto.
+  rewrite big_sepL_nil right_id; iFrame. iNext. iIntros "?!>". by iApply "HΦ".
 Qed.
 
 Lemma wp_write_na1_pst E l v Φ :
@@ -111,37 +111,37 @@ Proof.
   rewrite big_sepL_nil right_id. iApply ("HP" with "HΦ").
 Qed.
 
-Lemma wp_cas_fail_pst E σ l n e1 v1 v2 vl Φ :
+Lemma wp_cas_fail_pst E σ l n e1 v1 v2 vl :
   to_val e1 = Some v1 →
   σ !! l = Some (RSt n, vl) →
   value_eq σ v1 vl = Some false →
-  ▷ ownP σ ★ ▷ (ownP σ ={E}=★ Φ (LitV $ LitInt 0))
-  ⊢ WP CAS (Lit $ LitLoc l) e1 (of_val v2) @ E {{ Φ }}.
+  {{{ ▷ ownP σ }}} CAS (Lit $ LitLoc l) e1 (of_val v2) @ E
+  {{{ ; LitV $ LitInt 0, ownP σ }}}.
 Proof.
-  iIntros (?%of_to_val ??) "[HP HΦ]". subst.
+  iIntros (?%of_to_val ???) "[HP HΦ]". subst.
   iApply wp_lift_atomic_det_head_step; eauto. by intros; inv_head_step; eauto.
-  iFrame. iNext. by rewrite big_sepL_nil right_id.
+  iFrame. iNext. rewrite big_sepL_nil right_id. iIntros "?!>". by iApply "HΦ".
 Qed.
 
-Lemma wp_cas_suc_pst E σ l e1 v1 v2 vl Φ :
+Lemma wp_cas_suc_pst E σ l e1 v1 v2 vl :
   to_val e1 = Some v1 →
   σ !! l = Some (RSt 0, vl) →
   value_eq σ v1 vl = Some true →
-  ▷ ownP σ ★ ▷ (ownP (<[l:=(RSt 0, v2)]>σ) ={E}=★ Φ (LitV $ LitInt 1))
-  ⊢ WP CAS (Lit $ LitLoc l) e1 (of_val v2) @ E {{ Φ }}.
+  {{{ ▷ ownP σ }}} CAS (Lit $ LitLoc l) e1 (of_val v2) @ E
+  {{{ ; LitV $ LitInt 1, ownP (<[l:=(RSt 0, v2)]>σ) }}}.
 Proof.
-  iIntros (?%of_to_val ??) "[HP HΦ]". subst.
+  iIntros (?%of_to_val ???) "[HP HΦ]". subst.
   iApply wp_lift_atomic_det_head_step; eauto. by intros; inv_head_step; eauto.
-  iFrame. iNext. by rewrite big_sepL_nil right_id.
+  iFrame. iNext. rewrite big_sepL_nil right_id. iIntros "?!>". by iApply "HΦ".
 Qed.
 
 (** Base axioms for core primitives of the language: Stateless reductions *)
-Lemma wp_fork E e Φ :
-  ▷ Φ (LitV LitUnit) ★ ▷ WP e {{ _, True }} ⊢ WP Fork e @ E {{ Φ }}.
+Lemma wp_fork E e :
+  {{{ ▷ WP e {{ _, True }} }}} Fork e @ E {{{ ; LitV LitUnit, True }}}.
 Proof.
-  iIntros "[??]". iApply wp_lift_pure_det_head_step; eauto.
+  iIntros (?) "[?HΦ]". iApply wp_lift_pure_det_head_step; eauto.
   by intros; inv_head_step; eauto. iNext.
-  rewrite big_sepL_singleton. iFrame. by iApply wp_value.
+  rewrite big_sepL_singleton. iFrame. iApply wp_value. done. by iApply "HΦ".
 Qed.
 
 Lemma wp_rec E e f xl erec erec' el Φ :

@@ -28,7 +28,7 @@ Lemma tac_wp_alloc Δ Δ' E j1 j2 n Φ :
     (Δ'' ⊢ |={E}=> Φ (LitV $ LitLoc l))) →
   Δ ⊢ WP Alloc (Lit $ LitInt n) @ E {{ Φ }}.
 Proof.
-  intros ???? HΔ. rewrite -wp_alloc // -always_and_sep_l.
+  intros ???? HΔ. rewrite -wp_fupd -wp_alloc // -always_and_sep_l.
   apply and_intro; first done.
   rewrite into_later_env_sound; apply later_mono, forall_intro=> l;
   apply forall_intro=> vl. apply wand_intro_l. rewrite -assoc.
@@ -48,10 +48,11 @@ Lemma tac_wp_free Δ Δ' Δ'' Δ''' E i1 i2 vl (n : Z) (n' : nat) l Φ :
   (Δ''' ⊢ |={E}=> Φ (LitV LitUnit)) →
   Δ ⊢ WP Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
-  intros ?? -> ?? <- ? <- -> HΔ. rewrite -wp_free // -always_and_sep_l.
+  intros ?? -> ?? <- ? <- -> HΔ.
+  rewrite -wp_fupd -wp_free // -!assoc -always_and_sep_l.
   apply and_intro; first done.
   rewrite into_later_env_sound -!later_sep; apply later_mono.
-  do 2 (rewrite envs_lookup_sound' //). by rewrite HΔ.
+  do 2 (rewrite envs_lookup_sound' //). by rewrite HΔ wand_True.
 Qed.
 
 Lemma tac_wp_read Δ Δ' E i l q v o Φ :
@@ -62,10 +63,12 @@ Lemma tac_wp_read Δ Δ' E i l q v o Φ :
   Δ ⊢ WP Read o (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
   intros ??[->| ->]???.
-  - rewrite -wp_read_na // -always_and_sep_l. apply and_intro; first done.
+  - rewrite -wp_fupd -wp_read_na // -!assoc -always_and_sep_l.
+    apply and_intro; first done.
     rewrite into_later_env_sound -later_sep envs_lookup_split //; simpl.
       by apply later_mono, sep_mono_r, wand_mono.
-  - rewrite -wp_read_sc // -always_and_sep_l. apply and_intro; first done.
+  - rewrite -wp_fupd -wp_read_sc // -!assoc -always_and_sep_l.
+    apply and_intro; first done.
     rewrite into_later_env_sound -later_sep envs_lookup_split //; simpl.
       by apply later_mono, sep_mono_r, wand_mono.
 Qed.
@@ -80,10 +83,10 @@ Lemma tac_wp_write Δ Δ' Δ'' E i l v e v' o Φ :
   Δ ⊢ WP Write o (Lit $ LitLoc l) e @ E {{ Φ }}.
 Proof.
   intros ???[->| ->]????.
-  - rewrite -wp_write_na // -always_and_sep_l. apply and_intro; first done.
+  - rewrite -wp_fupd -wp_write_na // -!assoc -always_and_sep_l. apply and_intro; first done.
     rewrite into_later_env_sound -later_sep envs_simple_replace_sound //; simpl.
     rewrite right_id. by apply later_mono, sep_mono_r, wand_mono.
-  - rewrite -wp_write_sc // -always_and_sep_l. apply and_intro; first done.
+  - rewrite -wp_fupd -wp_write_sc // -!assoc -always_and_sep_l. apply and_intro; first done.
     rewrite into_later_env_sound -later_sep envs_simple_replace_sound //; simpl.
     rewrite right_id. by apply later_mono, sep_mono_r, wand_mono.
 Qed.

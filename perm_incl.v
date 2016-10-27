@@ -104,10 +104,11 @@ Section props.
   Lemma perm_lftincl_trans κ1 κ2 κ3 : κ1 ⊑ κ2 ★ κ2 ⊑ κ3 ⇒ κ1 ⊑ κ3.
   Proof. iIntros (tid) "[#?#?]!>". iApply lft_incl_trans. auto. Qed.
 
-  Lemma perm_incl_share q v κ ty :
-    v ◁ &uniq{κ} ty ★ [κ]{q} ⇒ v ◁ &shr{κ} ty ★ [κ]{q}.
+  Lemma perm_incl_share q ν κ ty :
+    ν ◁ &uniq{κ} ty ★ [κ]{q} ⇒ ν ◁ &shr{κ} ty ★ [κ]{q}.
   Proof.
-    iIntros (tid) "[Huniq [Htok Hlft]]". destruct v; last by iDestruct "Huniq" as "[]".
+    iIntros (tid) "[Huniq [Htok Hlft]]". unfold has_type.
+    destruct (eval_expr ν); last by iDestruct "Huniq" as "[]".
     iDestruct "Huniq" as (l) "[% Hown]".
     iMod (ty.(ty_share) _ lrustN with "Hown Htok") as "[Hown Htok]".
     apply disjoint_union_l; solve_ndisj. set_solver. iModIntro.
@@ -140,23 +141,22 @@ Section props.
       rewrite !big_sepL_cons IH //.
   Qed.
 
-  Lemma perm_split_own_prod tyl (q : Qp) (ql : list Qp) v :
+  Lemma perm_split_own_prod tyl (q : Qp) (ql : list Qp) ν :
     length tyl = length ql →
     foldr (λ (q : Qp) acc, q + acc)%Qc 0%Qc ql = q →
-    v ◁ own q (Π tyl) ⇔
+    ν ◁ own q (Π tyl) ⇔
       foldr (λ qtyoffs acc,
-             Valuable.proj (Z.of_nat (qtyoffs.2.2)) v ◁
-                           own (qtyoffs.1) (qtyoffs.2.1) ★ acc)
+             (ν +ₗ #(qtyoffs.2.2:nat))%E ◁ own (qtyoffs.1) (qtyoffs.2.1) ★ acc)
             ⊤ (combine ql (combine_offs tyl 0)).
   Proof.
     intros Hlen Hq. assert (ql ≠ []).
     { destruct ql as [|q0 ql]; last done. destruct q. simpl in *. by subst. }
-    destruct v as [[[|l|]|]|];
+    unfold has_type. simpl eval_expr. destruct (eval_expr ν) as [[[|l|]|]|];
       try by (destruct tyl as [|ty0 tyl], ql as [|q0 ql]; try done;
         by split; iIntros (tid) "H"; try done;
           [iDestruct "H" as (l) "[% _]" || iDestruct "H" as "[]" |
            iDestruct "H" as "[[]_]"]).
-    destruct (@exists_last _ ql) as (ql'&q0&->). done.
+    destruct (@exists_last _ ql) as (ql'&q0&->); first done.
     apply uPred_equiv_perm_equiv=>tid.
     assert (foldr Qp_plus (q0/2) (ql' ++ [q0/2]) = q)%Qp as <-.
     { destruct q as [q ?]. apply Qp_eq. simpl in *. subst. clear. induction ql'.
@@ -176,14 +176,14 @@ Section props.
       by iSplit; iIntros "[$[$[$[$$]]]]".
   Qed.
 
-  Lemma perm_split_uniq_borrow_prod tyl κ v :
-    v ◁ &uniq{κ} (Π tyl) ⇒
+  Lemma perm_split_uniq_borrow_prod tyl κ ν :
+    ν ◁ &uniq{κ} (Π tyl) ⇒
       foldr (λ tyoffs acc,
-             Valuable.proj (Z.of_nat (tyoffs.2)) v ◁ &uniq{κ} (tyoffs.1) ★ acc)%P
+             (ν +ₗ #(tyoffs.2:nat))%E ◁ &uniq{κ} (tyoffs.1) ★ acc)%P
             ⊤ (combine_offs tyl 0).
   Proof.
-    intros tid.
-    destruct v as [[[|l|]|]|];
+    intros tid. unfold has_type. simpl eval_expr.
+    destruct (eval_expr ν) as [[[|l|]|]|];
       iIntros "H"; try iDestruct "H" as "[]";
         iDestruct "H" as (l0) "[EQ H]"; iDestruct "EQ" as %[=]. subst l0.
     rewrite split_prod_mt.
@@ -193,14 +193,14 @@ Section props.
     iMod ("IH" with "H") as "$". iModIntro. iExists _. eauto.
   Qed.
 
-  Lemma perm_split_shr_borrow_prod tyl κ v :
-    v ◁ &shr{κ} (Π tyl) ⇒
+  Lemma perm_split_shr_borrow_prod tyl κ ν :
+    ν ◁ &shr{κ} (Π tyl) ⇒
       foldr (λ tyoffs acc,
-             Valuable.proj (Z.of_nat (tyoffs.2)) v ◁ &shr{κ} (tyoffs.1) ★ acc)%P
+             (ν +ₗ #(tyoffs.2:nat))%E ◁ &shr{κ} (tyoffs.1) ★ acc)%P
             ⊤ (combine_offs tyl 0).
   Proof.
-    intros tid.
-    destruct v as [[[|l|]|]|];
+    intros tid. unfold has_type. simpl eval_expr.
+    destruct (eval_expr ν) as [[[|l|]|]|];
       iIntros "H"; try iDestruct "H" as "[]";
         iDestruct "H" as (l0) "[EQ H]"; iDestruct "EQ" as %[=]. subst l0.
     simpl. iModIntro.
@@ -221,11 +221,11 @@ Section props.
     iApply lft_extract_combine. set_solver. by iFrame.
   Qed.
 
-  Lemma own_uniq_borrowing v q ty κ :
-    borrowing κ ⊤ (v ◁ own q ty) (v ◁ &uniq{κ} ty).
+  Lemma own_uniq_borrowing ν q ty κ :
+    borrowing κ ⊤ (ν ◁ own q ty) (ν ◁ &uniq{κ} ty).
   Proof.
-    iIntros (tid) "#Hκ _ Hown".
-    destruct v as [[[|l|]|]|];
+    iIntros (tid) "#Hκ _ Hown". unfold has_type.
+    destruct (eval_expr ν) as [[[|l|]|]|];
       try by (iDestruct "Hown" as "[]" || iDestruct "Hown" as (l) "[% _]").
     iDestruct "Hown" as (l') "[EQ [Hf Hown]]". iDestruct "EQ" as %[=]. subst l'.
     iMod (lft_borrow_create with "Hκ Hown") as "[Hbor Hextract]". done.
@@ -236,11 +236,11 @@ Section props.
     iIntros "H/=". iExists _. iSplit. done. by iDestruct "H" as "[$$]".
   Qed.
 
-  Lemma reborrow_uniq_borrowing κ κ' v ty :
-    borrowing κ (κ ⊑ κ') (v ◁ &uniq{κ'}ty) (v ◁ &uniq{κ}ty).
+  Lemma reborrow_uniq_borrowing κ κ' ν ty :
+    borrowing κ (κ ⊑ κ') (ν ◁ &uniq{κ'}ty) (ν ◁ &uniq{κ}ty).
   Proof.
-    iIntros (tid) "_ #Hord H".
-    destruct v as [[[|l|]|]|];
+    iIntros (tid) "_ #Hord H". unfold has_type.
+    destruct (eval_expr ν) as [[[|l|]|]|];
       try by (iDestruct "H" as "[]" || iDestruct "H" as (l) "[% _]").
     iDestruct "H" as (l') "[EQ H]". iDestruct "EQ" as %[=]. subst l'.
     iMod (lft_reborrow with "Hord H") as "[H Hextr]". done.
@@ -251,11 +251,11 @@ Section props.
     - iExists _. eauto.
   Qed.
 
-  Lemma reborrow_shr_perm_incl κ κ' v ty :
-    κ ⊑ κ' ★ v ◁ &shr{κ'}ty ⇒ v ◁ &shr{κ}ty.
+  Lemma reborrow_shr_perm_incl κ κ' ν ty :
+    κ ⊑ κ' ★ ν ◁ &shr{κ'}ty ⇒ ν ◁ &shr{κ}ty.
   Proof.
-    iIntros (tid) "[#Hord #Hκ']".
-    destruct v as [[[|l|]|]|];
+    iIntros (tid) "[#Hord #Hκ']". unfold has_type.
+    destruct (eval_expr ν) as [[[|l|]|]|];
       try by (iDestruct "Hκ'" as "[]" || iDestruct "Hκ'" as (l) "[% _]").
     iDestruct "Hκ'" as (l') "[EQ Hκ']". iDestruct "EQ" as %[=]. subst l'.
     iModIntro. iExists _. iSplit. done.

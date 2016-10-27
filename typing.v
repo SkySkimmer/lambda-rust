@@ -1,6 +1,6 @@
 From iris.program_logic Require Import thread_local hoare.
 From lrust Require Export type perm notation memcpy.
-From lrust Require Import type_incl perm_incl proofmode.
+From lrust Require Import perm_incl proofmode.
 
 Import Types Perm.
 
@@ -9,9 +9,9 @@ Section typing.
   Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
 
   (* TODO : good notations for [typed_step] and [typed_step_ty] ? *)
-  Definition typed_step (ρ : perm) e (θ : Valuable.t → perm) :=
-    ∀ tid,
-      heap_ctx ⊢ {{ ρ tid ★ tl_own tid ⊤ }} e {{ v, θ (Some v) tid ★ tl_own tid ⊤ }}.
+  Definition typed_step (ρ : perm) e (θ : val → perm) :=
+    ∀ tid, {{ heap_ctx ★ ρ tid ★ tl_own tid ⊤ }} e
+           {{ v, θ v tid ★ tl_own tid ⊤ }}.
 
   (* FIXME : why isn't the notation context on the last parameter not
      taken into account? *)
@@ -21,39 +21,39 @@ Section typing.
     typed_step ρ e (λ ν, ν ◁ ty)%P.
 
   Definition typed_program (ρ : perm) e :=
-    ∀ tid, heap_ctx ⊢  {{ ρ tid ★ tl_own tid ⊤ }} e {{ v, False }}.
+    ∀ tid, {{ heap_ctx ★ ρ tid ★ tl_own tid ⊤ }} e {{ _, False }}.
 
   Lemma typed_frame ρ e θ ξ:
     typed_step ρ e θ → typed_step (ρ ★ ξ) e (λ ν, θ ν ★ ξ)%P.
   Proof.
-    iIntros (Hwt tid) "#HEAP!#[[?$]?]". iApply (Hwt with "HEAP"). by iFrame.
+    iIntros (Hwt tid) "!#(#HEAP&[?$]&?)". iApply Hwt. by iFrame.
   Qed.
 
   Lemma typed_step_exists {A} ρ θ e ξ:
     (∀ x:A, typed_step (ρ ★ θ x) e ξ) →
     typed_step (ρ ★ ∃ x, θ x) e ξ.
   Proof.
-    iIntros (Hwt tid) "#HEAP!#[[Hρ Hθ]?]". iDestruct "Hθ" as (x) "Hθ".
-    iApply (Hwt with "HEAP"). by iFrame.
+    iIntros (Hwt tid) "!#(#HEAP&[Hρ Hθ]&?)". iDestruct "Hθ" as (x) "Hθ".
+    iApply Hwt. by iFrame.
   Qed.
 
-  Lemma typed_bool ρ (b:Datatypes.bool) :
-    typed_step_ty ρ #b bool.
-  Proof. iIntros (tid) "_!#[_$]". wp_value. simpl. eauto. Qed.
+  Lemma typed_bool ρ (b:Datatypes.bool): typed_step_ty ρ #b bool.
+  Proof. iIntros (tid) "!#(_&_&$)". wp_value. by iExists _. Qed.
 
   Lemma typed_int ρ (z:Datatypes.nat) :
     typed_step_ty ρ #z int.
-  Proof. iIntros (tid) "_!#[_$]". wp_value. simpl. eauto. Qed.
+  Proof. iIntros (tid) "!#(_&_&$)". wp_value. by iExists _. Qed.
 
   Lemma typed_fn {A n} `{Duplicable _ ρ, Closed (f :b: xl +b+ []) e} θ :
     length xl = n →
     (∀ (a : A) (vl : vec val n) (fv : val) e',
         subst_l xl (map of_val vl) e = Some e' →
-        typed_program (Some fv ◁ fn θ ★ (θ a vl) ★ ρ) (subst' f fv e')) →
+        typed_program (fv ◁ fn θ ★ (θ a vl) ★ ρ) (subst' f fv e')) →
     typed_step_ty ρ (Rec f xl e) (fn θ).
   Proof.
-    iIntros (Hn He tid) "#HEAP !# [#Hρ $]". iApply (wp_value _ _ _ (RecV f xl e)).
-    { simpl. destruct decide as [CL|?]. repeat f_equal. apply proof_irrel. done. }
+    iIntros (Hn He tid) "!#(#HEAP&#Hρ&$)".
+    assert (Rec f xl e = RecV f xl e) as -> by done. iApply wp_value'.
+    rewrite has_type_value.
     iLöb as "IH". iExists _. iSplit. done. iIntros (a vl) "!#[Hθ?]".
     assert (is_Some (subst_l xl (map of_val vl) e)) as [e' He'].
     { clear -Hn. revert xl Hn e. induction vl=>-[|x xl] //=. by eauto.
@@ -61,18 +61,19 @@ Section typing.
     iApply wp_rec; try done.
     { apply List.Forall_forall=>?. rewrite in_map_iff=>-[?[<- _]].
       rewrite to_of_val. eauto. }
-    iNext. iApply (He with "HEAP"). done. by iFrame "★#".
+    iNext. iApply He. done. iFrame "★#". by rewrite has_type_value.
   Qed.
 
   Lemma typed_cont {n} `{Closed (f :b: xl +b+ []) e} ρ θ :
     length xl = n →
-    (∀ (vl : vec val n) (fv : val) e',
+    (∀ (fv : val) (vl : vec val n) e',
         subst_l xl (map of_val vl) e = Some e' →
-        typed_program (Some fv ◁ cont (λ vl, ρ ★ θ vl)%P ★ (θ vl) ★ ρ) (subst' f fv e')) →
+        typed_program (fv ◁ cont (λ vl, ρ ★ θ vl)%P ★ (θ vl) ★ ρ) (subst' f fv e')) →
     typed_step_ty ρ (Rec f xl e) (cont θ).
   Proof.
-    iIntros (Hn He tid) "#HEAP !# [Hρ $]". iApply (wp_value _ _ _ (RecV f xl e)).
-    { simpl. destruct decide as [CL|?]. repeat f_equal. apply proof_irrel. done. }
+    iIntros (Hn He tid) "!#(#HEAP&Hρ&$)". specialize (He (RecV f xl e)).
+    assert (Rec f xl e = RecV f xl e) as -> by done. iApply wp_value'.
+    rewrite has_type_value.
     iLöb as "IH". iExists _. iSplit. done. iIntros (vl) "Hθ ?".
     assert (is_Some (subst_l xl (map of_val vl) e)) as [e' He'].
     { clear -Hn. revert xl Hn e. induction vl=>-[|x xl] //=. by eauto.
@@ -80,69 +81,69 @@ Section typing.
     iApply wp_rec; try done.
     { apply List.Forall_forall=>?. rewrite in_map_iff=>-[?[<- _]].
       rewrite to_of_val. eauto. }
-    iNext. iApply (He with "HEAP"). done. iFrame. simpl.
+    iNext. iApply He. done. iFrame "★#". rewrite has_type_value.
     iExists _. iSplit. done. iIntros (vl') "[Hρ Hθ] Htl".
     iDestruct ("IH" with "Hρ") as (f') "[Hf' IH']".
     iDestruct "Hf'" as %[=<-]. iApply ("IH'" with "Hθ Htl").
   Qed.
 
-  Lemma typed_valuable e ty:
-    typed_step_ty (Valuable.of_expr e ◁ ty) e ty.
+  Lemma typed_valuable (ν : expr) ty:
+    typed_step_ty (ν ◁ ty) ν ty.
   Proof.
-    iIntros (tid) "_!#[H$]".
-    destruct (Valuable.of_expr e) as [v|] eqn:Hv. 2:by iDestruct "H" as "[]".
-    by iApply Valuable.of_expr_wp.
+    iIntros (tid) "!#(_&H&$)". iApply (has_type_wp with "[$H]"). by iIntros (v) "[_$]".
   Qed.
 
   Lemma typed_plus e1 e2 ρ1 ρ2:
     typed_step_ty ρ1 e1 int → typed_step_ty ρ2 e2 int →
-    typed_step_ty (ρ1 ★ ρ2) (BinOp PlusOp e1 e2) int.
+    typed_step_ty (ρ1 ★ ρ2) (e1 + e2) int.
   Proof.
-    iIntros (He1 He2 tid) "#HEAP!#[[H1 H2]?]".
-    wp_bind e1. iApply wp_wand_r. iSplitR "H2". iApply (He1 with "HEAP"); by iFrame.
+    unfold typed_step_ty, typed_step. setoid_rewrite has_type_value.
+    iIntros (He1 He2 tid) "!#(#HEAP&[H1 H2]&?)".
+    wp_bind e1. iApply wp_wand_r. iSplitR "H2". iApply He1; by iFrame.
     iIntros (v1) "[Hv1?]". iDestruct "Hv1" as (z1) "Hz1". iDestruct "Hz1" as %[=->].
-    wp_bind e2. iApply wp_wand_r. iSplitL. iApply (He2 with "HEAP"); by iFrame.
-    iIntros (v2) "[Hv2?]". iDestruct "Hv2" as (z2) "Hz2". iDestruct "Hz2" as %[=->].
-    wp_op. iFrame. by iExists _.
+    wp_bind e2. iApply wp_wand_r. iSplitL. iApply He2; by iFrame.
+    iIntros (v2) "[Hv2$]". iDestruct "Hv2" as (z2) "Hz2". iDestruct "Hz2" as %[=->].
+    wp_op. by iExists _.
   Qed.
 
   Lemma typed_minus e1 e2 ρ1 ρ2:
     typed_step_ty ρ1 e1 int → typed_step_ty ρ2 e2 int →
-    typed_step_ty (ρ1 ★ ρ2) (BinOp MinusOp e1 e2) int.
+    typed_step_ty (ρ1 ★ ρ2) (e1 - e2) int.
   Proof.
-    iIntros (He1 He2 tid) "#HEAP!#[[H1 H2]?]".
-    wp_bind e1. iApply wp_wand_r. iSplitR "H2". iApply (He1 with "HEAP"); by iFrame.
+    unfold typed_step_ty, typed_step. setoid_rewrite has_type_value.
+    iIntros (He1 He2 tid) "!#(#HEAP&[H1 H2]&?)".
+    wp_bind e1. iApply wp_wand_r. iSplitR "H2". iApply He1; by iFrame.
     iIntros (v1) "[Hv1?]". iDestruct "Hv1" as (z1) "Hz1". iDestruct "Hz1" as %[=->].
-    wp_bind e2. iApply wp_wand_r. iSplitL. iApply (He2 with "HEAP"); by iFrame.
-    iIntros (v2) "[Hv2?]". iDestruct "Hv2" as (z2) "Hz2". iDestruct "Hz2" as %[=->].
-    wp_op. iFrame. by iExists _.
+    wp_bind e2. iApply wp_wand_r. iSplitL. iApply He2; by iFrame.
+    iIntros (v2) "[Hv2$]". iDestruct "Hv2" as (z2) "Hz2". iDestruct "Hz2" as %[=->].
+    wp_op. by iExists _.
   Qed.
 
   Lemma typed_le e1 e2 ρ1 ρ2:
     typed_step_ty ρ1 e1 int → typed_step_ty ρ2 e2 int →
-    typed_step_ty (ρ1 ★ ρ2) (BinOp LeOp e1 e2) bool.
+    typed_step_ty (ρ1 ★ ρ2) (e1 ≤ e2) bool.
   Proof.
-    iIntros (He1 He2 tid) "#HEAP!#[[H1 H2]?]".
-    wp_bind e1. iApply wp_wand_r. iSplitR "H2". iApply (He1 with "HEAP"); by iFrame.
+    unfold typed_step_ty, typed_step. setoid_rewrite has_type_value.
+    iIntros (He1 He2 tid) "!#(#HEAP&[H1 H2]&?)".
+    wp_bind e1. iApply wp_wand_r. iSplitR "H2". iApply He1; by iFrame.
     iIntros (v1) "[Hv1?]". iDestruct "Hv1" as (z1) "Hz1". iDestruct "Hz1" as %[=->].
-    wp_bind e2. iApply wp_wand_r. iSplitL. iApply (He2 with "HEAP"); by iFrame.
-    iIntros (v2) "[Hv2?]". iDestruct "Hv2" as (z2) "Hz2". iDestruct "Hz2" as %[=->].
-    iFrame. wp_op; intros _; by iExists _.
+    wp_bind e2. iApply wp_wand_r. iSplitL. iApply He2; by iFrame.
+    iIntros (v2) "[Hv2$]". iDestruct "Hv2" as (z2) "Hz2". iDestruct "Hz2" as %[=->].
+    wp_op; intros _; by iExists _.
   Qed.
 
   Lemma typed_newlft ρ:
     typed_step ρ Newlft (λ _, ∃ α, [α]{1} ★ α ∋ top)%P.
   Proof.
-    iIntros (tid) "_!#[_$]". wp_value. iMod lft_begin as (α) "[?#?]". done.
+    iIntros (tid) "!#(_&_&$)". wp_value. iMod lft_begin as (α) "[?#?]". done.
     iMod (lft_borrow_create with "[][]") as "[_?]". done. done.
-    2:by iModIntro; iExists α; iFrame. eauto.
+    2:by iExists α; iFrame. eauto.
   Qed.
 
   Lemma typed_endlft κ ρ:
     typed_step (κ ∋ ρ ★ [κ]{1}) Endlft (λ _, ρ)%P.
   Proof.
-    iIntros (tid) "_!#[[Hextr [Htok #Hlft]]$]".
-    wp_bind (#() ;; #())%E.
+    iIntros (tid) "!#(_&[Hextr [Htok #Hlft]]&$)". wp_bind (#() ;; #())%E.
     iApply (wp_wand_r _ _ (λ _, _ ★ True)%I). iSplitR "Hextr".
     iApply (wp_frame_step_l with "[-]"); try done.
     iDestruct (lft_end with "Hlft Htok") as "$". by wp_seq.
@@ -153,27 +154,31 @@ Section typing.
   Lemma typed_alloc ρ (n : nat):
     0 < n → typed_step_ty ρ (Alloc #n) (own 1 (uninit n)).
   Proof.
-    iIntros (? tid) "#HEAP!#[_$]". wp_alloc l vl as "H↦" "H†". iIntros "!>".
+    iIntros (? tid) "!#(#HEAP&_&$)". wp_alloc l vl as "H↦" "H†". iIntros "!>".
     iExists _. iSplit. done. iNext. rewrite Nat2Z.id. iFrame.
-    apply (inj Z.of_nat) in H3. iExists _. iFrame. eauto.
+    apply (inj Z.of_nat) in H3. iExists _. iFrame. auto.
   Qed.
 
-  Lemma typed_free ty e:
-    typed_step (Valuable.of_expr e ◁ own 1 ty) (Free #ty.(ty_size) e) (λ _, top).
+  Lemma typed_free ty (ν : expr):
+    typed_step (ν ◁ own 1 ty) (Free #ty.(ty_size) ν) (λ _, top).
   Proof.
-    iIntros (tid) "#HEAP!#[Hown$]".
-    destruct (Valuable.of_expr e) as [v|] eqn:EQv; last by iDestruct "Hown" as "[]".
-    wp_bind e. iApply Valuable.of_expr_wp. done.
-    iDestruct "Hown" as (l) "(Hv & >H† & H↦★:)". iDestruct "Hv" as %[=->].
+    iIntros (tid) "!#(#HEAP&H◁&$)". wp_bind ν.
+    iApply (has_type_wp with "[$H◁]"). iIntros (v) "[_ H◁]".
+    rewrite has_type_value.
+    iDestruct "H◁" as (l) "(Hv & >H† & H↦★:)". iDestruct "Hv" as %[=->].
     iDestruct "H↦★:" as (vl) "[>H↦ Hown]".
     rewrite ty_size_eq. iDestruct "Hown" as ">%". wp_free; eauto.
   Qed.
 
-  Definition consumes (ty : type) (ρ1 ρ2 : Valuable.t → perm) : Prop :=
-    ∀ v tid, ρ1 v tid ★ tl_own tid ⊤ ={mgmtE ∪ lrustN}=★
-      ∃ (l : loc) vl q, v = Some #l ★ length vl = ty.(ty_size) ★ l ↦★{q} vl ★
-        |={mgmtE ∪ lrustN}▷=> (ty.(ty_own) tid vl ★
-           (l ↦★{q} vl ={mgmtE ∪ lrustN}=★ ρ2 v tid ★ tl_own tid ⊤)).
+  Definition consumes (ty : type) (ρ1 ρ2 : expr → perm) : Prop :=
+    ∀ ν tid Φ,
+      ρ1 ν tid ★ tl_own tid ⊤ ★
+      (∀ (l:loc) vl q,
+        (length vl = ty.(ty_size) ★ eval_expr ν = Some #l ★ l ↦★{q} vl ★
+         |={mgmtE ∪ lrustN}▷=> (ty.(ty_own) tid vl ★
+            (l ↦★{q} vl ={mgmtE ∪ lrustN}=★ ρ2 ν tid ★ tl_own tid ⊤)))
+       -★ Φ #l)
+      ⊢ WP ν @ mgmtE ∪ lrustN {{ Φ }}.
   (* FIXME : why isn't the notation context on the two last parameters not
      taken into account? *)
   Arguments consumes _%T _%P _%P.
@@ -181,25 +186,27 @@ Section typing.
   Lemma consumes_copy_own ty q:
     ty.(ty_dup) → consumes ty (λ ν, ν ◁ own q ty)%P (λ ν, ν ◁ own q ty)%P.
   Proof.
-    iIntros (? [v|] tid) "[Hown Htl]"; last by iDestruct "Hown" as "[]".
-    iDestruct "Hown" as (l) "[Heq [>H† H↦]]".
+    iIntros (? ν tid Φ) "(H◁ & Htl & HΦ)". iApply wp_fupd.
+    iApply (has_type_wp with "[- $H◁]"). iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
+    rewrite has_type_value. iDestruct "H◁" as (l) "[Heq [>H† H↦]]".
     iDestruct "Heq" as %[=->]. iDestruct "H↦" as (vl) "[>H↦ #Hown]".
     iAssert (▷ (length vl = ty_size ty))%I with "[#]" as ">%".
       by rewrite ty.(ty_size_eq).
-    iModIntro. iExists _, _, _. iFrame "★#%". iSplit. done. iIntros "!>!>!>H↦!>".
-    iExists _. iSplit. done. iFrame. iExists vl. eauto.
+    iModIntro. iApply "HΦ". iFrame "★#%". iIntros "!>!>!>H↦!>".
+    rewrite /has_type Hνv. iExists _. iSplit. done. iFrame. iExists vl. eauto.
   Qed.
 
   Lemma consumes_move ty q:
     consumes ty (λ ν, ν ◁ own q ty)%P (λ ν, ν ◁ own q (uninit ty.(ty_size)))%P.
   Proof.
-    iIntros ([v|] tid) "[Hown Htl]"; last by iDestruct "Hown" as "[]".
-    iDestruct "Hown" as (l) "[Heq [>H† H↦]]".
+    iIntros (ν tid Φ) "(H◁ & Htl & HΦ)". iApply wp_fupd.
+    iApply (has_type_wp with "[- $H◁]"). iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
+    rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & >H† & H↦)".
     iDestruct "Heq" as %[=->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
     iAssert (▷ (length vl = ty_size ty))%I with "[#]" as ">%".
       by rewrite ty.(ty_size_eq).
-    iModIntro. iExists _, _, _. iFrame "★#%". iSplit. done. iIntros "!>!>!>H↦!>".
-    iExists _. iSplit. done. iFrame. iExists vl. eauto.
+    iModIntro. iApply "HΦ". iFrame "★#%". iIntros "!>!>!>H↦!>".
+    rewrite /has_type Hνv. iExists _. iSplit. done. iFrame. iExists vl. eauto.
   Qed.
 
   Lemma consumes_copy_uniq_borrow ty κ κ' q:
@@ -207,17 +214,18 @@ Section typing.
     consumes ty (λ ν, ν ◁ &uniq{κ}ty ★ κ' ⊑ κ ★ [κ']{q})%P
                 (λ ν, ν ◁ &uniq{κ}ty ★ κ' ⊑ κ ★ [κ']{q})%P.
   Proof.
-    iIntros (? [v|] tid) "[(H◁ & #H⊑ & [Htok #Hκ']) Htl]"; last by iDestruct "H◁" as "[]".
-    iDestruct "H◁" as (l') "[Heq H↦]". iDestruct "Heq" as %[=->].
+    iIntros (? ν tid Φ) "((H◁ & #H⊑ & Htok & #Hκ') & Htl & HΦ)". iApply wp_fupd.
+    iApply (has_type_wp with "[- $H◁]"). iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
+    rewrite has_type_value. iDestruct "H◁" as (l') "[Heq H↦]". iDestruct "Heq" as %[=->].
     iMod (lft_incl_trade with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
     iMod (lft_borrow_open with "H↦ Htok") as "[H↦ Hclose']". set_solver.
     iDestruct "H↦" as (vl) "[>H↦ #Hown]".
     iAssert (▷ (length vl = ty_size ty))%I with "[#]" as ">%".
       by rewrite ty.(ty_size_eq).
-    iModIntro. iExists _, _, _. iFrame "★#%". iSplit. done. iIntros "!>!>!>H↦".
+    iModIntro. iApply "HΦ". iFrame "★#%". iIntros "!>!>!>H↦".
     iMod (lft_borrow_close with "[H↦] Hclose'") as "[H↦ Htok]". set_solver.
     { iExists _. by iFrame. }
-    iMod ("Hclose" with "Htok") as "$". iExists _. eauto.
+    iMod ("Hclose" with "Htok") as "$". rewrite /has_type Hνv. iExists _. eauto.
   Qed.
 
   Lemma consumes_copy_shr_borrow ty κ κ' q:
@@ -225,74 +233,72 @@ Section typing.
     consumes ty (λ ν, ν ◁ &shr{κ}ty ★ κ' ⊑ κ ★ [κ']{q})%P
                 (λ ν, ν ◁ &shr{κ}ty ★ κ' ⊑ κ ★ [κ']{q})%P.
   Proof.
-    iIntros (? [v|] tid) "[(H◁ & #H⊑ & [Htok #Hκ']) Htl]"; last by iDestruct "H◁" as "[]".
-    iDestruct "H◁" as (l') "[Heq #Hshr]". iDestruct "Heq" as %[=->].
+    iIntros (? ν tid Φ) "((H◁ & #H⊑ & [Htok #Hκ']) & Htl & HΦ)". iApply wp_fupd.
+    iApply (has_type_wp with "[- $H◁]"). iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
+    rewrite has_type_value. iDestruct "H◁" as (l') "[Heq #Hshr]". iDestruct "Heq" as %[=->].
     iMod (lft_incl_trade with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
     rewrite (union_difference_L (nclose lrustN) ⊤); last done.
     setoid_rewrite ->tl_own_union; try set_solver.
-    iDestruct "Htl" as "[Htl $]".
-    iMod (ty_shr_acc with "Hshr [Htok Htl]") as (q'') "[H↦ Hclose']";
-      try set_solver. by iFrame.
+    iDestruct "Htl" as "[Htl ?]".
+    iMod (ty_shr_acc with "Hshr [$Htok $Htl]") as (q'') "[H↦ Hclose']"; try set_solver.
     iDestruct "H↦" as (vl) "[>H↦ #Hown]".
     iAssert (▷ (length vl = ty_size ty))%I with "[#]" as ">%".
       by rewrite ty.(ty_size_eq).
-    iModIntro. iExists _, _, _. iFrame "★#%". iSplit. done. iIntros "!>!>!>H↦".
+    iModIntro. iApply "HΦ". iFrame "★#%". iIntros "!>!>!>H↦".
     iMod ("Hclose'" with "[H↦]") as "[Htok $]".
     { iExists _. by iFrame. }
-    iMod ("Hclose" with "Htok") as "$". iExists _. eauto.
+    iMod ("Hclose" with "Htok") as "$". rewrite /has_type Hνv. iExists _. eauto.
   Qed.
 
-  Lemma typed_deref ty ρ1 ρ2 e:
+  Lemma typed_deref ty ρ1 ρ2 (ν:expr) :
     ty.(ty_size) = 1%nat → consumes ty ρ1 ρ2 →
-    typed_step (ρ1 (Valuable.of_expr e)) (!e) (λ v, v ◁ ty ★ ρ2 (Valuable.of_expr e))%P.
+    typed_step (ρ1 ν) (!ν) (λ v, v ◁ ty ★ ρ2 ν)%P.
   Proof.
+    iIntros (Hsz Hconsumes tid) "!#[#HEAP[??]]". wp_bind ν. iApply wp_mask_mono. done.
+    iApply Hconsumes. iFrame. iIntros (l vl q) "(%&%&H↦&Hupd)".
     (* FIXME : I need to use [fupd_mask_mono], but I do not expect so. *)
-    iIntros (Hsz Hconsumes tid) "#HEAP!#H". iApply fupd_wp. iApply fupd_mask_mono.
-    done. iMod (Hconsumes with "H") as (l vl q) "(%&%&H↦&Hupd)".
-    iMod "Hupd". iModIntro. wp_bind e. iApply Valuable.of_expr_wp. done.
+    iApply fupd_wp. iApply fupd_mask_mono. done. iMod "Hupd". iModIntro.
     rewrite ->Hsz in *. destruct vl as [|v [|]]; try done.
-    rewrite heap_mapsto_vec_singleton. wp_read.
-    iApply fupd_mask_mono. 2:iMod "Hupd" as "[$ Hclose]". done.
-    by iApply "Hclose".
+    rewrite heap_mapsto_vec_singleton. wp_read. rewrite /sep has_type_value.
+    (* FIXME : Idem. *)
+    iApply fupd_mask_mono. done. iMod "Hupd" as "[$ Hclose]". by iApply "Hclose".
   Qed.
 
-  Lemma typed_deref_uniq_borrow_own ty e κ κ' q q':
-    typed_step (Valuable.of_expr e ◁ &uniq{κ} own q' ty ★ κ' ⊑ κ ★ [κ']{q})
-               (!e)
+  Lemma typed_deref_uniq_borrow_own ty ν κ κ' q q':
+    typed_step (ν ◁ &uniq{κ} own q' ty ★ κ' ⊑ κ ★ [κ']{q})
+               (!ν)
                (λ v, v ◁ &uniq{κ} ty ★ κ' ⊑ κ ★ [κ']{q})%P.
   Proof.
-    iIntros (tid) "#HEAP !# [(H◁ & #H⊑ & Htok & #Hκ') Htl]".
-    destruct (Valuable.of_expr e) eqn:He; last by iDestruct "H◁" as "[]".
-    iDestruct "H◁" as (l) "[Heq H↦]". iDestruct "Heq" as %[=->].
+    iIntros (tid) "!#(#HEAP & (H◁ & #H⊑ & Htok & #Hκ') & Htl)". wp_bind ν.
+    iApply (has_type_wp with "[- $H◁]"). iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
+    rewrite has_type_value. iDestruct "H◁" as (l) "[Heq H↦]". iDestruct "Heq" as %[=->].
     iMod (lft_incl_trade with "H⊑ Htok") as (q'') "[Htok Hclose]". done.
     iMod (lft_borrow_open with "H↦ Htok") as "[H↦ Hclose']". done.
     iDestruct "H↦" as (vl) "[>H↦ Hown]". iDestruct "Hown" as (l') "(>% & H† & Hown)".
-    subst. rewrite heap_mapsto_vec_singleton.
-    wp_bind e. iApply Valuable.of_expr_wp. done. wp_read.
+    subst. rewrite heap_mapsto_vec_singleton. wp_read.
     iMod (lft_borrow_close_stronger with "[H↦ H† Hown] Hclose' []") as "[Hbor Htok]". done.
     { iCombine "H†" "Hown" as "H". iCombine "H↦" "H" as "H". iNext. iExact "H". }
     { iIntros "!>(?&?&?)!>". iNext. rewrite -heap_mapsto_vec_singleton. iExists _.
-      iFrame. iExists _. iSplit. done. by iFrame. }
+      iFrame. iExists _. by iFrame. }
     iMod (lft_borrow_split with "Hbor") as "[_ Hbor]". done.
     iMod (lft_borrow_split with "Hbor") as "[_ Hbor]". done.
     iMod ("Hclose" with "Htok"). iFrame "#★". iIntros "!>". iExists _. eauto.
   Qed.
 
-  Lemma typed_deref_shr_borrow_own ty e κ κ' q q':
-    typed_step (Valuable.of_expr e ◁ &shr{κ} own q' ty ★ κ' ⊑ κ ★ [κ']{q})
-               (!e)
+  Lemma typed_deref_shr_borrow_own ty ν κ κ' q q':
+    typed_step (ν ◁ &shr{κ} own q' ty ★ κ' ⊑ κ ★ [κ']{q})
+               (!ν)
                (λ v, v ◁ &shr{κ} ty ★ κ' ⊑ κ ★ [κ']{q})%P.
   Proof.
-    iIntros (tid) "#HEAP !# [(H◁ & #H⊑ & Htok & #Hκ') Htl]".
-    destruct (Valuable.of_expr e) eqn:He; last by iDestruct "H◁" as "[]".
-    iDestruct "H◁" as (l) "[Heq #H↦]". iDestruct "Heq" as %[=->].
+    iIntros (tid) "!#(#HEAP & (H◁ & #H⊑ & Htok & #Hκ') & Htl)". wp_bind ν.
+    iApply (has_type_wp with "[- $H◁]"). iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
+    rewrite has_type_value. iDestruct "H◁" as (l) "[Heq #H↦]". iDestruct "Heq" as %[=->].
     iMod (lft_incl_trade with "H⊑ Htok") as (q'') "[[Htok1 Htok2] Hclose]". done.
     iDestruct "H↦" as (vl) "[H↦b Hown]".
     iMod (lft_frac_borrow_open with "[] H↦b Htok1") as (q''') "[>H↦ Hclose']". done.
     { iIntros "!#". iIntros (q1 q2). rewrite heap_mapsto_op_eq. iSplit; auto. }
-    wp_bind e. iApply Valuable.of_expr_wp. done.
-    iSpecialize ("Hown" $! _ with "Htok2").
-    iApply wp_strong_mono. reflexivity. iSplitL "Htl Hclose Hclose'"; last first.
+    iSpecialize ("Hown" $! _ with "Htok2"). iFrame "#★".
+    iApply wp_strong_mono. reflexivity. iSplitL "Hclose Hclose'"; last first.
     - iApply (wp_frame_step_l _ heapN _ (λ v, l ↦{q'''} v ★ v = #vl)%I); try done.
       iSplitL "Hown"; last by wp_read; eauto.
       (* TODO : solving this goal is way too complicated compared
@@ -306,20 +312,20 @@ Section typing.
       iApply fupd_trans. iApply fupd_mask_frame_r. set_solver.
       iMod "Hown". iModIntro. iMod "H". iModIntro. iNext.
       iMod "H". iApply fupd_mask_frame_r. set_solver. done.
-    - iFrame "★#". iIntros (v) "[[#Hshr Htok][H↦ %]]". subst.
+    - iIntros (v) "([#Hshr Htok] & H↦ & %)". subst.
       iMod ("Hclose'" with "[H↦]") as "Htok'". by eauto.
       iCombine "Htok" "Htok'" as "Htok". iMod ("Hclose" with "Htok") as "$".
-      iModIntro. iExists _. eauto.
+      iExists _. eauto.
   Qed.
 
-  Lemma typed_deref_uniq_borrow_borrow ty e κ κ' κ'' q:
-    typed_step (Valuable.of_expr e ◁ &uniq{κ'} &uniq{κ''} ty ★ κ ⊑ κ' ★ [κ]{q} ★ κ' ⊑ κ'')
-               (!e)
+  Lemma typed_deref_uniq_borrow_borrow ty ν κ κ' κ'' q:
+    typed_step (ν ◁ &uniq{κ'} &uniq{κ''} ty ★ κ ⊑ κ' ★ [κ]{q} ★ κ' ⊑ κ'')
+               (!ν)
                (λ v, v ◁ &uniq{κ'} ty ★ κ ⊑ κ' ★ [κ]{q})%P.
   Proof.
-    iIntros (tid) "#HEAP !# [(H◁ & #H⊑1 & [Htok #Hκ'] & #H⊑2) Htl]".
-    destruct (Valuable.of_expr e) eqn:He; last by iDestruct "H◁" as "[]".
-    iDestruct "H◁" as (l) "[Heq H↦]". iDestruct "Heq" as %[=->].
+    iIntros (tid) "!#(#HEAP & (H◁ & #H⊑1 & [Htok #Hκ'] & #H⊑2) & Htl)". wp_bind ν.
+    iApply (has_type_wp with "[- $H◁]"). iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
+    rewrite has_type_value. iDestruct "H◁" as (l) "[Heq H↦]". iDestruct "Heq" as %[=->].
     iMod (lft_incl_trade with "H⊑1 Htok") as (q'') "[Htok Hclose]". done.
     iMod (lft_borrow_exists with "H↦ Htok") as (vl) "[Hbor Htok]". done.
     iMod (lft_borrow_split with "Hbor") as "[H↦ Hbor]". done.
@@ -328,27 +334,28 @@ Section typing.
     iMod (lft_borrow_persistent with "Heq Htok") as "[>% [Htok1 Htok2]]". done. subst.
     iMod (lft_borrow_open with "H↦ Htok1") as "[>H↦ Hclose']". done.
     iMod (lft_borrow_open with "Hbor Htok2") as "[Hbor Hclose'']". done.
-    rewrite heap_mapsto_vec_singleton.
-    wp_bind e. iApply Valuable.of_expr_wp. done. wp_read.
+    rewrite heap_mapsto_vec_singleton. wp_read.
     iMod (lft_borrow_close with "[H↦] Hclose'") as "[_ Htok1]". done. by auto.
     iMod (lft_borrow_unnest with "H⊑2 [Hbor Hclose'']") as "[Htok2 Hbor]". done. by iFrame.
     iCombine "Htok1" "Htok2" as "Htok". iMod ("Hclose" with "Htok") as "$". iFrame "★#".
-    iModIntro. iExists _. eauto.
+    iExists _. eauto.
   Qed.
 
-  Lemma typed_deref_shr_borrow_borrow ty e κ κ' κ'' q:
-    typed_step (Valuable.of_expr e ◁ &shr{κ'} &uniq{κ''} ty ★ κ ⊑ κ' ★ [κ]{q} ★ κ' ⊑ κ'')
-               (!e)
+  Lemma typed_deref_shr_borrow_borrow ty ν κ κ' κ'' q:
+    typed_step (ν ◁ &shr{κ'} &uniq{κ''} ty ★ κ ⊑ κ' ★ [κ]{q} ★ κ' ⊑ κ'')
+               (!ν)
                (λ v, v ◁ &shr{κ'} ty ★ κ ⊑ κ' ★ [κ]{q})%P.
   Proof.
     (* TODO : fix the definition of sharing unique borrows before. *)
   Admitted.
 
-  Definition update (ty : type) (ρ1 ρ2 : Valuable.t → perm) : Prop :=
-    ∀ v tid, ρ1 v tid ={mgmtE ∪ lrustN}=★
-      ∃ (l : loc) vl, v = Some #l ★ length vl = ty.(ty_size) ★ l ↦★ vl ★
-      ∀ vl', l ↦★ vl' ★ ▷ (ty.(ty_own) tid vl')
-        ={mgmtE ∪ lrustN}=★ ρ2 v tid.
+  Definition update (ty : type) (ρ1 ρ2 : expr → perm) : Prop :=
+    ∀ ν tid Φ, ρ1 ν tid ★
+      (∀ (l:loc) vl,
+         (length vl = ty.(ty_size) ★ eval_expr ν = Some #l ★ l ↦★ vl ★
+         ∀ vl', l ↦★ vl' ★ ▷ (ty.(ty_own) tid vl') ={mgmtE ∪ lrustN}=★ ρ2 ν tid)
+         -★ Φ #l)
+      ⊢ WP ν @ mgmtE ∪ lrustN {{ Φ }}.
   (* FIXME : why isn't the notation context on the two last parameters not
      taken into account? *)
   Arguments update _%T _%P _%P.
@@ -357,61 +364,58 @@ Section typing.
     ty1.(ty_size) = ty2.(ty_size) →
     update ty1 (λ ν, ν ◁ own q ty2)%P (λ ν, ν ◁ own q ty1)%P.
   Proof.
-    iIntros (Hsz [v|] tid) "H◁"; last by iDestruct "H◁" as "[]".
-    iDestruct "H◁" as (l) "(Heq & >H† & H↦)". iDestruct "Heq" as %[= ->].
-    iDestruct "H↦" as (vl) "[>H↦ Hown]". rewrite ty2.(ty_size_eq) -Hsz.
-    iDestruct "Hown" as ">%". iExists l, vl. iModIntro. iFrame "★%". iSplit. done.
-    iIntros (vl') "[H↦ Hown']!>". iExists _. iSplit. done. iFrame. iExists _. iFrame.
+    iIntros (Hsz ν tid Φ) "[H◁ HΦ]". iApply wp_fupd.
+    iApply (has_type_wp with "[- $H◁]"). iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
+    rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & >H† & H↦)".
+    iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
+    rewrite ty2.(ty_size_eq) -Hsz. iDestruct "Hown" as ">%". iApply "HΦ". iFrame "★%".
+    iIntros (vl') "[H↦ Hown']!>". rewrite /has_type Hνv.
+    iExists _. iSplit. done. iFrame. iExists _. iFrame.
   Qed.
 
   Lemma update_weak ty q κ κ':
     update ty (λ ν, ν ◁ &uniq{κ} ty ★ κ' ⊑ κ ★ [κ']{q})%P
               (λ ν, ν ◁ &uniq{κ} ty ★ κ' ⊑ κ ★ [κ']{q})%P.
   Proof.
-    iIntros ([v|] tid) "(H◁ & #H⊑ & Htok & #Hκ)"; last by iDestruct "H◁" as "[]".
-    iDestruct "H◁" as (l) "(Heq & H↦)". iDestruct "Heq" as %[= ->].
+    iIntros (ν tid Φ) "[(H◁ & #H⊑ & Htok & #Hκ) HΦ]". iApply wp_fupd.
+    iApply (has_type_wp with "[- $H◁]"). iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
+    rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & H↦)". iDestruct "Heq" as %[=->].
     iMod (lft_incl_trade with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
     iMod (lft_borrow_open with "H↦ Htok") as "[H↦ Hclose']". set_solver.
     iDestruct "H↦" as (vl) "[>H↦ Hown]". rewrite ty.(ty_size_eq).
-    iDestruct "Hown" as ">%". iExists _, _. iModIntro. iFrame "★%#". iSplit. done.
-    iIntros (vl') "[H↦ Hown]".
+    iDestruct "Hown" as ">%". iApply "HΦ". iFrame "★%#". iIntros (vl') "[H↦ Hown]".
     iMod (lft_borrow_close with "[H↦ Hown] Hclose'") as "[Hbor Htok]". set_solver.
     { iExists _. iFrame. }
-    iMod ("Hclose" with "Htok") as "$". iExists _. eauto.
+    iMod ("Hclose" with "Htok") as "$". rewrite /has_type Hνv. iExists _. eauto.
   Qed.
 
-  Lemma typed_assign ρ1 ρ2 ty e1 e2:
-    ty.(ty_size) = 1%nat →
-    update ty ρ1 ρ2 →
-    typed_step (ρ1 (Valuable.of_expr e1) ★ Valuable.of_expr e2 ◁ ty) (e1 <- e2)
-               (λ _, ρ2 (Valuable.of_expr e1)).
+  Lemma typed_assign ρ1 ρ2 ty ν1 ν2:
+    ty.(ty_size) = 1%nat → update ty ρ1 ρ2 →
+    typed_step (ρ1 ν1 ★ ν2 ◁ ty) (ν1 <- ν2) (λ _, ρ2 ν1).
   Proof.
     (* FIXME : I need to use [fupd_mask_mono], but I do not expect so. *)
-    iIntros (Hsz Hupd tid) "#HEAP!#[[Hρ1 H◁]$]". iApply fupd_wp. iApply fupd_mask_mono.
-    done. iMod (Hupd with "Hρ1") as (l vl) "(% & % & H↦ & Hupd)".
+    iIntros (Hsz Hupd tid) "!#(#HEAP & [Hρ1 H◁] & $)". wp_bind ν1.
+    iApply wp_mask_mono. done. iApply Hupd. iFrame. iIntros (l vl) "(%&%&H↦&Hupd)".
     rewrite ->Hsz in *. destruct vl as [|v[|]]; try done.
-    iModIntro. rewrite heap_mapsto_vec_singleton.
-    destruct (Valuable.of_expr e2) eqn:He2; last by iDestruct "H◁" as "[]".
-    wp_bind e1. iApply Valuable.of_expr_wp. done.
-    wp_bind e2. iApply Valuable.of_expr_wp. done.
-    wp_write. iApply fupd_mask_mono. done. iApply "Hupd". iFrame.
-    by rewrite heap_mapsto_vec_singleton.
+    wp_bind ν2. iApply (has_type_wp with "[- $H◁]"). iIntros (v') "[% H◁]".
+    rewrite heap_mapsto_vec_singleton. wp_write.
+    iApply fupd_mask_mono. done. iApply ("Hupd" $! [_]).
+    rewrite heap_mapsto_vec_singleton has_type_value. iFrame.
   Qed.
 
-  Lemma typed_memcpy ρ1 ρ1' ρ2 ρ2' ty e1 e2:
+  Lemma typed_memcpy ρ1 ρ1' ρ2 ρ2' ty ν1 ν2:
     update ty ρ1' ρ1 → consumes ty ρ2' ρ2 →
-    typed_step (ρ1' (Valuable.of_expr e1) ★ ρ2' (Valuable.of_expr e2))
-               (e1 <-{ty.(ty_size)} !e2)
-               (λ _, ρ1 (Valuable.of_expr e1) ★ ρ2 (Valuable.of_expr e2))%P.
+    typed_step (ρ1' ν1 ★ ρ2' ν2) (ν1 <-{ty.(ty_size)} !ν2) (λ _, ρ1 ν1 ★ ρ2 ν2)%P.
   Proof.
+    iIntros (Hupd Hcons tid) "!#(#HEAP&[H1 H2]&Htl)". wp_bind ν1.
+    iApply wp_mask_mono. done. iApply (Hupd with "[- $H1]").
+    iIntros (l vl) "(% & % & H↦ & Hupd)". wp_bind ν2.
+    iApply wp_mask_mono. done. iApply (Hcons with "[- $H2 $Htl]").
+    iIntros (l' vl' q) "(% & % & H↦' & Hcons)".
     (* FIXME : I need to use [fupd_mask_mono], but I do not expect so. *)
-    iIntros (Hupd Hcons tid) "#HEAP!#[[H1 H2]Htl]". iApply fupd_wp. iApply fupd_mask_mono.
-    done. iMod (Hupd with "H1") as (l vl) "(% & % & H↦ & Hupd)".
-    iMod (Hcons with "[H2 Htl]") as (l' vl' q) "(% & % & H↦' & Hcons)". by iFrame.
-    iMod "Hcons". iModIntro.
-    wp_bind e1. iApply Valuable.of_expr_wp. done.
-    wp_bind e2. iApply Valuable.of_expr_wp. done.
+    iApply wp_fupd. iApply fupd_wp. iApply fupd_mask_mono. done. iMod "Hcons".
     iApply wp_memcpy; last iFrame "★#"; try done. iNext. iIntros "[H↦ H↦']".
+    (* FIXME : Idem. *)
     iApply fupd_mask_mono. done. iMod "Hcons" as "[Hown' Hcons]".
     iMod ("Hcons" with "H↦'") as "[$$]". iApply "Hupd". by iFrame.
   Qed.
@@ -419,38 +423,36 @@ Section typing.
   Lemma typed_weaken ρ1 ρ2 e:
     typed_program ρ2 e → (ρ1 ⇒ ρ2) → typed_program ρ1 e.
   Proof.
-    iIntros (Hρ2 Hρ12 tid) "#HEAP!#[Hρ1 Htl]".
-    iMod (Hρ12 with "Hρ1"). iApply (Hρ2 with "HEAP"). by iFrame.
+    iIntros (Hρ2 Hρ12 tid) "!#(#HEAP & Hρ1 & Htl)".
+    iMod (Hρ12 with "Hρ1"). iApply Hρ2. by iFrame.
   Qed.
 
   Lemma typed_program_exists {A} ρ θ e:
     (∀ x:A, typed_program (ρ ★ θ x) e) →
     typed_program (ρ ★ ∃ x, θ x) e.
   Proof.
-    iIntros (Hwt tid) "#HEAP!#[[Hρ Hθ]?]". iDestruct "Hθ" as (x) "Hθ".
-    iApply (Hwt with "HEAP"). by iFrame.
+    iIntros (Hwt tid) "!#(#HEAP & [Hρ Hθ] & ?)". iDestruct "Hθ" as (x) "Hθ".
+    iApply Hwt. by iFrame.
   Qed.
 
   Lemma typed_step_program ρ θ e K:
     typed_step ρ e θ →
-    (∀ v, typed_program (θ (Some v)) (fill K (of_val v))) →
+    (∀ v, typed_program (θ v) (fill K (of_val v))) →
     typed_program ρ (fill K e).
   Proof.
-    iIntros (He HK tid) "#HEAP!#[Hρ Htl]".
-    iApply wp_bind. iApply wp_wand_r. iSplitL.
-    iApply (He with "HEAP [-]"); by iFrame.
-    iIntros (v) "[Hθ Htl]". iApply (HK with "HEAP"). by iFrame.
+    iIntros (He HK tid) "!#(#HEAP & Hρ & Htl)".
+    iApply wp_bind. iApply wp_wand_r. iSplitL. iApply He; by iFrame.
+    iIntros (v) "[Hθ Htl]". iApply HK. by iFrame.
   Qed.
 
-  Lemma typed_if ρ e1 e2 e:
+  Lemma typed_if ρ e1 e2 ν:
     typed_program ρ e1 → typed_program ρ e2 →
-    typed_program (ρ ★ Valuable.of_expr e ◁ bool) (if: e then e1 else e2).
+    typed_program (ρ ★ ν ◁ bool) (if: ν then e1 else e2).
   Proof.
-    iIntros (He1 He2 tid) "#HEAP!#[[Hρ H◁]Htl]".
-    destruct (Valuable.of_expr e) eqn:He; try iDestruct "H◁" as "[]".
-    iDestruct "H◁" as (b) "Heq". iDestruct "Heq" as %[= ->].
-    wp_bind e. iApply Valuable.of_expr_wp. done. wp_if. destruct b; iNext.
-    iApply (He1 with "HEAP"); by iFrame. iApply (He2 with "HEAP"); by iFrame.
+    iIntros (He1 He2 tid) "!#(#HEAP & [Hρ H◁] & Htl)".
+    wp_bind ν. iApply has_type_wp. iFrame. iIntros (v) "[% H◁]".
+    rewrite has_type_value. iDestruct "H◁" as (b) "Heq". iDestruct "Heq" as %[= ->].
+    wp_if. destruct b; iNext. iApply He1; by iFrame. iApply He2; by iFrame.
   Qed.
 
 End typing.
