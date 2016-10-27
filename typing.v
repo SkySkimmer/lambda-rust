@@ -1,5 +1,5 @@
 From iris.program_logic Require Import thread_local hoare.
-From lrust Require Export type perm notation.
+From lrust Require Export type perm notation memcpy.
 From lrust Require Import type_incl perm_incl proofmode.
 
 Import Types Perm.
@@ -248,7 +248,7 @@ Section typing.
   Proof.
     (* FIXME : I need to use [fupd_mask_mono], but I do not expect so. *)
     iIntros (Hsz Hconsumes tid) "#HEAP!#H". iApply fupd_wp. iApply fupd_mask_mono.
-    2:iMod (Hconsumes with "H") as (l vl q) "(%&%&H↦&Hupd)". done.
+    done. iMod (Hconsumes with "H") as (l vl q) "(%&%&H↦&Hupd)".
     iMod "Hupd". iModIntro. wp_bind e. iApply Valuable.of_expr_wp. done.
     rewrite ->Hsz in *. destruct vl as [|v [|]]; try done.
     rewrite heap_mapsto_vec_singleton. wp_read.
@@ -343,5 +343,77 @@ Section typing.
   Proof.
     (* TODO : fix the definition of sharing unique borrows before. *)
   Admitted.
+
+  Definition update (ty : type) (ρ1 ρ2 : Valuable.t → perm) : Prop :=
+    ∀ v tid, ρ1 v tid ={mgmtE ∪ lrustN}=★
+      ∃ (l : loc) vl, v = Some #l ★ length vl = ty.(ty_size) ★ l ↦★ vl ★
+      ∀ vl', l ↦★ vl' ★ ▷ (ty.(ty_own) tid vl')
+        ={mgmtE ∪ lrustN}=★ ρ2 v tid.
+  (* FIXME : why isn't the notation context on the two last parameters not
+     taken into account? *)
+  Arguments update _%T _%P _%P.
+
+  Lemma update_strong ty1 ty2 q:
+    ty1.(ty_size) = ty2.(ty_size) →
+    update ty1 (λ ν, ν ◁ own q ty2)%P (λ ν, ν ◁ own q ty1)%P.
+  Proof.
+    iIntros (Hsz [v|] tid) "H◁"; last by iDestruct "H◁" as "[]".
+    iDestruct "H◁" as (l) "(Heq & >H† & H↦)". iDestruct "Heq" as %[= ->].
+    iDestruct "H↦" as (vl) "[>H↦ Hown]". rewrite ty2.(ty_size_eq) -Hsz.
+    iDestruct "Hown" as ">%". iExists l, vl. iModIntro. iFrame "★%". iSplit. done.
+    iIntros (vl') "[H↦ Hown']!>". iExists _. iSplit. done. iFrame. iExists _. iFrame.
+  Qed.
+
+  Lemma update_weak ty q κ κ':
+    update ty (λ ν, ν ◁ &uniq{κ} ty ★ κ' ⊑ κ ★ [κ']{q})%P
+              (λ ν, ν ◁ &uniq{κ} ty ★ κ' ⊑ κ ★ [κ']{q})%P.
+  Proof.
+    iIntros ([v|] tid) "(H◁ & #H⊑ & Htok & #Hκ)"; last by iDestruct "H◁" as "[]".
+    iDestruct "H◁" as (l) "(Heq & H↦)". iDestruct "Heq" as %[= ->].
+    iMod (lft_incl_trade with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
+    iMod (lft_borrow_open with "H↦ Htok") as "[H↦ Hclose']". set_solver.
+    iDestruct "H↦" as (vl) "[>H↦ Hown]". rewrite ty.(ty_size_eq).
+    iDestruct "Hown" as ">%". iExists _, _. iModIntro. iFrame "★%#". iSplit. done.
+    iIntros (vl') "[H↦ Hown]".
+    iMod (lft_borrow_close with "[H↦ Hown] Hclose'") as "[Hbor Htok]". set_solver.
+    { iExists _. iFrame. }
+    iMod ("Hclose" with "Htok") as "$". iExists _. eauto.
+  Qed.
+
+  Lemma typed_step_assign ρ1 ρ2 ty e1 e2:
+    ty.(ty_size) = 1%nat →
+    update ty ρ1 ρ2 →
+    typed_step (ρ1 (Valuable.of_expr e1) ★ Valuable.of_expr e2 ◁ ty) (e1 <- e2)
+               (λ _, ρ2 (Valuable.of_expr e1)).
+  Proof.
+    (* FIXME : I need to use [fupd_mask_mono], but I do not expect so. *)
+    iIntros (Hsz Hupd tid) "#HEAP!#[[Hρ1 H◁]$]". iApply fupd_wp. iApply fupd_mask_mono.
+    done. iMod (Hupd with "Hρ1") as (l vl) "(% & % & H↦ & Hupd)".
+    rewrite ->Hsz in *. destruct vl as [|v[|]]; try done.
+    iModIntro. rewrite heap_mapsto_vec_singleton.
+    destruct (Valuable.of_expr e2) eqn:He2; last by iDestruct "H◁" as "[]".
+    wp_bind e1. iApply Valuable.of_expr_wp. done.
+    wp_bind e2. iApply Valuable.of_expr_wp. done.
+    wp_write. iApply fupd_mask_mono. done. iApply "Hupd". iFrame.
+    by rewrite heap_mapsto_vec_singleton.
+  Qed.
+
+  Lemma typed_step_memcpy ρ1 ρ1' ρ2 ρ2' ty e1 e2:
+    update ty ρ1' ρ1 → consumes ty ρ2' ρ2 →
+    typed_step (ρ1' (Valuable.of_expr e1) ★ ρ2' (Valuable.of_expr e2))
+               (e1 <-{ty.(ty_size)} !e2)
+               (λ _, ρ1 (Valuable.of_expr e1) ★ ρ2 (Valuable.of_expr e2))%P.
+  Proof.
+    (* FIXME : I need to use [fupd_mask_mono], but I do not expect so. *)
+    iIntros (Hupd Hcons tid) "#HEAP!#[[H1 H2]Htl]". iApply fupd_wp. iApply fupd_mask_mono.
+    done. iMod (Hupd with "H1") as (l vl) "(% & % & H↦ & Hupd)".
+    iMod (Hcons with "[H2 Htl]") as (l' vl' q) "(% & % & H↦' & Hcons)". by iFrame.
+    iMod "Hcons". iModIntro.
+    wp_bind e1. iApply Valuable.of_expr_wp. done.
+    wp_bind e2. iApply Valuable.of_expr_wp. done.
+    iApply wp_memcpy; last iFrame "★#"; try done. iNext. iIntros "[H↦ H↦']".
+    iApply fupd_mask_mono. done. iMod "Hcons" as "[Hown' Hcons]".
+    iMod ("Hcons" with "H↦'") as "[$$]". iApply "Hupd". by iFrame.
+  Qed.
 
 End typing.
