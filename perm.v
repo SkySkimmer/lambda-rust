@@ -1,4 +1,3 @@
-From iris.program_logic Require Import thread_local.
 From iris.proofmode Require Import tactics.
 From lrust Require Export type proofmode.
 

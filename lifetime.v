@@ -1,5 +1,5 @@
-From iris.program_logic Require Export fancy_updates.
-From iris.program_logic Require Import invariants namespaces thread_local.
+From iris.base_logic.lib Require Export fancy_updates invariants namespaces thread_local.
+From iris.program_logic Require Export weakestpre.
 From iris.proofmode Require Import tactics.
 
 Definition lftN := nroot .@ "lft".
@@ -156,12 +156,16 @@ Section lft.
   Proof. by rewrite lft_own_op Qp_div_2. Qed.
 
   Global Instance into_and_lft_own κ q :
-    IntoAnd false ([κ]{q}) ([κ]{q/2}) ([κ]{q/2}).
+    IntoAnd false [κ]{q} [κ]{q/2} [κ]{q/2}.
   Proof. by rewrite /IntoAnd lft_own_split. Qed.
 
   Global Instance from_sep_lft_own κ q :
-    FromSep ([κ]{q}) ([κ]{q/2}) ([κ]{q/2}).
+    FromSep [κ]{q} [κ]{q/2} [κ]{q/2}.
   Proof. by rewrite /FromSep -lft_own_split. Qed.
+
+  Global Instance frame_lft_own κ q :
+    Frame [κ]{q/2} [κ]{q} [κ]{q/2} | 100.
+  Proof. by rewrite /Frame -lft_own_split. Qed.
 
   Lemma lft_borrow_open' E κ P q :
     nclose lftN ⊆ E →

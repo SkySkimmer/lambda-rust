@@ -1,7 +1,6 @@
 From iris.algebra Require Import cmra_big_op gmap frac dec_agree.
 From iris.algebra Require Import csum excl auth.
-From iris.base_logic Require Import big_op.
-From iris.program_logic Require Export invariants wsat.
+From iris.base_logic Require Import big_op lib.invariants.
 From iris.proofmode Require Export tactics.
 From lrust Require Export lifting.
 Import uPred.

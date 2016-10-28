@@ -10,7 +10,7 @@ Class heapPreG Σ := HeapPreG {
 }.
 
 Definition heapΣ : gFunctors :=
-  #[irisΣ lrust_lang;
+  #[irisΣ state;
     GFunctor (constRF (authR heapUR));
     GFunctor (constRF (authR heap_freeableUR))].
 Instance subG_heapPreG {Σ} : subG heapΣ Σ → heapPreG Σ.

@@ -1,5 +1,5 @@
 From iris.base_logic Require Import big_op.
-From iris.program_logic Require Import thread_local hoare.
+From iris.program_logic Require Import hoare.
 From lrust Require Export type perm_incl.
 
 Import Types.

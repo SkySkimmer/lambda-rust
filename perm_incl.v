@@ -1,6 +1,5 @@
 From Coq Require Import Qcanon.
 From iris.base_logic Require Import big_op.
-From iris.program_logic Require Import thread_local.
 From lrust Require Export type perm.
 
 Import Perm Types.
@@ -107,12 +106,12 @@ Section props.
   Lemma perm_incl_share q ν κ ty :
     ν ◁ &uniq{κ} ty ★ [κ]{q} ⇒ ν ◁ &shr{κ} ty ★ [κ]{q}.
   Proof.
-    iIntros (tid) "[Huniq [Htok Hlft]]". unfold has_type.
+    iIntros (tid) "[Huniq [Htok $]]". unfold has_type.
     destruct (eval_expr ν); last by iDestruct "Huniq" as "[]".
     iDestruct "Huniq" as (l) "[% Hown]".
-    iMod (ty.(ty_share) _ lrustN with "Hown Htok") as "[Hown Htok]".
-    apply disjoint_union_l; solve_ndisj. set_solver. iModIntro.
-    iFrame. iExists _. iSplit. done. done.
+    iMod (ty.(ty_share) _ lrustN with "Hown Htok") as "[Hown $]".
+    apply disjoint_union_l; solve_ndisj. done. iModIntro.
+    simpl. eauto.
   Qed.
 
   Lemma split_own_prod tyl (q0: Qp) (ql : list Qp) (l : loc) tid :
@@ -228,10 +227,10 @@ Section props.
     destruct (eval_expr ν) as [[[|l|]|]|];
       try by (iDestruct "Hown" as "[]" || iDestruct "Hown" as (l) "[% _]").
     iDestruct "Hown" as (l') "[EQ [Hf Hown]]". iDestruct "EQ" as %[=]. subst l'.
-    iMod (lft_borrow_create with "Hκ Hown") as "[Hbor Hextract]". done.
+    iMod (lft_borrow_create with "Hκ Hown") as "[Hbor Hext]". done.
     iSplitL "Hbor". by simpl; eauto.
     iMod (lft_borrow_create with "Hκ Hf") as "[_ Hf]". done.
-    iMod (lft_extract_combine with "[-]"). done. by iFrame.
+    iMod (lft_extract_combine with "[$Hext $Hf]"). done.
     iModIntro. iApply lft_extract_mono; last done.
     iIntros "H/=". iExists _. iSplit. done. by iDestruct "H" as "[$$]".
   Qed.

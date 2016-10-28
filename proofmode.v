@@ -1,5 +1,6 @@
 From iris.proofmode Require Import coq_tactics.
 From iris.proofmode Require Export tactics.
+From iris.base_logic Require Import namespaces.
 From lrust Require Export wp_tactics heap.
 Import uPred.
 
