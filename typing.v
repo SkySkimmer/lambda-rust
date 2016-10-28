@@ -13,10 +13,6 @@ Section typing.
     ∀ tid, {{ heap_ctx ★ ρ tid ★ tl_own tid ⊤ }} e
            {{ v, θ v tid ★ tl_own tid ⊤ }}.
 
-  (* FIXME : why isn't the notation context on the last parameter not
-     taken into account? *)
-  Arguments typed_step _%P _%E _%P.
-
   Definition typed_step_ty (ρ : perm) e ty :=
     typed_step ρ e (λ ν, ν ◁ ty)%P.
 
@@ -178,9 +174,6 @@ Section typing.
          |={E}▷=> (ty.(ty_own) tid vl ★ (l ↦★{q} vl ={E}=★ ρ2 ν tid ★ tl_own tid ⊤)))
        -★ Φ #l)
       ⊢ WP ν @ E {{ Φ }}.
-  (* FIXME : why isn't the notation context on the two last parameters not
-     taken into account? *)
-  Arguments consumes _%T _%P _%P.
 
   Lemma consumes_copy_own ty q:
     ty.(ty_dup) → consumes ty (λ ν, ν ◁ own q ty)%P (λ ν, ν ◁ own q ty)%P.
@@ -297,18 +290,8 @@ Section typing.
     iApply wp_strong_mono. reflexivity. iSplitL "Hclose Hclose'"; last first.
     - iApply (wp_frame_step_l _ heapN _ (λ v, l ↦{q'''} v ★ v = #vl)%I); try done.
       iSplitL "Hown"; last by wp_read; eauto.
-      (* TODO : solving this goal is way too complicated compared
-         to what actually happens. *)
-      iAssert (|={mgmtE ∪ ⊤ ∖ (mgmtE ∪ lrustN), heapN}▷=> True)%I as "H".
-      { iApply fupd_mono. iIntros "H!>"; iExact "H".
-        iApply fupd_intro_mask; last done.
-        assert (Hdisj:nclose heapN ⊥ (mgmtE ∪ lrustN))
-          by (rewrite !disjoint_union_r; solve_ndisj).
-        set_solver. }
-      rewrite {3 4}(union_difference_L (mgmtE ∪ lrustN) ⊤); last done.
-      iApply fupd_trans. iApply fupd_mask_frame_r. set_solver.
-      iMod "Hown". iModIntro. iMod "H". iModIntro. iNext.
-      iMod "H". iApply fupd_mask_frame_r. set_solver. done.
+      iApply step_fupd_mask_mono; last iApply (step_fupd_mask_frame_r _ _ heapN);
+        last iApply "Hown"; (set_solver || rewrite !disjoint_union_l; solve_ndisj).
     - iIntros (v) "([#Hshr Htok] & H↦ & %)". subst.
       iMod ("Hclose'" with "[$H↦]") as "Htok'".
       iMod ("Hclose" with "[$Htok $Htok']") as "$".
@@ -354,22 +337,11 @@ Section typing.
     iApply wp_strong_mono. reflexivity. iSplitL "Hclose Hclose'"; last first.
     - iApply (wp_frame_step_l _ heapN _ (λ v, l ↦{q''} v ★ v = #l')%I); try done.
       iSplitL "Hown"; last by wp_read; eauto.
-      (* TODO : solving this goal is way too complicated compared
-         to what actually happens. *)
-      iAssert (|={mgmtE ∪ ⊤ ∖ (mgmtE ∪ lrustN), heapN}▷=> True)%I as "H".
-      { iApply fupd_mono. iIntros "H!>"; iExact "H".
-        iApply fupd_intro_mask; last done.
-        assert (Hdisj:nclose heapN ⊥ (mgmtE ∪ lrustN))
-          by (rewrite !disjoint_union_r; solve_ndisj).
-        set_solver. }
-      rewrite {3 4}(union_difference_L (mgmtE ∪ lrustN) ⊤); last done.
-      iApply fupd_trans. iApply fupd_mask_frame_r. set_solver.
-      iMod "Hown". iModIntro. iMod "H". iModIntro. iNext.
-      iMod "H" as "_". iApply fupd_mask_frame_r. set_solver. done.
+      iApply step_fupd_mask_mono; last iApply (step_fupd_mask_frame_r _ _ heapN);
+        last iApply "Hown"; (set_solver || rewrite !disjoint_union_l; solve_ndisj).
     - iIntros (v) "([#Hshr Htok] & H↦ & %)". subst.
       iMod ("Hclose'" with "[$H↦]") as "Htok'".
-      iMod ("Hclose" with "[$Htok $Htok']") as "$".
-      iFrame "#". iExists _. eauto.
+      iMod ("Hclose" with "[$Htok $Htok']") as "$". iFrame "#". iExists _. eauto.
   Qed.
 
   Definition update (ty : type) (ρ1 ρ2 : expr → perm) : Prop :=
@@ -380,9 +352,6 @@ Section typing.
          ∀ vl', l ↦★ vl' ★ ▷ (ty.(ty_own) tid vl') ={E}=★ ρ2 ν tid)
          -★ Φ #l)
       ⊢ WP ν @ E {{ Φ }}.
-  (* FIXME : why isn't the notation context on the two last parameters not
-     taken into account? *)
-  Arguments update _%T _%P _%P.
 
   Lemma update_strong ty1 ty2 q:
     ty1.(ty_size) = ty2.(ty_size) →
