@@ -1,0 +1,22 @@
+image: coq:8.5
+
+buildjob:
+  tags:
+  - coq
+  script:
+  - coqc -v
+  - 'export IRIS_SHA=$(git submodule status iris | sed "s/^.\([a-f0-9]*\) .*$/\1/")'
+  # see if we have sth. in the cache, otherwise build Iris
+  - '[ -d iris-cache/$IRIS_SHA ] && ln -sv iris-cache/$IRIS_SHA iris-enabled'
+  - '[ -d iris-enabled ] || make iris-local -j8'
+  # build local repo
+  - 'time make -j8'
+  # cache Iris
+  - mkdir -p iris-cache
+  - '[ -d iris-cache/$IRIS_SHA ] || cp -a iris iris-cache/$IRIS_SHA'
+  cache:
+    key: "lrust"
+    paths:
+    - iris-cache/
+  only:
+  - master
