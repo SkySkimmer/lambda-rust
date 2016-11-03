@@ -1,22 +1,32 @@
 image: coq:8.5
 
-buildjob:
+stages:
+  - iris
+  - lrust
+
+iris:
+  stage: iris
   tags:
   - coq
   script:
   - coqc -v
-  - 'export IRIS_SHA=$(git submodule status iris | sed "s/^.\([a-f0-9]*\) .*$/\1/")'
-  # see if we have sth. in the cache, otherwise build Iris
-  - '[ -d iris-cache/$IRIS_SHA ] && ln -sv iris-cache/$IRIS_SHA iris-enabled'
-  - '[ -d iris-enabled ] || make iris-local -j8'
-  # build local repo
-  - 'time make -j8'
-  # cache Iris
-  - mkdir -p iris-cache
-  - '[ -d iris-cache/$IRIS_SHA ] || cp -a iris iris-cache/$IRIS_SHA'
-  cache:
-    key: "lrust"
-    paths:
-    - iris-cache/
+  # see if the Iris submodule needs cleaning, then build it
+  - 'git submodule status iris | egrep "^ " || (git submodule update --init iris && cd iris && git clean -xfd)'
+  - 'cd iris && make -j8'
   only:
   - master
+  - ci
+
+lrust:
+  stage: lrust
+  tags:
+  - coq
+  script:
+  - coqc -v
+  # prepare the environment
+  - 'ln -s iris iris-enabled'
+  # build local repo
+  - 'time make -j8'
+  only:
+  - master
+  - ci
