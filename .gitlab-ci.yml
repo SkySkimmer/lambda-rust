@@ -23,7 +23,8 @@ lrust:
   - coq
   script:
   - coqc -v
-  # prepare the environment
+  # prepare the environment, safeguard against outdated submodule
+  - 'git submodule status iris | egrep "^ "'
   - 'ln -s iris iris-enabled'
   # build local repo
   - 'time make -j8'
