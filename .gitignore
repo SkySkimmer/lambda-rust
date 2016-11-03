@@ -9,4 +9,5 @@
 *~
 *.bak
 .coq-native/
+iris-project
 Makefile.coq
