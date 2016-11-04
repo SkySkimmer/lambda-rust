@@ -1,20 +1,31 @@
+
 # Makefile originally taken from coq-club
 
-%: Makefile.coq
-	+make -f Makefile.coq $@
+%: Makefile.coq phony
+	+@make -f Makefile.coq $@
 
 all: Makefile.coq
-	+make -f Makefile.coq all
+	+@make -f Makefile.coq all
 
 clean: Makefile.coq
-	+make -f Makefile.coq clean
+	+@make -f Makefile.coq clean
 	rm -f Makefile.coq
 
 Makefile.coq: _CoqProject Makefile
 	coq_makefile -f _CoqProject | sed 's/$$(COQCHK) $$(COQCHKFLAGS) $$(COQLIBS)/$$(COQCHK) $$(COQCHKFLAGS) $$(subst -Q,-R,$$(COQLIBS))/' > Makefile.coq
 
+iris-local: clean
+	git submodule update --init iris
+	ln -s iris iris-enabled
+	+make -C iris -f Makefile
+
+iris-system: clean
+	rm -f iris-enabled
+
 _CoqProject: ;
 
 Makefile: ;
 
-.PHONY: all clean
+phony: ;
+
+.PHONY: all clean phony iris-local iris-system

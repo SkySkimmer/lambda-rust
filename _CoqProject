@@ -1,18 +1,19 @@
--Q . lrust
-adequacy.v
-derived.v
-heap.v
-lang.v
-lifting.v
-memcpy.v
-notation.v
-proofmode.v
-races.v
-tactics.v
-wp_tactics.v
-lifetime.v
-type.v
-type_incl.v
-perm.v
-perm_incl.v
-typing.v
+-Q theories lrust
+-Q iris-enabled iris
+theories/adequacy.v
+theories/derived.v
+theories/heap.v
+theories/lang.v
+theories/lifting.v
+theories/memcpy.v
+theories/notation.v
+theories/proofmode.v
+theories/races.v
+theories/tactics.v
+theories/wp_tactics.v
+theories/lifetime.v
+theories/type.v
+theories/type_incl.v
+theories/perm.v
+theories/perm_incl.v
+theories/typing.v
