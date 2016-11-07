@@ -33,14 +33,14 @@ Record type `{heapG Σ, lifetimeG Σ, thread_localG Σ} :=
        more consistent with thread-local tokens, which we do not
        give any. *)
     ty_share E N κ l tid q : mgmtE ⊥ nclose N → mgmtE ⊆ E →
-      &{κ} (l ↦★: ty_own tid) ⊢ [κ]{q} ={E}=★ ty_shr κ tid N l ★ [κ]{q};
+      &{κ} (l ↦∗: ty_own tid) ⊢ [κ]{q} ={E}=∗ ty_shr κ tid N l ∗ [κ]{q};
     ty_shr_mono κ κ' tid N l :
       κ' ⊑ κ ⊢ ty_shr κ tid N l → ty_shr κ' tid N l;
     ty_shr_acc κ tid E N l q :
       ty_dup → mgmtE ∪ nclose N ⊆ E →
       ty_shr κ tid N l ⊢
-        [κ]{q} ★ tl_own tid N ={E}=★ ∃ q', ▷l ↦★{q'}: ty_own tid ★
-           (▷l ↦★{q'}: ty_own tid ={E}=★ [κ]{q} ★ tl_own tid N)
+        [κ]{q} ∗ tl_own tid N ={E}=∗ ∃ q', ▷l ↦∗{q'}: ty_own tid ∗
+           (▷l ↦∗{q'}: ty_own tid ={E}=∗ [κ]{q} ∗ tl_own tid N)
   }.
 Global Existing Instances ty_shr_persistent ty_dup_persistent.
 
@@ -61,7 +61,7 @@ Program Coercion ty_of_st `{heapG Σ, lifetimeG Σ, thread_localG Σ}
         borrow, otherwise I do not knwo how to prove the shr part of
         [lft_incl_ty_incl_shared_borrow]. *)
      ty_shr := λ κ tid _ l,
-               (∃ vl, (&frac{κ} λ q, l ↦★{q} vl) ★ ▷ st.(st_own) tid vl)%I
+               (∃ vl, (&frac{κ} λ q, l ↦∗{q} vl) ∗ ▷ st.(st_own) tid vl)%I
   |}.
 Next Obligation. intros. apply st_size_eq. Qed.
 Next Obligation.
@@ -142,11 +142,11 @@ Section types.
 
             Since this assertion is timeless, this should not cause
             problems. *)
-         (∃ l:loc, vl = [ #l ] ★ ▷ †{q}l…ty.(ty_size)
-                               ★ ▷ l ↦★: ty.(ty_own) tid)%I;
+         (∃ l:loc, vl = [ #l ] ∗ ▷ †{q}l…ty.(ty_size)
+                               ∗ ▷ l ↦∗: ty.(ty_own) tid)%I;
        ty_shr κ tid N l :=
-         (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ★
-            ∀ q', □ ([κ]{q'} ={mgmtE ∪ N, mgmtE}▷=★ ty.(ty_shr) κ tid N l' ★ [κ]{q'}))%I
+         (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ∗
+            ∀ q', □ ([κ]{q'} ={mgmtE ∪ N, mgmtE}▷=∗ ty.(ty_shr) κ tid N l' ∗ [κ]{q'}))%I
     |}.
   Next Obligation. done. Qed.
   Next Obligation.
@@ -169,7 +169,7 @@ Section types.
     iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
     replace ((mgmtE ∪ N) ∖ N) with mgmtE by set_solver.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
-    - iAssert (&{κ}▷ l' ↦★: ty_own ty tid)%I with "[Hbtok]" as "Hb".
+    - iAssert (&{κ}▷ l' ↦∗: ty_own ty tid)%I with "[Hbtok]" as "Hb".
       { iApply lft_borrow_persist. eauto. }
       iMod (lft_borrow_open with "Hb Htok") as "[Hown Hob]". set_solver.
       iIntros "!>". iNext.
@@ -194,11 +194,11 @@ Section types.
   Program Definition uniq_borrow (κ:lifetime) (ty:type) :=
     {| ty_size := 1; ty_dup := false;
        ty_own tid vl :=
-         (∃ l:loc, vl = [ #l ] ★ &{κ} l ↦★: ty.(ty_own) tid)%I;
+         (∃ l:loc, vl = [ #l ] ∗ &{κ} l ↦∗: ty.(ty_own) tid)%I;
        ty_shr κ' tid N l :=
-         (∃ l':loc, &frac{κ'}(λ q', l ↦{q'} #l') ★
-            ∀ q' κ'', □ (κ'' ⊑ κ ★ κ'' ⊑ κ' ★ [κ'']{q'}
-               ={mgmtE ∪ N, mgmtE}▷=★ ty.(ty_shr) κ'' tid N l' ★ [κ'']{q'}))%I
+         (∃ l':loc, &frac{κ'}(λ q', l ↦{q'} #l') ∗
+            ∀ q' κ'', □ (κ'' ⊑ κ ∗ κ'' ⊑ κ' ∗ [κ'']{q'}
+               ={mgmtE ∪ N, mgmtE}▷=∗ ty.(ty_shr) κ'' tid N l' ∗ [κ'']{q'}))%I
     |}.
   Next Obligation. done. Qed.
   Next Obligation.
@@ -222,8 +222,8 @@ Section types.
     iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
     replace ((mgmtE ∪ N) ∖ N) with mgmtE by set_solver.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
-    - iAssert (&{κ''}&{κ} l' ↦★: ty_own ty tid)%I with "[Hbtok]" as "Hb".
-      { iApply lft_borrow_persist. iExists κ0, i. iFrame "★ #".
+    - iAssert (&{κ''}&{κ} l' ↦∗: ty_own ty tid)%I with "[Hbtok]" as "Hb".
+      { iApply lft_borrow_persist. iExists κ0, i. iFrame "∗ #".
         iApply lft_incl_trans. eauto. }
       iMod (lft_borrow_open with "Hb Htok") as "[Hown Hob]". set_solver.
       iIntros "!>". iNext.
@@ -255,7 +255,7 @@ Section types.
 
   Program Definition shared_borrow (κ : lifetime) (ty : type) : type :=
     {| st_size := 1;
-       st_own tid vl := (∃ l:loc, vl = [ #l ] ★ ty.(ty_shr) κ tid lrustN l)%I |}.
+       st_own tid vl := (∃ l:loc, vl = [ #l ] ∗ ty.(ty_shr) κ tid lrustN l)%I |}.
   Next Obligation.
     iIntros (κ ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
   Qed.
@@ -268,7 +268,7 @@ Section types.
 
   Lemma list_ty_type_eq tid (tyl : list type) (vll : list (list val)) :
     length tyl = length vll →
-    ([★ list] tyvl ∈ combine tyl vll, ty_own (tyvl.1) tid (tyvl.2))
+    ([∗ list] tyvl ∈ combine tyl vll, ty_own (tyvl.1) tid (tyvl.2))
       ⊢ length (concat vll) = sum_list_with ty_size tyl.
   Proof.
     revert vll; induction tyl as [|ty tyq IH]; destruct vll;
@@ -279,11 +279,11 @@ Section types.
   Qed.
 
   Lemma split_prod_mt tid tyl l q :
-    (l ↦★{q}: λ vl,
-       ∃ vll, vl = concat vll ★ length tyl = length vll
-         ★ [★ list] tyvl ∈ combine tyl vll, ty_own (tyvl.1) tid (tyvl.2))%I
-    ⊣⊢ [★ list] tyoffs ∈ combine_offs tyl 0,
-         shift_loc l (tyoffs.2) ↦★{q}: ty_own (tyoffs.1) tid.
+    (l ↦∗{q}: λ vl,
+       ∃ vll, vl = concat vll ∗ length tyl = length vll
+         ∗ [∗ list] tyvl ∈ combine tyl vll, ty_own (tyvl.1) tid (tyvl.2))%I
+    ⊣⊢ [∗ list] tyoffs ∈ combine_offs tyl 0,
+         shift_loc l (tyoffs.2) ↦∗{q}: ty_own (tyoffs.1) tid.
   Proof.
     rewrite -{1}(shift_loc_0_nat l). generalize 0%nat.
     induction tyl as [|ty tyl IH]=>/= offs.
@@ -317,7 +317,7 @@ Section types.
 
   Lemma split_prod_namespace tid (N : namespace) n :
     ∃ E, (tl_own tid N ⊣⊢ tl_own tid E
-                 ★ nat_rec_shift True (λ i P, tl_own tid (N .@ i) ★ P) 0%nat n)
+                 ∗ nat_rec_shift True (λ i P, tl_own tid (N .@ i) ∗ P) 0%nat n)
          ∧ (∀ i, i < 0 → nclose (N .@ i) ⊆ E)%nat.
   Proof.
     generalize 0%nat. induction n as [|n IH].
@@ -333,15 +333,15 @@ Section types.
   Program Definition product (tyl : list type) :=
     {| ty_size := sum_list_with ty_size tyl; ty_dup := forallb ty_dup tyl;
        ty_own tid vl :=
-         (∃ vll, vl = concat vll ★ length tyl = length vll ★
-                 [★ list] tyvl ∈ combine tyl vll, tyvl.1.(ty_own) tid (tyvl.2))%I;
+         (∃ vll, vl = concat vll ∗ length tyl = length vll ∗
+                 [∗ list] tyvl ∈ combine tyl vll, tyvl.1.(ty_own) tid (tyvl.2))%I;
        ty_shr κ tid N l :=
-         ([★ list] i ↦ tyoffs ∈ combine_offs tyl 0,
+         ([∗ list] i ↦ tyoffs ∈ combine_offs tyl 0,
            tyoffs.1.(ty_shr) κ tid (N .@ i) (shift_loc l (tyoffs.2)))%I
     |}.
   Next Obligation.
     intros tyl tid vl Hfa.
-    cut (∀ vll, PersistentP ([★ list] tyvl ∈ combine tyl vll,
+    cut (∀ vll, PersistentP ([∗ list] tyvl ∈ combine tyl vll,
                              ty_own (tyvl.1) tid (tyvl.2))). by apply _.
     clear vl. induction tyl as [|ty tyl IH]=>[|[|vl vll]]; try by apply _.
     edestruct andb_prop_elim as [Hduph Hdupq]. by apply Hfa.
@@ -387,7 +387,7 @@ Section types.
       iExists q'. iModIntro. rewrite big_sepL_cons.
       rewrite -heap_mapsto_vec_prop_op; last apply ty_size_eq.
       iDestruct "Hownh" as "[$ Hownh1]".
-      rewrite (big_sepL_proper (λ _ x, _ ↦★{_}: _)%I); last first.
+      rewrite (big_sepL_proper (λ _ x, _ ↦∗{_}: _)%I); last first.
       { intros. rewrite -heap_mapsto_vec_prop_op; last apply ty_size_eq.
         instantiate (1:=λ _ y, _). simpl. reflexivity. }
       rewrite big_sepL_sepL. iDestruct "Hownq" as "[$ Hownq1]".
@@ -397,9 +397,9 @@ Section types.
   Qed.
 
   Lemma split_sum_mt l tid q tyl :
-    (l ↦★{q}: λ vl,
-         ∃ (i : nat) vl', vl = #i :: vl' ★ ty_own (nth i tyl emp) tid vl')%I
-    ⊣⊢ ∃ (i : nat), l ↦{q} #i ★ shift_loc l 1 ↦★{q}: ty_own (nth i tyl emp) tid.
+    (l ↦∗{q}: λ vl,
+         ∃ (i : nat) vl', vl = #i :: vl' ∗ ty_own (nth i tyl emp) tid vl')%I
+    ⊣⊢ ∃ (i : nat), l ↦{q} #i ∗ shift_loc l 1 ↦∗{q}: ty_own (nth i tyl emp) tid.
   Proof.
     iSplit; iIntros "H".
     - iDestruct "H" as (vl) "[Hmt Hown]". iDestruct "Hown" as (i vl') "(%&Hown)". subst.
@@ -428,9 +428,9 @@ Section types.
   Program Definition sum {n} (tyl : list type) {_:LstTySize n tyl} :=
     {| ty_size := S n; ty_dup := forallb ty_dup tyl;
        ty_own tid vl :=
-         (∃ (i : nat) vl', vl = #i :: vl' ★ (nth i tyl emp).(ty_own) tid vl')%I;
+         (∃ (i : nat) vl', vl = #i :: vl' ∗ (nth i tyl emp).(ty_own) tid vl')%I;
        ty_shr κ tid N l :=
-         (∃ (i : nat), (&frac{κ} λ q, l ↦{q} #i) ★
+         (∃ (i : nat), (&frac{κ} λ q, l ↦{q} #i) ∗
                (nth i tyl emp).(ty_shr) κ tid N (shift_loc l 1))%I
     |}.
   Next Obligation.
@@ -489,9 +489,9 @@ Section types.
 
   Program Definition cont {n : nat} (ρ : vec val n → @perm Σ) :=
     {| ty_size := 1; ty_dup := false;
-       ty_own tid vl := (∃ f, vl = [f] ★
-          ∀ vl, ρ vl tid -★ tl_own tid ⊤
-                 -★ WP f (map of_val vl) {{λ _, False}})%I;
+       ty_own tid vl := (∃ f, vl = [f] ∗
+          ∀ vl, ρ vl tid -∗ tl_own tid ⊤
+                 -∗ WP f (map of_val vl) {{λ _, False}})%I;
        ty_shr κ tid N l := True%I |}.
   Next Obligation. done. Qed.
   Next Obligation.
@@ -507,8 +507,8 @@ Section types.
      needs a Send closure). *)
   Program Definition fn {A n} (ρ : A -> vec val n → @perm Σ) : type :=
     {| st_size := 1;
-       st_own tid vl := (∃ f, vl = [f] ★ ∀ x vl,
-         {{ ρ x vl tid ★ tl_own tid ⊤ }} f (map of_val vl) {{λ _, False}})%I |}.
+       st_own tid vl := (∃ f, vl = [f] ∗ ∀ x vl,
+         {{ ρ x vl tid ∗ tl_own tid ⊤ }} f (map of_val vl) {{λ _, False}})%I |}.
   Next Obligation.
     iIntros (x n ρ tid vl) "H". iDestruct "H" as (f) "[% _]". by subst.
   Qed.

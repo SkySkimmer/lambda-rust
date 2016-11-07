@@ -9,20 +9,20 @@ Section ty_incl.
   Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
 
   Definition ty_incl (ρ : perm) (ty1 ty2 : type) :=
-    ∀ tid, ρ tid ={⊤}=★
-      (□ ∀ vl, ty1.(ty_own) tid vl → ty2.(ty_own) tid vl) ★
+    ∀ tid, ρ tid ={⊤}=∗
+      (□ ∀ vl, ty1.(ty_own) tid vl → ty2.(ty_own) tid vl) ∗
       (□ ∀ κ E l, ty1.(ty_shr) κ tid E l →
        (* [ty_incl] needs to prove something about the length of the
           object when it is shared. We place this property under the
           hypothesis that [ty2.(ty_shr)] holds, so that the [!] type
           is still included in any other. *)
-                  ty2.(ty_shr) κ tid E l ★ ty1.(ty_size) = ty2.(ty_size)).
+                  ty2.(ty_shr) κ tid E l ∗ ty1.(ty_size) = ty2.(ty_size)).
 
   Global Instance ty_incl_refl ρ : Reflexive (ty_incl ρ).
   Proof. iIntros (ty tid) "_!>". iSplit; iIntros "!#"; eauto. Qed.
 
   Lemma ty_incl_trans ρ θ ty1 ty2 ty3 :
-    ty_incl ρ ty1 ty2 → ty_incl θ ty2 ty3 → ty_incl (ρ ★ θ) ty1 ty3.
+    ty_incl ρ ty1 ty2 → ty_incl θ ty2 ty3 → ty_incl (ρ ∗ θ) ty1 ty3.
   Proof.
     iIntros (H12 H23 tid) "[H1 H2]".
     iMod (H12 with "H1") as "[#H12 #H12']".
@@ -93,10 +93,10 @@ Section ty_incl.
     Duplicable ρ → Forall2 (ty_incl ρ) tyl1 tyl2 → ty_incl ρ (Π tyl1) (Π tyl2).
   Proof.
     intros Hρ HFA. iIntros (tid) "#Hρ". iSplitL "".
-    - assert (Himpl : ρ tid ={⊤}=★
+    - assert (Himpl : ρ tid ={⊤}=∗
          □ (∀ vll, length tyl1 = length vll →
-               ([★ list] tyvl ∈ combine tyl1 vll, ty_own (tyvl.1) tid (tyvl.2))
-             → ([★ list] tyvl ∈ combine tyl2 vll, ty_own (tyvl.1) tid (tyvl.2)))).
+               ([∗ list] tyvl ∈ combine tyl1 vll, ty_own (tyvl.1) tid (tyvl.2))
+             → ([∗ list] tyvl ∈ combine tyl2 vll, ty_own (tyvl.1) tid (tyvl.2)))).
       { induction HFA as [|ty1 ty2 tyl1 tyl2 Hincl HFA IH].
         - iIntros "_!>!#* _ _". by rewrite big_sepL_nil.
         - iIntros "#Hρ". iMod (IH with "Hρ") as "#Hqimpl".
@@ -147,7 +147,7 @@ Section ty_incl.
     ty_incl ρ (sum tyl1) (sum tyl2).
   Proof.
     iIntros (DUP FA tid) "#Hρ". rewrite /sum /=. iSplitR "".
-    - assert (Hincl : ρ tid ={⊤}=★
+    - assert (Hincl : ρ tid ={⊤}=∗
          (□ ∀ i vl, (nth i tyl1 ∅%T).(ty_own) tid vl
                   → (nth i tyl2 ∅%T).(ty_own) tid vl)).
       { clear -FA DUP. induction FA as [|ty1 ty2 tyl1 tyl2 Hincl _ IH].
@@ -157,7 +157,7 @@ Section ty_incl.
       iMod (Hincl with "Hρ") as "#Hincl". iIntros "!>!#*H".
       iDestruct "H" as (i vl') "[% Hown]". subst. iExists _, _. iSplit. done.
         by iApply "Hincl".
-    - assert (Hincl : ρ tid ={⊤}=★
+    - assert (Hincl : ρ tid ={⊤}=∗
          (□ ∀ i κ E l, (nth i tyl1 ∅%T).(ty_shr) κ tid E l
                      → (nth i tyl2 ∅%T).(ty_shr) κ tid E l)).
       { clear -FA DUP. induction FA as [|ty1 ty2 tyl1 tyl2 Hincl _ IH].
@@ -197,7 +197,7 @@ Section ty_incl.
   Admitted.
 
   Lemma ty_incl_cont {n} ρ ρ1 ρ2 :
-    Duplicable ρ → (∀ vl : vec val n, ρ ★ ρ2 vl ⇒ ρ1 vl) →
+    Duplicable ρ → (∀ vl : vec val n, ρ ∗ ρ2 vl ⇒ ρ1 vl) →
     ty_incl ρ (cont ρ1) (cont ρ2).
   Proof.
     iIntros (? Hρ1ρ2 tid) "#Hρ!>". iSplit; iIntros "!#*H"; last by auto.
@@ -207,7 +207,7 @@ Section ty_incl.
   Qed.
 
   Lemma ty_incl_fn {A n} ρ ρ1 ρ2 :
-    Duplicable ρ → (∀ (x : A) (vl : vec val n), ρ ★ ρ2 x vl ⇒ ρ1 x vl) →
+    Duplicable ρ → (∀ (x : A) (vl : vec val n), ρ ∗ ρ2 x vl ⇒ ρ1 x vl) →
     ty_incl ρ (fn ρ1) (fn ρ2).
   Proof.
     iIntros (? Hρ1ρ2 tid) "#Hρ!>". iSplit; iIntros "!#*#H".
@@ -242,7 +242,7 @@ Section ty_incl.
   Qed.
 
   Lemma ty_incl_perm_incl ρ ty1 ty2 ν :
-    ty_incl ρ ty1 ty2 → ρ ★ ν ◁ ty1 ⇒ ν ◁ ty2.
+    ty_incl ρ ty1 ty2 → ρ ∗ ν ◁ ty1 ⇒ ν ◁ ty2.
   Proof.
     iIntros (Hincl tid) "[Hρ Hty1]". iMod (Hincl with "Hρ") as "[#Hownincl _]".
     unfold Perm.has_type. destruct (Perm.eval_expr ν); last done. by iApply "Hownincl".

@@ -10,13 +10,13 @@ Section defs.
 
   (* Definitions *)
   Definition perm_incl (ρ1 ρ2 : perm) :=
-    ∀ tid, ρ1 tid ={⊤}=★ ρ2 tid.
+    ∀ tid, ρ1 tid ={⊤}=∗ ρ2 tid.
 
   Global Instance perm_equiv : Equiv perm :=
     λ ρ1 ρ2, perm_incl ρ1 ρ2 ∧ perm_incl ρ2 ρ1.
 
   Definition borrowing κ (ρ ρ1 ρ2 : perm) :=
-    ∀ tid, lft κ ⊢ ρ tid -★ ρ1 tid ={⊤}=★ ρ2 tid ★ κ ∋ ρ1 tid.
+    ∀ tid, lft κ ⊢ ρ tid -∗ ρ1 tid ={⊤}=∗ ρ2 tid ∗ κ ∋ ρ1 tid.
 
 End defs.
 
@@ -65,11 +65,11 @@ Section props.
   Lemma perm_incl_top ρ : ρ ⇒ ⊤.
   Proof. iIntros (tid) "H". eauto. Qed.
 
-  Lemma perm_incl_frame_l ρ ρ1 ρ2 : ρ1 ⇒ ρ2 → ρ ★ ρ1 ⇒ ρ ★ ρ2.
+  Lemma perm_incl_frame_l ρ ρ1 ρ2 : ρ1 ⇒ ρ2 → ρ ∗ ρ1 ⇒ ρ ∗ ρ2.
   Proof. iIntros (Hρ tid) "[$?]". by iApply Hρ. Qed.
 
   Lemma perm_incl_frame_r ρ ρ1 ρ2 :
-    ρ1 ⇒ ρ2 → ρ1 ★ ρ ⇒ ρ2 ★ ρ.
+    ρ1 ⇒ ρ2 → ρ1 ∗ ρ ⇒ ρ2 ∗ ρ.
   Proof. iIntros (Hρ tid) "[?$]". by iApply Hρ. Qed.
 
   Lemma perm_incl_exists_intro {A} P x : P x ⇒ ∃ x : A, P x.
@@ -87,11 +87,11 @@ Section props.
   Global Instance perm_top_left_id : LeftId (⇔) ⊤ sep.
   Proof. intros ρ. by rewrite comm right_id. Qed.
 
-  Lemma perm_incl_duplicable ρ (_ : Duplicable ρ) : ρ ⇒ ρ ★ ρ.
+  Lemma perm_incl_duplicable ρ (_ : Duplicable ρ) : ρ ⇒ ρ ∗ ρ.
   Proof. iIntros (tid) "#H!>". by iSplit. Qed.
 
   Lemma perm_tok_plus κ q1 q2 :
-    tok κ q1 ★ tok κ q2 ⇔ tok κ (q1 + q2).
+    tok κ q1 ∗ tok κ q2 ⇔ tok κ (q1 + q2).
   Proof.
     rewrite /tok /sep /=; split; intros tid; rewrite -lft_own_op;
       iIntros "[[$$]H]!>". by iDestruct "H" as "[$?]". by auto.
@@ -100,11 +100,11 @@ Section props.
   Lemma perm_lftincl_refl κ : ⊤ ⇒ κ ⊑ κ.
   Proof. iIntros (tid) "_!>". iApply lft_incl_refl. Qed.
 
-  Lemma perm_lftincl_trans κ1 κ2 κ3 : κ1 ⊑ κ2 ★ κ2 ⊑ κ3 ⇒ κ1 ⊑ κ3.
+  Lemma perm_lftincl_trans κ1 κ2 κ3 : κ1 ⊑ κ2 ∗ κ2 ⊑ κ3 ⇒ κ1 ⊑ κ3.
   Proof. iIntros (tid) "[#?#?]!>". iApply lft_incl_trans. auto. Qed.
 
   Lemma perm_incl_share q ν κ ty :
-    ν ◁ &uniq{κ} ty ★ [κ]{q} ⇒ ν ◁ &shr{κ} ty ★ [κ]{q}.
+    ν ◁ &uniq{κ} ty ∗ [κ]{q} ⇒ ν ◁ &shr{κ} ty ∗ [κ]{q}.
   Proof.
     iIntros (tid) "[Huniq [Htok $]]". unfold has_type.
     destruct (eval_expr ν); last by iDestruct "Huniq" as "[]".
@@ -117,14 +117,14 @@ Section props.
   Lemma split_own_prod tyl (q0: Qp) (ql : list Qp) (l : loc) tid :
     length tyl = length ql →
       (own (foldr Qp_plus q0 ql) (Π tyl)).(ty_own) tid [ #l] ⊣⊢
-    ▷ †{q0}(shift_loc l (0 + (Π tyl).(ty_size))%nat)…0 ★
-    [★ list] qtyoffs ∈ (combine ql (combine_offs tyl 0)),
+    ▷ †{q0}(shift_loc l (0 + (Π tyl).(ty_size))%nat)…0 ∗
+    [∗ list] qtyoffs ∈ (combine ql (combine_offs tyl 0)),
          (own (qtyoffs.1) (qtyoffs.2.1)).(ty_own)
               tid [ #(shift_loc l (qtyoffs.2.2))].
   Proof.
     intros Hlen.
     assert (REW: ∀ (l : loc) (Φ : loc → iProp Σ),
-               Φ l ⊣⊢ (∃ l0:loc, [ #l] = [ #l0] ★ Φ l0)).
+               Φ l ⊣⊢ (∃ l0:loc, [ #l] = [ #l0] ∗ Φ l0)).
     { intros l0 Φ. iSplit; iIntros "H". eauto.
       iDestruct "H" as (l') "[Heq H]". iDestruct "Heq" as %[=]. subst. done. }
     setoid_rewrite <-REW. clear REW.
@@ -145,7 +145,7 @@ Section props.
     foldr (λ (q : Qp) acc, q + acc)%Qc 0%Qc ql = q →
     ν ◁ own q (Π tyl) ⇔
       foldr (λ qtyoffs acc,
-             (ν +ₗ #(qtyoffs.2.2:nat))%E ◁ own (qtyoffs.1) (qtyoffs.2.1) ★ acc)
+             (ν +ₗ #(qtyoffs.2.2:nat))%E ◁ own (qtyoffs.1) (qtyoffs.2.1) ∗ acc)
             ⊤ (combine ql (combine_offs tyl 0)).
   Proof.
     intros Hlen Hq. assert (ql ≠ []).
@@ -168,7 +168,7 @@ Section props.
       apply uPred.exist_proper=>l0.
       rewrite -{3}(Qp_div_2 q0) -{3}(right_id O plus ty.(ty_size))
               -heap_freeable_op_eq uPred.later_sep -!assoc.
-      iSplit; iIntros "[#Eq[?[??]]]"; iFrame "# ★";
+      iSplit; iIntros "[#Eq[?[??]]]"; iFrame "# ∗";
         iDestruct "Eq" as %[=]; subst; rewrite shift_loc_assoc_nat //.
     - rewrite /= big_sepL_cons /sep -IH // !uPred.sep_exist_r uPred.sep_exist_l.
       apply uPred.exist_proper=>l0. rewrite -!assoc /=.
@@ -178,7 +178,7 @@ Section props.
   Lemma perm_split_uniq_borrow_prod tyl κ ν :
     ν ◁ &uniq{κ} (Π tyl) ⇒
       foldr (λ tyoffs acc,
-             (ν +ₗ #(tyoffs.2:nat))%E ◁ &uniq{κ} (tyoffs.1) ★ acc)%P
+             (ν +ₗ #(tyoffs.2:nat))%E ◁ &uniq{κ} (tyoffs.1) ∗ acc)%P
             ⊤ (combine_offs tyl 0).
   Proof.
     intros tid. unfold has_type. simpl eval_expr.
@@ -195,7 +195,7 @@ Section props.
   Lemma perm_split_shr_borrow_prod tyl κ ν :
     ν ◁ &shr{κ} (Π tyl) ⇒
       foldr (λ tyoffs acc,
-             (ν +ₗ #(tyoffs.2:nat))%E ◁ &shr{κ} (tyoffs.1) ★ acc)%P
+             (ν +ₗ #(tyoffs.2:nat))%E ◁ &shr{κ} (tyoffs.1) ∗ acc)%P
             ⊤ (combine_offs tyl 0).
   Proof.
     intros tid. unfold has_type. simpl eval_expr.
@@ -213,7 +213,7 @@ Section props.
   Admitted.
 
   Lemma borrowing_perm_incl κ ρ ρ1 ρ2 θ :
-    borrowing κ ρ ρ1 ρ2 → ρ ★ κ ∋ θ ★ ρ1 ⇒ ρ2 ★ κ ∋ (θ ★ ρ1).
+    borrowing κ ρ ρ1 ρ2 → ρ ∗ κ ∋ θ ∗ ρ1 ⇒ ρ2 ∗ κ ∋ (θ ∗ ρ1).
   Proof.
     iIntros (Hbor tid) "(Hρ&Hθ&Hρ1)".
     iMod (Hbor with "[#] Hρ Hρ1") as "[$ ?]". by iApply lft_extract_lft.
@@ -251,7 +251,7 @@ Section props.
   Qed.
 
   Lemma reborrow_shr_perm_incl κ κ' ν ty :
-    κ ⊑ κ' ★ ν ◁ &shr{κ'}ty ⇒ ν ◁ &shr{κ}ty.
+    κ ⊑ κ' ∗ ν ◁ &shr{κ'}ty ⇒ ν ◁ &shr{κ}ty.
   Proof.
     iIntros (tid) "[#Hord #Hκ']". unfold has_type.
     destruct (eval_expr ν) as [[[|l|]|]|];

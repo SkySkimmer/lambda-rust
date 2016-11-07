@@ -17,20 +17,20 @@ Global Instance into_and_mapsto l q v :
 Proof. by rewrite /IntoAnd heap_mapsto_op_split. Qed.
 
 Global Instance into_and_mapsto_vec l q vl :
-  IntoAnd false (l ↦★{q} vl) (l ↦★{q/2} vl) (l ↦★{q/2} vl).
+  IntoAnd false (l ↦∗{q} vl) (l ↦∗{q/2} vl) (l ↦∗{q/2} vl).
 Proof. by rewrite /IntoAnd heap_mapsto_vec_op_split. Qed.
 
 Lemma tac_wp_alloc Δ Δ' E j1 j2 n Φ :
   (Δ ⊢ heap_ctx) → nclose heapN ⊆ E → 0 < n →
   IntoLaterEnvs Δ Δ' →
   (∀ l vl, n = length vl → ∃ Δ'',
-    envs_app false (Esnoc (Esnoc Enil j1 (l ↦★ vl)) j2 (†l…(Z.to_nat n))) Δ'
+    envs_app false (Esnoc (Esnoc Enil j1 (l ↦∗ vl)) j2 (†l…(Z.to_nat n))) Δ'
       = Some Δ'' ∧
     (Δ'' ⊢ |={E}=> Φ (LitV $ LitLoc l))) →
   Δ ⊢ WP Alloc (Lit $ LitInt n) @ E {{ Φ }}.
 Proof.
-  intros ???? HΔ. rewrite -wp_fupd -wp_alloc // -always_and_sep_l.
-  apply and_intro; first done.
+  intros ???? HΔ. rewrite -wp_fupd. eapply wand_apply; first exact:wp_alloc.
+  rewrite -always_and_sep_l. apply and_intro; first done.
   rewrite into_later_env_sound; apply later_mono, forall_intro=> l;
   apply forall_intro=> vl. apply wand_intro_l. rewrite -assoc.
   apply pure_elim_sep_l=> Hn. apply wand_elim_r'.
@@ -41,7 +41,7 @@ Qed.
 Lemma tac_wp_free Δ Δ' Δ'' Δ''' E i1 i2 vl (n : Z) (n' : nat) l Φ :
   (Δ ⊢ heap_ctx) → nclose heapN ⊆ E → n = length vl →
   IntoLaterEnvs Δ Δ' →
-  envs_lookup i1 Δ' = Some (false, l ↦★ vl)%I →
+  envs_lookup i1 Δ' = Some (false, l ↦∗ vl)%I →
   envs_delete i1 false Δ' = Δ'' →
   envs_lookup i2 Δ'' = Some (false, †l…n')%I →
   envs_delete i2 false Δ'' = Δ''' →
@@ -49,8 +49,8 @@ Lemma tac_wp_free Δ Δ' Δ'' Δ''' E i1 i2 vl (n : Z) (n' : nat) l Φ :
   (Δ''' ⊢ |={E}=> Φ (LitV LitUnit)) →
   Δ ⊢ WP Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
-  intros ?? -> ?? <- ? <- -> HΔ.
-  rewrite -wp_fupd -wp_free // -!assoc -always_and_sep_l.
+  intros ?? -> ?? <- ? <- -> HΔ. rewrite -wp_fupd.
+  eapply wand_apply; first exact:wp_free. rewrite -!assoc -always_and_sep_l.
   apply and_intro; first done.
   rewrite into_later_env_sound -!later_sep; apply later_mono.
   do 2 (rewrite envs_lookup_sound' //). by rewrite HΔ wand_True.
@@ -64,12 +64,12 @@ Lemma tac_wp_read Δ Δ' E i l q v o Φ :
   Δ ⊢ WP Read o (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
   intros ??[->| ->]???.
-  - rewrite -wp_fupd -wp_read_na // -!assoc -always_and_sep_l.
-    apply and_intro; first done.
+  - rewrite -wp_fupd. eapply wand_apply; first exact:wp_read_na.
+    rewrite -!assoc -always_and_sep_l. apply and_intro; first done.
     rewrite into_later_env_sound -later_sep envs_lookup_split //; simpl.
       by apply later_mono, sep_mono_r, wand_mono.
-  - rewrite -wp_fupd -wp_read_sc // -!assoc -always_and_sep_l.
-    apply and_intro; first done.
+  - rewrite -wp_fupd. eapply wand_apply; first exact:wp_read_sc.
+    rewrite -!assoc -always_and_sep_l. apply and_intro; first done.
     rewrite into_later_env_sound -later_sep envs_lookup_split //; simpl.
       by apply later_mono, sep_mono_r, wand_mono.
 Qed.
@@ -84,10 +84,12 @@ Lemma tac_wp_write Δ Δ' Δ'' E i l v e v' o Φ :
   Δ ⊢ WP Write o (Lit $ LitLoc l) e @ E {{ Φ }}.
 Proof.
   intros ???[->| ->]????.
-  - rewrite -wp_fupd -wp_write_na // -!assoc -always_and_sep_l. apply and_intro; first done.
+  - rewrite -wp_fupd. eapply wand_apply; first by apply wp_write_na.
+    rewrite -!assoc -always_and_sep_l. apply and_intro; first done.
     rewrite into_later_env_sound -later_sep envs_simple_replace_sound //; simpl.
     rewrite right_id. by apply later_mono, sep_mono_r, wand_mono.
-  - rewrite -wp_fupd -wp_write_sc // -!assoc -always_and_sep_l. apply and_intro; first done.
+  - rewrite -wp_fupd. eapply wand_apply; first by apply wp_write_sc.
+    rewrite -!assoc -always_and_sep_l. apply and_intro; first done.
     rewrite into_later_env_sound -later_sep envs_simple_replace_sound //; simpl.
     rewrite right_id. by apply later_mono, sep_mono_r, wand_mono.
 Qed.
@@ -135,8 +137,8 @@ Tactic Notation "wp_free" :=
       |solve_ndisj
       |try fast_done
       |apply _
-      |let l := match goal with |- _ = Some (_, (?l ↦★ _)%I) => l end in
-       iAssumptionCore || fail "wp_free: cannot find" l "↦★ ?"
+      |let l := match goal with |- _ = Some (_, (?l ↦∗ _)%I) => l end in
+       iAssumptionCore || fail "wp_free: cannot find" l "↦∗ ?"
       |env_cbv; reflexivity
       |let l := match goal with |- _ = Some (_, († ?l … _)%I) => l end in
        iAssumptionCore || fail "wp_free: cannot find †" l "… ?"

@@ -27,7 +27,7 @@ Section perm.
     λ tid, (κ ∋ ρ tid)%I.
 
   Definition tok (κ : lifetime) (q : Qp) : perm :=
-    λ _, ([κ]{q} ★ lft κ)%I.
+    λ _, ([κ]{q} ∗ lft κ)%I.
 
   Definition incl (κ κ' : lifetime) : perm :=
     λ _, (κ ⊑ κ')%I.
@@ -36,7 +36,7 @@ Section perm.
     λ tid, (∃ x, P x tid)%I.
 
   Definition sep (ρ1 ρ2 : perm) : @perm Σ :=
-    λ tid, (ρ1 tid ★ ρ2 tid)%I.
+    λ tid, (ρ1 tid ∗ ρ2 tid)%I.
 
   Global Instance top : Top (@perm Σ) :=
     λ _, True%I.
@@ -60,7 +60,7 @@ Infix "⊑" := incl (at level 70) : perm_scope.
 Notation "∃ x .. y , P" :=
   (exist (λ x, .. (exist (λ y, P)) ..)) : perm_scope.
 
-Infix "★" := sep (at level 80, right associativity) : perm_scope.
+Infix "∗" := sep (at level 80, right associativity) : perm_scope.
 
 Section duplicable.
 
@@ -77,7 +77,7 @@ Section duplicable.
   Proof. intros tid. apply _. Qed.
 
   Global Instance sep_dup P Q :
-    Duplicable P → Duplicable Q → Duplicable (P ★ Q).
+    Duplicable P → Duplicable Q → Duplicable (P ∗ Q).
   Proof. intros HP HQ tid. apply _. Qed.
 
   Global Instance top_dup : Duplicable ⊤.
@@ -98,7 +98,7 @@ Section has_type.
   Qed.
 
   Lemma has_type_wp E (ν : expr) ty tid (Φ : val -> iProp _) :
-    (ν ◁ ty)%P tid ★ (∀ (v : val), eval_expr ν = Some v ★ (v ◁ ty)%P tid ={E}=★ Φ v)
+    (ν ◁ ty)%P tid ∗ (∀ (v : val), eval_expr ν = Some v ∗ (v ◁ ty)%P tid ={E}=∗ Φ v)
     ⊢ WP ν @ E {{ Φ }}.
   Proof.
     iIntros "[H◁ HΦ]". setoid_rewrite has_type_value. unfold has_type.
