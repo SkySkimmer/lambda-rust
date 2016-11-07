@@ -1,6 +1,3 @@
-
-# Makefile originally taken from coq-club
-
 %: Makefile.coq phony
 	+@make -f Makefile.coq $@
 
@@ -16,7 +13,7 @@ Makefile.coq: _CoqProject Makefile
 
 iris-local: clean
 	git submodule update --init iris
-	ln -s iris iris-enabled
+	ln -nsf iris iris-enabled
 	+make -C iris -f Makefile
 
 iris-system: clean
