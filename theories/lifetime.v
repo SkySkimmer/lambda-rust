@@ -130,7 +130,7 @@ Section lft.
   Qed.
 
   Axiom lft_create :
-    ∀ `(nclose lftN ⊆ E), True ={E}=∗ ∃ κ, 1.[κ] ∗ □ (1.[κ] ={⊤,∅}▷=∗ [†κ]).
+    ∀ `(nclose lftN ⊆ E), True ={E}=∗ ∃ κ, 1.[κ] ∗ □ (1.[κ] ={⊤,⊤∖nclose lftN}▷=∗ [†κ]).
 
   Axiom idx_borrow_acc :
     ∀ `(nclose lftN ⊆ E) q κ i P,

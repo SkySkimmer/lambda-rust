@@ -132,21 +132,18 @@ Section typing.
     typed_step ρ Newlft (λ _, ∃ α, 1.[α] ∗ α ∋ top)%P.
   Proof.
     iIntros (tid) "!#(_&_&$)". wp_value. iMod lft_create as (α) "[?#?]". done.
-    iExists α. iFrame. iApply fupd_mask_mono. done.
-    iMod (borrow_create with "[]") as "[_?]". reflexivity. 2:by iIntros "!>". eauto.
+    iExists α. iFrame. iIntros "!>_!>". done.
   Qed.
 
-  (* TODO : lifetime ending permission. *)
-  (* Lemma typed_endlft κ ρ: *)
-  (*   typed_step (κ ∋ ρ ∗ 1.[κ]) Endlft (λ _, ρ)%P. *)
-  (* Proof. *)
-  (*   iIntros (tid) "!#(_&[Hextr Htok]&$)". wp_bind (#() ;; #())%E. *)
-  (*   iApply (wp_wand_r _ _ (λ _, _ ∗ True)%I). iSplitR "Hextr". *)
-  (*   iApply (wp_frame_step_l with "[-]"); try done. *)
-  (*   iDestruct (lft_end with "Hlft Htok") as "$". by wp_seq. *)
-  (*   iIntros (v) "[#Hκ _]". iMod (lft_extract_out with "Hκ Hextr"). done. *)
-  (*   by wp_seq. *)
-  (* Qed. *)
+  Lemma typed_endlft κ ρ:
+    typed_step (κ ∋ ρ ∗ 1.[κ] ∗ †κ) Endlft (λ _, ρ)%P.
+  Proof.
+    iIntros (tid) "!#(_&(Hextr&Htok&Hend)&$)".
+    iApply wp_fupd. iApply (wp_wand_r _ _ (λ _, _ ∗ True)%I). iSplitR "Hextr".
+    iApply (wp_frame_step_l with "[-]"); try done.
+    iDestruct ("Hend" with "Htok") as "$". by wp_seq.
+    iIntros (v) "[#Hκ _]". by iApply fupd_mask_mono; last iApply "Hextr".
+  Qed.
 
   Lemma typed_alloc ρ (n : nat):
     0 < n → typed_step_ty ρ (Alloc #n) (own 1 (uninit n)).

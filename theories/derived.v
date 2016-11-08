@@ -12,8 +12,8 @@ Notation SeqCtx e2 := (LetCtx BAnon e2).
 Notation Skip := (Seq (Lit LitUnit) (Lit LitUnit)).
 Coercion lit_of_bool : bool >-> base_lit.
 Notation If e0 e1 e2 := (Case e0 [e2;e1]).
-Notation Newlft := (Lit LitUnit) (only parsing).
-Notation Endlft := (Seq Skip (Lit LitUnit)) (only parsing).
+Definition Newlft := Lit LitUnit.
+Definition Endlft := Skip.
 
 Section derived.
 Context `{irisG lrust_lang Σ}.

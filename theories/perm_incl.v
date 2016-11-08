@@ -211,6 +211,17 @@ Section props.
     (* FIXME : namespaces problem. *)
   Admitted.
 
+  Lemma reborrow_shr_perm_incl κ κ' ν ty :
+    κ ⊑ κ' ∗ ν ◁ &shr{κ'}ty ⇒ ν ◁ &shr{κ}ty.
+  Proof.
+    iIntros (tid) "[#Hord #Hκ']". unfold has_type.
+    destruct (eval_expr ν) as [[[|l|]|]|];
+      try by (iDestruct "Hκ'" as "[]" || iDestruct "Hκ'" as (l) "[% _]").
+    iDestruct "Hκ'" as (l') "[EQ Hκ']". iDestruct "EQ" as %[=]. subst l'.
+    iModIntro. iExists _. iSplit. done.
+    by iApply (ty_shr_mono with "Hord Hκ'").
+  Qed.
+
   Lemma borrowing_perm_incl κ ρ ρ1 ρ2 θ :
     borrowing κ ρ ρ1 ρ2 → ρ ∗ κ ∋ θ ∗ ρ1 ⇒ ρ2 ∗ κ ∋ (θ ∗ ρ1).
   Proof.
@@ -247,24 +258,14 @@ Section props.
     iIntros "H†". iMod ("Hextr" with "H†"). simpl. auto.
   Qed.
 
-  Lemma reborrow_shr_perm_incl κ κ' ν ty :
-    κ ⊑ κ' ∗ ν ◁ &shr{κ'}ty ⇒ ν ◁ &shr{κ}ty.
-  Proof.
-    iIntros (tid) "[#Hord #Hκ']". unfold has_type.
-    destruct (eval_expr ν) as [[[|l|]|]|];
-      try by (iDestruct "Hκ'" as "[]" || iDestruct "Hκ'" as (l) "[% _]").
-    iDestruct "Hκ'" as (l') "[EQ Hκ']". iDestruct "EQ" as %[=]. subst l'.
-    iModIntro. iExists _. iSplit. done.
-    by iApply (ty_shr_mono with "Hord Hκ'").
-  Qed.
-
   Lemma lftincl_borrowing κ κ' q : borrowing κ ⊤ q.[κ'] (κ ⊑ κ').
   Proof.
     iIntros (tid) "_ Htok". iApply fupd_mask_mono. done.
     iMod (borrow_create with "[$Htok]") as "[Hbor Hclose]". reflexivity.
     iMod (borrow_fracture (λ q', (q * q').[κ'])%I with "[Hbor]") as "Hbor". done.
     { by rewrite Qp_mult_1_r. }
-    iSplitL "Hbor". iApply frac_borrow_incl. done. eauto.
+    iSplitL "Hbor". iApply frac_borrow_incl. done.
+    iIntros "!>H". by iMod ("Hclose" with "H") as ">$".
   Qed.
 
 End props.
