@@ -16,7 +16,7 @@ Section defs.
     λ ρ1 ρ2, perm_incl ρ1 ρ2 ∧ perm_incl ρ2 ρ1.
 
   Definition borrowing κ (ρ ρ1 ρ2 : perm) :=
-    ∀ tid, lft κ ⊢ ρ tid -∗ ρ1 tid ={⊤}=∗ ρ2 tid ∗ κ ∋ ρ1 tid.
+    ∀ tid, ρ tid ⊢ ρ1 tid ={⊤}=∗ ρ2 tid ∗ (κ ∋ ρ1)%P tid.
 
 End defs.
 
@@ -93,8 +93,7 @@ Section props.
   Lemma perm_tok_plus κ q1 q2 :
     tok κ q1 ∗ tok κ q2 ⇔ tok κ (q1 + q2).
   Proof.
-    rewrite /tok /sep /=; split; intros tid; rewrite -lft_own_op;
-      iIntros "[[$$]H]!>". by iDestruct "H" as "[$?]". by auto.
+    rewrite /tok /sep /=; split; iIntros (tid) "?"; rewrite lft_own_frac_op //.
   Qed.
 
   Lemma perm_lftincl_refl κ : ⊤ ⇒ κ ⊑ κ.
@@ -104,7 +103,7 @@ Section props.
   Proof. iIntros (tid) "[#?#?]!>". iApply lft_incl_trans. auto. Qed.
 
   Lemma perm_incl_share q ν κ ty :
-    ν ◁ &uniq{κ} ty ∗ [κ]{q} ⇒ ν ◁ &shr{κ} ty ∗ [κ]{q}.
+    ν ◁ &uniq{κ} ty ∗ q.[κ] ⇒ ν ◁ &shr{κ} ty ∗ q.[κ].
   Proof.
     iIntros (tid) "[Huniq [Htok $]]". unfold has_type.
     destruct (eval_expr ν); last by iDestruct "Huniq" as "[]".
@@ -188,7 +187,7 @@ Section props.
     rewrite split_prod_mt.
     iInduction (combine_offs tyl 0) as [|[ty offs] ll] "IH". by auto.
     rewrite big_sepL_cons /=.
-    iMod (lft_borrow_split with "H") as "[H0 H]". set_solver.
+    iMod (borrow_split with "H") as "[H0 H]". set_solver.
     iMod ("IH" with "H") as "$". iModIntro. iExists _. eauto.
   Qed.
 
@@ -215,39 +214,37 @@ Section props.
   Lemma borrowing_perm_incl κ ρ ρ1 ρ2 θ :
     borrowing κ ρ ρ1 ρ2 → ρ ∗ κ ∋ θ ∗ ρ1 ⇒ ρ2 ∗ κ ∋ (θ ∗ ρ1).
   Proof.
-    iIntros (Hbor tid) "(Hρ&Hθ&Hρ1)".
-    iMod (Hbor with "[#] Hρ Hρ1") as "[$ ?]". by iApply lft_extract_lft.
-    iApply lft_extract_combine. set_solver. by iFrame.
+    iIntros (Hbor tid) "(Hρ&Hθ&Hρ1)". iMod (Hbor with "Hρ Hρ1") as "[$ Hρ1]".
+    iIntros "!>#H†". iSplitL "Hθ". by iApply "Hθ". by iApply "Hρ1".
   Qed.
 
   Lemma own_uniq_borrowing ν q ty κ :
     borrowing κ ⊤ (ν ◁ own q ty) (ν ◁ &uniq{κ} ty).
   Proof.
-    iIntros (tid) "#Hκ _ Hown". unfold has_type.
+    iIntros (tid) "_ Hown". unfold has_type.
     destruct (eval_expr ν) as [[[|l|]|]|];
       try by (iDestruct "Hown" as "[]" || iDestruct "Hown" as (l) "[% _]").
     iDestruct "Hown" as (l') "[EQ [Hf Hown]]". iDestruct "EQ" as %[=]. subst l'.
-    iMod (lft_borrow_create with "Hκ Hown") as "[Hbor Hext]". done.
+    iApply (fupd_mask_mono lftN). done.
+    iMod (borrow_create with "Hown") as "[Hbor Hext]". done.
     iSplitL "Hbor". by simpl; eauto.
-    iMod (lft_borrow_create with "Hκ Hf") as "[_ Hf]". done.
-    iMod (lft_extract_combine with "[$Hext $Hf]"). done.
-    iModIntro. iApply lft_extract_mono; last done.
-    iIntros "H/=". iExists _. iSplit. done. by iDestruct "H" as "[$$]".
+    iMod (borrow_create with "Hf") as "[_ Hf]". done.
+    iIntros "!>#H†".
+    iMod ("Hext" with "H†") as "Hext". iMod ("Hf" with "H†") as "Hf". iIntros "!>/=".
+    iExists _. iFrame. auto.
   Qed.
 
   Lemma reborrow_uniq_borrowing κ κ' ν ty :
     borrowing κ (κ ⊑ κ') (ν ◁ &uniq{κ'}ty) (ν ◁ &uniq{κ}ty).
   Proof.
-    iIntros (tid) "_ #Hord H". unfold has_type.
+    iIntros (tid) "#Hord H". unfold has_type.
     destruct (eval_expr ν) as [[[|l|]|]|];
       try by (iDestruct "H" as "[]" || iDestruct "H" as (l) "[% _]").
     iDestruct "H" as (l') "[EQ H]". iDestruct "EQ" as %[=]. subst l'.
-    iMod (lft_reborrow with "Hord H") as "[H Hextr]". done.
+    iApply (fupd_mask_mono lftN). done.
+    iMod (reborrow with "Hord H") as "[H Hextr]". done.
     iModIntro. iSplitL "H". iExists _. by eauto.
-    iApply (lft_extract_proper with "Hextr").
-    iSplit; iIntros "H/=".
-    - iDestruct "H" as (l') "[EQ H]". iDestruct "EQ" as %[=]. by subst l'.
-    - iExists _. eauto.
+    iIntros "H†". iMod ("Hextr" with "H†"). simpl. auto.
   Qed.
 
   Lemma reborrow_shr_perm_incl κ κ' ν ty :
@@ -261,12 +258,25 @@ Section props.
     by iApply (ty_shr_mono with "Hord Hκ'").
   Qed.
 
-  Lemma lftincl_borrowing κ κ' q : borrowing κ ⊤ [κ']{q} (κ ⊑ κ').
-  Proof.
-    iIntros (tid) "#Hκ #Hord [Htok #Hκ']".
-    iMod (lft_mkincl' with "[#] Htok") as "[$ H]". done. by iFrame "#".
-    iMod (lft_borrow_create with "Hκ []") as "[_ H']". done. by iNext; iApply "Hκ'".
-    iApply lft_extract_combine. done. by iFrame.
-  Qed.
+  (* TODO *)
+  (* Lemma lftincl_borrowing κ κ' q : borrowing κ ⊤ q.[κ'] (κ ⊑ κ'). *)
+  (* Proof. *)
+  (*   iIntros (tid) "_ Htok". iApply fupd_mask_mono. done. *)
+  (*   iDestruct "Htok" as "[Htok1 Htok2]". *)
+  (*   iMod (borrow_create with "[Htok1]") as "[Hbor Hclose]". reflexivity. *)
+  (*   { iIntros "!>". iExact "Htok1". } *)
+  (*   iMod (borrow_fracture (λ q', (q / 2 * q').[κ'])%I with "[Hbor $Htok2]") *)
+  (*     as "[Hbor Htok]". done. *)
+  (*   { by rewrite Qp_mult_1_r. } *)
+  (*   iIntros "{$Htok}!>". iSplitL "Hbor". *)
+  (*   iApply frac_borrow_incl. done. frac_borrow_incl *)
+
+  (*     iExact "Hclose". iFrame. *)
+
+  (*   iMod (frac_borrow_incl with "[-]"). *)
+  (*   iMod (lft_mkincl' with "[#] Htok") as "[$ H]". done. by iFrame "#". *)
+  (*   iMod (lft_borrow_create with "Hκ []") as "[_ H']". done. by iNext; iApply "Hκ'". *)
+  (*   iApply lft_extract_combine. done. by iFrame. *)
+  (* Qed. *)
 
 End props.

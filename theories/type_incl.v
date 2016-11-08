@@ -70,9 +70,19 @@ Section ty_incl.
   Proof.
     iIntros (tid) "#Hincl!>". iSplit; iIntros "!#*H".
     - iDestruct "H" as (l) "[% Hown]". subst. iExists _. iSplit. done.
-      by iApply (lft_borrow_incl with "Hincl").
-    - admit. (* TODO : fix the definition before *)
-  Admitted.
+      by iApply (borrow_shorten with "Hincl").
+    - iAssert (κ1 ⋅ κ ⊑ κ2 ⋅ κ) as "#Hincl'".
+      { iApply lft_incl_lb. iSplit.
+        - iApply lft_incl_trans. iSplit; last done.
+          iApply lft_le_incl. by exists κ.
+        - iApply lft_le_incl. exists κ1. by apply (comm _). }
+      iSplitL; last done. iDestruct "H" as (l') "[Hbor #Hupd]". iExists l'.
+      iFrame. iIntros (q') "!#Htok".
+      iMod (lft_incl_acc with "Hincl' Htok") as (q'') "[Htok Hclose]". set_solver.
+      iMod ("Hupd" with "*Htok") as "Hupd'". iModIntro. iNext.
+      iMod "Hupd'" as "[H Htok]". iMod ("Hclose" with "Htok") as "$".
+      iApply (ty_shr_mono with "Hincl' H").
+  Qed.
 
   Lemma lft_incl_ty_incl_shared_borrow ty κ1 κ2 :
     ty_incl (κ1 ⊑ κ2) (&shr{κ2}ty) (&shr{κ1}ty).

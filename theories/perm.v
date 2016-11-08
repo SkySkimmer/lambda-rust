@@ -24,10 +24,10 @@ Section perm.
     from_option (λ v, ty.(ty_own) tid [v]) False%I (eval_expr ν).
 
   Definition extract (κ : lifetime) (ρ : perm) : perm :=
-    λ tid, (κ ∋ ρ tid)%I.
+    λ tid, ([†κ] ={lftN}=∗ ▷ ρ tid)%I.
 
   Definition tok (κ : lifetime) (q : Qp) : perm :=
-    λ _, ([κ]{q} ∗ lft κ)%I.
+    λ _, q.[κ]%I.
 
   Definition incl (κ κ' : lifetime) : perm :=
     λ _, (κ ⊑ κ')%I.
@@ -53,9 +53,9 @@ Notation "v ◁ ty" := (has_type v ty)
 Notation "κ ∋ ρ" := (extract κ ρ)
   (at level 75, right associativity) : perm_scope.
 
-Notation "[ κ ]{ q }" := (tok κ q) (format "[ κ ]{ q }") : perm_scope.
+Notation "q .[ κ ]" := (tok κ q) (format "q .[ κ ]", at level 0) : perm_scope.
 
-Infix "⊑" := incl (at level 70) : perm_scope.
+Infix "⊑" := incl (at level 60) : perm_scope.
 
 Notation "∃ x .. y , P" :=
   (exist (λ x, .. (exist (λ y, P)) ..)) : perm_scope.

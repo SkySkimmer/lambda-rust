@@ -11,11 +11,17 @@ Definition atomic_lft := positive.
 Definition lft_tokUR : ucmraT :=
   authUR (gmapUR atomic_lft (csumR fracR unitR)).
 
+(* FIXME : this is not the actual definitions. *)
+Definition borrow_idx := positive.
+Definition borrow_tokUR : ucmraT :=
+  authUR (gmapUR borrow_idx fracR).
+
 Class lifetimeG Σ := LifetimeG {
-  lifetimeG_inv_inG :> invG Σ;
   lft_tok_inG :> inG Σ lft_tokUR;
+  borrow_tok_inG :> inG Σ borrow_tokUR;
   frac_inG :> inG Σ fracR;
-  toks_name : gname
+  lft_toks_name : gname;
+  borrow_tok_name : gname
 }.
 
 Section defs.
@@ -35,39 +41,36 @@ Section defs.
     end.
 
   Definition lft_own (q : Qp) (κ : lifetime) : iProp Σ :=
-    own toks_name (◯ (Cinl <$> omap (Qp_nat_mul q) κ)).
+    own lft_toks_name (◯ (Cinl <$> omap (Qp_nat_mul q) κ)).
 
   Definition lft_dead (κ : lifetime) : iProp Σ :=
     (∃ Λ, ■ (∃ n, κ !! Λ = Some (S n)) ∗
-            own toks_name (◯ {[ Λ := Cinr () ]}))%I.
+            own lft_toks_name (◯ {[ Λ := Cinr () ]}))%I.
+
+  Definition idx_borrow_own (q : Qp) (i : borrow_idx) :=
+    own borrow_tok_name (◯ {[ i := q ]}).
 
 End defs.
 
 Typeclasses Opaque lft_own lft_dead .
 
-Parameter lft_extract :
-  ∀ `{lifetimeG Σ} (κ : lifetime) (P : iProp Σ), iProp Σ.
-Parameter lft_idx_borrow:
-  ∀ `{lifetimeG Σ} (κ : lifetime) (i : gname) (P : iProp Σ), iProp Σ.
-Parameter lft_idx_borrow_persist: ∀ `{lifetimeG Σ} (i : gname), iProp Σ.
-Parameter lft_idx_borrow_own : ∀ `{lifetimeG Σ} (i : gname), iProp Σ.
+Parameter idx_borrow:
+  ∀ `{lifetimeG Σ} (κ : lifetime) (i : borrow_idx) (P : iProp Σ), iProp Σ.
 
-Definition lft_borrow `{lifetimeG Σ} (κ : lifetime) (P : iProp Σ) : iProp Σ :=
-  (∃ i, lft_idx_borrow κ i P ∗ lft_idx_borrow_own i)%I.
+Definition borrow `{lifetimeG Σ} (κ : lifetime) (P : iProp Σ) : iProp Σ :=
+  (∃ i, idx_borrow κ i P ∗ idx_borrow_own 1 i)%I.
 
 (*** Notations  *)
 
 Notation "q .[ κ ]" := (lft_own q κ)
     (format "q .[ κ ]", at level 0): uPred_scope.
 Notation "[† κ ]" := (lft_dead κ) (format "[† κ ]"): uPred_scope.
-Notation "κ ∋ P" := (lft_extract κ P)
-  (at level 75, right associativity) : uPred_scope.
-Notation "&{ κ } P" := (lft_borrow κ P)
+Notation "&{ κ } P" := (borrow κ P)
   (format "&{ κ } P", at level 20, right associativity) : uPred_scope.
 Hint Unfold lifetime : typeclass_instances.
 
 Section lft.
-  Context `{lifetimeG Σ}.
+  Context `{invG Σ, lifetimeG Σ}.
 
   (*** PersitentP, TimelessP and Proper instances  *)
 
@@ -79,28 +82,18 @@ Section lft.
   Global Instance lft_dead_timeless κ : PersistentP [†κ].
   Proof. unfold lft_dead. apply _. Qed.
 
-  Axiom lft_idx_borrow_persistent :
-    ∀ κ i P, PersistentP (lft_idx_borrow κ i P).
-  Global Existing Instance lft_idx_borrow_persistent.
-  Axiom lft_idx_borrow_proper :
-    ∀ κ i, Proper ((⊣⊢) ==> (⊣⊢)) (lft_idx_borrow κ i).
-  Global Existing Instance lft_idx_borrow_proper.
+  Axiom idx_borrow_persistent :
+    ∀ κ i P, PersistentP (idx_borrow κ i P).
+  Global Existing Instance idx_borrow_persistent.
+  Axiom idx_borrow_proper :
+    ∀ κ i, Proper ((⊣⊢) ==> (⊣⊢)) (idx_borrow κ i).
+  Global Existing Instance idx_borrow_proper.
 
-  Axiom lft_idx_borrow_persist_persistent :
-    ∀ i, PersistentP (lft_idx_borrow_persist i).
-  Global Existing Instance lft_idx_borrow_persist_persistent.
-  Axiom lft_idx_borrow_persist_timeless :
-    ∀ i, TimelessP (lft_idx_borrow_persist i).
-  Global Existing Instance lft_idx_borrow_persist_timeless.
+  Axiom idx_borrow_own_timeless :
+    ∀ q i, TimelessP (idx_borrow_own q i).
+  Global Existing Instance idx_borrow_own_timeless.
 
-  Axiom lft_idx_borrow_own_timeless :
-    ∀ i, TimelessP (lft_idx_borrow_own i).
-  Global Existing Instance lft_idx_borrow_own_timeless.
-
-  Axiom lft_extract_proper : ∀ κ, Proper ((⊣⊢) ==> (⊣⊢)) (lft_extract κ).
-  Global Existing Instances lft_extract_proper.
-
-  Global Instance lft_borrow_proper κ: Proper ((⊣⊢) ==> (⊣⊢)) (lft_borrow κ).
+  Global Instance borrow_proper κ: Proper ((⊣⊢) ==> (⊣⊢)) (borrow κ).
   Proof. solve_proper. Qed.
 
   (** Basic rules about lifetimes  *)
@@ -136,48 +129,39 @@ Section lft.
     rewrite -!assoc. f_equal. apply (comm _).
   Qed.
 
-  (* FIXME : merging begin and end. *)
   Axiom lft_create :
     ∀ `(nclose lftN ⊆ E), True ={E}=∗ ∃ κ, 1.[κ] ∗ □ (1.[κ] ={⊤,∅}▷=∗ [†κ]).
 
-  Axiom lft_idx_borrow_persist_upd :
-    ∀ `(nclose lftN ⊆ E) i, lft_idx_borrow_own i ={E}=∗ lft_idx_borrow_persist i.
-  Axiom lft_idx_borrow_own_acc :
+  Axiom idx_borrow_acc :
     ∀ `(nclose lftN ⊆ E) q κ i P,
-      lft_idx_borrow κ i P ⊢ lft_idx_borrow_own i ∗ q.[κ] ={E}=∗ ▷ P ∗
-                                 (▷ P ={E}=∗ lft_idx_borrow_own i ∗ q.[κ]).
-  Axiom lft_idx_borrow_persist_acc :
+      idx_borrow κ i P ⊢ idx_borrow_own 1 i ∗ q.[κ] ={E}=∗ ▷ P ∗
+                                 (▷ P ={E}=∗ idx_borrow_own 1 i ∗ q.[κ]).
+  (* TODO : Can't we give back ▷ P ∨ [†κ] in all cases?  *)
+  Axiom idx_borrow_atomic_acc :
     ∀ `(nclose lftN ⊆ E) q κ i P,
-      lft_idx_borrow κ i P ⊢ lft_idx_borrow_persist i -∗
-            q.[κ] ={E,E∖lftN}=∗ ▷ P ∗ (▷ P ={E∖lftN,E}=∗ q.[κ]).
+      idx_borrow κ i P ⊢ idx_borrow_own q i
+         ={E,E∖lftN}=∗
+            ▷ P ∗ (▷ P ={E∖lftN,E}=∗ idx_borrow_own q i) ∨
+            [†κ] ∗ (|={E∖lftN,E}=> idx_borrow_own q i).
 
   (** Basic borrows  *)
-  Axiom lft_borrow_create :
-    ∀ `(nclose lftN ⊆ E) κ P, ▷ P ={E}=∗ &{κ} P ∗ κ ∋ ▷ P.
-  Axiom lft_borrow_split :
+  Axiom borrow_create :
+    ∀ `(nclose lftN ⊆ E) κ P, ▷ P ={E}=∗ &{κ} P ∗ ([†κ] ={E}=∗ ▷ P).
+  Axiom borrow_split :
     ∀ `(nclose lftN ⊆ E) κ P Q, &{κ}(P ∗ Q) ={E}=∗ &{κ}P ∗ &{κ}Q.
-  Axiom lft_borrow_combine :
+  Axiom borrow_combine :
     ∀ `(nclose lftN ⊆ E) κ P Q, &{κ}P ∗ &{κ}Q ={E}=∗ &{κ}(P ∗ Q).
-  Axiom lft_borrow_acc_strong :
+  Axiom borrow_acc_strong :
     ∀ `(nclose lftN ⊆ E) q κ P,
       &{κ}P ⊢ q.[κ] ={E}=∗ ▷ P ∗
-      ∀ Q, ▷ Q ∗ ▷([†κ] ∗ ▷Q  ={⊤ ∖ nclose lftN}=∗ ▷ P) ={E}=∗ &{κ}Q ∗ q.[κ].
-  Axiom lft_reborrow_static :
+      ∀ Q, ▷ Q ∗ ▷([†κ] ∗ ▷Q ={⊤ ∖ nclose lftN}=∗ ▷ P) ={E}=∗ &{κ}Q ∗ q.[κ].
+  Axiom borrow_reborrow' :
     ∀ `(nclose lftN ⊆ E) κ κ' P, κ ≼ κ' →
-      &{κ}P ={E}=∗ &{κ'}P ∗ κ' ∋ &{κ}P.
+      &{κ}P ={E}=∗ &{κ'}P ∗ ([†κ'] ={E}=∗ &{κ}P).
   (* FIXME : the document says that we need κ tokens here. Why so?
      Why not κ' tokens also?*)
-  Axiom lft_borrow_unnest :
+  Axiom borrow_unnest :
     ∀ `(nclose lftN ⊆ E) κ κ' P, &{κ'}&{κ}P ⊢ |={E}▷=> &{κ ⋅ κ'}P.
-
-  (** Extraction  *)
-  Axiom lft_extract_split :
-    ∀ `(nclose lftN ⊆ E) κ P Q, κ ∋ (P ∗ Q) ={E}=∗ κ ∋ P ∗ κ ∋ Q.
-  Axiom lft_extract_combine :
-    ∀ `(nclose lftN ⊆ E) κ P Q, κ ∋ P ∗ κ ∋ Q ={E}=∗ κ ∋ (P ∗ Q).
-  Axiom lft_extract_out : ∀ `(nclose lftN ⊆ E) κ P, [†κ] ⊢ κ ∋ P ={E}=∗ P.
-  Axiom lft_extract_contravar : ∀ κ P Q, (P -∗ Q) ∗ κ ∋ P ⊢ κ ∋ Q.
-  Axiom lft_extract_mono : ∀ κ κ' P, κ' ≼ κ → κ ∋ P ⊢ κ' ∋ P.
 
   (*** Derived lemmas  *)
 
@@ -194,7 +178,13 @@ Section lft.
   Lemma lft_own_static q : True ==∗ q.[static].
   Proof.
     rewrite /lft_own /static omap_empty fmap_empty.
-    apply (own_empty (A:=lft_tokUR) toks_name).
+    apply (own_empty (A:=lft_tokUR) lft_toks_name).
+  Qed.
+
+  Lemma lft_not_dead_static : [† static] ⊢ False.
+  Proof.
+    rewrite /lft_dead /static. setoid_rewrite lookup_empty.
+    iIntros "HΛ". iDestruct "HΛ" as (Λ) "[% _]". naive_solver.
   Qed.
 
   Lemma lft_own_split κ q : q.[κ] ⊣⊢ (q/2).[κ] ∗ (q/2).[κ].
@@ -228,116 +218,133 @@ Section lft.
     FromSep q.[κ1⋅κ2] q.[κ1] q.[κ2].
   Proof. by rewrite /FromSep lft_own_op. Qed.
 
-  Lemma lft_borrow_acc E q κ P : nclose lftN ⊆ E →
+  Lemma borrow_acc E q κ P : nclose lftN ⊆ E →
       &{κ}P ⊢ q.[κ] ={E}=∗ ▷ P ∗ (▷ P ={E}=∗ &{κ}P ∗ q.[κ]).
   Proof.
     iIntros (?) "HP Htok".
-    iMod (lft_borrow_acc_strong with "HP Htok") as "[HP Hclose]". done.
+    iMod (borrow_acc_strong with "HP Htok") as "[HP Hclose]". done.
     iIntros "!> {$HP} HP". iApply "Hclose". by iIntros "{$HP}!>[_$]".
   Qed.
 
-  Lemma lft_borrow_exists {A} `(nclose lftN ⊆ E)
+  Lemma borrow_exists {A} `(nclose lftN ⊆ E)
         κ q (Φ : A → iProp Σ) {_:Inhabited A}:
     &{κ}(∃ x, Φ x) ⊢ q.[κ] ={E}=∗ ∃ x, &{κ}Φ x ∗ q.[κ].
   Proof.
     iIntros "Hb Htok".
-    iMod (lft_borrow_acc_strong with "Hb Htok") as "[HΦ Hob]". done.
+    iMod (borrow_acc_strong with "Hb Htok") as "[HΦ Hob]". done.
     iDestruct "HΦ" as (x) "HΦ". iExists x. iApply "Hob". iIntros "{$HΦ}!>[_?]". eauto.
   Qed.
 
-  Lemma lft_borrow_or `(nclose lftN ⊆ E) κ q P Q:
+  Lemma borrow_or `(nclose lftN ⊆ E) κ q P Q:
     &{κ}(P ∨ Q) ⊢ q.[κ] ={E}=∗ (&{κ}P ∨ &{κ}Q) ∗ q.[κ].
   Proof.
     iIntros "H Htok". rewrite uPred.or_alt.
-    iMod (lft_borrow_exists with "H Htok") as ([]) "[H $]"; auto.
+    iMod (borrow_exists with "H Htok") as ([]) "[H $]"; auto.
   Qed.
 
-  Lemma lft_borrow_persistent `(nclose lftN ⊆ E) `{PersistentP _ P} κ q:
+  Lemma borrow_persistent `(nclose lftN ⊆ E) `{PersistentP _ P} κ q:
     &{κ}P ⊢ q.[κ] ={E}=∗ ▷ P ∗ q.[κ].
   Proof.
     iIntros "Hb Htok".
-    iMod (lft_borrow_acc with "Hb Htok") as "[#HP Hob]". done.
+    iMod (borrow_acc with "Hb Htok") as "[#HP Hob]". done.
     by iMod ("Hob" with "HP") as "[_$]".
   Qed.
 
+  (* TODO : is this derivable (problem with masks of inheritance)? *)
+  (* Lemma borrow_unnest' `(nclose lftN ⊆ E) κ κ' q P: *)
+  (*   &{κ'}&{κ}P ⊢ q.[κ'] ={E}▷=∗ q.[κ'] ∗ &{κ ⋅ κ'}P. *)
+  (* Proof. *)
+
 End lft.
 
-Typeclasses Opaque lft_borrow.
+Typeclasses Opaque borrow.
 
 (*** Inclusion and shortening. *)
 
-Definition lft_incl `{lifetimeG Σ} κ κ' : iProp Σ :=
-  (□ ∀ q, q.[κ] ={lftN}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={lftN}=∗ q.[κ]))%I.
+Definition lft_incl `{invG Σ, lifetimeG Σ} κ κ' : iProp Σ :=
+  (□((∀ q, q.[κ] ={lftN}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={lftN}=∗ q.[κ])) ∗
+     ([†κ'] ={lftN}=∗ [†κ])))%I.
 
-Infix "⊑" := lft_incl (at level 60, right associativity) : C_scope.
+Infix "⊑" := lft_incl (at level 60) : C_scope.
 
 Section incl.
-  Context `{lifetimeG Σ}.
+  Context `{invG Σ, lifetimeG Σ}.
 
   Global Instance lft_incl_persistent κ κ': PersistentP (κ ⊑ κ') := _.
 
   Lemma lft_incl_acc `(nclose lftN ⊆ E) κ κ' q:
     κ ⊑ κ' ⊢ q.[κ] ={E}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={E}=∗ q.[κ]).
   Proof.
-    iIntros "#H Hq". iApply fupd_mask_mono. eassumption.
+    iIntros "#[H _] Hq". iApply fupd_mask_mono. eassumption.
     iMod ("H" with "*Hq") as (q') "[Hq' Hclose]". iExists q'.
     iIntros "{$Hq'}!>Hq". iApply fupd_mask_mono. eassumption. by iApply "Hclose".
   Qed.
 
-  Lemma lft_le_incl κ κ': κ' ≼ κ → True ⊢ κ ⊑ κ'.
+  Lemma lft_incl_dead `(nclose lftN ⊆ E) κ κ': κ ⊑ κ' ⊢ [†κ'] ={E}=∗ [†κ].
   Proof.
-    iIntros ([κ0 ->%leibniz_equiv]) "!#*[Hκ' Hκ0]". iExists q.
-    iIntros "!>{$Hκ'}Hκ'!>". by iSplitR "Hκ0".
+    iIntros "#[_ H] Hq". iApply fupd_mask_mono. eassumption. by iApply "H".
   Qed.
 
-  Lemma lft_incl_relf κ : True ⊢ κ ⊑ κ.
+  Lemma lft_le_incl κ κ': κ' ≼ κ → True ⊢ κ ⊑ κ'.
+  Proof.
+    iIntros ([κ0 ->%leibniz_equiv]) "!#". iSplitR.
+    - iIntros (q) "[Hκ' Hκ0]". iExists q. iIntros "!>{$Hκ'}Hκ'!>". by iSplitR "Hκ0".
+    - iIntros "?!>". iApply lft_dead_or. auto.
+  Qed.
+
+  Lemma lft_incl_refl κ : True ⊢ κ ⊑ κ.
   Proof. by apply lft_le_incl. Qed.
 
   Lemma lft_incl_trans κ κ' κ'': κ ⊑ κ' ∗ κ' ⊑ κ'' ⊢ κ ⊑ κ''.
   Proof.
-    unfold lft_incl. iIntros "[#H1 #H2]!#*Hκ".
-    iMod ("H1" with "*Hκ") as (q') "[Hκ' Hclose]".
-    iMod ("H2" with "*Hκ'") as (q'') "[Hκ'' Hclose']".
-    iExists q''. iIntros "{$Hκ''}!>Hκ''". iMod ("Hclose'" with "Hκ''") as "Hκ'".
-    by iApply "Hclose".
+    unfold lft_incl. iIntros "[#[H1 H1†] #[H2 H2†]]!#". iSplitR.
+    - iIntros (q) "Hκ".
+      iMod ("H1" with "*Hκ") as (q') "[Hκ' Hclose]".
+      iMod ("H2" with "*Hκ'") as (q'') "[Hκ'' Hclose']".
+      iExists q''. iIntros "{$Hκ''}!>Hκ''". iMod ("Hclose'" with "Hκ''") as "Hκ'".
+        by iApply "Hclose".
+    - iIntros "H†". iMod ("H2†" with "H†"). by iApply "H1†".
   Qed.
 
-  Axiom lft_idx_borrow_shorten :
-    ∀ κ κ' i P, κ ⊑ κ' ⊢ lft_idx_borrow κ' i P -∗ lft_idx_borrow κ i P.
+  Axiom idx_borrow_shorten :
+    ∀ κ κ' i P, κ ⊑ κ' ⊢ idx_borrow κ' i P -∗ idx_borrow κ i P.
 
-  Lemma lft_borrow_shorten κ κ' P: κ ⊑ κ' ⊢ &{κ'}P -∗ &{κ}P.
+  Lemma borrow_shorten κ κ' P: κ ⊑ κ' ⊢ &{κ'}P -∗ &{κ}P.
   Proof.
-    iIntros "H⊑ H". unfold lft_borrow. iDestruct "H" as (i) "[??]".
-    iExists i. iFrame. by iApply (lft_idx_borrow_shorten with "H⊑").
+    iIntros "H⊑ H". unfold borrow. iDestruct "H" as (i) "[??]".
+    iExists i. iFrame. by iApply (idx_borrow_shorten with "H⊑").
   Qed.
 
   Lemma lft_incl_lb κ κ' κ'' : κ ⊑ κ' ∗ κ ⊑ κ'' ⊢ κ ⊑ κ' ⋅ κ''.
   Proof.
-    iIntros "[#H⊑1 #H⊑2]!#". iIntros (q). iIntros "[Hκ'1 Hκ'2]".
-    iMod ("H⊑1" with "*Hκ'1") as (q') "[Hκ' Hclose']".
-    iMod ("H⊑2" with "*Hκ'2") as (q'') "[Hκ'' Hclose'']".
-    destruct (Qp_lower_bound q' q'') as (qq & q'0 & q''0 & -> & ->).
-    iExists qq. rewrite -lft_own_op !lft_own_frac_op.
-    iDestruct "Hκ'" as "[$ Hκ']". iDestruct "Hκ''" as "[$ Hκ'']".
-    iIntros "!>[Hκ'0 Hκ''0]".
-    iMod ("Hclose'" with "[$Hκ' $Hκ'0]") as "$".
-    by iMod ("Hclose''" with "[$Hκ'' $Hκ''0]") as "$".
+    iIntros "[#[H1 H1†] #[H2 H2†]]!#". iSplitR.
+    - iIntros (q) "[Hκ'1 Hκ'2]".
+      iMod ("H1" with "*Hκ'1") as (q') "[Hκ' Hclose']".
+      iMod ("H2" with "*Hκ'2") as (q'') "[Hκ'' Hclose'']".
+      destruct (Qp_lower_bound q' q'') as (qq & q'0 & q''0 & -> & ->).
+      iExists qq. rewrite -lft_own_op !lft_own_frac_op.
+      iDestruct "Hκ'" as "[$ Hκ']". iDestruct "Hκ''" as "[$ Hκ'']".
+      iIntros "!>[Hκ'0 Hκ''0]".
+      iMod ("Hclose'" with "[$Hκ' $Hκ'0]") as "$".
+      by iMod ("Hclose''" with "[$Hκ'' $Hκ''0]") as "$".
+    - rewrite -lft_dead_or. iIntros "[H†|H†]". by iApply "H1†". by iApply "H2†".
   Qed.
 
   Lemma lft_incl_static κ : True ⊢ κ ⊑ static.
   Proof.
-    iIntros "!#*$". iExists 1%Qp. iSplitR.
-    iApply lft_own_static. auto.
+    iIntros "!#". iSplitR.
+    - iIntros (q) "?". iExists 1%Qp. iSplitR. by iApply lft_own_static. auto.
+    - iIntros "?". by iDestruct (lft_not_dead_static with "[-]") as "[]".
   Qed.
 
-  Lemma lft_reborrow `(nclose lftN ⊆ E) P κ κ':
-    κ' ⊑ κ ⊢ &{κ}P ={E}=∗ &{κ'}P ∗ κ' ∋ &{κ}P.
+  Lemma reborrow `(nclose lftN ⊆ E) P κ κ':
+    κ' ⊑ κ ⊢ &{κ}P ={E}=∗ &{κ'}P ∗ ([†κ'] ={E}=∗  &{κ}P).
   Proof.
-    iIntros "#H⊑ HP". iMod (lft_reborrow_static with "HP") as "[Hκ' H∋]".
+    iIntros "#H⊑ HP". iMod (borrow_reborrow' with "HP") as "[Hκ' H∋]".
       done. by exists κ'.
-    iDestruct (lft_borrow_shorten with "[H⊑] Hκ'") as "$".
-    { iApply lft_incl_lb. iSplit. done. iIntros "!#*". iApply lft_incl_relf. }
-    iApply lft_extract_mono; last by iFrame; auto. exists κ. by rewrite comm.
+    iDestruct (borrow_shorten with "[H⊑] Hκ'") as "$".
+    { iApply lft_incl_lb. iSplit. done. iApply lft_incl_refl. }
+    iIntros "!>Hκ'". iApply ("H∋" with "[Hκ']"). iApply lft_dead_or. auto.
   Qed.
 
 End incl.
@@ -347,76 +354,107 @@ Typeclasses Opaque lft_incl.
 (*** Derived notions  *)
 
 (** Shared borrows  *)
-Definition lft_shr_borrow `{lifetimeG Σ} κ (P : iProp Σ) :=
-  (∃ i, lft_idx_borrow κ i P ∗ lft_idx_borrow_persist i)%I.
-Notation "&shr{ κ } P" := (lft_shr_borrow κ P)
+Definition shr_borrow `{invG Σ, lifetimeG Σ} κ (P : iProp Σ) :=
+  (∃ i, idx_borrow κ i P ∗ inv lftN (∃ q, idx_borrow_own q i))%I.
+Notation "&shr{ κ } P" := (shr_borrow κ P)
   (format "&shr{ κ } P", at level 20, right associativity) : uPred_scope.
 
 Section shared_borrows.
-  Context `{lifetimeG Σ} (P : iProp Σ).
+  Context `{invG Σ, lifetimeG Σ} (P : iProp Σ).
 
-  Global Instance lft_shr_borrow_proper :
-    Proper ((⊣⊢) ==> (⊣⊢)) (lft_shr_borrow κ).
+  Global Instance shr_borrow_proper :
+    Proper ((⊣⊢) ==> (⊣⊢)) (shr_borrow κ).
   Proof. solve_proper. Qed.
-  Global Instance lft_shr_borrow_persistent : PersistentP (&shr{κ} P) := _.
+  Global Instance shr_borrow_persistent : PersistentP (&shr{κ} P) := _.
 
-  Lemma lft_borrow_share `(nclose lftN ⊆ E) κ : &{κ}P ={E}=∗ &shr{κ}P.
+  Lemma borrow_share `(nclose lftN ⊆ E) κ : &{κ}P ={E}=∗ &shr{κ}P.
   Proof.
-    iIntros "HP". unfold lft_borrow. iDestruct "HP" as (i) "(#?&Hown)".
-    iExists i. iMod (lft_idx_borrow_persist_upd with "[$Hown]"). done. by auto.
+    iIntros "HP". unfold borrow. iDestruct "HP" as (i) "(#?&Hown)".
+    iExists i. iFrame "#". iApply inv_alloc. auto.
   Qed.
 
-  Lemma lft_shr_borrow_acc `(nclose lftN ⊆ E) q κ :
+  Lemma shr_borrow_acc `(nclose lftN ⊆ E) κ :
+    &shr{κ}P ={E,E∖lftN}=∗ ▷P ∗ (▷P ={E∖lftN,E}=∗ True) ∨
+                          [†κ] ∗ |={E∖lftN,E}=> True.
+  Proof.
+    iIntros "#HP". iDestruct "HP" as (i) "(#Hidx&#Hinv)".
+    iInv lftN as (q') ">Hq'" "Hclose".
+    rewrite -(Qp_div_2 q') /idx_borrow_own -op_singleton auth_frag_op own_op.
+    iDestruct "Hq'" as "[Hq'0 Hq'1]". iMod ("Hclose" with "[Hq'1]") as "_". by eauto.
+    iMod (idx_borrow_atomic_acc with "Hidx Hq'0") as "[[HP Hclose]|[H† Hclose]]". done.
+    - iLeft. iFrame. iIntros "!>HP". by iMod ("Hclose" with "HP").
+    - iRight. iFrame. iIntros "!>". by iMod "Hclose".
+  Qed.
+
+  Lemma shr_borrow_acc_tok `(nclose lftN ⊆ E) q κ :
     &shr{κ}P ⊢ q.[κ] ={E,E∖lftN}=∗ ▷P ∗ (▷P ={E∖lftN,E}=∗ q.[κ]).
   Proof.
-    iIntros "#HP Hκ". iDestruct "HP" as (i) "(#Hidx&#Hpers)".
-    iMod (lft_idx_borrow_persist_acc with "Hidx Hpers Hκ") as "[$H]". done.
-    iApply "H".
+    iIntros "#Hshr Hκ". iMod (shr_borrow_acc with "Hshr") as "[[$ Hclose]|[H† _]]". done.
+    - iIntros "!>HP". by iMod ("Hclose" with "HP").
+    - iDestruct (lft_own_dead with "[-]") as "[]". by iFrame.
   Qed.
 
-  Lemma lft_shr_borrow_shorten κ κ': κ ⊑ κ' ⊢ &shr{κ'}P -∗ &shr{κ}P.
+  Lemma shr_borrow_shorten κ κ': κ ⊑ κ' ⊢ &shr{κ'}P -∗ &shr{κ}P.
   Proof.
     iIntros "#H⊑ H". iDestruct "H" as (i) "[??]". iExists i. iFrame.
-      by iApply (lft_idx_borrow_shorten with "H⊑").
+      by iApply (idx_borrow_shorten with "H⊑").
   Qed.
 
 End shared_borrows.
 
-Typeclasses Opaque lft_shr_borrow.
+Typeclasses Opaque shr_borrow.
 
 (** Fractured borrows  *)
-Definition lft_frac_borrow `{lifetimeG Σ} κ (Φ : Qp → iProp Σ) :=
+Definition frac_borrow `{invG Σ, lifetimeG Σ} κ (Φ : Qp → iProp Σ) :=
   (∃ γ κ', κ ⊑ κ' ∗ &shr{κ'} ∃ q, Φ q ∗ own γ q ∗
                        (q = 1%Qp ∨ ∃ q', (q + q')%Qp = 1%Qp ∗ q'.[κ']))%I.
-Notation "&frac{ κ } P" := (lft_frac_borrow κ P)
+Notation "&frac{ κ } P" := (frac_borrow κ P)
   (format "&frac{ κ } P", at level 20, right associativity) : uPred_scope.
 
 Section frac_borrow.
 
-  Context `{lifetimeG Σ}.
+  Context `{invG Σ, lifetimeG Σ}.
 
-  Lemma lft_borrow_fracture `(nclose lftN ⊆ E) q κ φ:
+  Global Instance frac_borrow_proper :
+    Proper (pointwise_relation _ (⊣⊢) ==> (⊣⊢)) (frac_borrow κ).
+  Proof. solve_proper. Qed.
+  Global Instance frac_borrow_persistent : PersistentP (&frac{κ}φ) := _.
+
+  (* FIXME : we shall not use tokens for κ here. *)
+  Lemma borrow_fracture φ `(nclose lftN ⊆ E) q κ:
     &{κ}(φ 1%Qp) ∗ q.[κ] ={E}=∗ &frac{κ}φ ∗ q.[κ].
   Proof.
     iIntros "[Hφ Hκ]". iMod (own_alloc 1%Qp) as (γ) "?". done.
-    iMod (lft_borrow_acc_strong with "Hφ Hκ") as "[Hφ Hclose]". done.
+    iMod (borrow_acc_strong with "Hφ Hκ") as "[Hφ Hclose]". done.
     iMod ("Hclose" with "*[-]") as "[Hφ$]"; last first.
-    { iExists γ, κ. iSplitR; last by iApply (lft_borrow_share with "Hφ").
-      iApply lft_incl_relf. }
+    { iExists γ, κ. iSplitR; last by iApply (borrow_share with "Hφ").
+      iApply lft_incl_refl. }
     iSplitL. by iExists 1%Qp; iFrame; auto.
     iIntros "!>[H† Hφ]!>". iNext. iDestruct "Hφ" as (q') "(Hφ & _ & [%|Hκ])". by subst.
     iDestruct "Hκ" as (q'') "[_ Hκ]".
     iDestruct (lft_own_dead with "[$Hκ $H†]") as "[]".
   Qed.
 
-  Lemma lft_frac_borrow_acc `(nclose lftN ⊆ E) q κ φ:
+  Lemma frac_borrow_atomic_acc `(nclose lftN ⊆ E) κ φ:
+    &frac{κ}φ ={E,E∖lftN}=∗ (∃ q, ▷ φ q ∗ (▷ φ q ={E∖lftN,E}=∗ True))
+                          ∨ [†κ] ∗ |={E∖lftN,E}=> True.
+  Proof.
+    iIntros "#Hφ". iDestruct "Hφ" as (γ κ') "[Hκκ' Hshr]".
+    iMod (shr_borrow_acc with "Hshr") as "[[Hφ Hclose]|[H† Hclose]]". done.
+    - iLeft. iDestruct "Hφ" as (q) "(Hφ & Hγ & H)". iExists q. iFrame.
+      iIntros "!>Hφ". iApply "Hclose". iExists q. iFrame.
+    - iRight. iMod "Hclose" as "_". iMod (lft_incl_dead with "Hκκ' H†") as "$". done.
+      iApply fupd_intro_mask. set_solver. done.
+  Qed.
+
+  Lemma frac_borrow_acc `(nclose lftN ⊆ E) q κ φ:
     □ (∀ q1 q2, φ (q1+q2)%Qp ↔ φ q1 ∗ φ q2) ⊢
     &frac{κ}φ -∗ q.[κ] ={E}=∗ ∃ q', ▷ φ q' ∗ (▷ φ q' ={E}=∗ q.[κ]).
   Proof.
-    iIntros "#Hφ Hfrac Hκ". unfold lft_frac_borrow.
+    iIntros "#Hφ Hfrac Hκ". unfold frac_borrow.
     iDestruct "Hfrac" as (γ κ') "#[#Hκκ' Hshr]".
     iMod (lft_incl_acc with "Hκκ' Hκ") as (qκ') "[[Hκ1 Hκ2] Hclose]". done.
-    iMod (lft_shr_borrow_acc with "Hshr Hκ1") as "[H Hclose']". done.
+    iMod (shr_borrow_acc_tok with "Hshr Hκ1") as "[H Hclose']". done.
     iDestruct "H" as (qφ) "(Hφqφ & >Hown & Hq)".
     destruct (Qp_lower_bound (qκ'/2) (qφ/2)) as (qq & qκ'0 & qφ0 & Hqκ' & Hqφ).
     iExists qq.
@@ -432,7 +470,7 @@ Section frac_borrow.
         rewrite lft_own_frac_op. iIntros "{$Hκq $Hq'κ}!%".
         by rewrite assoc (comm _ _ qq) assoc -Hqφ Qp_div_2. }
     clear Hqφ qφ qφ0. iIntros "!>Hqφ".
-    iMod (lft_shr_borrow_acc with "Hshr Hκ1") as "[H Hclose']". done.
+    iMod (shr_borrow_acc_tok with "Hshr Hκ1") as "[H Hclose']". done.
     iDestruct "H" as (qφ) "(Hφqφ & >Hown & >[%|Hq])".
     { subst. iCombine "Hown" "Hownq" as "Hown".
       by iDestruct (own_valid with "Hown") as %Hval%Qp_not_plus_q_ge_1. }
@@ -455,43 +493,57 @@ Section frac_borrow.
       iApply "Hclose". rewrite -{2}(Qp_div_2 qκ') {2}Hqκ' !lft_own_frac_op. by iFrame.
   Qed.
 
-  Lemma lft_frac_borrow_shorten κ κ' φ: κ ⊑ κ' ⊢ &frac{κ'}φ -∗ &frac{κ}φ.
+  Lemma frac_borrow_shorten κ κ' φ: κ ⊑ κ' ⊢ &frac{κ'}φ -∗ &frac{κ}φ.
   Proof.
     iIntros "Hκκ' H". iDestruct "H" as (γ κ0) "[H⊑?]". iExists γ, κ0. iFrame.
     iApply lft_incl_trans. iFrame.
   Qed.
 
+  Lemma frac_borrow_incl κ κ' q:
+    &frac{κ}(λ q', (q * q').[κ']) ⊢ κ ⊑ κ'.
+  Proof.
+    iIntros "#Hbor!#". iSplitR.
+    - iIntros (q') "Hκ'".
+      iMod (frac_borrow_acc with "[] Hbor Hκ'") as (q'') "[>? Hclose]". done.
+      + iIntros "/=!#*". rewrite Qp_mult_plus_distr_r lft_own_frac_op. iSplit; auto.
+      + iExists _. iFrame. iIntros "!>Hκ'". iApply "Hclose". auto.
+    - iIntros "H†'".
+      iMod (frac_borrow_atomic_acc with "Hbor") as "[H|[$ $]]". done.
+      iDestruct "H" as (q') "[>Hκ' _]".
+      iDestruct (lft_own_dead with "[$H†' $Hκ']") as "[]".
+  Qed.
+
 End frac_borrow.
 
-Typeclasses Opaque lft_frac_borrow.
+Typeclasses Opaque frac_borrow.
 
 (** Thread local borrows  *)
 
-Definition lft_tl_borrow `{lifetimeG Σ, thread_localG Σ}
+Definition tl_borrow `{invG Σ, lifetimeG Σ, thread_localG Σ}
            (κ : lifetime) (tid : thread_id) (N : namespace) (P : iProp Σ) :=
-  (∃ i, lft_idx_borrow κ i P ∗ tl_inv tid N (lft_idx_borrow_own i))%I.
+  (∃ i, idx_borrow κ i P ∗ tl_inv tid N (idx_borrow_own 1 i))%I.
 
-Notation "&tl{ κ | tid | N } P" := (lft_tl_borrow κ tid N P)
+Notation "&tl{ κ | tid | N } P" := (tl_borrow κ tid N P)
   (format "&tl{ κ | tid | N } P", at level 20, right associativity) : uPred_scope.
 
-Section tl_borrows.
-  Context `{lifetimeG Σ, thread_localG Σ}
+Section tl_borrow.
+  Context `{invG Σ, lifetimeG Σ, thread_localG Σ}
           (tid : thread_id) (N : namespace) (P : iProp Σ).
 
-  Global Instance lft_tl_borrow_persistent κ : PersistentP (&tl{κ|tid|N} P) := _.
-  Global Instance lft_tl_borrow_proper κ :
-    Proper ((⊣⊢) ==> (⊣⊢)) (lft_tl_borrow κ tid N).
+  Global Instance tl_borrow_persistent κ : PersistentP (&tl{κ|tid|N} P) := _.
+  Global Instance tl_borrow_proper κ :
+    Proper ((⊣⊢) ==> (⊣⊢)) (tl_borrow κ tid N).
   Proof.
     intros P1 P2 EQ. apply uPred.exist_proper. intros i. by rewrite EQ.
   Qed.
 
-  Lemma lft_borrow_tl κ `(nclose lftN ⊆ E): &{κ}P ={E}=∗ &tl{κ|tid|N}P.
+  Lemma borrow_tl κ `(nclose lftN ⊆ E): &{κ}P ={E}=∗ &tl{κ|tid|N}P.
   Proof.
-    iIntros "HP". unfold lft_borrow. iDestruct "HP" as (i) "[#? Hown]".
+    iIntros "HP". unfold borrow. iDestruct "HP" as (i) "[#? Hown]".
     iExists i. iFrame "#". iApply (tl_inv_alloc tid E N with "[Hown]"). auto.
   Qed.
 
-  Lemma lft_tl_borrow_acc q κ E F :
+  Lemma tl_borrow_acc q κ E F :
     nclose lftN ⊆ E → nclose tlN ⊆ E → nclose N ⊆ F →
     &tl{κ|tid|N}P ⊢ q.[κ] ∗ tl_own tid F ={E}=∗ ▷P ∗ tl_own tid (F ∖ N) ∗
                      (▷P ∗ tl_own tid (F ∖ N) ={E}=∗ q.[κ] ∗ tl_own tid F).
@@ -499,17 +551,17 @@ Section tl_borrows.
     iIntros (???) "#HP[Hκ Htlown]".
     iDestruct "HP" as (i) "(#Hpers&#Hinv)".
     iMod (tl_inv_open with "Hinv Htlown") as "(>Hown&Htlown&Hclose)"; try done.
-    iMod (lft_idx_borrow_own_acc with "Hpers [$Hown $Hκ]") as "[HP Hclose']". done.
+    iMod (idx_borrow_acc with "Hpers [$Hown $Hκ]") as "[HP Hclose']". done.
     iIntros "{$HP $Htlown}!>[HP Htlown]".
     iMod ("Hclose'" with "HP") as "[Hown $]". iApply "Hclose". by iFrame.
   Qed.
 
-  Lemma lft_tl_borrow_shorten κ κ': κ ⊑ κ' ⊢ &tl{κ'|tid|N}P -∗ &tl{κ|tid|N}P.
+  Lemma tl_borrow_shorten κ κ': κ ⊑ κ' ⊢ &tl{κ'|tid|N}P -∗ &tl{κ|tid|N}P.
   Proof.
     iIntros "Hκκ' H". iDestruct "H" as (i) "[??]". iExists i. iFrame.
-    iApply (lft_idx_borrow_shorten with "Hκκ' H").
+    iApply (idx_borrow_shorten with "Hκκ' H").
   Qed.
 
-End tl_borrows.
+End tl_borrow.
 
-Typeclasses Opaque lft_tl_borrow.
+Typeclasses Opaque tl_borrow.
