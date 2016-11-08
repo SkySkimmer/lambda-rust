@@ -47,15 +47,15 @@ Section defs.
   Definition idx_borrow_own (q : Qp) (i : borrow_idx) :=
     own borrow_tok_name (◯ {[ i := q ]}).
 
+  Parameter idx_borrow:
+    ∀ `{lifetimeG Σ} (κ : lifetime) (i : borrow_idx) (P : iProp Σ), iProp Σ.
+
+  Definition borrow (κ : lifetime) (P : iProp Σ) : iProp Σ :=
+    (∃ i, idx_borrow κ i P ∗ idx_borrow_own 1 i)%I.
+
 End defs.
 
-Typeclasses Opaque lft_own lft_dead .
-
-Parameter idx_borrow:
-  ∀ `{lifetimeG Σ} (κ : lifetime) (i : borrow_idx) (P : iProp Σ), iProp Σ.
-
-Definition borrow `{lifetimeG Σ} (κ : lifetime) (P : iProp Σ) : iProp Σ :=
-  (∃ i, idx_borrow κ i P ∗ idx_borrow_own 1 i)%I.
+Typeclasses Opaque lft_own lft_dead borrow.
 
 (*** Notations  *)
 
