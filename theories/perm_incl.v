@@ -258,25 +258,13 @@ Section props.
     by iApply (ty_shr_mono with "Hord Hκ'").
   Qed.
 
-  (* TODO *)
-  (* Lemma lftincl_borrowing κ κ' q : borrowing κ ⊤ q.[κ'] (κ ⊑ κ'). *)
-  (* Proof. *)
-  (*   iIntros (tid) "_ Htok". iApply fupd_mask_mono. done. *)
-  (*   iDestruct "Htok" as "[Htok1 Htok2]". *)
-  (*   iMod (borrow_create with "[Htok1]") as "[Hbor Hclose]". reflexivity. *)
-  (*   { iIntros "!>". iExact "Htok1". } *)
-  (*   iMod (borrow_fracture (λ q', (q / 2 * q').[κ'])%I with "[Hbor $Htok2]") *)
-  (*     as "[Hbor Htok]". done. *)
-  (*   { by rewrite Qp_mult_1_r. } *)
-  (*   iIntros "{$Htok}!>". iSplitL "Hbor". *)
-  (*   iApply frac_borrow_incl. done. frac_borrow_incl *)
-
-  (*     iExact "Hclose". iFrame. *)
-
-  (*   iMod (frac_borrow_incl with "[-]"). *)
-  (*   iMod (lft_mkincl' with "[#] Htok") as "[$ H]". done. by iFrame "#". *)
-  (*   iMod (lft_borrow_create with "Hκ []") as "[_ H']". done. by iNext; iApply "Hκ'". *)
-  (*   iApply lft_extract_combine. done. by iFrame. *)
-  (* Qed. *)
+  Lemma lftincl_borrowing κ κ' q : borrowing κ ⊤ q.[κ'] (κ ⊑ κ').
+  Proof.
+    iIntros (tid) "_ Htok". iApply fupd_mask_mono. done.
+    iMod (borrow_create with "[$Htok]") as "[Hbor Hclose]". reflexivity.
+    iMod (borrow_fracture (λ q', (q * q').[κ'])%I with "[Hbor]") as "Hbor". done.
+    { by rewrite Qp_mult_1_r. }
+    iSplitL "Hbor". iApply frac_borrow_incl. done. eauto.
+  Qed.
 
 End props.

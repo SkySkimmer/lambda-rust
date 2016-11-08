@@ -66,10 +66,10 @@ Program Coercion ty_of_st `{heapG Σ, lifetimeG Σ, thread_localG Σ}
 Next Obligation. intros. apply st_size_eq. Qed.
 Next Obligation.
   intros Σ ??? st E N κ l tid q ??. iIntros "Hmt Htok".
-  iMod (borrow_exists with "Hmt Htok") as (vl) "[Hmt Htok]". set_solver.
+  iMod (borrow_exists with "Hmt") as (vl) "Hmt". set_solver.
   iMod (borrow_split with "Hmt") as "[Hmt Hown]". set_solver.
-  iMod (borrow_persistent with "Hown Htok") as "[Hown Htok]". set_solver.
-  iMod (borrow_fracture with "[Hmt $Htok]") as "[Hfrac $]"; last first.
+  iMod (borrow_persistent with "Hown Htok") as "[Hown $]". set_solver.
+  iMod (borrow_fracture with "[Hmt]") as "Hfrac"; last first.
   { iExists vl. by iFrame. }
   done. set_solver.
 Qed.
@@ -114,7 +114,7 @@ Section types.
   Next Obligation. iIntros (tid vl) "[]". Qed.
   Next Obligation.
     iIntros (????????) "Hb Htok".
-    iMod (borrow_exists with "Hb Htok") as (vl) "[Hb Htok]". set_solver.
+    iMod (borrow_exists with "Hb") as (vl) "Hb". set_solver.
     iMod (borrow_split with "Hb") as "[_ Hb]". set_solver.
     iMod (borrow_persistent with "Hb Htok") as "[>[] _]". set_solver.
   Qed.
@@ -156,15 +156,14 @@ Section types.
   Qed.
   Next Obligation.
     move=> q ty E N κ l tid q' ?? /=. iIntros "Hshr Htok".
-    iMod (borrow_exists with "Hshr Htok") as (vl) "[Hb Htok]". set_solver.
+    iMod (borrow_exists with "Hshr") as (vl) "Hb". set_solver.
     iMod (borrow_split with "Hb") as "[Hb1 Hb2]". set_solver.
-    iMod (borrow_exists with "Hb2 Htok") as (l') "[Hb2 Htok]". set_solver.
+    iMod (borrow_exists with "Hb2") as (l') "Hb2". set_solver.
     iMod (borrow_split with "Hb2") as "[EQ Hb2]". set_solver.
-    iMod (borrow_persistent with "EQ Htok") as "[>% Htok]". set_solver. subst.
+    iMod (borrow_persistent with "EQ Htok") as "[>% $]". set_solver. subst.
     rewrite heap_mapsto_vec_singleton.
     iMod (borrow_split with "Hb2") as "[_ Hb2]". set_solver.
-    iMod (borrow_fracture (λ q, l ↦{q} #l')%I with "[$Hb1 $Htok]") as "[Hbf $]".
-      set_solver.
+    iMod (borrow_fracture (λ q, l ↦{q} #l')%I with "Hb1") as "Hbf". set_solver.
     rewrite /borrow. iDestruct "Hb2" as (i) "(#Hpb&Hpbown)".
     iMod (inv_alloc N _ (idx_borrow_own 1 i ∨ ty_shr ty κ tid N l')%I
          with "[Hpbown]") as "#Hinv"; first by eauto.
@@ -208,14 +207,13 @@ Section types.
   Qed.
   Next Obligation.
     move=> κ ty E N κ' l tid q' ??/=. iIntros "Hshr Htok".
-    iMod (borrow_exists with "Hshr Htok") as (vl) "[Hb Htok]". set_solver.
+    iMod (borrow_exists with "Hshr") as (vl) "Hb". set_solver.
     iMod (borrow_split with "Hb") as "[Hb1 Hb2]". set_solver.
-    iMod (borrow_exists with "Hb2 Htok") as (l') "[Hb2 Htok]". set_solver.
+    iMod (borrow_exists with "Hb2") as (l') "Hb2". set_solver.
     iMod (borrow_split with "Hb2") as "[EQ Hb2]". set_solver.
-    iMod (borrow_persistent with "EQ Htok") as "[>% Htok]". set_solver. subst.
+    iMod (borrow_persistent with "EQ Htok") as "[>% $]". set_solver. subst.
     rewrite heap_mapsto_vec_singleton.
-    iMod (borrow_fracture (λ q, l ↦{q} #l')%I with "[$Hb1 $Htok]")
-      as "[Hbf $]". set_solver.
+    iMod (borrow_fracture (λ q, l ↦{q} #l')%I with "Hb1") as "Hbf". set_solver.
     rewrite {1}/borrow. iDestruct "Hb2" as (i) "[#Hpb Hpbown]".
     iMod (inv_alloc N _ (idx_borrow_own 1 i ∨ ty_shr ty (κ⋅κ') tid N l')%I
          with "[Hpbown]") as "#Hinv"; first by eauto.
@@ -437,10 +435,10 @@ Section types.
   Qed.
   Next Obligation.
     intros n tyl Hn E N κ l tid q ??. iIntros "Hown Htok". rewrite split_sum_mt.
-    iMod (borrow_exists with "Hown Htok") as (i) "[Hown Htok]". set_solver.
+    iMod (borrow_exists with "Hown") as (i) "Hown". set_solver.
     iMod (borrow_split with "Hown") as "[Hmt Hown]". set_solver.
-    iMod ((nth i tyl emp).(ty_share) with "Hown Htok") as "[#Hshr Htok]"; try done.
-    iMod (borrow_fracture with "[-]") as "[H $]"; last by eauto. set_solver. iFrame.
+    iMod ((nth i tyl emp).(ty_share) with "Hown Htok") as "[#Hshr $]"; try done.
+    iMod (borrow_fracture with "[-]") as "H"; last by eauto. set_solver. iFrame.
   Qed.
   Next Obligation.
     intros n tyl Hn κ κ' tid N l. iIntros "#Hord H".

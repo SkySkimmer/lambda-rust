@@ -304,9 +304,9 @@ Section typing.
     iApply (has_type_wp with "[- $H◁]"). iIntros (v) "[Hνv H◁]!>". iDestruct "Hνv" as %Hνv.
     rewrite has_type_value. iDestruct "H◁" as (l) "[Heq H↦]". iDestruct "Heq" as %[=->].
     iMod (lft_incl_acc with "H⊑1 Htok") as (q'') "[Htok Hclose]". done.
-    iMod (borrow_exists with "H↦ Htok") as (vl) "[Hbor Htok]". done.
+    iMod (borrow_exists with "H↦") as (vl) "Hbor". done.
     iMod (borrow_split with "Hbor") as "[H↦ Hbor]". done.
-    iMod (borrow_exists with "Hbor Htok") as (l') "[Hbor Htok]". done.
+    iMod (borrow_exists with "Hbor") as (l') "Hbor". done.
     iMod (borrow_split with "Hbor") as "[Heq Hbor]". done.
     iMod (borrow_unnest with "Hbor") as "Hbor". done.
     iMod (borrow_persistent with "Heq Htok") as "[>% Htok]". done. subst.

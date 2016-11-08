@@ -136,7 +136,6 @@ Section lft.
     ∀ `(nclose lftN ⊆ E) q κ i P,
       idx_borrow κ i P ⊢ idx_borrow_own 1 i ∗ q.[κ] ={E}=∗ ▷ P ∗
                                  (▷ P ={E}=∗ idx_borrow_own 1 i ∗ q.[κ]).
-  (* TODO : Can't we give back ▷ P ∨ [†κ] in all cases?  *)
   Axiom idx_borrow_atomic_acc :
     ∀ `(nclose lftN ⊆ E) q κ i P,
       idx_borrow κ i P ⊢ idx_borrow_own q i
@@ -155,11 +154,14 @@ Section lft.
     ∀ `(nclose lftN ⊆ E) q κ P,
       &{κ}P ⊢ q.[κ] ={E}=∗ ▷ P ∗
       ∀ Q, ▷ Q ∗ ▷([†κ] ∗ ▷Q ={⊤ ∖ nclose lftN}=∗ ▷ P) ={E}=∗ &{κ}Q ∗ q.[κ].
+  Axiom borrow_acc_atomic_strong :
+    ∀ `(nclose lftN ⊆ E) κ P,
+      &{κ}P ={E,E∖lftN}=∗
+        (▷ P ∗ ∀ Q, ▷ Q ∗ ▷([†κ] ∗ ▷Q ={⊤ ∖ nclose lftN}=∗ ▷ P) ={E∖lftN,E}=∗ &{κ}Q) ∨
+        [†κ] ∗ ∀ Q, |={E∖lftN,E}=> &{κ}Q.
   Axiom borrow_reborrow' :
     ∀ `(nclose lftN ⊆ E) κ κ' P, κ ≼ κ' →
       &{κ}P ={E}=∗ &{κ'}P ∗ ([†κ'] ={E}=∗ &{κ}P).
-  (* FIXME : the document says that we need κ tokens here. Why so?
-     Why not κ' tokens also?*)
   Axiom borrow_unnest :
     ∀ `(nclose lftN ⊆ E) κ κ' P, &{κ'}&{κ}P ⊢ |={E}▷=> &{κ ⋅ κ'}P.
 
@@ -226,20 +228,19 @@ Section lft.
     iIntros "!> {$HP} HP". iApply "Hclose". by iIntros "{$HP}!>[_$]".
   Qed.
 
-  Lemma borrow_exists {A} `(nclose lftN ⊆ E)
-        κ q (Φ : A → iProp Σ) {_:Inhabited A}:
-    &{κ}(∃ x, Φ x) ⊢ q.[κ] ={E}=∗ ∃ x, &{κ}Φ x ∗ q.[κ].
+  Lemma borrow_exists {A} `(nclose lftN ⊆ E) κ (Φ : A → iProp Σ) {_:Inhabited A}:
+    &{κ}(∃ x, Φ x) ={E}=∗ ∃ x, &{κ}Φ x.
   Proof.
-    iIntros "Hb Htok".
-    iMod (borrow_acc_strong with "Hb Htok") as "[HΦ Hob]". done.
-    iDestruct "HΦ" as (x) "HΦ". iExists x. iApply "Hob". iIntros "{$HΦ}!>[_?]". eauto.
+    iIntros "Hb". iMod (borrow_acc_atomic_strong with "Hb") as "[[HΦ Hclose]|[H† Hclose]]". done.
+    - iDestruct "HΦ" as (x) "HΦ". iExists x. iApply "Hclose". iIntros "{$HΦ}!>[_?]". eauto.
+    - iExists inhabitant. iApply "Hclose".
   Qed.
 
-  Lemma borrow_or `(nclose lftN ⊆ E) κ q P Q:
-    &{κ}(P ∨ Q) ⊢ q.[κ] ={E}=∗ (&{κ}P ∨ &{κ}Q) ∗ q.[κ].
+  Lemma borrow_or `(nclose lftN ⊆ E) κ P Q:
+    &{κ}(P ∨ Q) ={E}=∗ (&{κ}P ∨ &{κ}Q).
   Proof.
-    iIntros "H Htok". rewrite uPred.or_alt.
-    iMod (borrow_exists with "H Htok") as ([]) "[H $]"; auto.
+    iIntros "H". rewrite uPred.or_alt.
+    iMod (borrow_exists with "H") as ([]) "H"; auto.
   Qed.
 
   Lemma borrow_persistent `(nclose lftN ⊆ E) `{PersistentP _ P} κ q:
@@ -249,11 +250,6 @@ Section lft.
     iMod (borrow_acc with "Hb Htok") as "[#HP Hob]". done.
     by iMod ("Hob" with "HP") as "[_$]".
   Qed.
-
-  (* TODO : is this derivable (problem with masks of inheritance)? *)
-  (* Lemma borrow_unnest' `(nclose lftN ⊆ E) κ κ' q P: *)
-  (*   &{κ'}&{κ}P ⊢ q.[κ'] ={E}▷=∗ q.[κ'] ∗ &{κ ⋅ κ'}P. *)
-  (* Proof. *)
 
 End lft.
 
@@ -420,19 +416,20 @@ Section frac_borrow.
   Proof. solve_proper. Qed.
   Global Instance frac_borrow_persistent : PersistentP (&frac{κ}φ) := _.
 
-  (* FIXME : we shall not use tokens for κ here. *)
-  Lemma borrow_fracture φ `(nclose lftN ⊆ E) q κ:
-    &{κ}(φ 1%Qp) ∗ q.[κ] ={E}=∗ &frac{κ}φ ∗ q.[κ].
+  Lemma borrow_fracture φ `(nclose lftN ⊆ E) κ:
+    &{κ}(φ 1%Qp) ={E}=∗ &frac{κ}φ.
   Proof.
-    iIntros "[Hφ Hκ]". iMod (own_alloc 1%Qp) as (γ) "?". done.
-    iMod (borrow_acc_strong with "Hφ Hκ") as "[Hφ Hclose]". done.
-    iMod ("Hclose" with "*[-]") as "[Hφ$]"; last first.
-    { iExists γ, κ. iSplitR; last by iApply (borrow_share with "Hφ").
-      iApply lft_incl_refl. }
-    iSplitL. by iExists 1%Qp; iFrame; auto.
-    iIntros "!>[H† Hφ]!>". iNext. iDestruct "Hφ" as (q') "(Hφ & _ & [%|Hκ])". by subst.
-    iDestruct "Hκ" as (q'') "[_ Hκ]".
-    iDestruct (lft_own_dead with "[$Hκ $H†]") as "[]".
+    iIntros "Hφ". iMod (own_alloc 1%Qp) as (γ) "?". done.
+    iMod (borrow_acc_atomic_strong with "Hφ") as "[[Hφ Hclose]|[H† Hclose]]". done.
+    - iMod ("Hclose" with "*[-]") as "Hφ"; last first.
+      { iExists γ, κ. iSplitR; last by iApply (borrow_share with "Hφ").
+        iApply lft_incl_refl. }
+      iSplitL. by iExists 1%Qp; iFrame; auto.
+      iIntros "!>[H† Hφ]!>". iNext. iDestruct "Hφ" as (q') "(Hφ & _ & [%|Hκ])". by subst.
+      iDestruct "Hκ" as (q'') "[_ Hκ]".
+      iDestruct (lft_own_dead with "[$Hκ $H†]") as "[]".
+    - iMod ("Hclose" with "*") as "Hφ"; last first.
+      iExists γ, κ. iSplitR; last by iApply (borrow_share with "Hφ"). iApply lft_incl_refl.
   Qed.
 
   Lemma frac_borrow_atomic_acc `(nclose lftN ⊆ E) κ φ:
