@@ -146,6 +146,7 @@ Section lft.
   (** Basic borrows  *)
   Axiom borrow_create :
     ∀ `(nclose lftN ⊆ E) κ P, ▷ P ={E}=∗ &{κ} P ∗ ([†κ] ={E}=∗ ▷ P).
+  Axiom borrow_fake : ∀ `(nclose lftN ⊆ E) κ P, [†κ] ={E}=∗ &{κ}P.
   Axiom borrow_split :
     ∀ `(nclose lftN ⊆ E) κ P Q, &{κ}(P ∗ Q) ={E}=∗ &{κ}P ∗ &{κ}Q.
   Axiom borrow_combine :
@@ -158,7 +159,7 @@ Section lft.
     ∀ `(nclose lftN ⊆ E) κ P,
       &{κ}P ={E,E∖lftN}=∗
         (▷ P ∗ ∀ Q, ▷ Q ∗ ▷([†κ] ∗ ▷Q ={⊤ ∖ nclose lftN}=∗ ▷ P) ={E∖lftN,E}=∗ &{κ}Q) ∨
-        [†κ] ∗ ∀ Q, |={E∖lftN,E}=> &{κ}Q.
+        [†κ] ∗ |={E∖lftN,E}=> True.
   Axiom borrow_reborrow' :
     ∀ `(nclose lftN ⊆ E) κ κ' P, κ ≼ κ' →
       &{κ}P ={E}=∗ &{κ'}P ∗ ([†κ'] ={E}=∗ &{κ}P).
@@ -233,7 +234,7 @@ Section lft.
   Proof.
     iIntros "Hb". iMod (borrow_acc_atomic_strong with "Hb") as "[[HΦ Hclose]|[H† Hclose]]". done.
     - iDestruct "HΦ" as (x) "HΦ". iExists x. iApply "Hclose". iIntros "{$HΦ}!>[_?]". eauto.
-    - iExists inhabitant. iApply "Hclose".
+    - iMod "Hclose" as "_". iExists inhabitant. by iApply borrow_fake.
   Qed.
 
   Lemma borrow_or `(nclose lftN ⊆ E) κ P Q:
@@ -429,7 +430,8 @@ Section frac_borrow.
       iDestruct "Hκ" as (q'') "[_ Hκ]".
       iDestruct (lft_own_dead with "[$Hκ $H†]") as "[]".
     - iMod ("Hclose" with "*") as "Hφ"; last first.
-      iExists γ, κ. iSplitR; last by iApply (borrow_share with "Hφ"). iApply lft_incl_refl.
+      iExists γ, κ. iSplitR. by iApply lft_incl_refl.
+      iMod (borrow_fake with "H†"). done. by iApply borrow_share.
   Qed.
 
   Lemma frac_borrow_atomic_acc `(nclose lftN ⊆ E) κ φ:
