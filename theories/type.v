@@ -1,7 +1,14 @@
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Export thread_local.
 From iris.program_logic Require Import hoare.
-From lrust Require Export notation lifetime heap.
+From lrust Require Export notation lifetime frac_borrow heap.
+
+Class iris_typeG Σ := Iris_typeG {
+  type_heapG :> heapG Σ;
+  type_lifetimeG :> lifetimeG Σ;
+  type_thread_localG :> thread_localG Σ;
+  type_frac_borrowG Σ :> frac_borrowG Σ
+}.
 
 Definition mgmtE := nclose tlN ∪ lftN.
 Definition lrustN := nroot .@ "lrust".
@@ -9,12 +16,11 @@ Definition lrustN := nroot .@ "lrust".
 (* [perm] is defined here instead of perm.v in order to define [cont] *)
 Definition perm {Σ} := thread_id → iProp Σ.
 
-(* We would like to put the defintions of [type] and [simple_type] in
-   a section to generalize over [Σ] and all the [xxxG], but
-   [simple_type] would not depend on all that and this would make us
-   unable to define [ty_of_st] as a coercion... *)
+Section type.
 
-Record type `{heapG Σ, lifetimeG Σ, thread_localG Σ} :=
+Context `{iris_typeG Σ}.
+
+Record type :=
   { ty_size : nat; ty_dup : bool;
     ty_own : thread_id → list val → iProp Σ;
     ty_shr : lifetime → thread_id → namespace → loc → iProp Σ;
@@ -44,7 +50,10 @@ Record type `{heapG Σ, lifetimeG Σ, thread_localG Σ} :=
   }.
 Global Existing Instances ty_shr_persistent ty_dup_persistent.
 
-Record simple_type `{heapG Σ, lifetimeG Σ, thread_localG Σ} :=
+(* We are repeating the typeclass parameter here jsut to make sure
+   that simple_type does depend on it. Otherwise, the coercion defined
+   bellow will not be acceptable by Coq. *)
+Record simple_type `{iris_typeG Σ} :=
   { st_size : nat;
     st_own : thread_id → list val → iProp Σ;
 
@@ -52,8 +61,7 @@ Record simple_type `{heapG Σ, lifetimeG Σ, thread_localG Σ} :=
     st_own_persistent tid vl : PersistentP (st_own tid vl) }.
 Global Existing Instance st_own_persistent.
 
-Program Coercion ty_of_st `{heapG Σ, lifetimeG Σ, thread_localG Σ}
-        (st : simple_type) : type :=
+Program Coercion ty_of_st (st : simple_type) : type :=
   {| ty_size := st.(st_size); ty_dup := true;
      ty_own := st.(st_own);
 
@@ -65,7 +73,7 @@ Program Coercion ty_of_st `{heapG Σ, lifetimeG Σ, thread_localG Σ}
   |}.
 Next Obligation. intros. apply st_size_eq. Qed.
 Next Obligation.
-  intros Σ ??? st E N κ l tid q ??. iIntros "Hmt Htok".
+  intros st E N κ l tid q ? ?. iIntros "Hmt Htok".
   iMod (borrow_exists with "Hmt") as (vl) "Hmt". set_solver.
   iMod (borrow_split with "Hmt") as "[Hmt Hown]". set_solver.
   iMod (borrow_persistent with "Hown Htok") as "[Hown $]". set_solver.
@@ -74,12 +82,11 @@ Next Obligation.
   done. set_solver.
 Qed.
 Next Obligation.
-  intros Σ???. iIntros (st κ κ' tid N l) "#Hord H".
-  iDestruct "H" as (vl) "[Hf Hown]".
+  iIntros (st κ κ' tid N l) "#Hord H". iDestruct "H" as (vl) "[Hf Hown]".
   iExists vl. iFrame. by iApply (frac_borrow_shorten with "Hord").
 Qed.
 Next Obligation.
-  intros Σ??? st κ tid N E l q ??.  iIntros "#Hshr[Hlft $]".
+  intros st κ tid N E l q ??.  iIntros "#Hshr[Hlft $]".
   iDestruct "Hshr" as (vl) "[Hf Hown]".
   iMod (frac_borrow_acc with "[] Hf Hlft") as (q') "[Hmt Hclose]";
     first set_solver.
@@ -97,13 +104,15 @@ Next Obligation.
       iDestruct "Hmt" as "[>% Hmt]". subst. by iApply "Hclose".
 Qed.
 
+End type.
+
 Delimit Scope lrust_type_scope with T.
 Bind Scope lrust_type_scope with type.
 
 Module Types.
 Section types.
 
-  Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
+  Context `{iris_typeG Σ}.
 
   (* [emp] cannot be defined using [ty_of_st], because the least we
      would be able to prove from its [ty_shr] would be [▷ False], but

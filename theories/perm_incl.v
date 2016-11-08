@@ -6,7 +6,7 @@ Import Perm Types.
 
 Section defs.
 
-  Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
+  Context `{iris_typeG Σ}.
 
   (* Definitions *)
   Definition perm_incl (ρ1 ρ2 : perm) :=
@@ -29,7 +29,7 @@ Notation "(⇔)" := (equiv (A:=perm)) (only parsing) : C_scope.
 
 Section props.
 
-  Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
+  Context `{iris_typeG Σ}.
 
   (* Properties *)
   Global Instance perm_incl_preorder : PreOrder (⇒).

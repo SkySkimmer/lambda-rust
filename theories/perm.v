@@ -8,7 +8,7 @@ Module Perm.
 
 Section perm.
 
-  Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
+  Context `{iris_typeG Σ}.
 
   Fixpoint eval_expr (ν : expr) : option val :=
     match ν with
@@ -70,7 +70,7 @@ Infix "∗" := sep (at level 80, right associativity) : perm_scope.
 
 Section duplicable.
 
-  Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
+  Context `{iris_typeG Σ}.
 
   Class Duplicable (ρ : @perm Σ) :=
     duplicable_persistent tid : PersistentP (ρ tid).
@@ -93,7 +93,7 @@ End duplicable.
 
 Section has_type.
 
-  Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
+  Context `{iris_typeG Σ}.
 
   Lemma has_type_value (v : val) ty tid :
     (v ◁ ty)%P tid ⊣⊢ ty.(ty_own) tid [v].

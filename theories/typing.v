@@ -6,7 +6,7 @@ Import Types Perm.
 
 Section typing.
 
-  Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
+  Context `{iris_typeG Σ}.
 
   (* TODO : good notations for [typed_step] and [typed_step_ty] ? *)
   Definition typed_step (ρ : perm) e (θ : val → perm) :=
@@ -150,7 +150,7 @@ Section typing.
   Proof.
     iIntros (? tid) "!#(#HEAP&_&$)". wp_alloc l vl as "H↦" "H†". iIntros "!>".
     iExists _. iSplit. done. iNext. rewrite Nat2Z.id. iFrame.
-    apply (inj Z.of_nat) in H3. iExists _. iFrame. auto.
+    iExists _. iFrame. iPureIntro. by apply (inj Z.of_nat).
   Qed.
 
   Lemma typed_free ty (ν : expr):

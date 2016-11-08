@@ -12,6 +12,9 @@ theories/races.v
 theories/tactics.v
 theories/wp_tactics.v
 theories/lifetime.v
+theories/tl_borrow.v
+theories/shr_borrow.v
+theories/frac_borrow.v
 theories/type.v
 theories/type_incl.v
 theories/perm.v

@@ -6,7 +6,7 @@ Import Types.
 
 Section ty_incl.
 
-  Context `{heapG Σ, lifetimeG Σ, thread_localG Σ}.
+  Context `{iris_typeG Σ}.
 
   Definition ty_incl (ρ : perm) (ty1 ty2 : type) :=
     ∀ tid, ρ tid ={⊤}=∗
