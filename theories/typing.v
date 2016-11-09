@@ -1,4 +1,5 @@
 From iris.program_logic Require Import hoare.
+From iris.base_logic Require Import big_op.
 From lrust Require Export type perm notation memcpy.
 From lrust Require Import perm_incl proofmode.
 
@@ -146,11 +147,20 @@ Section typing.
   Qed.
 
   Lemma typed_alloc ρ (n : nat):
-    0 < n → typed_step_ty ρ (Alloc #n) (own 1 (uninit n)).
+    0 < n → typed_step_ty ρ (Alloc #n) (own 1 (Π(replicate n uninit))).
   Proof.
-    iIntros (? tid) "!#(#HEAP&_&$)". wp_alloc l vl as "H↦" "H†". iIntros "!>".
-    iExists _. iSplit. done. iNext. rewrite Nat2Z.id. iFrame.
-    iExists _. iFrame. iPureIntro. by apply (inj Z.of_nat).
+    iIntros (Hn tid) "!#(#HEAP&_&$)". wp_alloc l vl as "H↦" "H†". iIntros "!>".
+    iExists _. iSplit. done. iNext. rewrite Nat2Z.id. iSplitL "H†".
+    - assert (ty_size (Π (replicate n uninit)) = n) as ->; last done.
+      clear. simpl. induction n. done. rewrite /= IHn //.
+    - iExists vl. iFrame.
+      match goal with H : Z.of_nat n = Z.of_nat (length vl) |- _ => rename H into Hlen end.
+      clear Hn. apply (inj Z.of_nat) in Hlen. subst.
+      iInduction vl as [|v vl] "IH".
+      + iExists []. rewrite big_sepL_nil. auto.
+      + iDestruct "IH" as (vll) "(% & % & ?)". subst. iExists ([_]::_). iSplit. done.
+        iSplit. iIntros "/=!%"; congruence.
+        rewrite /= big_sepL_cons. by iSplit.
   Qed.
 
   Lemma typed_free ty (ν : expr):
@@ -187,16 +197,26 @@ Section typing.
   Qed.
 
   Lemma consumes_move ty q:
-    consumes ty (λ ν, ν ◁ own q ty)%P (λ ν, ν ◁ own q (uninit ty.(ty_size)))%P.
+    consumes ty (λ ν, ν ◁ own q ty)%P
+             (λ ν, ν ◁ own q (Π(replicate ty.(ty_size) uninit)))%P.
   Proof.
     iIntros (ν tid Φ E ?) "(H◁ & Htl & HΦ)". iApply (has_type_wp with "[- $H◁]").
     iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
     rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & >H† & H↦)".
     iDestruct "Heq" as %[=->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
-    iAssert (▷ (length vl = ty_size ty))%I with "[#]" as ">%".
-      by rewrite ty.(ty_size_eq).
+    iAssert (▷ (length vl = ty_size ty))%I with "[#]" as ">Hlen".
+      by rewrite ty.(ty_size_eq). iDestruct "Hlen" as %Hlen.
     iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦!>".
-    rewrite /has_type Hνv. iExists _. iSplit. done. iFrame. iExists vl. eauto.
+    rewrite /has_type Hνv. iExists _. iSplit. done. iSplitL "H†".
+    - assert (ty_size (Π (replicate (ty_size ty) uninit)) = ty_size ty) as ->; last by auto.
+      clear. induction ty.(ty_size). done. simpl in *. congruence.
+    - rewrite -Hlen. iExists vl. iIntros "{$H↦}!>". clear.
+      iInduction vl as [|v vl] "IH".
+      + iExists []. rewrite big_sepL_nil. auto.
+      + iDestruct "IH" as (vll) "(% & % & IH)". iExists ([v]::vll). iSplit; last iSplit.
+        * iIntros "!%/=". congruence.
+        * iIntros "!%/=". congruence.
+        * rewrite big_sepL_cons. iFrame "#". done.
   Qed.
 
   Lemma consumes_copy_uniq_borrow ty κ κ' q:

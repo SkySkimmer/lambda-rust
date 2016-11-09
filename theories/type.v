@@ -66,7 +66,7 @@ Program Coercion ty_of_st (st : simple_type) : type :=
      ty_own := st.(st_own);
 
      (* [st.(st_own) tid vl] needs to be outside of the fractured
-        borrow, otherwise I do not knwo how to prove the shr part of
+        borrow, otherwise I do not know how to prove the shr part of
         [lft_incl_ty_incl_shared_borrow]. *)
      ty_shr := λ κ tid _ l,
                (∃ vl, (&frac{κ} λ q, l ↦∗{q} vl) ∗ ▷ st.(st_own) tid vl)%I
@@ -482,8 +482,8 @@ Section types.
       by iApply "Hclose'".
   Qed.
 
-  Program Definition uninit (n : nat) : type :=
-    {| st_size := n; st_own tid vl := (length vl = n)%I |}.
+  Program Definition uninit : type :=
+    {| st_size := 1; st_own tid vl := (length vl = 1%nat)%I |}.
   Next Obligation. done. Qed.
 
   Program Definition cont {n : nat} (ρ : vec val n → @perm Σ) :=

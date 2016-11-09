@@ -180,32 +180,6 @@ Section ty_incl.
       iDestruct "H" as (i) "[??]". iExists _. iSplit. done. by iApply "Hincl".
   Qed.
 
-  Lemma ty_incl_uninit_split ρ n1 n2 :
-    ty_incl ρ (uninit (n1+n2)) (Π[uninit n1; uninit n2]).
-  Proof.
-    iIntros (tid) "_!>". iSplit; iIntros "!#*H".
-    - iDestruct "H" as %Hlen. iExists [take n1 vl; drop n1 vl].
-      repeat iSplit. by rewrite /= app_nil_r take_drop. done.
-      rewrite big_sepL_cons big_sepL_singleton. iSplit; iPureIntro.
-      apply take_length_le. lia. rewrite drop_length. lia.
-    - iSplit; last (iPureIntro; simpl; lia). iDestruct "H" as (vl) "[#Hf #Hlen]".
-      rewrite /= big_sepL_cons big_sepL_singleton. iSplit.
-      + iExists (take n1 vl). iSplit.
-        (* FIXME : cannot split the fractured borrow. *)
-        admit.
-        iNext. iDestruct "Hlen" as %Hlen. rewrite /= take_length_le //. lia.
-      + iExists (drop n1 vl). iSplit.
-        (* FIXME : cannot split the fractured borrow. *)
-        admit.
-        iNext. iDestruct "Hlen" as %Hlen. rewrite /= drop_length. iPureIntro. lia.
-  Admitted.
-
-  Lemma ty_incl_uninit_combine ρ n1 n2 :
-    ty_incl ρ (Π[uninit n1; uninit n2]) (uninit (n1+n2)).
-  Proof.
-  (* FIXME : idem : cannot combine the fractured borrow. *)
-  Admitted.
-
   Lemma ty_incl_cont {n} ρ ρ1 ρ2 :
     Duplicable ρ → (∀ vl : vec val n, ρ ∗ ρ2 vl ⇒ ρ1 vl) →
     ty_incl ρ (cont ρ1) (cont ρ2).
