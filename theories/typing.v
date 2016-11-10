@@ -150,17 +150,14 @@ Section typing.
     0 < n → typed_step_ty ρ (Alloc #n) (own 1 (Π(replicate n uninit))).
   Proof.
     iIntros (Hn tid) "!#(#HEAP&_&$)". wp_alloc l vl as "H↦" "H†". iIntros "!>".
-    iExists _. iSplit. done. iNext. rewrite Nat2Z.id. iSplitL "H†".
-    - assert (ty_size (Π (replicate n uninit)) = n) as ->; last done.
-      clear. simpl. induction n. done. rewrite /= IHn //.
+    iExists _. iSplit. done. iNext. rewrite Nat2Z.id. iSplitR "H†".
     - iExists vl. iFrame.
       match goal with H : Z.of_nat n = Z.of_nat (length vl) |- _ => rename H into Hlen end.
       clear Hn. apply (inj Z.of_nat) in Hlen. subst.
-      iInduction vl as [|v vl] "IH".
-      + iExists []. rewrite big_sepL_nil. auto.
-      + iDestruct "IH" as (vll) "(% & % & ?)". subst. iExists ([_]::_). iSplit. done.
-        iSplit. iIntros "/=!%"; congruence.
-        rewrite /= big_sepL_cons. by iSplit.
+      iInduction vl as [|v vl] "IH". done.
+      iExists [v], vl. iSplit. done. by iSplit.
+    - assert (ty_size (Π (replicate n uninit)) = n) as ->; last done.
+      clear. simpl. induction n. done. rewrite /= IHn //.
   Qed.
 
   Lemma typed_free ty (ν : expr):
@@ -169,7 +166,7 @@ Section typing.
     iIntros (tid) "!#(#HEAP&H◁&$)". wp_bind ν.
     iApply (has_type_wp with "[$H◁]"). iIntros (v) "[_ H◁]!>".
     rewrite has_type_value.
-    iDestruct "H◁" as (l) "(Hv & >H† & H↦∗:)". iDestruct "Hv" as %[=->].
+    iDestruct "H◁" as (l) "(Hv & H↦∗: & >H†)". iDestruct "Hv" as %[=->].
     iDestruct "H↦∗:" as (vl) "[>H↦ Hown]".
     rewrite ty_size_eq. iDestruct "Hown" as ">%". wp_free; eauto.
   Qed.
@@ -188,7 +185,7 @@ Section typing.
   Proof.
     iIntros (? ν tid Φ E ?) "(H◁ & Htl & HΦ)". iApply (has_type_wp with "[- $H◁]").
     iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l) "[Heq [>H† H↦]]".
+    rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & H↦ & >H†)".
     iDestruct "Heq" as %[=->]. iDestruct "H↦" as (vl) "[>H↦ #Hown]".
     iAssert (▷ (length vl = ty_size ty))%I with "[#]" as ">%".
       by rewrite ty.(ty_size_eq).
@@ -202,21 +199,17 @@ Section typing.
   Proof.
     iIntros (ν tid Φ E ?) "(H◁ & Htl & HΦ)". iApply (has_type_wp with "[- $H◁]").
     iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & >H† & H↦)".
+    rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & H↦ & >H†)".
     iDestruct "Heq" as %[=->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
     iAssert (▷ (length vl = ty_size ty))%I with "[#]" as ">Hlen".
       by rewrite ty.(ty_size_eq). iDestruct "Hlen" as %Hlen.
     iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦!>".
-    rewrite /has_type Hνv. iExists _. iSplit. done. iSplitL "H†".
+    rewrite /has_type Hνv. iExists _. iSplit. done. iSplitR "H†".
+    - rewrite -Hlen. iExists vl. iIntros "{$H↦}!>". clear.
+      iInduction vl as [|v vl] "IH". done.
+      iExists [v], vl. iSplit. done. by iSplit.
     - assert (ty_size (Π (replicate (ty_size ty) uninit)) = ty_size ty) as ->; last by auto.
       clear. induction ty.(ty_size). done. simpl in *. congruence.
-    - rewrite -Hlen. iExists vl. iIntros "{$H↦}!>". clear.
-      iInduction vl as [|v vl] "IH".
-      + iExists []. rewrite big_sepL_nil. auto.
-      + iDestruct "IH" as (vll) "(% & % & IH)". iExists ([v]::vll). iSplit; last iSplit.
-        * iIntros "!%/=". congruence.
-        * iIntros "!%/=". congruence.
-        * rewrite big_sepL_cons. iFrame "#". done.
   Qed.
 
   Lemma consumes_copy_uniq_borrow ty κ κ' q:
@@ -262,8 +255,8 @@ Section typing.
     typed_step (ρ1 ν) (!ν) (λ v, v ◁ ty ∗ ρ2 ν)%P.
   Proof.
     iIntros (Hsz Hconsumes tid) "!#[#HEAP[??]]". wp_bind ν.
-    iApply Hconsumes. done. iFrame. iIntros (l vl q) "(%&%&H↦&Hupd)".
-    iMod "Hupd". rewrite ->Hsz in *. destruct vl as [|v [|]]; try done.
+    iApply Hconsumes. done. iFrame. iIntros (l vl q) "(%&%&H↦&>Hupd)".
+    rewrite ->Hsz in *. destruct vl as [|v [|]]; try done.
     rewrite heap_mapsto_vec_singleton. wp_read. rewrite /sep has_type_value.
     iMod "Hupd" as "[$ Hclose]". by iApply "Hclose".
   Qed.
@@ -278,9 +271,9 @@ Section typing.
     rewrite has_type_value. iDestruct "H◁" as (l) "[Heq H↦]". iDestruct "Heq" as %[=->].
     iMod (lft_incl_acc with "H⊑ Htok") as (q'') "[Htok Hclose]". done.
     iMod (borrow_acc_strong with "H↦ Htok") as "[H↦ Hclose']". done.
-    iDestruct "H↦" as (vl) "[>H↦ Hown]". iDestruct "Hown" as (l') "(>% & H† & Hown)".
+    iDestruct "H↦" as (vl) "[>H↦ Hown]". iDestruct "Hown" as (l') "(>% & Hown & H†)".
     subst. rewrite heap_mapsto_vec_singleton. wp_read.
-    iMod ("Hclose'" with "*[H↦ H† Hown]") as "[Hbor Htok]"; last first.
+    iMod ("Hclose'" with "*[H↦ Hown H†]") as "[Hbor Htok]"; last first.
     - iMod (borrow_split with "Hbor") as "[_ Hbor]". done.
       iMod (borrow_split with "Hbor") as "[_ Hbor]". done.
       iMod ("Hclose" with "Htok") as "$". iFrame "#". iExists _. eauto.
@@ -360,7 +353,7 @@ Section typing.
       iMod ("Hclose''" with "Htok") as "Htok".
       iMod ("Hclose'" with "[$H↦]") as "Htok'".
       iMod ("Hclose" with "[$Htok $Htok']") as "$". iFrame "#". iExists _.
-      iSplitL. done. iApply (ty_shr_mono with "H⊑3 Hshr").
+      iSplitL. done. by iApply (ty_shr_mono with "H⊑3 Hshr").
   Qed.
 
   Definition update (ty : type) (ρ1 ρ2 : expr → perm) : Prop :=
@@ -378,7 +371,7 @@ Section typing.
   Proof.
     iIntros (Hsz ν tid Φ E ?) "[H◁ HΦ]". iApply (has_type_wp with "[- $H◁]").
     iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & >H† & H↦)".
+    rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & H↦ & >H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
     rewrite ty2.(ty_size_eq) -Hsz. iDestruct "Hown" as ">%". iApply "HΦ". iFrame "∗%".
     iIntros (vl') "[H↦ Hown']!>". rewrite /has_type Hνv.

@@ -52,7 +52,7 @@ Section ty_incl.
   Proof.
     iIntros (Hincl tid) "H/=". iMod (Hincl with "H") as "[#Howni #Hshri]".
     iModIntro. iSplit; iIntros "!#*H".
-    - iDestruct "H" as (l) "(%&H†&Hmt)". subst. iExists _. iSplit. done.
+    - iDestruct "H" as (l) "(%&Hmt&H†)". subst. iExists _. iSplit. done.
       iDestruct "Hmt" as (vl') "[Hmt Hown]". iNext.
       iDestruct (ty_size_eq with "Hown") as %<-.
       iDestruct ("Howni" $! _ with "Hown") as "Hown".
@@ -81,76 +81,107 @@ Section ty_incl.
       iMod (lft_incl_acc with "Hincl' Htok") as (q'') "[Htok Hclose]". set_solver.
       iMod ("Hupd" with "*Htok") as "Hupd'". iModIntro. iNext.
       iMod "Hupd'" as "[H Htok]". iMod ("Hclose" with "Htok") as "$".
-      iApply (ty_shr_mono with "Hincl' H").
+      by iApply (ty_shr_mono with "Hincl' H").
   Qed.
 
   Lemma lft_incl_ty_incl_shared_borrow ty κ1 κ2 :
     ty_incl (κ1 ⊑ κ2) (&shr{κ2}ty) (&shr{κ1}ty).
   Proof.
     iIntros (tid) "#Hincl!>". iSplit; iIntros "!#*H".
-    - iDestruct "H" as (l) "[% Hown]". subst. iExists _. iSplit. done.
-      by iApply (ty.(ty_shr_mono) with "Hincl").
+    - iDestruct "H" as (l) "(% & H)". subst. iExists _.
+      iSplit. done. by iApply (ty.(ty_shr_mono) with "Hincl").
     - iDestruct "H" as (vl) "#[Hfrac Hty]". iSplit; last done.
       iExists vl. iFrame "#". iNext.
-      iDestruct "Hty" as (l0) "[% Hty]". subst. iExists _. iSplit. done.
+      iDestruct "Hty" as (l0) "(% & Hty)". subst. iExists _. iSplit. done.
       by iApply (ty_shr_mono with "Hincl Hty").
   Qed.
 
   (* We have the additional hypothesis that ρ should be duplicable.
      The only way I can see to circumvent this limitation is to deeply
      embed permissions (and their inclusion). Not sure this is worth it. *)
-  Lemma ty_incl_prod ρ tyl1 tyl2 :
-    Duplicable ρ → Forall2 (ty_incl ρ) tyl1 tyl2 → ty_incl ρ (Π tyl1) (Π tyl2).
+  Lemma ty_incl_prod2 ρ ty11 ty12 ty21 ty22 :
+    Duplicable ρ → ty_incl ρ ty11 ty12 → ty_incl ρ ty21 ty22 →
+    ty_incl ρ (product2 ty11 ty21) (product2 ty12 ty22).
   Proof.
-    intros Hρ HFA. iIntros (tid) "#Hρ". iSplitL "".
-    - assert (Himpl : ρ tid ={⊤}=∗
-         □ (∀ vll, length tyl1 = length vll →
-               ([∗ list] tyvl ∈ combine tyl1 vll, ty_own (tyvl.1) tid (tyvl.2))
-             → ([∗ list] tyvl ∈ combine tyl2 vll, ty_own (tyvl.1) tid (tyvl.2)))).
-      { induction HFA as [|ty1 ty2 tyl1 tyl2 Hincl HFA IH].
-        - iIntros "_!>!#* _ _". by rewrite big_sepL_nil.
-        - iIntros "#Hρ". iMod (IH with "Hρ") as "#Hqimpl".
-          iMod (Hincl with "Hρ") as "[#Hhimpl _]".
-          iIntros "!>!#*%". destruct vll as [|vlh vllq]. done.
-          rewrite !big_sepL_cons.
-          iIntros "[Hh Hq]". iSplitL "Hh". by iApply "Hhimpl".
-          iApply ("Hqimpl" with "[] Hq"). iPureIntro. simpl in *. congruence. }
-      iMod (Himpl with "Hρ") as "#Himpl". iIntros "!>!#*H".
-      iDestruct "H" as (vll) "(%&%&H)". iExists _. iSplit. done. iSplit.
-      by rewrite -(Forall2_length _ _ _ HFA). by iApply ("Himpl" with "[] H").
-    - rewrite /Π /=. iRevert "Hρ". generalize O; intros offs.
-      change (ndot (A:=nat)) with (λ N i, N .@ (0+i)%nat). generalize O; intros i.
-      iInduction HFA as [|ty1 ty2 tyl1 tyl2 Hincl HFA] "IH" forall (i offs).
-      + iIntros "_!>!#*_/=". rewrite big_sepL_nil. eauto.
-      + iIntros "#Hρ". iMod ("IH" $! _ _ with "[]") as "#Hqimpl"; try done.
-        iMod (Hincl with "Hρ") as "[_ #Hhimpl]". iIntros "!>!#*".
-        rewrite !big_sepL_cons. iIntros "[Hh Hq]".
-        setoid_rewrite <-Nat.add_succ_comm.
-        iDestruct ("Hhimpl" $! _ _ _ with "Hh") as "[$ %]".
-        replace ty2.(ty_size) with ty1.(ty_size) by done.
-        iDestruct ("Hqimpl" $! _ _ _ with "Hq") as "[$ %]".
-        iIntros "!%/=". congruence.
+    iIntros (Hρ Hincl1 Hincl2 tid) "#Hρ".
+    iMod (Hincl1 with "Hρ") as "[#Ho1#Hs1]". iMod (Hincl2 with "Hρ") as "[#Ho2#Hs2]".
+    iSplitL; iIntros "!>!#*H/=".
+    - iDestruct "H" as (vl1 vl2) "(% & H1 & H2)". iExists _, _. iSplit. done.
+      iSplitL "H1". iApply ("Ho1" with "H1"). iApply ("Ho2" with "H2").
+    - iDestruct "H" as (E1 E2) "(% & H1 & H2)".
+      iDestruct ("Hs1" with "*H1") as "[H1 EQ]". iDestruct ("Hs2" with "*H2") as "[H2 %]".
+      iDestruct "EQ" as %->. iSplit; last by iPureIntro; f_equal.
+      iExists _, _. by iFrame.
   Qed.
 
-  Lemma ty_incl_prod_cons_l ρ ty tyl :
-    ty_incl ρ (Π(ty :: tyl)) (Π[ty ; Π tyl]).
-  Proof.
-    iIntros (tid) "_!>". iSplit; iIntros "!#/=".
-    - iIntros (vl) "H". iDestruct "H" as ([|vlh vllq]) "(%&%&H)". done. subst.
-      iExists [_;_]. iSplit. by rewrite /= app_nil_r. iSplit. done.
-      rewrite !big_sepL_cons big_sepL_nil right_id. iDestruct "H" as "[$ H]".
-      iExists _. repeat iSplit; try done. iPureIntro. simpl in *; congruence.
-    - iIntros (κ E l) "H". iSplit; last (iPureIntro; lia).
-      rewrite !big_sepL_cons big_sepL_nil right_id. iDestruct "H" as "[$ H]".
-      (* FIXME : namespaces do not match. *)
-      admit.
-  Admitted.
+  Lemma ty_incl_prod ρ tyl1 tyl2 :
+    Duplicable ρ → Forall2 (ty_incl ρ) tyl1 tyl2 → ty_incl ρ (Π tyl1) (Π tyl2).
+  Proof. intros Hρ HFA. induction HFA. done. by apply ty_incl_prod2. Qed.
 
-  (* TODO, depends on [ty_incl_prod_cons_l] *)
+  Lemma ty_incl_prod2_assoc1 ρ ty1 ty2 ty3 :
+    ty_incl ρ (product2 ty1 (product2 ty2 ty3)) (product2 (product2 ty1 ty2) ty3).
+  Proof.
+    iIntros (tid) "_!>". iSplit; iIntros "!#/=*H".
+    - iDestruct "H" as (vl1 vl') "(% & Ho1 & H)".
+      iDestruct "H" as (vl2 vl3) "(% & Ho2 & Ho3)". subst.
+      iExists _, _. iSplit. by rewrite assoc. iFrame. iExists _, _. by iFrame.
+    - iDestruct "H" as (E1 E2') "(% & Hs1 & H)".
+      iDestruct "H" as (E2 E3) "(% & Hs2 & Hs3)". rewrite shift_loc_assoc_nat.
+      iSplit; last by rewrite assoc.
+      iExists (E1 ∪ E2), E3. iSplit. by iPureIntro; set_solver. iFrame.
+      iExists E1, E2. iSplit. by iPureIntro; set_solver. by iFrame.
+  Qed.
+
+  Lemma ty_incl_prod2_assoc2 ρ ty1 ty2 ty3 :
+    ty_incl ρ (product2 (product2 ty1 ty2) ty3) (product2 ty1 (product2 ty2 ty3)).
+  Proof.
+    iIntros (tid) "_!>". iSplit; iIntros "!#/=*H".
+    - iDestruct "H" as (vl1 vl') "(% & H & Ho3)".
+      iDestruct "H" as (vl2 vl3) "(% & Ho1 & Ho2)". subst.
+      iExists _, _. iSplit. by rewrite -assoc. iFrame. iExists _, _. by iFrame.
+    - iDestruct "H" as (E1' E3) "(% & H & Hs3)".
+      iDestruct "H" as (E1 E2) "(% & Hs1 & Hs2)". rewrite shift_loc_assoc_nat.
+      iSplit; last by rewrite assoc.
+      iExists E1, (E2 ∪ E3). iSplit. by iPureIntro; set_solver. iFrame.
+      iExists E2, E3. iSplit. by iPureIntro; set_solver. by iFrame.
+  Qed.
+
   Lemma ty_incl_prod_flatten ρ tyl1 tyl2 tyl3 :
     ty_incl ρ (Π(tyl1 ++ Π tyl2 :: tyl3))
               (Π(tyl1 ++ tyl2 ++ tyl3)).
-  Admitted.
+  Proof.
+    apply (ty_incl_weaken _ ⊤). apply perm_incl_top.
+    induction tyl1; last by apply (ty_incl_prod2 _ _ _ _ _ _).
+    induction tyl2 as [|ty tyl2 IH]; simpl.
+    - iIntros (tid) "_". iSplitL; iIntros "/=!>!#*H".
+      + iDestruct "H" as (vl1 vl2) "(% & % & Ho)". subst. done.
+      + iDestruct "H" as (E1 E2) "(% & H1 & Ho)". iSplit; last done.
+        rewrite shift_loc_0. iApply (ty_shr_mono with "[] Ho"). set_solver.
+        iApply lft_incl_refl.
+    - etransitivity. apply ty_incl_prod2_assoc2.
+      eapply (ty_incl_prod2 _ _ _ _ _ _). done. apply IH.
+  Qed.
+
+  Lemma ty_incl_prod_unflatten ρ tyl1 tyl2 tyl3 :
+    ty_incl ρ (Π(tyl1 ++ tyl2 ++ tyl3))
+              (Π(tyl1 ++ Π tyl2 :: tyl3)).
+  Proof.
+    apply (ty_incl_weaken _ ⊤). apply perm_incl_top.
+    induction tyl1; last by apply (ty_incl_prod2 _ _ _ _ _ _).
+    induction tyl2 as [|ty tyl2 IH]; simpl.
+    - iIntros (tid) "_".
+      iMod (borrow_create with "[]") as "[Hbor _]".
+      done. instantiate (1:=True%I). by auto. instantiate (1:=static).
+      iMod (borrow_fracture (λ _, True%I) with "Hbor") as "#Hbor". done.
+      iSplitL; iIntros "/=!>!#*H".
+      + iExists [], vl. iFrame. auto.
+      + iSplit; last done. iExists ∅, E. iSplit. iPureIntro; set_solver.
+        rewrite shift_loc_0. iFrame. iExists []. iSplit; last auto.
+        setoid_rewrite heap_mapsto_vec_nil.
+        iApply (frac_borrow_shorten with "[] Hbor"). iApply lft_incl_static.
+    - etransitivity; last apply ty_incl_prod2_assoc1.
+      eapply (ty_incl_prod2 _ _ _ _ _ _). done. apply IH.
+  Qed.
 
   Lemma ty_incl_sum ρ n tyl1 tyl2 (_ : LstTySize n tyl1) (_ : LstTySize n tyl2) :
     Duplicable ρ → Forall2 (ty_incl ρ) tyl1 tyl2 →

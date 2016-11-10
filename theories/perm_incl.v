@@ -109,86 +109,129 @@ Section props.
     destruct (eval_expr ν); last by iDestruct "Huniq" as "[]".
     iDestruct "Huniq" as (l) "[% Hown]".
     iMod (ty.(ty_share) _ lrustN with "Hown Htok") as "[Hown $]".
-    apply disjoint_union_l; solve_ndisj. done. iModIntro.
-    simpl. eauto.
+    apply disjoint_union_l; solve_ndisj. done. iIntros "!>/=". eauto.
   Qed.
 
-  Lemma split_own_prod tyl (q0: Qp) (ql : list Qp) (l : loc) tid :
-    length tyl = length ql →
-      (own (foldr Qp_plus q0 ql) (Π tyl)).(ty_own) tid [ #l] ⊣⊢
-    ▷ †{q0}(shift_loc l (0 + (Π tyl).(ty_size))%nat)…0 ∗
-    [∗ list] qtyoffs ∈ (combine ql (combine_offs tyl 0)),
-         (own (qtyoffs.1) (qtyoffs.2.1)).(ty_own)
-              tid [ #(shift_loc l (qtyoffs.2.2))].
+  Lemma perm_split_own_prod2 ty1 ty2 (q1 q2 : Qp) ν :
+    ν ◁ own (q1 + q2) (product2 ty1 ty2) ⇔
+      ν ◁ own q1 ty1 ∗ ν +ₗ #ty1.(ty_size) ◁ own q2 ty2.
   Proof.
-    intros Hlen.
-    assert (REW: ∀ (l : loc) (Φ : loc → iProp Σ),
-               Φ l ⊣⊢ (∃ l0:loc, [ #l] = [ #l0] ∗ Φ l0)).
-    { intros l0 Φ. iSplit; iIntros "H". eauto.
-      iDestruct "H" as (l') "[Heq H]". iDestruct "Heq" as %[=]. subst. done. }
-    setoid_rewrite <-REW. clear REW.
-    rewrite big_sepL_sepL assoc split_prod_mt big_sepL_later. apply uPred.sep_proper.
-    - rewrite -{1}(shift_loc_0_nat l). generalize 0%nat at -3. revert ql Hlen.
-      induction tyl as [|ty tyl IH]; intros [|q ql] [=] offs.
-      + by rewrite big_sepL_nil !right_id.
-      + rewrite -heap_freeable_op_eq uPred.later_sep shift_loc_assoc_nat IH //
-                Nat.add_assoc big_sepL_cons.
-        iSplit; by iIntros "($&$&$)".
-    - generalize 0%nat. revert ql Hlen.
-      induction tyl as [|ty tyl IH]; intros [|q ql] [=] offs. done.
-      rewrite !big_sepL_cons IH //.
+    rewrite /has_type /own /sep /=.
+    destruct (eval_expr ν) as [[[]|?]|]; last first; split; iIntros (tid) "H/=";
+      (try by iDestruct "H" as "[_ []]"); (try by iDestruct "H" as (l) "[% _]").
+    { by auto. }
+    - iDestruct "H" as (l') "(EQ & H & H†)". iDestruct "EQ" as %[=<-].
+      iDestruct "H" as (vl) "[H↦ H]". iDestruct "H" as (vl1 vl2) "(>% & H1 & H2)".
+      subst. rewrite heap_mapsto_vec_app -heap_freeable_op_eq.
+      iDestruct "H†" as "[H†1 H†2]". iDestruct "H↦" as "[H↦1 H↦2]".
+      iAssert (▷ (length vl1 = ty_size ty1))%I with "[#]" as ">EQ".
+      { iNext. by iApply ty_size_eq. }
+      iDestruct "EQ" as %->. iSplitL "H↦1 H†1 H1".
+      + iExists _. iSplitR. done. iFrame. iExists _. by iFrame.
+      + iExists _. iSplitR. done. iFrame. iExists _. by iFrame.
+    - iDestruct "H" as "[H1 H2]".
+      iDestruct "H1" as (l') "(EQ & H↦1 & H†1)". iDestruct "EQ" as %[=<-].
+      iDestruct "H2" as (l') "(EQ & H↦2 & H†2)". iDestruct "EQ" as %[=<-].
+      iExists l. iSplitR. done. rewrite -heap_freeable_op_eq. iFrame.
+      iDestruct "H↦1" as (vl1) "[H↦1 H1]". iDestruct "H↦2" as (vl2) "[H↦2 H2]".
+      iExists (vl1 ++ vl2). rewrite heap_mapsto_vec_app. iFrame.
+      iAssert (▷ (length vl1 = ty_size ty1))%I with "[#]" as ">EQ".
+      { iNext. by iApply ty_size_eq. }
+      iDestruct "EQ" as %->. iFrame. iExists vl1, vl2. iFrame. auto.
   Qed.
+
+  Fixpoint combine_offs (tyl : list type) (accu : nat) :=
+    match tyl with
+    | [] => []
+    | ty :: q => (ty, accu) :: combine_offs q (accu + ty.(ty_size))
+    end.
 
   Lemma perm_split_own_prod tyl (q : Qp) (ql : list Qp) ν :
     length tyl = length ql →
     foldr (λ (q : Qp) acc, q + acc)%Qc 0%Qc ql = q →
     ν ◁ own q (Π tyl) ⇔
       foldr (λ qtyoffs acc,
-             (ν +ₗ #(qtyoffs.2.2:nat))%E ◁ own (qtyoffs.1) (qtyoffs.2.1) ∗ acc)
+             ν +ₗ #(qtyoffs.2.2:nat) ◁ own (qtyoffs.1) (qtyoffs.2.1) ∗ acc)
             ⊤ (combine ql (combine_offs tyl 0)).
   Proof.
-    intros Hlen Hq. assert (ql ≠ []).
-    { destruct ql as [|q0 ql]; last done. destruct q. simpl in *. by subst. }
-    unfold has_type. simpl eval_expr. destruct (eval_expr ν) as [[[|l|]|]|];
-      try by (destruct tyl as [|ty0 tyl], ql as [|q0 ql]; try done;
-        by split; iIntros (tid) "H"; try done;
-          [iDestruct "H" as (l) "[% _]" || iDestruct "H" as "[]" |
-           iDestruct "H" as "[[]_]"]).
-    destruct (@exists_last _ ql) as (ql'&q0&->); first done.
-    apply uPred_equiv_perm_equiv=>tid.
-    assert (foldr Qp_plus (q0/2) (ql' ++ [q0/2]) = q)%Qp as <-.
-    { destruct q as [q ?]. apply Qp_eq. simpl in *. subst. clear. induction ql'.
-      by rewrite /fold_right /app Qp_div_2 Qcplus_0_r. by rewrite /= IHql'. }
-    rewrite /has_type /from_option split_own_prod ?Hlen ?app_length //.
-    clear -Hlen. revert ql' Hlen. generalize 0%nat at -2.
-    induction tyl as [|ty tyl IH]; destruct ql' as [|q ql']; intros [= Hlen]; try done.
-    - destruct tyl; last done. clear IH Hlen.
-      rewrite big_sepL_singleton /= /sep !right_id comm uPred.sep_exist_r.
-      apply uPred.exist_proper=>l0.
-      rewrite -{3}(Qp_div_2 q0) -{3}(right_id O plus ty.(ty_size))
-              -heap_freeable_op_eq uPred.later_sep -!assoc.
-      iSplit; iIntros "[#Eq[?[??]]]"; iFrame "# ∗";
-        iDestruct "Eq" as %[=]; subst; rewrite shift_loc_assoc_nat //.
-    - rewrite /= big_sepL_cons /sep -IH // !uPred.sep_exist_r uPred.sep_exist_l.
-      apply uPred.exist_proper=>l0. rewrite -!assoc /=.
-      by iSplit; iIntros "[$[$[$[$$]]]]".
+    revert q tyl ν. induction ql as [|q0 [|q1 ql] IH]=>q tyl ν Hlen Hq.
+    { destruct q. intros. simpl in *. by subst. }
+    - destruct tyl as [|ty0 [|ty1 tyl]]; try done. simpl in *.
+      assert (q0 = q) as ->. { apply Qp_eq. by rewrite -Hq Qcplus_0_r. }
+      rewrite /has_type /sep /=.
+      destruct (eval_expr ν) as [[[]|]|]; split; iIntros (tid) "H/=";
+        (try by iDestruct "H" as "[[] _]"); (try by iDestruct "H" as (l) "[% _]");
+        (try by auto); rewrite (shift_loc_0 l) Nat.add_0_r.
+      + iSplitL; last done. iExists _. iSplitR. done.
+        iDestruct "H" as (l') "[Heq [H↦ H†]]". iDestruct "Heq" as %[=<-].
+        iDestruct "H↦" as (vl) "[H↦ H]".
+        iDestruct "H" as (vl1 vl2) "(>% & Hown & >%)". subst.
+        rewrite app_nil_r. iFrame. iExists _. by iFrame.
+      + iExists l. iSplitR. done.
+        iDestruct "H" as "[H _]". iDestruct "H" as (l') "[Heq [H↦ H†]]".
+        iDestruct "Heq" as %[=<-]. iFrame. iDestruct "H↦" as (vl) "[H↦ Hown]".
+        iExists vl. iFrame. iExists vl, []. iFrame. rewrite app_nil_r. auto.
+    - destruct tyl as [|ty0 tyl]. done.
+      assert (Hpos : (0 < foldr (λ (q : Qp) acc, (q + acc)%Qc) 0%Qc (q1 :: ql))%Qc).
+      { apply Qcplus_pos_nonneg. apply Qp_prf. clear. induction ql. done.
+        apply Qcplus_nonneg_nonneg. apply Qclt_le_weak, Qp_prf. done. }
+      assert (q = q0 + mk_Qp _ Hpos)%Qp as ->. by by apply Qp_eq; rewrite -Hq.
+      injection Hlen; intro Hlen'. rewrite perm_split_own_prod2 IH //.
+      apply perm_sep_proper.
+      + rewrite /has_type /sep /=.
+        destruct (eval_expr ν) as [[[]|]|]; split; iIntros (tid) "H/=";
+        (try by iDestruct "H" as "[]"); (try by iDestruct "H" as (l) "[% _]");
+        (try by auto); by rewrite shift_loc_0.
+      + cut (length tyl = length (q1 :: ql)); last done. clear. revert tyl.
+        generalize 0%nat. induction (q1 :: ql)=>offs -[|ty tyl] Hlen //.
+        apply perm_sep_proper.
+        * rewrite /has_type /sep /=.
+          destruct (eval_expr ν) as [[[]|]|]; split; iIntros (tid) "H/=";
+          (try by iDestruct "H" as "[]"); (try by iDestruct "H" as (l) "[% _]");
+          (try by auto); by rewrite shift_loc_assoc_nat (comm plus).
+        * etransitivity. apply IHl. by injection Hlen. do 3 f_equiv. lia.
+  Qed.
+
+  Lemma perm_split_uniq_borrow_prod2 ty1 ty2 κ ν :
+    ν ◁ &uniq{κ} (product2 ty1 ty2) ⇒
+    ν ◁ &uniq{κ} ty1 ∗ ν +ₗ #(ty1.(ty_size)) ◁ &uniq{κ} ty2.
+  Proof.
+    rewrite /has_type /sep /product2 /=.
+    destruct (eval_expr ν) as [[[|l|]|]|];
+      iIntros (tid) "H"; try iDestruct "H" as "[]";
+        iDestruct "H" as (l0) "[EQ H]"; iDestruct "EQ" as %[=<-].
+    rewrite /= split_prod_mt. iMod (borrow_split with "H") as "[H1 H2]".
+    set_solver. iSplitL "H1"; eauto.
   Qed.
 
   Lemma perm_split_uniq_borrow_prod tyl κ ν :
     ν ◁ &uniq{κ} (Π tyl) ⇒
       foldr (λ tyoffs acc,
-             (ν +ₗ #(tyoffs.2:nat))%E ◁ &uniq{κ} (tyoffs.1) ∗ acc)%P
+             ν +ₗ #(tyoffs.2:nat) ◁ &uniq{κ} (tyoffs.1) ∗ acc)%P
             ⊤ (combine_offs tyl 0).
   Proof.
-    intros tid. unfold has_type. simpl eval_expr.
+    transitivity (ν +ₗ #0%nat ◁ &uniq{κ}Π tyl)%P.
+    { iIntros (tid) "H/=". rewrite /has_type /=. destruct (eval_expr ν)=>//.
+      iDestruct "H" as (l) "[Heq H]". iDestruct "Heq" as %[=->].
+      rewrite shift_loc_0 /=. eauto. }
+    generalize 0%nat. induction tyl as [|ty tyl IH]=>offs. by iIntros (tid) "H/=".
+    etransitivity. apply perm_split_uniq_borrow_prod2.
+    iIntros (tid) "/=[$ H]". iApply IH. rewrite /has_type /=.
+    destruct (eval_expr ν) as [[[]|]|]=>//=. by rewrite shift_loc_assoc_nat.
+  Qed.
+
+  Lemma perm_split_shr_borrow_prod2 ty1 ty2 κ ν :
+    ν ◁ &shr{κ} (product2 ty1 ty2) ⇒
+    ν ◁ &shr{κ} ty1 ∗ ν +ₗ #(ty1.(ty_size)) ◁ &shr{κ} ty2.
+  Proof.
+    rewrite /has_type /sep /product2 /=.
     destruct (eval_expr ν) as [[[|l|]|]|];
-      iIntros "H"; try iDestruct "H" as "[]";
-        iDestruct "H" as (l0) "[EQ H]"; iDestruct "EQ" as %[=]. subst l0.
-    rewrite split_prod_mt.
-    iInduction (combine_offs tyl 0) as [|[ty offs] ll] "IH". by auto.
-    rewrite big_sepL_cons /=.
-    iMod (borrow_split with "H") as "[H0 H]". set_solver.
-    iMod ("IH" with "H") as "$". iModIntro. iExists _. eauto.
+      iIntros (tid) "H"; try iDestruct "H" as "[]";
+        iDestruct "H" as (l0) "(EQ & H)"; iDestruct "EQ" as %[=<-].
+    iDestruct "H" as (E1 E2) "(% & H1 & H2)".
+    iSplitL "H1"; iExists _; (iSplitR; [done|]); iApply (ty_shr_mono with "[]");
+      try by iFrame.
+    set_solver. iApply lft_incl_refl. set_solver. iApply lft_incl_refl.
   Qed.
 
   Lemma perm_split_shr_borrow_prod tyl κ ν :
@@ -197,19 +240,15 @@ Section props.
              (ν +ₗ #(tyoffs.2:nat))%E ◁ &shr{κ} (tyoffs.1) ∗ acc)%P
             ⊤ (combine_offs tyl 0).
   Proof.
-    intros tid. unfold has_type. simpl eval_expr.
-    destruct (eval_expr ν) as [[[|l|]|]|];
-      iIntros "H"; try iDestruct "H" as "[]";
-        iDestruct "H" as (l0) "[EQ H]"; iDestruct "EQ" as %[=]. subst l0.
-    simpl. iModIntro.
-    change (ndot (A:=nat)) with (λ N i, N .@ (0+i)%nat).
-    generalize O at 2; intro i.
-    iInduction (combine_offs tyl 0) as [|[ty offs] ll] "IH" forall (i). by auto.
-    rewrite big_sepL_cons /=. iDestruct "H" as "[H0 H]".
-    setoid_rewrite <-Nat.add_succ_comm. iDestruct ("IH" $! (S i) with "H") as "$".
-    iExists _. iSplit. done. admit.
-    (* FIXME : namespaces problem. *)
-  Admitted.
+    transitivity (ν +ₗ #0%nat ◁ &shr{κ}Π tyl)%P.
+    { iIntros (tid) "H/=". rewrite /has_type /=. destruct (eval_expr ν)=>//.
+      iDestruct "H" as (l) "[Heq H]". iDestruct "Heq" as %[=->].
+      rewrite shift_loc_0 /=. iExists _. by iFrame "∗%". }
+    generalize 0%nat. induction tyl as [|ty tyl IH]=>offs. by iIntros (tid) "H/=".
+    etransitivity. apply perm_split_shr_borrow_prod2.
+    iIntros (tid) "/=[$ H]". iApply IH. rewrite /has_type /=.
+    destruct (eval_expr ν) as [[[]|]|]=>//=. by rewrite shift_loc_assoc_nat.
+  Qed.
 
   Lemma reborrow_shr_perm_incl κ κ' ν ty :
     κ ⊑ κ' ∗ ν ◁ &shr{κ'}ty ⇒ ν ◁ &shr{κ}ty.
@@ -218,8 +257,7 @@ Section props.
     destruct (eval_expr ν) as [[[|l|]|]|];
       try by (iDestruct "Hκ'" as "[]" || iDestruct "Hκ'" as (l) "[% _]").
     iDestruct "Hκ'" as (l') "[EQ Hκ']". iDestruct "EQ" as %[=]. subst l'.
-    iModIntro. iExists _. iSplit. done.
-    by iApply (ty_shr_mono with "Hord Hκ'").
+    iModIntro. iExists _. iSplit. done. by iApply (ty_shr_mono with "Hord Hκ'").
   Qed.
 
   Lemma borrowing_perm_incl κ ρ ρ1 ρ2 θ :
@@ -235,7 +273,7 @@ Section props.
     iIntros (tid) "_ Hown". unfold has_type.
     destruct (eval_expr ν) as [[[|l|]|]|];
       try by (iDestruct "Hown" as "[]" || iDestruct "Hown" as (l) "[% _]").
-    iDestruct "Hown" as (l') "[EQ [Hf Hown]]". iDestruct "EQ" as %[=]. subst l'.
+    iDestruct "Hown" as (l') "[EQ [Hown Hf]]". iDestruct "EQ" as %[=]. subst l'.
     iApply (fupd_mask_mono lftN). done.
     iMod (borrow_create with "Hown") as "[Hbor Hext]". done.
     iSplitL "Hbor". by simpl; eauto.

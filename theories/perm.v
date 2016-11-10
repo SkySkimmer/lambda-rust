@@ -51,7 +51,7 @@ End Perm.
 
 Import Perm.
 
-Notation "v ◁ ty" := (has_type v ty)
+Notation "ν ◁ ty" := (has_type ν%E ty)
   (at level 75, right associativity) : perm_scope.
 
 Notation "κ ∋ ρ" := (extract κ ρ)
