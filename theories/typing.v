@@ -209,7 +209,7 @@ Section typing.
       iInduction vl as [|v vl] "IH". done.
       iExists [v], vl. iSplit. done. by iSplit.
     - assert (ty_size (Π (replicate (ty_size ty) uninit)) = ty_size ty) as ->; last by auto.
-      clear. induction ty.(ty_size). done. simpl in *. congruence.
+      clear. induction ty.(ty_size). done. by apply (f_equal S).
   Qed.
 
   Lemma consumes_copy_uniq_borrow ty κ κ' q:

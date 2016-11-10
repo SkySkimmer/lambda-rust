@@ -91,6 +91,8 @@ Section duplicable.
 
 End duplicable.
 
+Hint Extern 0 (Is_true _.(ty_dup)) => exact I.
+
 Section has_type.
 
   Context `{iris_typeG Σ}.

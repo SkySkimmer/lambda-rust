@@ -340,7 +340,7 @@ Section types.
       iMod ("Hclose2" with "[H2 H↦2]") as "[$$]". by iExists _; iFrame. done.
   Qed.
 
-  Definition product (tyl : list type) := fold_right product2 unit tyl.
+  Definition product := fold_right product2 unit.
 
   Lemma split_sum_mt l tid q tyl :
     (l ↦∗{q}: λ vl,
@@ -475,6 +475,7 @@ Notation "&uniq{ κ } ty" := (uniq_borrow κ ty)
 Notation "&shr{ κ } ty" := (shared_borrow κ ty)
   (format "&shr{ κ } ty", at level 20, right associativity) : lrust_type_scope.
 
+Arguments product : simpl never.
 Notation Π := product.
 (* Σ is commonly used for the current functor. So it cannot be defined
    as Π for products. We stick to the following form. *)
