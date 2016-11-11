@@ -21,28 +21,28 @@ Section frac_borrow.
   Global Instance frac_borrow_persistent : PersistentP (&frac{κ}φ) := _.
 
   Lemma borrow_fracture φ `(nclose lftN ⊆ E) κ:
-    &{κ}(φ 1%Qp) ={E}=∗ &frac{κ}φ.
+    lft_ctx ⊢ &{κ}(φ 1%Qp) ={E}=∗ &frac{κ}φ.
   Proof.
-    iIntros "Hφ". iMod (own_alloc 1%Qp) as (γ) "?". done.
-    iMod (borrow_acc_atomic_strong with "Hφ") as "[[Hφ Hclose]|[H† Hclose]]". done.
+    iIntros "#LFT Hφ". iMod (own_alloc 1%Qp) as (γ) "?". done.
+    iMod (borrow_acc_atomic_strong with "LFT Hφ") as "[[Hφ Hclose]|[H† Hclose]]". done.
     - iMod ("Hclose" with "*[-]") as "Hφ"; last first.
       { iExists γ, κ. iSplitR; last by iApply (borrow_share with "Hφ").
         iApply lft_incl_refl. }
       iSplitL. by iExists 1%Qp; iFrame; auto.
-      iIntros "!>[H† Hφ]!>". iNext. iDestruct "Hφ" as (q') "(Hφ & _ & [%|Hκ])". by subst.
+      iIntros "!>H† Hφ!>". iNext. iDestruct "Hφ" as (q') "(Hφ & _ & [%|Hκ])". by subst.
       iDestruct "Hκ" as (q'') "[_ Hκ]".
-      iDestruct (lft_own_dead with "[$Hκ $H†]") as "[]".
+      iDestruct (lft_own_dead with "Hκ H†") as "[]".
     - iMod ("Hclose" with "*") as "Hφ"; last first.
       iExists γ, κ. iSplitR. by iApply lft_incl_refl.
-      iMod (borrow_fake with "H†"). done. by iApply borrow_share.
+      iMod (borrow_fake with "LFT H†"). done. by iApply borrow_share.
   Qed.
 
   Lemma frac_borrow_atomic_acc `(nclose lftN ⊆ E) κ φ:
-    &frac{κ}φ ={E,E∖lftN}=∗ (∃ q, ▷ φ q ∗ (▷ φ q ={E∖lftN,E}=∗ True))
-                          ∨ [†κ] ∗ |={E∖lftN,E}=> True.
+    lft_ctx ⊢ &frac{κ}φ ={E,E∖lftN}=∗ (∃ q, ▷ φ q ∗ (▷ φ q ={E∖lftN,E}=∗ True))
+                                      ∨ [†κ] ∗ |={E∖lftN,E}=> True.
   Proof.
-    iIntros "#Hφ". iDestruct "Hφ" as (γ κ') "[Hκκ' Hshr]".
-    iMod (shr_borrow_acc with "Hshr") as "[[Hφ Hclose]|[H† Hclose]]". done.
+    iIntros "#LFT #Hφ". iDestruct "Hφ" as (γ κ') "[Hκκ' Hshr]".
+    iMod (shr_borrow_acc with "LFT Hshr") as "[[Hφ Hclose]|[H† Hclose]]". done.
     - iLeft. iDestruct "Hφ" as (q) "(Hφ & Hγ & H)". iExists q. iFrame.
       iIntros "!>Hφ". iApply "Hclose". iExists q. iFrame.
     - iRight. iMod "Hclose" as "_". iMod (lft_incl_dead with "Hκκ' H†") as "$". done.
@@ -50,13 +50,13 @@ Section frac_borrow.
   Qed.
 
   Lemma frac_borrow_acc `(nclose lftN ⊆ E) q κ φ:
-    □ (∀ q1 q2, φ (q1+q2)%Qp ↔ φ q1 ∗ φ q2) ⊢
+    lft_ctx ⊢ □ (∀ q1 q2, φ (q1+q2)%Qp ↔ φ q1 ∗ φ q2) -∗
     &frac{κ}φ -∗ q.[κ] ={E}=∗ ∃ q', ▷ φ q' ∗ (▷ φ q' ={E}=∗ q.[κ]).
   Proof.
-    iIntros "#Hφ Hfrac Hκ". unfold frac_borrow.
+    iIntros "#LFT #Hφ Hfrac Hκ". unfold frac_borrow.
     iDestruct "Hfrac" as (γ κ') "#[#Hκκ' Hshr]".
     iMod (lft_incl_acc with "Hκκ' Hκ") as (qκ') "[[Hκ1 Hκ2] Hclose]". done.
-    iMod (shr_borrow_acc_tok with "Hshr Hκ1") as "[H Hclose']". done.
+    iMod (shr_borrow_acc_tok with "LFT Hshr Hκ1") as "[H Hclose']". done.
     iDestruct "H" as (qφ) "(Hφqφ & >Hown & Hq)".
     destruct (Qp_lower_bound (qκ'/2) (qφ/2)) as (qq & qκ'0 & qφ0 & Hqκ' & Hqφ).
     iExists qq.
@@ -72,7 +72,7 @@ Section frac_borrow.
         rewrite lft_own_frac_op. iIntros "{$Hκq $Hq'κ}!%".
         by rewrite assoc (comm _ _ qq) assoc -Hqφ Qp_div_2. }
     clear Hqφ qφ qφ0. iIntros "!>Hqφ".
-    iMod (shr_borrow_acc_tok with "Hshr Hκ1") as "[H Hclose']". done.
+    iMod (shr_borrow_acc_tok with "LFT Hshr Hκ1") as "[H Hclose']". done.
     iDestruct "H" as (qφ) "(Hφqφ & >Hown & >[%|Hq])".
     { subst. iCombine "Hown" "Hownq" as "Hown".
       by iDestruct (own_valid with "Hown") as %Hval%Qp_not_plus_q_ge_1. }
@@ -102,17 +102,17 @@ Section frac_borrow.
   Qed.
 
   Lemma frac_borrow_incl κ κ' q:
-    &frac{κ}(λ q', (q * q').[κ']) ⊢ κ ⊑ κ'.
+    lft_ctx ⊢ &frac{κ}(λ q', (q * q').[κ']) -∗ κ ⊑ κ'.
   Proof.
-    iIntros "#Hbor!#". iSplitR.
+    iIntros "#LFT#Hbor!#". iSplitR.
     - iIntros (q') "Hκ'".
-      iMod (frac_borrow_acc with "[] Hbor Hκ'") as (q'') "[>? Hclose]". done.
+      iMod (frac_borrow_acc with "LFT [] Hbor Hκ'") as (q'') "[>? Hclose]". done.
       + iIntros "/=!#*". rewrite Qp_mult_plus_distr_r lft_own_frac_op. iSplit; auto.
       + iExists _. iFrame. iIntros "!>Hκ'". iApply "Hclose". auto.
     - iIntros "H†'".
-      iMod (frac_borrow_atomic_acc with "Hbor") as "[H|[$ $]]". done.
+      iMod (frac_borrow_atomic_acc with "LFT Hbor") as "[H|[$ $]]". done.
       iDestruct "H" as (q') "[>Hκ' _]".
-      iDestruct (lft_own_dead with "[$H†' $Hκ']") as "[]".
+      iDestruct (lft_own_dead with "Hκ' H†'") as "[]".
   Qed.
 
 End frac_borrow.

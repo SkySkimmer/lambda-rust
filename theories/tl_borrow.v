@@ -28,14 +28,15 @@ Section tl_borrow.
 
   Lemma tl_borrow_acc q κ E F :
     nclose lftN ⊆ E → nclose tlN ⊆ E → nclose N ⊆ F →
-    &tl{κ|tid|N}P ⊢ q.[κ] ∗ tl_own tid F ={E}=∗ ▷P ∗ tl_own tid (F ∖ N) ∗
-                     (▷P ∗ tl_own tid (F ∖ N) ={E}=∗ q.[κ] ∗ tl_own tid F).
+    lft_ctx ⊢ &tl{κ|tid|N}P -∗ q.[κ] -∗ tl_own tid F ={E}=∗
+            ▷P ∗ tl_own tid (F ∖ N) ∗
+            (▷P -∗ tl_own tid (F ∖ N) ={E}=∗ q.[κ] ∗ tl_own tid F).
   Proof.
-    iIntros (???) "#HP[Hκ Htlown]".
+    iIntros (???) "#LFT#HP Hκ Htlown".
     iDestruct "HP" as (i) "(#Hpers&#Hinv)".
     iMod (tl_inv_open with "Hinv Htlown") as "(>Hown&Htlown&Hclose)"; try done.
-    iMod (idx_borrow_acc with "Hpers [$Hown $Hκ]") as "[HP Hclose']". done.
-    iIntros "{$HP $Htlown}!>[HP Htlown]".
+    iMod (idx_borrow_acc with "LFT Hpers Hown Hκ") as "[HP Hclose']". done.
+    iIntros "{$HP $Htlown}!>HP Htlown".
     iMod ("Hclose'" with "HP") as "[Hown $]". iApply "Hclose". by iFrame.
   Qed.
 

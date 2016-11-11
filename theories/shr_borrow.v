@@ -23,24 +23,25 @@ Section shared_borrows.
   Qed.
 
   Lemma shr_borrow_acc `(nclose lftN ⊆ E) κ :
-    &shr{κ}P ={E,E∖lftN}=∗ ▷P ∗ (▷P ={E∖lftN,E}=∗ True) ∨
+    lft_ctx ⊢ &shr{κ}P ={E,E∖lftN}=∗ ▷P ∗ (▷P ={E∖lftN,E}=∗ True) ∨
                           [†κ] ∗ |={E∖lftN,E}=> True.
   Proof.
-    iIntros "#HP". iDestruct "HP" as (i) "(#Hidx&#Hinv)".
+    iIntros "#LFT #HP". iDestruct "HP" as (i) "(#Hidx&#Hinv)".
     iInv lftN as (q') ">Hq'" "Hclose".
     rewrite -(Qp_div_2 q') /idx_borrow_own -op_singleton auth_frag_op own_op.
     iDestruct "Hq'" as "[Hq'0 Hq'1]". iMod ("Hclose" with "[Hq'1]") as "_". by eauto.
-    iMod (idx_borrow_atomic_acc with "Hidx Hq'0") as "[[HP Hclose]|[H† Hclose]]". done.
+    iMod (idx_borrow_atomic_acc with "LFT Hidx Hq'0") as "[[HP Hclose]|[H† Hclose]]". done.
     - iLeft. iFrame. iIntros "!>HP". by iMod ("Hclose" with "HP").
     - iRight. iFrame. iIntros "!>". by iMod "Hclose".
   Qed.
 
   Lemma shr_borrow_acc_tok `(nclose lftN ⊆ E) q κ :
-    &shr{κ}P ⊢ q.[κ] ={E,E∖lftN}=∗ ▷P ∗ (▷P ={E∖lftN,E}=∗ q.[κ]).
+    lft_ctx ⊢ &shr{κ}P -∗ q.[κ] ={E,E∖lftN}=∗ ▷P ∗ (▷P ={E∖lftN,E}=∗ q.[κ]).
   Proof.
-    iIntros "#Hshr Hκ". iMod (shr_borrow_acc with "Hshr") as "[[$ Hclose]|[H† _]]". done.
+    iIntros "#LFT #Hshr Hκ".
+    iMod (shr_borrow_acc with "LFT Hshr") as "[[$ Hclose]|[H† _]]". done.
     - iIntros "!>HP". by iMod ("Hclose" with "HP").
-    - iDestruct (lft_own_dead with "[-]") as "[]". by iFrame.
+    - iDestruct (lft_own_dead with "Hκ H†") as "[]".
   Qed.
 
   Lemma shr_borrow_shorten κ κ': κ ⊑ κ' ⊢ &shr{κ'}P -∗ &shr{κ}P.
