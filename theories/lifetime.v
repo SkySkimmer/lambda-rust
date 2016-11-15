@@ -3,7 +3,6 @@ From iris.base_logic.lib Require Export fancy_updates invariants namespaces.
 From iris.proofmode Require Import tactics.
 
 Definition lftN := nroot .@ "lft".
-
 Definition atomic_lft := positive.
 
 Definition lft_tokUR : ucmraT :=
@@ -185,7 +184,7 @@ Section lft.
   Lemma lft_own_static q : True ==∗ q.[static].
   Proof.
     rewrite /lft_own /static omap_empty fmap_empty.
-    apply (own_empty (A:=lft_tokUR) lft_toks_name).
+    apply (own_empty lft_tokUR lft_toks_name).
   Qed.
 
   Lemma lft_not_dead_static : [† static] ⊢ False.

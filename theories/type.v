@@ -22,7 +22,8 @@ Section type.
 Context `{iris_typeG Σ}.
 
 Record type :=
-  { ty_size : nat; ty_dup : bool;
+  { ty_size : nat;
+    ty_dup : bool;
     ty_own : thread_id → list val → iProp Σ;
     ty_shr : lifetime → thread_id → coPset → loc → iProp Σ;
 
@@ -107,6 +108,9 @@ Next Obligation.
 Qed.
 
 End type.
+
+Hint Extern 0 (Is_true _.(ty_dup)) =>
+  exact I || assumption : typeclass_instances.
 
 Delimit Scope lrust_type_scope with T.
 Bind Scope lrust_type_scope with type.
@@ -317,8 +321,8 @@ Section types.
     repeat setoid_rewrite tl_own_union; first last.
     set_solver. set_solver. set_solver. set_solver.
     iDestruct "Htl" as "[[Htl1 Htl2] $]".
-    iMod (ty1.(ty_shr_acc) with "LFT H1 [$Htok1 $Htl1]") as (q1) "[H1 Hclose1]". set_solver.
-    iMod (ty2.(ty_shr_acc) with "LFT H2 [$Htok2 $Htl2]") as (q2) "[H2 Hclose2]". set_solver.
+    iMod (ty1.(ty_shr_acc) with "LFT H1 [$Htok1 $Htl1]") as (q1) "[H1 Hclose1]". done. set_solver.
+    iMod (ty2.(ty_shr_acc) with "LFT H2 [$Htok2 $Htl2]") as (q2) "[H2 Hclose2]". done. set_solver.
     destruct (Qp_lower_bound q1 q2) as (qq & q'1 & q'2 & -> & ->). iExists qq.
     iDestruct "H1" as (vl1) "[H↦1 H1]". iDestruct "H2" as (vl2) "[H↦2 H2]".
     rewrite -!heap_mapsto_vec_op_eq !split_prod_mt.
