@@ -195,7 +195,7 @@ Ltac solve_atomic :=
   end.
 Hint Extern 0 (language.atomic _) => solve_atomic.
 (* For the side-condition of elim_vs_pvs_wp_atomic *)
-Hint Extern 0 (language.atomic _) => solve_atomic : typeclass_instances.
+Hint Extern 0 (language.atomic _) => solve_atomic : atomic.
 
 (** Substitution *)
 Ltac simpl_subst :=

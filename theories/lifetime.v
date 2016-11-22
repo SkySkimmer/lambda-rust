@@ -1,6 +1,6 @@
 From iris.algebra Require Import csum auth frac gmap.
 From iris.base_logic.lib Require Export fancy_updates invariants namespaces.
-From iris.proofmode Require Import tactics.
+From iris.proofmode Require Import tactics fractional.
 
 Definition lftN := nroot .@ "lft".
 Definition atomic_lft := positive.
@@ -72,10 +72,23 @@ Section lft.
 
   Axiom lft_ctx_alloc : True ={∅}=∗ lft_ctx.
 
-  (*** PersitentP, TimelessP and Proper instances  *)
+  (*** PersitentP, TimelessP, Proper and Fractional instances  *)
 
   Global Instance lft_own_timeless q κ : TimelessP q.[κ].
   Proof. unfold lft_own. apply _. Qed.
+  Global Instance lft_own_fractional κ : Fractional (λ q, q.[κ])%I.
+  Proof.
+    intros p q. rewrite /lft_own -own_op -auth_frag_op.
+    f_equiv. constructor. done. simpl. intros Λ.
+    rewrite lookup_op !lookup_fmap !lookup_omap. apply reflexive_eq.
+    case: (κ !! Λ)=>[[|a]|]//=. rewrite -Some_op Cinl_op. repeat f_equal.
+    induction a as [|a IH]. done.
+    rewrite /= IH /op /cmra_op /= /frac_op !assoc. f_equal.
+    rewrite -!assoc. f_equal. apply (comm _).
+  Qed.
+  Global Instance lft_own_as_fractional κ q :
+    AsFractional q.[κ] (λ q, q.[κ])%I q.
+  Proof. done. Qed.
 
   Global Instance lft_dead_persistent κ : PersistentP [†κ].
   Proof. unfold lft_dead. apply _. Qed.
@@ -120,17 +133,6 @@ Section lft.
       (iRight + iLeft); iExists Λ; iIntros "{$Hown}!%"; by eauto.
   Qed.
 
-  Lemma lft_own_frac_op κ q q':
-       (q + q').[κ] ⊣⊢ q.[κ] ∗ q'.[κ].
-  Proof.
-    rewrite /lft_own -own_op -auth_frag_op. f_equiv. constructor. done. simpl.
-    intros Λ. rewrite lookup_op !lookup_fmap !lookup_omap. apply reflexive_eq.
-    case: (κ !! Λ)=>[[|a]|]//=. rewrite -Some_op Cinl_op. repeat f_equal.
-    induction a as [|a IH]. done.
-    rewrite /= IH /op /cmra_op /= /frac_op !assoc. f_equal.
-    rewrite -!assoc. f_equal. apply (comm _).
-  Qed.
-
   Axiom lft_create :
     ∀ `(nclose lftN ⊆ E),
       lft_ctx ={E}=∗ ∃ κ, 1.[κ] ∗ □ (1.[κ] ={⊤,⊤∖nclose lftN}▷=∗ [†κ]).
@@ -167,7 +169,7 @@ Section lft.
     ∀ `(nclose lftN ⊆ E) κ κ' P, κ ≼ κ' →
       lft_ctx ⊢ &{κ}P ={E}=∗ &{κ'}P ∗ ([†κ'] ={E}=∗ &{κ}P).
   Axiom borrow_unnest :
-    ∀ `(nclose lftN ⊆ E) κ κ' P, lft_ctx ⊢ &{κ'}&{κ}P ={E}▷=∗ &{κ ⋅ κ'}P.
+    ∀ `(nclose lftN ⊆ E) κ κ' P, lft_ctx ⊢ &{κ'}&{κ}P ={E, E∖lftN}▷=∗ &{κ ⋅ κ'}P.
 
   (*** Derived lemmas  *)
 
@@ -192,29 +194,6 @@ Section lft.
     rewrite /lft_dead /static. setoid_rewrite lookup_empty.
     iIntros "HΛ". iDestruct "HΛ" as (Λ) "[% _]". naive_solver.
   Qed.
-
-  Lemma lft_own_split κ q : q.[κ] ⊣⊢ (q/2).[κ] ∗ (q/2).[κ].
-  Proof. by rewrite -lft_own_frac_op Qp_div_2. Qed.
-
-  Global Instance into_and_lft_own_half κ q :
-    IntoAnd false q.[κ] (q/2).[κ] (q/2).[κ] | 100.
-  Proof. by rewrite /IntoAnd lft_own_split. Qed.
-
-  Global Instance from_sep_lft_own_half κ q :
-    FromSep q.[κ] (q/2).[κ] (q/2).[κ] | 100.
-  Proof. by rewrite /FromSep -lft_own_split. Qed.
-
-  Global Instance frame_lft_own_half κ q :
-    Frame (q/2).[κ] q.[κ] (q/2).[κ] | 100.
-  Proof. by rewrite /Frame -lft_own_split. Qed.
-
-  Global Instance into_and_lft_own_frac κ q1 q2 :
-    IntoAnd false (q1+q2).[κ] q1.[κ] q2.[κ].
-  Proof. by rewrite /IntoAnd lft_own_frac_op. Qed.
-
-  Global Instance from_sep_lft_own_frac κ q1 q2 :
-    FromSep (q1+q2).[κ] q1.[κ] q2.[κ].
-  Proof. by rewrite /FromSep -lft_own_frac_op. Qed.
 
   Global Instance into_and_lft_own κ1 κ2 q :
     IntoAnd false q.[κ1⋅κ2] q.[κ1] q.[κ2].
@@ -323,10 +302,9 @@ Section incl.
       iMod ("H1" with "*Hκ'1") as (q') "[Hκ' Hclose']".
       iMod ("H2" with "*Hκ'2") as (q'') "[Hκ'' Hclose'']".
       destruct (Qp_lower_bound q' q'') as (qq & q'0 & q''0 & -> & ->).
-      iExists qq. rewrite -lft_own_op !lft_own_frac_op.
+      iExists qq. rewrite -lft_own_op.
       iDestruct "Hκ'" as "[$ Hκ']". iDestruct "Hκ''" as "[$ Hκ'']".
-      iIntros "!>[Hκ'0 Hκ''0]".
-      iMod ("Hclose'" with "[$Hκ' $Hκ'0]") as "$".
+      iIntros "!>[Hκ'0 Hκ''0]". iMod ("Hclose'" with "[$Hκ' $Hκ'0]") as "$".
       by iMod ("Hclose''" with "[$Hκ'' $Hκ''0]") as "$".
     - rewrite -lft_dead_or. iIntros "[H†|H†]". by iApply "H1†". by iApply "H2†".
   Qed.

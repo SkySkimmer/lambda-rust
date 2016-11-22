@@ -93,9 +93,7 @@ Section props.
 
   Lemma perm_tok_plus κ q1 q2 :
     tok κ q1 ∗ tok κ q2 ⇔ tok κ (q1 + q2).
-  Proof.
-    rewrite /tok /sep /=; split; iIntros (tid) "_ ?"; rewrite lft_own_frac_op //.
-  Qed.
+  Proof. rewrite /tok /sep /=; split; by iIntros (tid) "_ [$$]". Qed.
 
   Lemma perm_lftincl_refl κ : ⊤ ⇒ κ ⊑ κ.
   Proof. iIntros (tid) "_ _!>". iApply lft_incl_refl. Qed.
