@@ -509,7 +509,7 @@ Proof.
   iDestruct (big_sepS_delete _ K with "HK") as "[[Hκalive Hκ] HK]"; first done.
   destruct (HIK κ) as [γs Hκ]; first done.
   specialize (IH (K ∖ {[ κ ]})). feed specialize IH.
-  { clear IH. set_unfold. (* HERE *)
+  { set_unfold. (* HERE *)
 assert (LeibnizEquiv (option ())). apply _.
 Typeclasses eauto := debug.
  set_unfold. naive_solver. set_solver. clear -HκK. set_solver. SearchAbout strict difference. abstract set_solver +HκK. }
