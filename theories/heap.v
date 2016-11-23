@@ -1,6 +1,6 @@
 From iris.algebra Require Import cmra_big_op gmap frac dec_agree.
 From iris.algebra Require Import csum excl auth.
-From iris.base_logic Require Import big_op lib.invariants.
+From iris.base_logic Require Import big_op lib.invariants lib.fractional.
 From iris.proofmode Require Export tactics.
 From lrust Require Export lifting.
 Import uPred.
@@ -118,22 +118,35 @@ Section heap.
   Global Instance heap_mapsto_timeless l q v : TimelessP (l↦{q}v).
   Proof. rewrite heap_mapsto_eq /heap_mapsto_def. apply _. Qed.
 
+  Global Instance heap_mapsto_fractional l v: Fractional (λ q, l ↦{q} v)%I.
+  Proof.
+    intros p q. by rewrite heap_mapsto_eq -own_op
+      -auth_frag_op op_singleton pair_op dec_agree_idemp.
+  Qed.
+  Global Instance heap_mapsto_as_fractional l q v:
+    AsFractional (l ↦{q} v) (λ q, l ↦{q} v)%I q.
+  Proof. done. Qed.
+
   Global Instance heap_mapsto_vec_timeless l q vl : TimelessP (l ↦∗{q} vl).
   Proof. apply _. Qed.
 
+  Global Instance heap_mapsto_vec_fractional l vl: Fractional (λ q, l ↦∗{q} vl)%I.
+  Proof.
+    intros p q. rewrite /heap_mapsto_vec -big_sepL_sepL.
+    by setoid_rewrite (fractional (Φ := λ q, _ ↦{q} _)%I).
+  Qed.
+  Global Instance heap_mapsto_vec_as_fractional l q vl:
+    AsFractional (l ↦∗{q} vl) (λ q, l ↦∗{q} vl)%I q.
+  Proof. done. Qed.
+
   Global Instance heap_freeable_timeless q l n : TimelessP (†{q}l…n).
   Proof. rewrite heap_freeable_eq /heap_freeable_def. apply _. Qed.
-
-  Lemma heap_mapsto_op_eq l q1 q2 v : l ↦{q1} v ∗ l ↦{q2} v ⊣⊢ l ↦{q1+q2} v.
-  Proof.
-    by rewrite heap_mapsto_eq -own_op -auth_frag_op op_singleton pair_op dec_agree_idemp.
-  Qed.
 
   Lemma heap_mapsto_op l q1 q2 v1 v2 :
     l ↦{q1} v1 ∗ l ↦{q2} v2 ⊣⊢ ⌜v1 = v2⌝ ∧ l ↦{q1+q2} v1.
   Proof.
     destruct (decide (v1 = v2)) as [->|].
-    { by rewrite heap_mapsto_op_eq pure_True // left_id. }
+    { by rewrite -(fractional (Φ := λ q, l ↦{q} _)%I) pure_True // left_id. }
     apply (anti_symm (⊢)); last by apply pure_elim_l.
     rewrite heap_mapsto_eq -own_op -auth_frag_op own_valid discrete_valid.
     eapply pure_elim; [done|]=> /auth_own_valid /=.
@@ -159,12 +172,6 @@ Section heap.
     by rewrite (heap_mapsto_vec_app l q [v] vl) heap_mapsto_vec_singleton.
   Qed.
 
-  Lemma heap_mapsto_vec_op_eq l q1 q2 vl :
-    l ↦∗{q1} vl ∗ l ↦∗{q2} vl ⊣⊢ l ↦∗{q1+q2} vl.
-  Proof.
-    rewrite /heap_mapsto_vec -big_sepL_sepL. by setoid_rewrite heap_mapsto_op_eq.
-  Qed.
-
   Lemma heap_mapsto_vec_op l q1 q2 vl1 vl2 :
     length vl1 = length vl2 →
     l ↦∗{q1} vl1 ∗ l ↦∗{q2} vl2 ⊣⊢ ⌜vl1 = vl2⌝ ∧ l ↦∗{q1+q2} vl1.
@@ -176,7 +183,7 @@ Section heap.
       iDestruct (IH (shift_loc l 1) with "[Hvl1 Hvl2]") as "[% $]";
         subst; first by iFrame.
       rewrite (inj_iff (:: vl2)). iApply heap_mapsto_op. by iFrame.
-    - iIntros "[% Hl]"; subst. by iApply heap_mapsto_vec_op_eq.
+    - by iIntros "[% [$ Hl2]]"; subst.
   Qed.
 
   Lemma heap_mapsto_vec_prop_op l q1 q2 n (Φ : list val → iProp Σ) :
@@ -189,18 +196,10 @@ Section heap.
       iDestruct (Hlen with "Hown") as %?.
       iCombine "Hmt1" "Hmt2" as "Hmt". rewrite heap_mapsto_vec_op; last congruence.
       iDestruct "Hmt" as "[_ Hmt]". iExists vl. by iFrame.
-    - iIntros "Hmt". setoid_rewrite <-heap_mapsto_vec_op_eq.
-      iDestruct "Hmt" as (vl) "[[Hmt1 Hmt2] Hown]".
+    - iIntros "Hmt". iDestruct "Hmt" as (vl) "[[Hmt1 Hmt2] Hown]".
       iDestruct (Hlen with "Hown") as %?.
       iSplitL "Hmt1 Hown"; iExists _; by iFrame.
   Qed.
-
-  Lemma heap_mapsto_op_split l q v : l ↦{q} v ⊣⊢ l ↦{q/2} v ∗ l ↦{q/2} v.
-  Proof. by rewrite heap_mapsto_op_eq Qp_div_2. Qed.
-
-  Lemma heap_mapsto_vec_op_split l q vl :
-    l ↦∗{q} vl ⊣⊢ l ↦∗{q/2} vl ∗ l ↦∗{q/2} vl.
-  Proof. by rewrite heap_mapsto_vec_op_eq Qp_div_2. Qed.
 
   Lemma heap_mapsto_vec_combine l q vl :
     vl ≠ [] →
