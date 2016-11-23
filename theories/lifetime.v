@@ -149,9 +149,9 @@ Section defs.
   Definition lft_ctx : iProp Σ := inv mgmtN lfts_inv.
 
   Definition lft_incl (κ κ' : lft) : iProp Σ :=
-    (□ ((∀ q, lft_own q κ ={lftN}=∗ ∃ q',
-                 lft_own q' κ' ∗ (lft_own q' κ' ={lftN}=∗ lft_own q κ)) ∗
-        (lft_dead_own κ' ={lftN}=∗ lft_dead_own κ)))%I.
+    (□ ((∀ q, lft_own q κ ={↑lftN}=∗ ∃ q',
+                 lft_own q' κ' ∗ (lft_own q' κ' ={↑lftN}=∗ lft_own q κ)) ∗
+        (lft_dead_own κ' ={↑lftN}=∗ lft_dead_own κ)))%I.
 
   Definition bor_idx := (lft * slice_name)%type.
 
@@ -637,7 +637,9 @@ Proof.
   { intros κ κ'. rewrite /K. rewrite !elem_of_filter. admit. }
   { intros κ κ'. rewrite /K. rewrite !elem_of_filter.
  admit. }
+Admitted.
 
+(*
  set_solver +. rewrite elem_of_dom.
 
 
@@ -827,3 +829,4 @@ Proof. Admitted.
 End incl.
 
 Typeclasses Opaque lft_incl.
+*)
