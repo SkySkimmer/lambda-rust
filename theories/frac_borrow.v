@@ -7,23 +7,23 @@ Class frac_borrowG Σ := frac_borrowG_inG :> inG Σ fracR.
 
 Definition frac_borrow `{invG Σ, lifetimeG Σ, frac_borrowG Σ} κ (Φ : Qp → iProp Σ) :=
   (∃ γ κ', κ ⊑ κ' ∗ &shr{κ'} ∃ q, Φ q ∗ own γ q ∗
-                       (q = 1%Qp ∨ ∃ q', (q + q')%Qp = 1%Qp ∗ q'.[κ']))%I.
+                       (⌜q = 1%Qp⌝ ∨ ∃ q', ⌜(q + q' = 1)%Qp⌝ ∗ q'.[κ']))%I.
 Notation "&frac{ κ } P" := (frac_borrow κ P)
   (format "&frac{ κ } P", at level 20, right associativity) : uPred_scope.
 
 Section frac_borrow.
-
   Context `{invG Σ, lifetimeG Σ, frac_borrowG Σ}.
+  Implicit Types E : coPset.
 
   Global Instance frac_borrow_proper :
     Proper (pointwise_relation _ (⊣⊢) ==> (⊣⊢)) (frac_borrow κ).
   Proof. solve_proper. Qed.
   Global Instance frac_borrow_persistent : PersistentP (&frac{κ}φ) := _.
 
-  Lemma borrow_fracture φ `(nclose lftN ⊆ E) κ:
-    lft_ctx ⊢ &{κ}(φ 1%Qp) ={E}=∗ &frac{κ}φ.
+  Lemma borrow_fracture φ E κ :
+    ↑lftN ⊆ E → lft_ctx ⊢ &{κ}(φ 1%Qp) ={E}=∗ &frac{κ}φ.
   Proof.
-    iIntros "#LFT Hφ". iMod (own_alloc 1%Qp) as (γ) "?". done.
+    iIntros (?) "#LFT Hφ". iMod (own_alloc 1%Qp) as (γ) "?". done.
     iMod (borrow_acc_atomic_strong with "LFT Hφ") as "[[Hφ Hclose]|[H† Hclose]]". done.
     - iMod ("Hclose" with "*[-]") as "Hφ"; last first.
       { iExists γ, κ. iSplitR; last by iApply (borrow_share with "Hφ").
@@ -37,11 +37,12 @@ Section frac_borrow.
       iMod (borrow_fake with "LFT H†"). done. by iApply borrow_share.
   Qed.
 
-  Lemma frac_borrow_atomic_acc `(nclose lftN ⊆ E) κ φ:
-    lft_ctx ⊢ &frac{κ}φ ={E,E∖lftN}=∗ (∃ q, ▷ φ q ∗ (▷ φ q ={E∖lftN,E}=∗ True))
-                                      ∨ [†κ] ∗ |={E∖lftN,E}=> True.
+  Lemma frac_borrow_atomic_acc E κ φ :
+    ↑lftN ⊆ E →
+    lft_ctx ⊢ &frac{κ}φ ={E,E∖↑lftN}=∗ (∃ q, ▷ φ q ∗ (▷ φ q ={E∖↑lftN,E}=∗ True))
+                                      ∨ [†κ] ∗ |={E∖↑lftN,E}=> True.
   Proof.
-    iIntros "#LFT #Hφ". iDestruct "Hφ" as (γ κ') "[Hκκ' Hshr]".
+    iIntros (?) "#LFT #Hφ". iDestruct "Hφ" as (γ κ') "[Hκκ' Hshr]".
     iMod (shr_borrow_acc with "LFT Hshr") as "[[Hφ Hclose]|[H† Hclose]]". done.
     - iLeft. iDestruct "Hφ" as (q) "(Hφ & Hγ & H)". iExists q. iFrame.
       iIntros "!>Hφ". iApply "Hclose". iExists q. iFrame.
@@ -49,11 +50,12 @@ Section frac_borrow.
       iApply fupd_intro_mask. set_solver. done.
   Qed.
 
-  Lemma frac_borrow_acc `(nclose lftN ⊆ E) q κ φ:
+  Lemma frac_borrow_acc E q κ φ:
+    ↑lftN ⊆ E →
     lft_ctx ⊢ □ (∀ q1 q2, φ (q1+q2)%Qp ↔ φ q1 ∗ φ q2) -∗
     &frac{κ}φ -∗ q.[κ] ={E}=∗ ∃ q', ▷ φ q' ∗ (▷ φ q' ={E}=∗ q.[κ]).
   Proof.
-    iIntros "#LFT #Hφ Hfrac Hκ". unfold frac_borrow.
+    iIntros (?) "#LFT #Hφ Hfrac Hκ". unfold frac_borrow.
     iDestruct "Hfrac" as (γ κ') "#[#Hκκ' Hshr]".
     iMod (lft_incl_acc with "Hκκ' Hκ") as (qκ') "[[Hκ1 Hκ2] Hclose]". done.
     iMod (shr_borrow_acc_tok with "LFT Hshr Hκ1") as "[H Hclose']". done.

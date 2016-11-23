@@ -16,7 +16,7 @@ Section ty_incl.
           object when it is shared. We place this property under the
           hypothesis that [ty2.(ty_shr)] holds, so that the [!] type
           is still included in any other. *)
-                  ty2.(ty_shr) κ tid E l ∗ ty1.(ty_size) = ty2.(ty_size)).
+                  ty2.(ty_shr) κ tid E l ∗ ⌜ty1.(ty_size) = ty2.(ty_size)⌝).
 
   Global Instance ty_incl_refl ρ : Reflexive (ty_incl ρ).
   Proof. iIntros (ty tid) "__!>". iSplit; iIntros "!#"; eauto. Qed.

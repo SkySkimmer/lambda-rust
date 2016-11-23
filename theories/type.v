@@ -11,7 +11,7 @@ Class iris_typeG Σ := Iris_typeG {
   type_frac_borrowG Σ :> frac_borrowG Σ
 }.
 
-Definition mgmtE := nclose tlN ∪ lftN.
+Definition mgmtE := ↑tlN ∪ ↑lftN.
 Definition lrustN := nroot .@ "lrust".
 
 (* [perm] is defined here instead of perm.v in order to define [cont] *)
@@ -30,7 +30,7 @@ Record type :=
     ty_dup_persistent tid vl : ty_dup → PersistentP (ty_own tid vl);
     ty_shr_persistent κ tid E l : PersistentP (ty_shr κ tid E l);
 
-    ty_size_eq tid vl : ty_own tid vl ⊢ length vl = ty_size;
+    ty_size_eq tid vl : ty_own tid vl ⊢ ⌜length vl = ty_size⌝;
     (* The mask for starting the sharing does /not/ include the
        namespace N, for allowing more flexibility for the user of
        this type (typically for the [own] type). AFAIK, there is no
@@ -40,8 +40,8 @@ Record type :=
        invariants, which does not need the mask.  Moreover, it is
        more consistent with thread-local tokens, which we do not
        give any. *)
-    ty_share E N κ l tid q : mgmtE ⊥ nclose N → mgmtE ⊆ E →
-      lft_ctx ⊢ &{κ} (l ↦∗: ty_own tid) -∗ q.[κ] ={E}=∗ ty_shr κ tid N l ∗ q.[κ];
+    ty_share E N κ l tid q : mgmtE ⊥ ↑N → mgmtE ⊆ E →
+      lft_ctx ⊢ &{κ} (l ↦∗: ty_own tid) -∗ q.[κ] ={E}=∗ ty_shr κ tid (↑N) l ∗ q.[κ];
     ty_shr_mono κ κ' tid E E' l : E ⊆ E' →
       lft_ctx ⊢ κ' ⊑ κ -∗ ty_shr κ tid E l -∗ ty_shr κ' tid E' l;
     ty_shr_acc κ tid E F l q :
@@ -59,7 +59,7 @@ Record simple_type `{iris_typeG Σ} :=
   { st_size : nat;
     st_own : thread_id → list val → iProp Σ;
 
-    st_size_eq tid vl : st_own tid vl ⊢ length vl = st_size;
+    st_size_eq tid vl : st_own tid vl ⊢ ⌜length vl = st_size⌝;
     st_own_persistent tid vl : PersistentP (st_own tid vl) }.
 Global Existing Instance st_own_persistent.
 
@@ -99,7 +99,7 @@ Next Obligation.
     iDestruct "Hmt" as "[Hmt1 Hmt2]". iSplitL "Hmt1".
     + iNext. iExists _. by iFrame.
     + iIntros "Hmt1". iDestruct "Hmt1" as (vl') "[Hmt1 #Hown']".
-      iAssert (▷ (length vl = length vl'))%I as ">%".
+      iAssert (▷ ⌜length vl = length vl'⌝)%I as ">%".
       { iNext.
         iDestruct (st_size_eq with "Hown") as %->.
         iDestruct (st_size_eq with "Hown'") as %->. done. }
@@ -137,15 +137,15 @@ Section types.
   Next Obligation. intros. iIntros "_ []". Qed.
 
   Program Definition unit : type :=
-    {| st_size := 0; st_own tid vl := (vl = [])%I |}.
+    {| st_size := 0; st_own tid vl := ⌜vl = []⌝%I |}.
   Next Obligation. iIntros (tid vl) "%". simpl. by subst. Qed.
 
   Program Definition bool : type :=
-    {| st_size := 1; st_own tid vl := (∃ z:bool, vl = [ #z ])%I |}.
+    {| st_size := 1; st_own tid vl := (∃ z:bool, ⌜vl = [ #z ]⌝)%I |}.
   Next Obligation. iIntros (tid vl) "H". iDestruct "H" as (z) "%". by subst. Qed.
 
   Program Definition int : type :=
-    {| st_size := 1; st_own tid vl := (∃ z:Z, vl = [ #z ])%I |}.
+    {| st_size := 1; st_own tid vl := (∃ z:Z, ⌜vl = [ #z ]⌝)%I |}.
   Next Obligation. iIntros (tid vl) "H". iDestruct "H" as (z) "%". by subst. Qed.
 
   Program Definition own (q : Qp) (ty : type) :=
@@ -157,7 +157,7 @@ Section types.
 
             Since this assertion is timeless, this should not cause
             problems. *)
-         (∃ l:loc, vl = [ #l ] ∗ ▷ l ↦∗: ty.(ty_own) tid ∗ ▷ †{q}l…ty.(ty_size))%I;
+         (∃ l:loc, ⌜vl = [ #l ]⌝ ∗ ▷ l ↦∗: ty.(ty_own) tid ∗ ▷ †{q}l…ty.(ty_size))%I;
        ty_shr κ tid E l :=
          (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ∗
             ∀ q', □ (q'.[κ] ={mgmtE ∪ E, mgmtE}▷=∗ ty.(ty_shr) κ tid E l' ∗ q'.[κ]))%I
@@ -177,11 +177,11 @@ Section types.
     iMod (borrow_split with "LFT Hb2") as "[Hb2 _]". set_solver.
     iMod (borrow_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "Hbf". set_solver.
     rewrite /borrow. iDestruct "Hb2" as (i) "(#Hpb&Hpbown)".
-    iMod (inv_alloc N _ (idx_borrow_own 1 i ∨ ty_shr ty κ tid N l')%I
+    iMod (inv_alloc N _ (idx_borrow_own 1 i ∨ ty_shr ty κ tid (↑N) l')%I
          with "[Hpbown]") as "#Hinv"; first by eauto.
     iExists l'. iIntros "!>{$Hbf}".  iIntros (q'') "!#Htok".
     iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
-    replace ((mgmtE ∪ N) ∖ N) with mgmtE by set_solver.
+    replace ((mgmtE ∪ ↑N) ∖ ↑N) with mgmtE by set_solver.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
     - iAssert (&{κ}▷ l' ↦∗: ty_own ty tid)%I with "[Hbtok]" as "Hb".
       { rewrite /borrow. iExists i. eauto. }
@@ -209,7 +209,7 @@ Section types.
   Program Definition uniq_borrow (κ:lifetime) (ty:type) :=
     {| ty_size := 1; ty_dup := false;
        ty_own tid vl :=
-         (∃ l:loc, vl = [ #l ] ∗ &{κ} l ↦∗: ty.(ty_own) tid)%I;
+         (∃ l:loc, ⌜vl = [ #l ]⌝ ∗ &{κ} l ↦∗: ty.(ty_own) tid)%I;
        ty_shr κ' tid E l :=
          (∃ l':loc, &frac{κ'}(λ q', l ↦{q'} #l') ∗
             ∀ q', □ (q'.[κ ⋅ κ']
@@ -229,11 +229,11 @@ Section types.
     rewrite heap_mapsto_vec_singleton.
     iMod (borrow_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "Hbf". set_solver.
     rewrite {1}/borrow. iDestruct "Hb2" as (i) "[#Hpb Hpbown]".
-    iMod (inv_alloc N _ (idx_borrow_own 1 i ∨ ty_shr ty (κ⋅κ') tid N l')%I
+    iMod (inv_alloc N _ (idx_borrow_own 1 i ∨ ty_shr ty (κ⋅κ') tid (↑N) l')%I
          with "[Hpbown]") as "#Hinv"; first by eauto.
     iExists l'. iIntros "!>{$Hbf}". iIntros (q'') "!#Htok".
     iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
-    replace ((mgmtE ∪ N) ∖ N) with mgmtE by set_solver.
+    replace ((mgmtE ∪ ↑N) ∖ ↑N) with mgmtE by set_solver.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
     - iAssert (&{κ'}&{κ} l' ↦∗: ty_own ty tid)%I with "[Hbtok]" as "Hb".
       { rewrite /borrow. eauto. }
@@ -262,14 +262,14 @@ Section types.
   Program Definition shared_borrow (κ : lifetime) (ty : type) : type :=
     {| st_size := 1;
        st_own tid vl :=
-         (∃ (l:loc), vl = [ #l ] ∗ ty.(ty_shr) κ tid lrustN l)%I |}.
+         (∃ (l:loc), ⌜vl = [ #l ]⌝ ∗ ty.(ty_shr) κ tid (↑lrustN) l)%I |}.
   Next Obligation.
     iIntros (κ ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
   Qed.
 
   Lemma split_prod_mt tid ty1 ty2 q l :
     (l ↦∗{q}: λ vl,
-       ∃ vl1 vl2, vl = vl1 ++ vl2 ∗ ty1.(ty_own) tid vl1 ∗ ty2.(ty_own) tid vl2)%I
+       ∃ vl1 vl2, ⌜vl = vl1 ++ vl2⌝ ∗ ty1.(ty_own) tid vl1 ∗ ty2.(ty_own) tid vl2)%I
        ⊣⊢ l ↦∗{q}: ty1.(ty_own) tid ∗ shift_loc l ty1.(ty_size) ↦∗{q}: ty2.(ty_own) tid.
   Proof.
     iSplit; iIntros "H".
@@ -287,9 +287,9 @@ Section types.
     {| ty_size := ty1.(ty_size) + ty2.(ty_size);
        ty_dup := ty1.(ty_dup) && ty2.(ty_dup);
        ty_own tid vl := (∃ vl1 vl2,
-         vl = vl1 ++ vl2 ∗ ty1.(ty_own) tid vl1 ∗ ty2.(ty_own) tid vl2)%I;
+         ⌜vl = vl1 ++ vl2⌝ ∗ ty1.(ty_own) tid vl1 ∗ ty2.(ty_own) tid vl2)%I;
        ty_shr κ tid E l :=
-         (∃ E1 E2, ■ (E1 ⊥ E2 ∧ E1 ⊆ E ∧ E2 ⊆ E) ∗
+         (∃ E1 E2, ⌜E1 ⊥ E2 ∧ E1 ⊆ E ∧ E2 ⊆ E⌝ ∗
             ty1.(ty_shr) κ tid E1 l ∗
             ty2.(ty_shr) κ tid E2 (shift_loc l ty1.(ty_size)))%I |}.
   Next Obligation. intros ty1 ty2 tid vl [Hdup1 Hdup2]%andb_True. apply _. Qed.
@@ -304,7 +304,7 @@ Section types.
     iMod (borrow_split with "LFT H") as "[H1 H2]". set_solver.
     iMod (ty1.(ty_share) _ (N .@ 1) with "LFT H1 Htok") as "[? Htok]". solve_ndisj. done.
     iMod (ty2.(ty_share) _ (N .@ 2) with "LFT H2 Htok") as "[? $]". solve_ndisj. done.
-    iModIntro. iExists (N .@ 1). iExists (N .@ 2). iFrame.
+    iModIntro. iExists (↑N .@ 1). iExists (↑N .@ 2). iFrame.
     iPureIntro. split. solve_ndisj. split; apply nclose_subseteq.
   Qed.
   Next Obligation.
@@ -326,18 +326,18 @@ Section types.
     destruct (Qp_lower_bound q1 q2) as (qq & q'1 & q'2 & -> & ->). iExists qq.
     iDestruct "H1" as (vl1) "[H↦1 H1]". iDestruct "H2" as (vl2) "[H↦2 H2]".
     rewrite -!heap_mapsto_vec_op_eq !split_prod_mt.
-    iAssert (▷ (length vl1 = ty1.(ty_size)))%I with "[#]" as ">%".
+    iAssert (▷ ⌜length vl1 = ty1.(ty_size)⌝)%I with "[#]" as ">%".
     { iNext. by iApply ty_size_eq. }
-    iAssert (▷ (length vl2 = ty2.(ty_size)))%I with "[#]" as ">%".
+    iAssert (▷ ⌜length vl2 = ty2.(ty_size)⌝)%I with "[#]" as ">%".
     { iNext. by iApply ty_size_eq. }
     iDestruct "H↦1" as "[H↦1 H↦1f]". iDestruct "H↦2" as "[H↦2 H↦2f]".
     iIntros "!>". iSplitL "H↦1 H1 H↦2 H2".
     - iNext. iSplitL "H↦1 H1". iExists vl1. by iFrame. iExists vl2. by iFrame.
     - iIntros "[H1 H2]".
       iDestruct "H1" as (vl1') "[H↦1 H1]". iDestruct "H2" as (vl2') "[H↦2 H2]".
-      iAssert (▷ (length vl1' = ty1.(ty_size)))%I with "[#]" as ">%".
+      iAssert (▷ ⌜length vl1' = ty1.(ty_size)⌝)%I with "[#]" as ">%".
       { iNext. by iApply ty_size_eq. }
-      iAssert (▷ (length vl2' = ty2.(ty_size)))%I with "[#]" as ">%".
+      iAssert (▷ ⌜length vl2' = ty2.(ty_size)⌝)%I with "[#]" as ">%".
       { iNext. by iApply ty_size_eq. }
       iCombine "H↦1" "H↦1f" as "H↦1". iCombine "H↦2" "H↦2f" as "H↦2".
       rewrite !heap_mapsto_vec_op; try by congruence.
@@ -350,7 +350,7 @@ Section types.
 
   Lemma split_sum_mt l tid q tyl :
     (l ↦∗{q}: λ vl,
-         ∃ (i : nat) vl', vl = #i :: vl' ∗ ty_own (nth i tyl emp) tid vl')%I
+         ∃ (i : nat) vl', ⌜vl = #i :: vl'⌝ ∗ ty_own (nth i tyl emp) tid vl')%I
     ⊣⊢ ∃ (i : nat), l ↦{q} #i ∗ shift_loc l 1 ↦∗{q}: ty_own (nth i tyl emp) tid.
   Proof.
     iSplit; iIntros "H".
@@ -369,7 +369,7 @@ Section types.
   Proof. intros. constructor; done. Qed.
 
   Lemma sum_size_eq n tid i tyl vl {Hn : LstTySize n tyl} :
-    ty_own (nth i tyl emp) tid vl ⊢ length vl = n.
+    ty_own (nth i tyl emp) tid vl ⊢ ⌜length vl = n⌝.
   Proof.
     iIntros "Hown". iDestruct (ty_size_eq with "Hown") as %->.
     revert Hn. rewrite /LstTySize List.Forall_forall /= =>Hn.
@@ -380,7 +380,7 @@ Section types.
   Program Definition sum {n} (tyl : list type) {_:LstTySize n tyl} :=
     {| ty_size := S n; ty_dup := forallb ty_dup tyl;
        ty_own tid vl :=
-         (∃ (i : nat) vl', vl = #i :: vl' ∗ (nth i tyl emp).(ty_own) tid vl')%I;
+         (∃ (i : nat) vl', ⌜vl = #i :: vl'⌝ ∗ (nth i tyl emp).(ty_own) tid vl')%I;
        ty_shr κ tid N l :=
          (∃ (i : nat), (&frac{κ} λ q, l ↦{q} #i) ∗
                (nth i tyl emp).(ty_shr) κ tid N (shift_loc l 1))%I
@@ -436,12 +436,12 @@ Section types.
   Qed.
 
   Program Definition uninit : type :=
-    {| st_size := 1; st_own tid vl := (length vl = 1%nat)%I |}.
+    {| st_size := 1; st_own tid vl := ⌜length vl = 1%nat⌝%I |}.
   Next Obligation. done. Qed.
 
   Program Definition cont {n : nat} (ρ : vec val n → @perm Σ) :=
     {| ty_size := 1; ty_dup := false;
-       ty_own tid vl := (∃ f, vl = [f] ∗
+       ty_own tid vl := (∃ f, ⌜vl = [f]⌝ ∗
           ∀ vl, ρ vl tid -∗ tl_own tid ⊤
                  -∗ WP f (map of_val vl) {{λ _, False}})%I;
        ty_shr κ tid N l := True%I |}.
@@ -459,7 +459,7 @@ Section types.
      needs a Send closure). *)
   Program Definition fn {A n} (ρ : A -> vec val n → @perm Σ) : type :=
     {| st_size := 1;
-       st_own tid vl := (∃ f, vl = [f] ∗ ∀ x vl,
+       st_own tid vl := (∃ f, ⌜vl = [f]⌝ ∗ ∀ x vl,
          {{ ρ x vl tid ∗ tl_own tid ⊤ }} f (map of_val vl) {{λ _, False}})%I |}.
   Next Obligation.
     iIntros (x n ρ tid vl) "H". iDestruct "H" as (f) "[% _]". by subst.

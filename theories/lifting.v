@@ -26,8 +26,8 @@ Lemma wp_alloc_pst E σ n:
   0 < n →
   {{{ ▷ ownP σ }}} Alloc (Lit $ LitInt n) @ E
   {{{ l σ', RET LitV $ LitLoc l;
-      ■ (∀ m, σ !! (shift_loc l m) = None) ∗
-      ■ (∃ vl, n = length vl ∧ init_mem l vl σ = σ') ∗
+      ⌜∀ m, σ !! (shift_loc l m) = None⌝ ∗
+      ⌜∃ vl, n = length vl ∧ init_mem l vl σ = σ'⌝ ∗
       ownP σ' }}}.
 Proof.
   iIntros (? Φ) "HP HΦ". iApply (wp_lift_atomic_head_step _ σ); eauto.
@@ -66,7 +66,7 @@ Proof.
 Qed.
 
 Lemma wp_read_na1_pst E l Φ :
-  (|={E,∅}=> ∃ σ n v, σ !! l = Some(RSt $ n, v) ∧
+  (|={E,∅}=> ∃ σ n v, ⌜σ !! l = Some(RSt $ n, v)⌝ ∧
      ▷ ownP σ ∗
      ▷ (ownP (<[l:=(RSt $ S n, v)]>σ) ={∅,E}=∗
           WP Read Na2Ord (Lit $ LitLoc l) @ E {{ Φ }}))
@@ -97,7 +97,7 @@ Proof.
 Qed.
 
 Lemma wp_write_na1_pst E l v Φ :
-  (|={E,∅}=> ∃ σ v', σ !! l = Some(RSt 0, v') ∧
+  (|={E,∅}=> ∃ σ v', ⌜σ !! l = Some(RSt 0, v')⌝ ∧
      ▷ ownP σ ∗
      ▷ (ownP (<[l:=(WSt, v')]>σ) ={∅,E}=∗
        WP Write Na2Ord (Lit $ LitLoc l) (of_val v) @ E {{ Φ }}))

@@ -142,7 +142,7 @@ Section typing.
   Proof.
     iIntros (tid) "!#(_&_&(Hextr&Htok&Hend)&$)".
     iApply wp_fupd. iApply (wp_wand_r _ _ (λ _, _ ∗ True)%I). iSplitR "Hextr".
-    iApply (wp_frame_step_l with "[-]"); try done.
+    iApply (wp_frame_step_l _ (⊤ ∖ ↑lftN) with "[-]"); try done.
     iDestruct ("Hend" with "Htok") as "$". by wp_seq.
     iIntros (v) "[#Hκ _]". by iApply fupd_mask_mono; last iApply "Hextr".
   Qed.
@@ -173,10 +173,10 @@ Section typing.
   Qed.
 
   Definition consumes (ty : type) (ρ1 ρ2 : expr → perm) : Prop :=
-    ∀ ν tid Φ E, mgmtE ∪ lrustN ⊆ E →
+    ∀ ν tid Φ E, mgmtE ∪ ↑lrustN ⊆ E →
       lft_ctx ⊢ ρ1 ν tid -∗ tl_own tid ⊤ -∗
       (∀ (l:loc) vl q,
-        (length vl = ty.(ty_size) ∗ eval_expr ν = Some #l ∗ l ↦∗{q} vl ∗
+        (⌜length vl = ty.(ty_size)⌝ ∗ ⌜eval_expr ν = Some #l⌝ ∗ l ↦∗{q} vl ∗
          |={E}▷=> (ty.(ty_own) tid vl ∗ (l ↦∗{q} vl ={E}=∗ ρ2 ν tid ∗ tl_own tid ⊤)))
        -∗ Φ #l)
       -∗ WP ν @ E {{ Φ }}.
@@ -188,7 +188,7 @@ Section typing.
     iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
     rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & H↦ & >H†)".
     iDestruct "Heq" as %[=->]. iDestruct "H↦" as (vl) "[>H↦ #Hown]".
-    iAssert (▷ (length vl = ty_size ty))%I with "[#]" as ">%".
+    iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
       by rewrite ty.(ty_size_eq).
     iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦!>".
     rewrite /has_type Hνv. iExists _. iSplit. done. iFrame. iExists vl. eauto.
@@ -202,7 +202,7 @@ Section typing.
     iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
     rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & H↦ & >H†)".
     iDestruct "Heq" as %[=->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
-    iAssert (▷ (length vl = ty_size ty))%I with "[#]" as ">Hlen".
+    iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">Hlen".
       by rewrite ty.(ty_size_eq). iDestruct "Hlen" as %Hlen.
     iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦!>".
     rewrite /has_type Hνv. iExists _. iSplit. done. iSplitR "H†".
@@ -224,7 +224,7 @@ Section typing.
     iMod (lft_incl_acc with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
     iMod (borrow_acc with "LFT H↦ Htok") as "[H↦ Hclose']". set_solver.
     iDestruct "H↦" as (vl) "[>H↦ #Hown]".
-    iAssert (▷ (length vl = ty_size ty))%I with "[#]" as ">%".
+    iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
       by rewrite ty.(ty_size_eq).
     iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦".
     iMod ("Hclose'" with "[H↦]") as "[H↦ Htok]". by iExists _; iFrame.
@@ -240,11 +240,11 @@ Section typing.
     iApply (has_type_wp with "[- $H◁]"). iIntros (v) "[Hνv H◁]". iDestruct "Hνv" as %Hνv.
     rewrite has_type_value. iDestruct "H◁" as (l') "[Heq #Hshr]". iDestruct "Heq" as %[=->].
     iMod (lft_incl_acc with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
-    rewrite (union_difference_L (nclose lrustN) ⊤); last done.
+    rewrite (union_difference_L (↑lrustN) ⊤); last done.
     setoid_rewrite ->tl_own_union; try set_solver. iDestruct "Htl" as "[Htl ?]".
     iMod (ty_shr_acc with "LFT Hshr [$Htok $Htl]") as (q'') "[H↦ Hclose']"; try set_solver.
     iDestruct "H↦" as (vl) "[>H↦ #Hown]".
-    iAssert (▷ (length vl = ty_size ty))%I with "[#]" as ">%".
+    iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
       by rewrite ty.(ty_size_eq).
     iModIntro. iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦".
     iMod ("Hclose'" with "[H↦]") as "[Htok $]". iExists _; by iFrame.
@@ -296,9 +296,9 @@ Section typing.
     { iIntros "!#". iIntros (q1 q2). rewrite heap_mapsto_op_eq. iSplit; auto. }
     iSpecialize ("Hown" $! _ with "Htok2").
     iApply wp_strong_mono. reflexivity. iSplitL "Hclose Hclose'"; last first.
-    - iApply (wp_frame_step_l _ heapN _ (λ v, l ↦{q'''} v ∗ v = #vl)%I); try done.
+    - iApply (wp_frame_step_l _ (↑heapN) _ (λ v, l ↦{q'''} v ∗ ⌜v = #vl⌝)%I); try done.
       iSplitL "Hown"; last by wp_read; eauto.
-      iApply step_fupd_mask_mono; last iApply (step_fupd_mask_frame_r _ _ heapN);
+      iApply step_fupd_mask_mono; last iApply (step_fupd_mask_frame_r _ _ (↑heapN));
         last iApply "Hown"; (set_solver || rewrite !disjoint_union_l; solve_ndisj).
     - iIntros (v) "([#Hshr Htok] & H↦ & %)". subst.
       iMod ("Hclose'" with "[$H↦]") as "Htok'".
@@ -346,9 +346,9 @@ Section typing.
     iMod (lft_incl_acc with "H⊑3 Htok2") as (q''') "[Htok Hclose'']". done.
     iSpecialize ("Hown" $! _ with "Htok").
     iApply wp_strong_mono. reflexivity. iSplitL "Hclose Hclose' Hclose''"; last first.
-    - iApply (wp_frame_step_l _ heapN _ (λ v, l ↦{q''} v ∗ v = #l')%I); try done.
+    - iApply (wp_frame_step_l _ (↑heapN) _ (λ v, l ↦{q''} v ∗ ⌜v = #l'⌝)%I); try done.
       iSplitL "Hown"; last by wp_read; eauto.
-      iApply step_fupd_mask_mono; last iApply (step_fupd_mask_frame_r _ _ heapN);
+      iApply step_fupd_mask_mono; last iApply (step_fupd_mask_frame_r _ _ (↑heapN));
         last iApply "Hown"; (set_solver || rewrite !disjoint_union_l; solve_ndisj).
     - iIntros (v) "([#Hshr Htok] & H↦ & %)". subst.
       iMod ("Hclose''" with "Htok") as "Htok".
@@ -358,10 +358,10 @@ Section typing.
   Qed.
 
   Definition update (ty : type) (ρ1 ρ2 : expr → perm) : Prop :=
-    ∀ ν tid Φ E, mgmtE ∪ lrustN ⊆ E →
+    ∀ ν tid Φ E, mgmtE ∪ (↑lrustN) ⊆ E →
       lft_ctx ⊢ ρ1 ν tid -∗
       (∀ (l:loc) vl,
-         (length vl = ty.(ty_size) ∗ eval_expr ν = Some #l ∗ l ↦∗ vl ∗
+         (⌜length vl = ty.(ty_size)⌝ ∗ ⌜eval_expr ν = Some #l⌝ ∗ l ↦∗ vl ∗
          ∀ vl', l ↦∗ vl' ∗ ▷ (ty.(ty_own) tid vl') ={E}=∗ ρ2 ν tid)
          -∗ Φ #l)
       -∗ WP ν @ E {{ Φ }}.

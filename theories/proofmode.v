@@ -21,7 +21,7 @@ Global Instance into_and_mapsto_vec l q vl :
 Proof. by rewrite /IntoAnd heap_mapsto_vec_op_split. Qed.
 
 Lemma tac_wp_alloc Δ Δ' E j1 j2 n Φ :
-  (Δ ⊢ heap_ctx) → nclose heapN ⊆ E → 0 < n →
+  (Δ ⊢ heap_ctx) → ↑heapN ⊆ E → 0 < n →
   IntoLaterEnvs Δ Δ' →
   (∀ l vl, n = length vl → ∃ Δ'',
     envs_app false (Esnoc (Esnoc Enil j1 (l ↦∗ vl)) j2 (†l…(Z.to_nat n))) Δ'
@@ -39,7 +39,7 @@ Proof.
 Qed.
 
 Lemma tac_wp_free Δ Δ' Δ'' Δ''' E i1 i2 vl (n : Z) (n' : nat) l Φ :
-  (Δ ⊢ heap_ctx) → nclose heapN ⊆ E → n = length vl →
+  (Δ ⊢ heap_ctx) → ↑heapN ⊆ E → n = length vl →
   IntoLaterEnvs Δ Δ' →
   envs_lookup i1 Δ' = Some (false, l ↦∗ vl)%I →
   envs_delete i1 false Δ' = Δ'' →
@@ -57,7 +57,7 @@ Proof.
 Qed.
 
 Lemma tac_wp_read Δ Δ' E i l q v o Φ :
-  (Δ ⊢ heap_ctx) → nclose heapN ⊆ E → o = Na1Ord ∨ o = ScOrd →
+  (Δ ⊢ heap_ctx) → ↑heapN ⊆ E → o = Na1Ord ∨ o = ScOrd →
   IntoLaterEnvs Δ Δ' →
   envs_lookup i Δ' = Some (false, l ↦{q} v)%I →
   (Δ' ⊢ |={E}=> Φ v) →
@@ -76,7 +76,7 @@ Qed.
 
 Lemma tac_wp_write Δ Δ' Δ'' E i l v e v' o Φ :
   to_val e = Some v' →
-  (Δ ⊢ heap_ctx) → nclose heapN ⊆ E → o = Na1Ord ∨ o = ScOrd →
+  (Δ ⊢ heap_ctx) → ↑heapN ⊆ E → o = Na1Ord ∨ o = ScOrd →
   IntoLaterEnvs Δ Δ' →
   envs_lookup i Δ' = Some (false, l ↦ v)%I →
   envs_simple_replace i false (Esnoc Enil i (l ↦ v')) Δ' = Some Δ'' →

@@ -20,17 +20,17 @@ Section tl_borrow.
     intros P1 P2 EQ. apply uPred.exist_proper. intros i. by rewrite EQ.
   Qed.
 
-  Lemma borrow_tl κ `(nclose lftN ⊆ E): &{κ}P ={E}=∗ &tl{κ|tid|N}P.
+  Lemma borrow_tl κ E : ↑lftN ⊆ E → &{κ}P ={E}=∗ &tl{κ|tid|N}P.
   Proof.
-    iIntros "HP". unfold borrow. iDestruct "HP" as (i) "[#? Hown]".
+    iIntros (?) "HP". unfold borrow. iDestruct "HP" as (i) "[#? Hown]".
     iExists i. iFrame "#". iApply (tl_inv_alloc tid E N with "[Hown]"). auto.
   Qed.
 
   Lemma tl_borrow_acc q κ E F :
-    nclose lftN ⊆ E → nclose tlN ⊆ E → nclose N ⊆ F →
+    ↑lftN ⊆ E → ↑tlN ⊆ E → ↑N ⊆ F →
     lft_ctx ⊢ &tl{κ|tid|N}P -∗ q.[κ] -∗ tl_own tid F ={E}=∗
-            ▷P ∗ tl_own tid (F ∖ N) ∗
-            (▷P -∗ tl_own tid (F ∖ N) ={E}=∗ q.[κ] ∗ tl_own tid F).
+            ▷P ∗ tl_own tid (F ∖ ↑N) ∗
+            (▷P -∗ tl_own tid (F ∖ ↑N) ={E}=∗ q.[κ] ∗ tl_own tid F).
   Proof.
     iIntros (???) "#LFT#HP Hκ Htlown".
     iDestruct "HP" as (i) "(#Hpers&#Hinv)".
