@@ -765,7 +765,6 @@ contradict H7. apply elem_of_dom. set_solver +HI Hκ.
     + iRight. iFrame. iPureIntro. by apply lft_dead_in_insert_false.
 Qed.
 
-(*
 (** Basic borrows  *)
 Lemma bor_create E κ P :
   ↑lftN ⊆ E →
@@ -775,7 +774,7 @@ Lemma bor_fake E κ P :
   ↑lftN ⊆ E →
   lft_ctx ⊢ [†κ] ={E}=∗ &{κ}P.
 Proof.
-  iIntros (?) "#?". iDestruct 1 as (Λ) "[% ?]".
+  iIntros (?) "#?". (* iDestruct 1 as (Λ) "[% ?]". *)
 Admitted.
 Lemma bor_sep E κ P Q :
   ↑lftN ⊆ E →
@@ -794,9 +793,9 @@ Lemma bor_acc_strong E q κ P :
 Proof. Admitted.
 Lemma bor_acc_atomic_strong E κ P :
   ↑lftN ⊆ E →
-  lft_ctx ⊢ &{κ} P ={E,E∖lftN}=∗
-    (▷ P ∗ ∀ Q, ▷ Q ∗ ▷ ([†κ] -∗ ▷ Q ={⊤∖↑lftN}=∗ ▷ P) ={E∖lftN,E}=∗ &{κ} Q) ∨
-    [†κ] ∗ |={E∖lftN,E}=> True.
+  lft_ctx ⊢ &{κ} P ={E,E∖↑lftN}=∗
+    (▷ P ∗ ∀ Q, ▷ Q ∗ ▷ ([†κ] -∗ ▷ Q ={⊤∖↑lftN}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ} Q) ∨
+    [†κ] ∗ |={E∖↑lftN,E}=> True.
 Proof. Admitted.
 Lemma bor_reborrow' E κ κ' P :
   ↑lftN ⊆ E → κ ⊆ κ' →
@@ -816,15 +815,16 @@ Proof. Admitted.
 
 Lemma idx_bor_atomic_acc E q κ i P :
   ↑lftN ⊆ E →
-  lft_ctx ⊢ idx_bor κ i P -∗ idx_bor_own q i ={E,E∖lftN}=∗
-              ▷ P ∗ (▷ P ={E∖lftN,E}=∗ idx_bor_own q i) ∨
-              [†κ] ∗ (|={E∖lftN,E}=> idx_bor_own q i).
+  lft_ctx ⊢ idx_bor κ i P -∗ idx_bor_own q i ={E,E∖↑lftN}=∗
+              ▷ P ∗ (▷ P ={E∖↑lftN,E}=∗ idx_bor_own q i) ∨
+              [†κ] ∗ (|={E∖↑lftN,E}=> idx_bor_own q i).
 Proof. Admitted.
 
 Lemma idx_bor_shorten κ κ' i P :
   κ ⊑ κ' ⊢ idx_bor κ' i P -∗ idx_bor κ i P.
 Proof. Admitted.
 
+(*
   (*** Derived lemmas  *)
 
   Lemma borrow_acc E q κ P : ↑lftN ⊆ E →
@@ -932,8 +932,4 @@ Proof. Admitted.
     { iApply lft_incl_lb. iSplit. done. iApply lft_incl_refl. }
     iIntros "!>Hκ'". iApply ("H∋" with "[Hκ']"). iApply lft_dead_or. auto.
   Qed.
-
-End incl.
-
-Typeclasses Opaque lft_incl.
 *)
