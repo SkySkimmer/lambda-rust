@@ -1,22 +1,7 @@
 -Q theories lrust
 -Q iris-enabled iris
-theories/adequacy.v
-theories/derived.v
-theories/heap.v
-theories/lang.v
-theories/lifting.v
-theories/memcpy.v
-theories/notation.v
-theories/proofmode.v
-theories/races.v
-theories/tactics.v
-theories/wp_tactics.v
-theories/lifetime.v
-theories/tl_borrow.v
-theories/shr_borrow.v
-theories/frac_borrow.v
-theories/type.v
-theories/type_incl.v
-theories/perm.v
-theories/perm_incl.v
-theories/typing.v
+theories/lifetime/definitions.v
+theories/lifetime/derived.v
+theories/lifetime/creation.v
+theories/lifetime/primitive.v
+theories/lifetime/todo.v
