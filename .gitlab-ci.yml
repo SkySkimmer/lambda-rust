@@ -1,33 +1,17 @@
-image: coq:8.5
+image: opam
 
-stages:
-  - iris
-  - lrust
-
-iris:
-  stage: iris
+lrust-coq8.5.3:
   tags:
   - coq
   script:
-  - coqc -v
-  # see if the Iris submodule needs cleaning, then build it
-  - 'git submodule status iris | egrep "^ " || (git submodule update --init iris && cd iris && git clean -xfd)'
-  - 'cd iris && make -j8'
-  only:
-  - master
-  - ci
-
-lrust:
-  stage: lrust
-  tags:
-  - coq
-  script:
-  - coqc -v
-  # prepare the environment, safeguard against outdated submodule
-  - 'git submodule status iris | egrep "^ "'
-  - 'ln -s iris iris-enabled'
-  # build local repo
+  # prepare
+  - . build/opam-ci.sh 'coq 8.5.3' 'coq-mathcomp-ssreflect 1.6'
+  # build
   - 'time make -j8'
+  cache:
+    key: "coq8.5.3-2"
+    paths:
+    - opamroot/
   only:
   - master
   - ci

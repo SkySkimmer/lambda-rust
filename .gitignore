@@ -11,3 +11,4 @@
 .coq-native/
 iris-enabled
 Makefile.coq
+opamroot
