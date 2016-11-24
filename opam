@@ -13,5 +13,5 @@ build: [
 install: [make "install"]
 remove: [ "sh" "-c" "rm -rf '%{lib}%/coq/user-contrib/lrust'" ]
 depends: [
-  "https://gitlab.mpi-sws.org/FP/iris-coq/" { (= "dev")) }
+  "coq-iris" { (= "dep.lrust")) }
 ]
