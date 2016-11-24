@@ -5,15 +5,6 @@ Context `{invG Σ, lftG Σ}.
 Implicit Types κ : lft.
 
 (** Basic borrows  *)
-Lemma bor_create E κ P :
-  ↑lftN ⊆ E →
-  lft_ctx ⊢ ▷ P ={E}=∗ &{κ} P ∗ ([†κ] ={E}=∗ ▷ P).
-Proof. Admitted.
-Lemma bor_fake E κ P :
-  ↑lftN ⊆ E →
-  lft_ctx ⊢ [†κ] ={E}=∗ &{κ}P.
-Proof.
-Admitted.
 Lemma bor_sep E κ P Q :
   ↑lftN ⊆ E →
   lft_ctx ⊢ &{κ} (P ∗ Q) ={E}=∗ &{κ} P ∗ &{κ} Q.

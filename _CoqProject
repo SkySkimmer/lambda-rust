@@ -5,3 +5,4 @@ theories/lifetime/derived.v
 theories/lifetime/creation.v
 theories/lifetime/primitive.v
 theories/lifetime/todo.v
+theories/lifetime/borrow.v

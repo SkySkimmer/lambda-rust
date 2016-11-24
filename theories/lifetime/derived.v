@@ -1,4 +1,4 @@
-From lrust.lifetime Require Export primitive todo.
+From lrust.lifetime Require Export primitive borrow todo.
 From iris.proofmode Require Import tactics.
 
 Section derived.
@@ -57,27 +57,6 @@ Lemma lft_incl_dead E κ κ' : ↑lftN ⊆ E → κ ⊑ κ' ⊢ [†κ'] ={E}=�
 Proof.
   rewrite /lft_incl.
   iIntros (?) "#[_ H] Hq". iApply fupd_mask_mono; first done. by iApply "H".
-Qed.
-
-Lemma lft_le_incl κ κ' : κ' ⊆ κ → True ⊢ κ ⊑ κ'.
-Proof. (*
-  iIntros (->%gmultiset_union_difference) "!#". iSplitR.
-  - iIntros (q). rewrite -lft_tok_op. iIntros (q) "[Hκ' Hκ0]". iExists q. iIntros "!>{$Hκ'}Hκ'!>". by iSplitR "Hκ0".
-  - iIntros "? !>". iApply lft_dead_or. auto.
-Qed. *) Admitted.
-
-Lemma lft_incl_refl κ : True ⊢ κ ⊑ κ.
-Proof. by apply lft_le_incl. Qed.
-
-Lemma lft_incl_trans κ κ' κ'': κ ⊑ κ' ∗ κ' ⊑ κ'' ⊢ κ ⊑ κ''.
-Proof.
-  rewrite /lft_incl. iIntros "[#[H1 H1†] #[H2 H2†]] !#". iSplitR.
-  - iIntros (q) "Hκ".
-    iMod ("H1" with "*Hκ") as (q') "[Hκ' Hclose]".
-    iMod ("H2" with "*Hκ'") as (q'') "[Hκ'' Hclose']".
-    iExists q''. iIntros "{$Hκ''} !> Hκ''".
-    iMod ("Hclose'" with "Hκ''") as "Hκ'". by iApply "Hclose".
-  - iIntros "H†". iMod ("H2†" with "H†"). by iApply "H1†".
 Qed.
 
 Lemma bor_shorten κ κ' P: κ ⊑ κ' ⊢ &{κ'}P -∗ &{κ}P.

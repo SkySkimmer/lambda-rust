@@ -27,6 +27,9 @@ Definition lft_stateR := csumR fracR unitR.
 Definition to_lft_stateR (b : bool) : lft_stateR :=
   if b then Cinl 1%Qp else Cinr ().
 
+Instance to_lft_stateR_inj : Inj eq eq to_lft_stateR.
+Proof. by intros [] []. Qed.
+
 Record lft_names := LftNames {
   bor_name : gname;
   cnt_name : gname;
@@ -136,9 +139,9 @@ Section defs.
       lft_inh κ true P)%I.
 
   Definition lft_alive_in (A : gmap atomic_lft bool) (κ : lft) : Prop :=
-    ∀ Λ, Λ ∈ κ → A !! Λ = Some true.
+    ∀ Λ:atomic_lft, Λ ∈ κ → A !! Λ = Some true.
   Definition lft_dead_in (A : gmap atomic_lft bool) (κ : lft) : Prop :=
-    ∃ Λ, Λ ∈ κ ∧ A !! Λ = Some false.
+    ∃ Λ:atomic_lft, Λ ∈ κ ∧ A !! Λ = Some false.
 
   Definition lft_inv (A : gmap atomic_lft bool) (κ : lft) : iProp Σ :=
     (lft_inv_alive κ ∗ ⌜lft_alive_in A κ⌝ ∨

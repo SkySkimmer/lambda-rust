@@ -178,6 +178,18 @@ Proof.
   simplify_map_eq; simplify_option_eq; eauto.
 Qed.
 
+Lemma own_alft_auth_agree (A : gmap atomic_lft bool) Λ b :
+  own_alft_auth A ⊢
+    own alft_name (◯ {[Λ := to_lft_stateR b]}) -∗ ⌜A !! Λ = Some b⌝.
+Proof.
+  iIntros "HA HΛ". iDestruct (own_valid_2 with "HA HΛ")
+    as %[[? [Heq Hle]]%singleton_included _]%auth_valid_discrete_2.
+  simplify_map_eq. destruct (A!!Λ) as [b'|]; last done. inversion Heq. subst x.
+  apply Some_included in Hle. destruct Hle as [->%leibniz_equiv%(inj _)|Hle]. done.
+  apply csum_included in Hle.
+  destruct Hle as [Hle|[(?&?&?&?&?)|(?&?&?&?&?)]], b, b'; try done.
+Qed.
+
 Lemma own_bor_auth I κ x : own_ilft_auth I ⊢ own_bor κ x -∗ ⌜is_Some (I !! κ)⌝.
 Proof.
   iIntros "HI"; iDestruct 1 as (γs) "[? _]".
@@ -295,4 +307,27 @@ Proof. by rewrite /lft_tok big_sepMS_empty. Qed.
 
 Lemma lft_dead_static : [† static] ⊢ False.
 Proof. rewrite /lft_dead. iDestruct 1 as (Λ) "[% H']". set_solver. Qed.
+
+Lemma lft_le_incl κ κ' : κ' ⊆ κ → True ⊢ κ ⊑ κ'.
+Proof.
+  iIntros (->%gmultiset_union_difference) "!#". iSplitR.
+  - iIntros (q). rewrite <-lft_tok_op. iIntros "[H Hf]". iExists q. iFrame.
+    rewrite <-lft_tok_op. by iIntros "!>{$Hf}$".
+  - iIntros "? !>". iApply lft_dead_or. auto.
+Qed.
+
+Lemma lft_incl_refl κ : True ⊢ κ ⊑ κ.
+Proof. by apply lft_le_incl. Qed.
+
+Lemma lft_incl_trans κ κ' κ'': κ ⊑ κ' ∗ κ' ⊑ κ'' ⊢ κ ⊑ κ''.
+Proof.
+  rewrite /lft_incl. iIntros "[#[H1 H1†] #[H2 H2†]] !#". iSplitR.
+  - iIntros (q) "Hκ".
+    iMod ("H1" with "*Hκ") as (q') "[Hκ' Hclose]".
+    iMod ("H2" with "*Hκ'") as (q'') "[Hκ'' Hclose']".
+    iExists q''. iIntros "{$Hκ''} !> Hκ''".
+    iMod ("Hclose'" with "Hκ''") as "Hκ'". by iApply "Hclose".
+  - iIntros "H†". iMod ("H2†" with "H†"). by iApply "H1†".
+Qed.
+
 End primitive.
