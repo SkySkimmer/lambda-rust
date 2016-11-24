@@ -187,7 +187,7 @@ Section heap.
   Qed.
 
   Lemma heap_mapsto_vec_prop_op l q1 q2 n (Φ : list val → iProp Σ) :
-    (∀ vl, Φ vl ⊢ ⌜length vl = n⌝) →
+    (∀ vl, Φ vl -∗ ⌜length vl = n⌝) →
     l ↦∗{q1}: Φ ∗ l ↦∗{q2}: (λ vl, ⌜length vl = n⌝) ⊣⊢ l ↦∗{q1+q2}: Φ.
   Proof.
     intros Hlen. iSplit.
@@ -396,7 +396,7 @@ Section heap.
   Qed.
 
   Lemma heap_mapsto_lookup l ls q v σ:
-    own heap_name (● to_heap σ) ⊢
+    own heap_name (● to_heap σ) -∗
     own heap_name (◯ {[ l := (q, to_lock_stateR ls, DecAgree v) ]}) -∗
     ⌜∃ n' : nat,
         σ !! l = Some (match ls with RSt n => RSt (n+n') | WSt => WSt end, v)⌝.
@@ -414,7 +414,7 @@ Section heap.
   Qed.
 
   Lemma heap_mapsto_lookup_1 l ls v σ:
-    own heap_name (● to_heap σ) ⊢
+    own heap_name (● to_heap σ) -∗
     own heap_name (◯ {[ l := (1%Qp, to_lock_stateR ls, DecAgree v) ]}) -∗
     ⌜σ !! l = Some (ls, v)⌝.
   Proof.

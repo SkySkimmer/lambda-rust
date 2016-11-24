@@ -30,7 +30,7 @@ Record type :=
     ty_dup_persistent tid vl : ty_dup → PersistentP (ty_own tid vl);
     ty_shr_persistent κ tid E l : PersistentP (ty_shr κ tid E l);
 
-    ty_size_eq tid vl : ty_own tid vl ⊢ ⌜length vl = ty_size⌝;
+    ty_size_eq tid vl : ty_own tid vl -∗ ⌜length vl = ty_size⌝;
     (* The mask for starting the sharing does /not/ include the
        namespace N, for allowing more flexibility for the user of
        this type (typically for the [own] type). AFAIK, there is no
@@ -41,12 +41,12 @@ Record type :=
        more consistent with thread-local tokens, which we do not
        give any. *)
     ty_share E N κ l tid q : mgmtE ⊥ ↑N → mgmtE ⊆ E →
-      lft_ctx ⊢ &{κ} (l ↦∗: ty_own tid) -∗ q.[κ] ={E}=∗ ty_shr κ tid (↑N) l ∗ q.[κ];
+      lft_ctx -∗ &{κ} (l ↦∗: ty_own tid) -∗ q.[κ] ={E}=∗ ty_shr κ tid (↑N) l ∗ q.[κ];
     ty_shr_mono κ κ' tid E E' l : E ⊆ E' →
-      lft_ctx ⊢ κ' ⊑ κ -∗ ty_shr κ tid E l -∗ ty_shr κ' tid E' l;
+      lft_ctx -∗ κ' ⊑ κ -∗ ty_shr κ tid E l -∗ ty_shr κ' tid E' l;
     ty_shr_acc κ tid E F l q :
       ty_dup → mgmtE ∪ F ⊆ E →
-      lft_ctx ⊢ ty_shr κ tid F l -∗
+      lft_ctx -∗ ty_shr κ tid F l -∗
         q.[κ] ∗ tl_own tid F ={E}=∗ ∃ q', ▷l ↦∗{q'}: ty_own tid ∗
            (▷l ↦∗{q'}: ty_own tid ={E}=∗ q.[κ] ∗ tl_own tid F)
   }.
@@ -59,7 +59,7 @@ Record simple_type `{iris_typeG Σ} :=
   { st_size : nat;
     st_own : thread_id → list val → iProp Σ;
 
-    st_size_eq tid vl : st_own tid vl ⊢ ⌜length vl = st_size⌝;
+    st_size_eq tid vl : st_own tid vl -∗ ⌜length vl = st_size⌝;
     st_own_persistent tid vl : PersistentP (st_own tid vl) }.
 Global Existing Instance st_own_persistent.
 
@@ -244,10 +244,10 @@ Section types.
   Qed.
   Next Obligation.
     intros κ0 ty κ κ' tid E E' l ?. iIntros "#LFT #Hκ #H".
-    iDestruct "H" as (l') "[Hfb Hvs]". iAssert (κ0⋅κ' ⊑ κ0⋅κ) as "#Hκ0".
-    { iApply lft_incl_lb. iSplit.
+    iDestruct "H" as (l') "[Hfb Hvs]". iAssert (κ0⋅κ' ⊑ κ0⋅κ)%I as "#Hκ0".
+    { iApply (lft_incl_lb with "[] []").
       - iApply lft_le_incl. by exists κ'.
-      - iApply lft_incl_trans. iSplit; last done.
+      - iApply (lft_incl_trans with "[] Hκ").
         iApply lft_le_incl. exists κ0. apply (comm _). }
     iExists l'. iSplit. by iApply (frac_borrow_shorten with "[]"). iIntros (q) "!#Htok".
     iApply step_fupd_mask_mono. reflexivity. apply union_preserving_l. eassumption.
@@ -368,7 +368,7 @@ Section types.
   Proof. intros. constructor; done. Qed.
 
   Lemma sum_size_eq n tid i tyl vl {Hn : LstTySize n tyl} :
-    ty_own (nth i tyl emp) tid vl ⊢ ⌜length vl = n⌝.
+    ty_own (nth i tyl emp) tid vl -∗ ⌜length vl = n⌝.
   Proof.
     iIntros "Hown". iDestruct (ty_size_eq with "Hown") as %->.
     revert Hn. rewrite /LstTySize List.Forall_forall /= =>Hn.

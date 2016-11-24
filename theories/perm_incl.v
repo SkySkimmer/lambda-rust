@@ -10,13 +10,13 @@ Section defs.
 
   (* Definitions *)
   Definition perm_incl (ρ1 ρ2 : perm) :=
-    ∀ tid, lft_ctx ⊢ ρ1 tid ={⊤}=∗ ρ2 tid.
+    ∀ tid, lft_ctx -∗ ρ1 tid ={⊤}=∗ ρ2 tid.
 
   Global Instance perm_equiv : Equiv perm :=
     λ ρ1 ρ2, perm_incl ρ1 ρ2 ∧ perm_incl ρ2 ρ1.
 
   Definition borrowing κ (ρ ρ1 ρ2 : perm) :=
-    ∀ tid, lft_ctx ⊢ ρ tid -∗ ρ1 tid ={⊤}=∗ ρ2 tid ∗ (κ ∋ ρ1)%P tid.
+    ∀ tid, lft_ctx -∗ ρ tid -∗ ρ1 tid ={⊤}=∗ ρ2 tid ∗ (κ ∋ ρ1)%P tid.
 
 End defs.
 
@@ -99,7 +99,7 @@ Section props.
   Proof. iIntros (tid) "_ _!>". iApply lft_incl_refl. Qed.
 
   Lemma perm_lftincl_trans κ1 κ2 κ3 : κ1 ⊑ κ2 ∗ κ2 ⊑ κ3 ⇒ κ1 ⊑ κ3.
-  Proof. iIntros (tid) "_ [#?#?]!>". iApply lft_incl_trans. auto. Qed.
+  Proof. iIntros (tid) "_ [#?#?]!>". iApply (lft_incl_trans with "[] []"); auto. Qed.
 
   Lemma perm_incl_share q ν κ ty :
     ν ◁ &uniq{κ} ty ∗ q.[κ] ⇒ ν ◁ &shr{κ} ty ∗ q.[κ].

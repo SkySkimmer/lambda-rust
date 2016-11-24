@@ -105,12 +105,13 @@ Section has_type.
   Qed.
 
   Lemma has_type_wp E (ν : expr) ty tid (Φ : val -> iProp _) :
-    (ν ◁ ty)%P tid ∗ (∀ (v : val), ⌜eval_expr ν = Some v⌝ ∗ (v ◁ ty)%P tid ={E}=∗ Φ v)
-    ⊢ WP ν @ E {{ Φ }}.
+    (ν ◁ ty)%P tid -∗
+    (∀ (v : val), ⌜eval_expr ν = Some v⌝ -∗ (v ◁ ty)%P tid ={E}=∗ Φ v) -∗
+    WP ν @ E {{ Φ }}.
   Proof.
-    iIntros "[H◁ HΦ]". setoid_rewrite has_type_value. unfold has_type.
+    iIntros "H◁ HΦ". setoid_rewrite has_type_value. unfold has_type.
     destruct (eval_expr ν) eqn:EQν; last by iDestruct "H◁" as "[]". simpl.
-    iMod ("HΦ" $! v with "[$H◁]") as "HΦ". done.
+    iMod ("HΦ" $! v with "[] H◁") as "HΦ". done.
     iInduction ν as [| | |[] e ? [|[]| | | | | | | | | |] _| | | | | | | |] "IH"
       forall (Φ v EQν); try done.
     - inversion EQν. subst. wp_value. auto.

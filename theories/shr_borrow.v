@@ -24,7 +24,7 @@ Section shared_borrows.
 
   Lemma shr_borrow_acc E κ :
     ↑lftN ⊆ E →
-    lft_ctx ⊢ &shr{κ}P ={E,E∖↑lftN}=∗ ▷P ∗ (▷P ={E∖↑lftN,E}=∗ True) ∨
+    lft_ctx -∗ &shr{κ}P ={E,E∖↑lftN}=∗ ▷P ∗ (▷P ={E∖↑lftN,E}=∗ True) ∨
                [†κ] ∗ |={E∖↑lftN,E}=> True.
   Proof.
     iIntros (?) "#LFT #HP". iDestruct "HP" as (i) "(#Hidx&#Hinv)".
@@ -38,7 +38,7 @@ Section shared_borrows.
 
   Lemma shr_borrow_acc_tok E q κ :
     ↑lftN ⊆ E →
-    lft_ctx ⊢ &shr{κ}P -∗ q.[κ] ={E,E∖↑lftN}=∗ ▷P ∗ (▷P ={E∖↑lftN,E}=∗ q.[κ]).
+    lft_ctx -∗ &shr{κ}P -∗ q.[κ] ={E,E∖↑lftN}=∗ ▷P ∗ (▷P ={E∖↑lftN,E}=∗ q.[κ]).
   Proof.
     iIntros (?) "#LFT #Hshr Hκ".
     iMod (shr_borrow_acc with "LFT Hshr") as "[[$ Hclose]|[H† _]]". done.
@@ -46,7 +46,7 @@ Section shared_borrows.
     - iDestruct (lft_own_dead with "Hκ H†") as "[]".
   Qed.
 
-  Lemma shr_borrow_shorten κ κ': κ ⊑ κ' ⊢ &shr{κ'}P -∗ &shr{κ}P.
+  Lemma shr_borrow_shorten κ κ': κ ⊑ κ' -∗ &shr{κ'}P -∗ &shr{κ}P.
   Proof.
     iIntros "#H⊑ H". iDestruct "H" as (i) "[??]". iExists i. iFrame.
       by iApply (idx_borrow_shorten with "H⊑").

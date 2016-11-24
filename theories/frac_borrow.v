@@ -22,7 +22,7 @@ Section frac_borrow.
   Global Instance frac_borrow_persistent : PersistentP (&frac{κ}Φ) := _.
 
   Lemma borrow_fracture φ E κ :
-    ↑lftN ⊆ E → lft_ctx ⊢ &{κ}(φ 1%Qp) ={E}=∗ &frac{κ}φ.
+    ↑lftN ⊆ E → lft_ctx -∗ &{κ}(φ 1%Qp) ={E}=∗ &frac{κ}φ.
   Proof.
     iIntros (?) "#LFT Hφ". iMod (own_alloc 1%Qp) as (γ) "?". done.
     iMod (borrow_acc_atomic_strong with "LFT Hφ") as "[[Hφ Hclose]|[H† Hclose]]". done.
@@ -40,7 +40,7 @@ Section frac_borrow.
 
   Lemma frac_borrow_atomic_acc E κ φ :
     ↑lftN ⊆ E →
-    lft_ctx ⊢ &frac{κ}φ ={E,E∖↑lftN}=∗ (∃ q, ▷ φ q ∗ (▷ φ q ={E∖↑lftN,E}=∗ True))
+    lft_ctx -∗ &frac{κ}φ ={E,E∖↑lftN}=∗ (∃ q, ▷ φ q ∗ (▷ φ q ={E∖↑lftN,E}=∗ True))
                                       ∨ [†κ] ∗ |={E∖↑lftN,E}=> True.
   Proof.
     iIntros (?) "#LFT #Hφ". iDestruct "Hφ" as (γ κ') "[Hκκ' Hshr]".
@@ -53,7 +53,7 @@ Section frac_borrow.
 
   Lemma frac_borrow_acc_strong E q κ Φ:
     ↑lftN ⊆ E →
-    lft_ctx ⊢ □ (∀ q1 q2, Φ (q1+q2)%Qp ↔ Φ q1 ∗ Φ q2) -∗
+    lft_ctx -∗ □ (∀ q1 q2, Φ (q1+q2)%Qp ↔ Φ q1 ∗ Φ q2) -∗
     &frac{κ}Φ -∗ q.[κ] ={E}=∗ ∃ q', ▷ Φ q' ∗ (▷ Φ q' ={E}=∗ q.[κ]).
   Proof.
     iIntros (?) "#LFT #HΦ Hfrac Hκ". unfold frac_borrow.
@@ -99,20 +99,20 @@ Section frac_borrow.
 
   Lemma frac_borrow_acc E q κ `{Fractional _ Φ} :
     ↑lftN ⊆ E →
-    lft_ctx ⊢ &frac{κ}Φ -∗ q.[κ] ={E}=∗ ∃ q', ▷ Φ q' ∗ (▷ Φ q' ={E}=∗ q.[κ]).
+    lft_ctx -∗ &frac{κ}Φ -∗ q.[κ] ={E}=∗ ∃ q', ▷ Φ q' ∗ (▷ Φ q' ={E}=∗ q.[κ]).
   Proof.
     iIntros (?) "LFT". iApply (frac_borrow_acc_strong with "LFT"). done.
     iIntros "!#*". rewrite fractional. iSplit; auto.
   Qed.
 
-  Lemma frac_borrow_shorten κ κ' Φ: κ ⊑ κ' ⊢ &frac{κ'}Φ -∗ &frac{κ}Φ.
+  Lemma frac_borrow_shorten κ κ' Φ: κ ⊑ κ' -∗ &frac{κ'}Φ -∗ &frac{κ}Φ.
   Proof.
-    iIntros "Hκκ' H". iDestruct "H" as (γ κ0) "[H⊑?]". iExists γ, κ0. iFrame.
-    iApply lft_incl_trans. iFrame.
+    iIntros "Hκκ' H". iDestruct "H" as (γ κ0) "[#H⊑ ?]". iExists γ, κ0. iFrame.
+    iApply (lft_incl_trans with "Hκκ' []"). auto.
   Qed.
 
   Lemma frac_borrow_incl κ κ' q:
-    lft_ctx ⊢ &frac{κ}(λ q', (q * q').[κ']) -∗ κ ⊑ κ'.
+    lft_ctx -∗ &frac{κ}(λ q', (q * q').[κ']) -∗ κ ⊑ κ'.
   Proof.
     iIntros "#LFT#Hbor!#". iSplitR.
     - iIntros (q') "Hκ'".

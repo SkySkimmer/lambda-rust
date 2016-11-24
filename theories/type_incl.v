@@ -9,7 +9,7 @@ Section ty_incl.
   Context `{iris_typeG Σ}.
 
   Definition ty_incl (ρ : perm) (ty1 ty2 : type) :=
-    ∀ tid, lft_ctx ⊢ ρ tid ={⊤}=∗
+    ∀ tid, lft_ctx -∗ ρ tid ={⊤}=∗
       (□ ∀ vl, ty1.(ty_own) tid vl → ty2.(ty_own) tid vl) ∗
       (□ ∀ κ E l, ty1.(ty_shr) κ tid E l →
        (* [ty_incl] needs to prove something about the length of the
@@ -19,7 +19,7 @@ Section ty_incl.
                   ty2.(ty_shr) κ tid E l ∗ ⌜ty1.(ty_size) = ty2.(ty_size)⌝).
 
   Global Instance ty_incl_refl ρ : Reflexive (ty_incl ρ).
-  Proof. iIntros (ty tid) "__!>". iSplit; iIntros "!#"; eauto. Qed.
+  Proof. iIntros (ty tid) "_ _!>". iSplit; iIntros "!#"; eauto. Qed.
 
   Lemma ty_incl_trans ρ θ ty1 ty2 ty3 :
     ty_incl ρ ty1 ty2 → ty_incl θ ty2 ty3 → ty_incl (ρ ∗ θ) ty1 ty3.
@@ -74,10 +74,9 @@ Section ty_incl.
     iIntros (tid) "#LFT #Hincl!>". iSplit; iIntros "!#*H".
     - iDestruct "H" as (l) "[% Hown]". subst. iExists _. iSplit. done.
       by iApply (borrow_shorten with "Hincl").
-    - iAssert (κ1 ⋅ κ ⊑ κ2 ⋅ κ) as "#Hincl'".
-      { iApply lft_incl_lb. iSplit.
-        - iApply lft_incl_trans. iSplit; last done.
-          iApply lft_le_incl. by exists κ.
+    - iAssert (κ1 ⋅ κ ⊑ κ2 ⋅ κ)%I as "#Hincl'".
+      { iApply (lft_incl_lb with "[] []").
+        - iApply (lft_incl_trans with "[] Hincl"). iApply lft_le_incl. by exists κ.
         - iApply lft_le_incl. exists κ1. by apply (comm _). }
       iSplitL; last done. iDestruct "H" as (l') "[Hbor #Hupd]". iExists l'.
       iFrame. iIntros (q') "!#Htok".
@@ -191,7 +190,7 @@ Section ty_incl.
     ty_incl ρ (sum tyl1) (sum tyl2).
   Proof.
     iIntros (DUP FA tid) "#LFT #Hρ". rewrite /sum /=. iSplitR "".
-    - assert (Hincl : lft_ctx ⊢ ρ tid ={⊤}=∗
+    - assert (Hincl : lft_ctx -∗ ρ tid ={⊤}=∗
          (□ ∀ i vl, (nth i tyl1 ∅%T).(ty_own) tid vl
                   → (nth i tyl2 ∅%T).(ty_own) tid vl)).
       { clear -FA DUP. induction FA as [|ty1 ty2 tyl1 tyl2 Hincl _ IH].
@@ -202,7 +201,7 @@ Section ty_incl.
       iMod (Hincl with "LFT Hρ") as "#Hincl". iIntros "!>!#*H".
       iDestruct "H" as (i vl') "[% Hown]". subst. iExists _, _. iSplit. done.
         by iApply "Hincl".
-    - assert (Hincl : lft_ctx ⊢ ρ tid ={⊤}=∗
+    - assert (Hincl : lft_ctx -∗ ρ tid ={⊤}=∗
          (□ ∀ i κ E l, (nth i tyl1 ∅%T).(ty_shr) κ tid E l
                      → (nth i tyl2 ∅%T).(ty_shr) κ tid E l)).
       { clear -FA DUP. induction FA as [|ty1 ty2 tyl1 tyl2 Hincl _ IH].

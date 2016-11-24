@@ -28,7 +28,7 @@ Section tl_borrow.
 
   Lemma tl_borrow_acc q κ E F :
     ↑lftN ⊆ E → ↑tlN ⊆ E → ↑N ⊆ F →
-    lft_ctx ⊢ &tl{κ|tid|N}P -∗ q.[κ] -∗ tl_own tid F ={E}=∗
+    lft_ctx -∗ &tl{κ|tid|N}P -∗ q.[κ] -∗ tl_own tid F ={E}=∗
             ▷P ∗ tl_own tid (F ∖ ↑N) ∗
             (▷P -∗ tl_own tid (F ∖ ↑N) ={E}=∗ q.[κ] ∗ tl_own tid F).
   Proof.
@@ -40,7 +40,7 @@ Section tl_borrow.
     iMod ("Hclose'" with "HP") as "[Hown $]". iApply "Hclose". by iFrame.
   Qed.
 
-  Lemma tl_borrow_shorten κ κ': κ ⊑ κ' ⊢ &tl{κ'|tid|N}P -∗ &tl{κ|tid|N}P.
+  Lemma tl_borrow_shorten κ κ': κ ⊑ κ' -∗ &tl{κ'|tid|N}P -∗ &tl{κ|tid|N}P.
   Proof.
     iIntros "Hκκ' H". iDestruct "H" as (i) "[??]". iExists i. iFrame.
     iApply (idx_borrow_shorten with "Hκκ' H").
