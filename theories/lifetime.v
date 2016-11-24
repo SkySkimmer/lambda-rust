@@ -39,10 +39,10 @@ Proof. solve_decision. Defined.
 
 Class lftG Σ := LftG {
   lft_box :> boxG Σ;
-  lft_atomic_inG :> inG Σ (authR (gmapUR atomic_lft lft_stateR));
-  lft_atomic_name : gname;
-  lft_inter_inG :> inG Σ (authR (gmapUR lft (dec_agreeR lft_names)));
-  lft_inter_name : gname;
+  alft_inG :> inG Σ (authR (gmapUR atomic_lft lft_stateR));
+  alft_name : gname;
+  ilft_inG :> inG Σ (authR (gmapUR lft (dec_agreeR lft_names)));
+  ilft_name : gname;
   lft_bor_box :>
     inG Σ (authR (gmapUR slice_name (prodR fracR (dec_agreeR bor_state))));
   lft_cnt_inG :> inG Σ (authR natUR);
@@ -52,37 +52,37 @@ Class lftG Σ := LftG {
 Section defs.
   Context `{invG Σ, lftG Σ}.
 
-  Definition lft_own (q : Qp) (κ : lft) : iProp Σ :=
-    ([∗ mset] Λ ∈ κ, own lft_atomic_name (◯ {[ Λ := Cinl q ]}))%I.
+  Definition lft_tok (q : Qp) (κ : lft) : iProp Σ :=
+    ([∗ mset] Λ ∈ κ, own alft_name (◯ {[ Λ := Cinl q ]}))%I.
 
-  Definition lft_dead_own (κ : lft) : iProp Σ :=
-    (∃ Λ, ⌜Λ ∈ κ⌝ ∗ own lft_atomic_name (◯ {[ Λ := Cinr () ]}))%I.
+  Definition lft_dead (κ : lft) : iProp Σ :=
+    (∃ Λ, ⌜Λ ∈ κ⌝ ∗ own alft_name (◯ {[ Λ := Cinr () ]}))%I.
 
   Definition own_alft_auth (A : gmap atomic_lft bool) : iProp Σ :=
-    own lft_atomic_name (● (to_lft_stateR <$> A)).
+    own alft_name (● (to_lft_stateR <$> A)).
   Definition own_ilft_auth (I : gmap lft lft_names) : iProp Σ :=
-    own lft_inter_name (● (DecAgree <$> I)).
+    own ilft_name (● (DecAgree <$> I)).
 
   Definition own_bor (κ : lft)
       (x : auth (gmap slice_name (frac * dec_agree bor_state))) : iProp Σ :=
     (∃ γs,
-      own lft_inter_name (◯ {[ κ := DecAgree γs ]}) ∗
+      own ilft_name (◯ {[ κ := DecAgree γs ]}) ∗
       own (bor_name γs) x)%I.
 
   Definition own_cnt (κ : lft) (x : auth nat) : iProp Σ :=
     (∃ γs,
-      own lft_inter_name (◯ {[ κ := DecAgree γs ]}) ∗
+      own ilft_name (◯ {[ κ := DecAgree γs ]}) ∗
       own (cnt_name γs) x)%I.
 
   Definition own_inh (κ : lft) (x : auth (gset_disj slice_name)) : iProp Σ :=
     (∃ γs,
-      own lft_inter_name (◯ {[ κ := DecAgree γs ]}) ∗
+      own ilft_name (◯ {[ κ := DecAgree γs ]}) ∗
       own (inh_name γs) x)%I.
 
   Definition bor_cnt (κ : lft) (s : bor_state) : iProp Σ :=
     match s with
     | Bor_in => True
-    | Bor_open q => lft_own q κ
+    | Bor_open q => lft_tok q κ
     | Bor_rebor κ' => ⌜κ ⊂ κ'⌝ ∗ own_cnt κ' (◯ 1)
     end%I.
 
@@ -102,35 +102,36 @@ Section defs.
        own_inh κ (● GSet E) ∗
        box inhN (to_gmap s E) P)%I.
 
-   Definition lft_vs_inv_go (κ : lft) (lft_alive : ∀ κ', κ' ⊂ κ → iProp Σ)
+   Definition lft_vs_inv_go (κ : lft) (lft_inv_alive : ∀ κ', κ' ⊂ κ → iProp Σ)
        (I : gmap lft lft_names) : iProp Σ :=
      (lft_bor_dead κ ∗
        own_ilft_auth I ∗
-       [∗ set] κ' ∈ dom _ I, ∀ Hκ : κ' ⊂ κ, lft_alive κ' Hκ)%I.
+       [∗ set] κ' ∈ dom _ I, ∀ Hκ : κ' ⊂ κ, lft_inv_alive κ' Hκ)%I.
 
-   Definition lft_vs_go (κ : lft) (lft_alive : ∀ κ', κ' ⊂ κ → iProp Σ)
+   Definition lft_vs_go (κ : lft) (lft_inv_alive : ∀ κ', κ' ⊂ κ → iProp Σ)
        (P Q : iProp Σ) : iProp Σ :=
      (∃ n : nat,
        own_cnt κ (● n) ∗
        ∀ I : gmap lft lft_names,
-         lft_vs_inv_go κ lft_alive I -∗ ▷ P -∗ lft_dead_own κ
+         lft_vs_inv_go κ lft_inv_alive I -∗ ▷ P -∗ lft_dead κ
            ={⊤∖↑mgmtN}=∗
-         lft_vs_inv_go κ lft_alive I ∗ ▷ Q ∗ own_cnt κ (◯ n))%I.
+         lft_vs_inv_go κ lft_inv_alive I ∗ ▷ Q ∗ own_cnt κ (◯ n))%I.
 
-  Definition lft_alive_go (κ : lft) (lft_alive : ∀ κ', κ' ⊂ κ → iProp Σ) : iProp Σ :=
+  Definition lft_inv_alive_go (κ : lft)
+      (lft_inv_alive : ∀ κ', κ' ⊂ κ → iProp Σ) : iProp Σ :=
     (∃ P Q,
       lft_bor_alive κ P ∗
-      lft_vs_go κ lft_alive P Q ∗
+      lft_vs_go κ lft_inv_alive P Q ∗
       lft_inh κ false Q)%I.
 
-  Definition lft_alive (κ : lft) : iProp Σ :=
-    Fix_F _ lft_alive_go (gmultiset_wf κ).
+  Definition lft_inv_alive (κ : lft) : iProp Σ :=
+    Fix_F _ lft_inv_alive_go (gmultiset_wf κ).
   Definition lft_vs_inv (κ : lft) (I : gmap lft lft_names) : iProp Σ :=
-    lft_vs_inv_go κ (λ κ' _, lft_alive κ') I.
+    lft_vs_inv_go κ (λ κ' _, lft_inv_alive κ') I.
   Definition lft_vs (κ : lft) (P Q : iProp Σ) : iProp Σ :=
-    lft_vs_go κ (λ κ' _, lft_alive κ') P Q.
+    lft_vs_go κ (λ κ' _, lft_inv_alive κ') P Q.
 
-  Definition lft_dead (κ : lft) : iProp Σ :=
+  Definition lft_inv_dead (κ : lft) : iProp Σ :=
     (∃ P,
       lft_bor_dead κ ∗
       own_cnt κ (● 0) ∗
@@ -142,7 +143,8 @@ Section defs.
     ∃ Λ, Λ ∈ κ ∧ A !! Λ = Some false.
 
   Definition lft_inv (A : gmap atomic_lft bool) (κ : lft) : iProp Σ :=
-    (lft_alive κ ∗ ⌜lft_alive_in A κ⌝ ∨ lft_dead κ ∗ ⌜lft_dead_in A κ⌝)%I.
+    (lft_inv_alive κ ∗ ⌜lft_alive_in A κ⌝ ∨
+     lft_inv_dead κ ∗ ⌜lft_dead_in A κ⌝)%I.
 
   Definition lfts_inv : iProp Σ :=
     (∃ (A : gmap atomic_lft bool) (I : gmap lft lft_names),
@@ -153,9 +155,9 @@ Section defs.
   Definition lft_ctx : iProp Σ := inv mgmtN lfts_inv.
 
   Definition lft_incl (κ κ' : lft) : iProp Σ :=
-    (□ ((∀ q, lft_own q κ ={↑lftN}=∗ ∃ q',
-                 lft_own q' κ' ∗ (lft_own q' κ' ={↑lftN}=∗ lft_own q κ)) ∗
-        (lft_dead_own κ' ={↑lftN}=∗ lft_dead_own κ)))%I.
+    (□ ((∀ q, lft_tok q κ ={↑lftN}=∗ ∃ q',
+                 lft_tok q' κ' ∗ (lft_tok q' κ' ={↑lftN}=∗ lft_tok q κ)) ∗
+        (lft_dead κ' ={↑lftN}=∗ lft_dead κ)))%I.
 
   Definition bor_idx := (lft * slice_name)%type.
 
@@ -176,9 +178,9 @@ Instance: Params (@idx_bor) 5.
 Instance: Params (@raw_bor) 4.
 Instance: Params (@bor) 4.
 
-Notation "q .[ κ ]" := (lft_own q κ)
+Notation "q .[ κ ]" := (lft_tok q κ)
     (format "q .[ κ ]", at level 0) : uPred_scope.
-Notation "[† κ ]" := (lft_dead_own κ) (format "[† κ ]"): uPred_scope.
+Notation "[† κ ]" := (lft_dead κ) (format "[† κ ]"): uPred_scope.
 
 Notation "&{ κ } P" := (bor κ P)
   (format "&{ κ }  P", at level 20, right associativity) : uPred_scope.
@@ -187,9 +189,9 @@ Notation "&{ κ , i } P" := (idx_bor κ i P)
 
 Infix "⊑" := lft_incl (at level 70) : uPred_scope.
 
-Typeclasses Opaque lft_own lft_dead_own bor_cnt lft_bor_alive lft_bor_dead
-  lft_inh lft_alive lft_vs_inv lft_vs lft_dead lft_inv lft_incl idx_bor_own
-  idx_bor raw_bor bor.
+Typeclasses Opaque lft_tok lft_dead bor_cnt lft_bor_alive lft_bor_dead
+  lft_inh lft_inv_alive lft_vs_inv lft_vs lft_inv_dead lft_inv lft_incl
+  idx_bor_own idx_bor raw_bor bor.
 
 Section theorems.
 Context `{invG Σ, lftG Σ}.
@@ -213,24 +215,24 @@ Proof.
   apply sep_ne, forall_ne=> // I. rewrite lft_vs_inv_go_ne //. solve_proper.
 Qed.
 
-Lemma lft_alive_go_ne κ (f f' : ∀ κ', κ' ⊂ κ → iProp Σ) n :
+Lemma lft_inv_alive_go_ne κ (f f' : ∀ κ', κ' ⊂ κ → iProp Σ) n :
   (∀ κ' (Hκ : κ' ⊂ κ), f κ' Hκ ≡{n}≡ f' κ' Hκ) →
-  lft_alive_go κ f ≡{n}≡ lft_alive_go κ f'.
+  lft_inv_alive_go κ f ≡{n}≡ lft_inv_alive_go κ f'.
 Proof.
   intros Hf. apply exist_ne=> P; apply exist_ne=> Q. by rewrite lft_vs_go_ne.
 Qed.
 
-Lemma lft_alive_unfold κ :
-  lft_alive κ ⊣⊢ ∃ P Q, lft_bor_alive κ P ∗ lft_vs κ P Q ∗ lft_inh κ false Q.
+Lemma lft_inv_alive_unfold κ :
+  lft_inv_alive κ ⊣⊢ ∃ P Q, lft_bor_alive κ P ∗ lft_vs κ P Q ∗ lft_inh κ false Q.
 Proof.
-  apply equiv_dist=> n. rewrite /lft_alive -Fix_F_eq.
-  apply lft_alive_go_ne=> κ' Hκ.
-  apply (Fix_F_proper _ (λ _, dist n)); auto using lft_alive_go_ne.
+  apply equiv_dist=> n. rewrite /lft_inv_alive -Fix_F_eq.
+  apply lft_inv_alive_go_ne=> κ' Hκ.
+  apply (Fix_F_proper _ (λ _, dist n)); auto using lft_inv_alive_go_ne.
 Qed.
 Lemma lft_vs_inv_unfold κ (I : gmap lft lft_names) :
   lft_vs_inv κ I ⊣⊢ lft_bor_dead κ ∗
     own_ilft_auth I ∗
-    [∗ set] κ' ∈ dom _ I, ⌜κ' ⊂ κ⌝ → lft_alive κ'.
+    [∗ set] κ' ∈ dom _ I, ⌜κ' ⊂ κ⌝ → lft_inv_alive κ'.
 Proof.
   rewrite /lft_vs_inv /lft_vs_inv_go. by setoid_rewrite pure_impl_forall.
 Qed.
@@ -238,7 +240,7 @@ Lemma lft_vs_unfold κ P Q :
   lft_vs κ P Q ⊣⊢ ∃ n : nat,
     own_cnt κ (● n) ∗
     ∀ I : gmap lft lft_names,
-      lft_vs_inv κ I -∗ ▷ P -∗ lft_dead_own κ ={⊤∖↑mgmtN}=∗
+      lft_vs_inv κ I -∗ ▷ P -∗ lft_dead κ ={⊤∖↑mgmtN}=∗
       lft_vs_inv κ I ∗ ▷ Q ∗ own_cnt κ (◯ n).
 Proof. done. Qed.
 
@@ -274,12 +276,12 @@ Global Instance bor_proper κ : Proper ((≡) ==> (≡)) (bor κ).
 Proof. apply (ne_proper _). Qed.
 
 (*** PersistentP and TimelessP instances  *)
-Global Instance lft_own_timeless q κ : TimelessP q.[κ].
-Proof. rewrite /lft_own. apply _. Qed.
-Global Instance lft_dead_own_persistent κ : PersistentP [†κ].
-Proof. rewrite /lft_dead_own. apply _. Qed.
-Global Instance lft_dead_own_timeless κ : PersistentP [†κ].
-Proof. rewrite /lft_own. apply _. Qed.
+Global Instance lft_tok_timeless q κ : TimelessP q.[κ].
+Proof. rewrite /lft_tok. apply _. Qed.
+Global Instance lft_dead_persistent κ : PersistentP [†κ].
+Proof. rewrite /lft_dead. apply _. Qed.
+Global Instance lft_dead_timeless κ : PersistentP [†κ].
+Proof. rewrite /lft_tok. apply _. Qed.
 
 Global Instance lft_incl_persistent κ κ' : PersistentP (κ ⊑ κ').
 Proof. rewrite /lft_incl. apply _. Qed.
@@ -358,7 +360,7 @@ Proof. exists Λ. by rewrite lookup_insert. Qed.
 (** Silly stuff *)
 Lemma own_ilft_auth_agree (I : gmap lft lft_names) κ γs :
   own_ilft_auth I ⊢
-    own lft_inter_name (◯ {[κ := DecAgree γs]}) -∗ ⌜is_Some (I !! κ)⌝.
+    own ilft_name (◯ {[κ := DecAgree γs]}) -∗ ⌜is_Some (I !! κ)⌝.
 Proof.
   iIntros "HI Hκ". iDestruct (own_valid_2 with "HI Hκ")
     as %[[? [??]]%singleton_included _]%auth_valid_discrete_2.
@@ -442,46 +444,46 @@ Proof.
   iDestruct 1 as (γs) "[#Hκ Hx]"; iExists γs. iFrame "Hκ". by iApply own_update.
 Qed.
 
-Lemma lft_alive_twice κ : lft_alive κ ⊢ lft_alive κ -∗ False.
+Lemma lft_inv_alive_twice κ : lft_inv_alive κ ⊢ lft_inv_alive κ -∗ False.
 Proof.
-  rewrite lft_alive_unfold /lft_inh.
+  rewrite lft_inv_alive_unfold /lft_inh.
   iDestruct 1 as (P Q) "(_&_&Hinh)"; iDestruct 1 as (P' Q') "(_&_&Hinh')".
   iDestruct "Hinh" as (E) "[HE _]"; iDestruct "Hinh'" as (E') "[HE' _]".
   by iDestruct (own_inh_valid_2 with "HE HE'") as %?.
 Qed.
 
 (** Basic rules about lifetimes  *)
-Lemma lft_own_op q κ1 κ2 : q.[κ1] ∗ q.[κ2] ⊣⊢ q.[κ1 ∪ κ2].
-Proof. by rewrite /lft_own -big_sepMS_union. Qed.
+Lemma lft_tok_op q κ1 κ2 : q.[κ1] ∗ q.[κ2] ⊣⊢ q.[κ1 ∪ κ2].
+Proof. by rewrite /lft_tok -big_sepMS_union. Qed.
 
-Lemma lft_dead_own_or κ1 κ2 : [†κ1] ∨ [†κ2] ⊣⊢ [† κ1 ∪ κ2].
+Lemma lft_dead_or κ1 κ2 : [†κ1] ∨ [†κ2] ⊣⊢ [† κ1 ∪ κ2].
 Proof.
-  rewrite /lft_dead_own -or_exist. apply exist_proper=> Λ.
+  rewrite /lft_dead -or_exist. apply exist_proper=> Λ.
   rewrite -sep_or_r -pure_or. do 2 f_equiv. set_solver.
 Qed.
 
-Lemma lft_own_frac_op κ q q' : (q + q').[κ] ⊣⊢ q.[κ] ∗ q'.[κ].
+Lemma lft_tok_frac_op κ q q' : (q + q').[κ] ⊣⊢ q.[κ] ∗ q'.[κ].
 Proof.
-  rewrite /lft_own -big_sepMS_sepMS. apply big_sepMS_proper=> Λ _.
+  rewrite /lft_tok -big_sepMS_sepMS. apply big_sepMS_proper=> Λ _.
   by rewrite -own_op -auth_frag_op op_singleton.
 Qed.
 
-Lemma lft_own_split κ q : q.[κ] ⊣⊢ (q/2).[κ] ∗ (q/2).[κ].
-Proof. by rewrite -lft_own_frac_op Qp_div_2. Qed.
+Lemma lft_tok_split κ q : q.[κ] ⊣⊢ (q/2).[κ] ∗ (q/2).[κ].
+Proof. by rewrite -lft_tok_frac_op Qp_div_2. Qed.
 
-Lemma lft_own_dead_own q κ : q.[κ] ⊢ [† κ] -∗ False.
+Lemma lft_tok_dead_own q κ : q.[κ] ⊢ [† κ] -∗ False.
 Proof.
-  rewrite /lft_own /lft_dead_own. iIntros "H"; iDestruct 1 as (Λ') "[% H']".
+  rewrite /lft_tok /lft_dead. iIntros "H"; iDestruct 1 as (Λ') "[% H']".
   iDestruct (big_sepMS_elem_of _ _ Λ' with "H") as "H"=> //.
   iDestruct (own_valid_2 with "H H'") as %Hvalid.
   move: Hvalid=> /auth_own_valid /=; by rewrite op_singleton singleton_valid.
 Qed.
 
-Lemma lft_own_static q : True ⊢ q.[static].
-Proof. by rewrite /lft_own big_sepMS_empty. Qed.
+Lemma lft_tok_static q : True ⊢ q.[static].
+Proof. by rewrite /lft_tok big_sepMS_empty. Qed.
 
-Lemma lft_dead_own_static : [† static] ⊢ False.
-Proof. rewrite /lft_dead_own. iDestruct 1 as (Λ) "[% H']". set_solver. Qed.
+Lemma lft_dead_static : [† static] ⊢ False.
+Proof. rewrite /lft_dead. iDestruct 1 as (Λ) "[% H']". set_solver. Qed.
 
 (* Lifetime creation *)
 Lemma lft_inh_kill E κ Q :
@@ -496,10 +498,10 @@ Qed.
 
 Lemma lft_vs_inv_frame (KI K : gset lft) κ :
   (∀ κ', κ' ∈ KI → κ' ⊂ κ → κ' ∈ K) →
-  ([∗ set] κ' ∈ K, lft_alive κ') ⊢
-    ([∗ set] κ' ∈ KI, ⌜κ' ⊂ κ⌝ → lft_alive κ') ∗
-    (([∗ set] κ' ∈ KI, ⌜κ' ⊂ κ⌝ → lft_alive κ') -∗
-      ([∗ set] κ' ∈ K, lft_alive κ')).
+  ([∗ set] κ' ∈ K, lft_inv_alive κ') ⊢
+    ([∗ set] κ' ∈ KI, ⌜κ' ⊂ κ⌝ → lft_inv_alive κ') ∗
+    (([∗ set] κ' ∈ KI, ⌜κ' ⊂ κ⌝ → lft_inv_alive κ') -∗
+      ([∗ set] κ' ∈ K, lft_inv_alive κ')).
 Proof.
   intros ?.
   destruct (proj1 (subseteq_disjoint_union_L (filter (⊂ κ) KI) K)) as (K'&->&?).
@@ -527,16 +529,17 @@ Proof.
       (alloc_singleton_local_update _ κ (DecAgree γs)); last done.
     by rewrite lookup_fmap HIκ. }
   iDestruct "Hγs" as "#Hγs".
-  iAssert (lft_dead κ ∧ lft_alive κ)%I with "[-HA HA' HI]" as "Hdeadandalive".
+  iAssert (lft_inv_dead κ ∧ lft_inv_alive κ)%I
+    with "[-HA HA' HI]" as "Hdeadandalive".
   { iSplit.
-    - rewrite /lft_dead. iExists True%I. iSplitL "Hbor".
+    - rewrite /lft_inv_dead. iExists True%I. iSplitL "Hbor".
       { rewrite /lft_bor_dead. iExists ∅, True%I. rewrite !to_gmap_empty.
         iSplitL "Hbor". iExists γs. by iFrame. iApply box_alloc. }
       iSplitL "Hcnt".
       { rewrite /own_cnt. iExists γs. by iFrame. }
       rewrite /lft_inh. iExists ∅. rewrite to_gmap_empty.
       iSplitL; [|iApply box_alloc]. rewrite /own_inh. iExists γs. by iSplit.
-    - rewrite lft_alive_unfold. iExists True%I, True%I. iSplitL "Hbor".
+    - rewrite lft_inv_alive_unfold. iExists True%I, True%I. iSplitL "Hbor".
       { rewrite /lft_bor_alive. iExists ∅. rewrite !fmap_empty big_sepM_empty.
         iSplitR; [iApply box_alloc|]. iSplit=>//.
         rewrite /own_bor. iExists γs. by iFrame. }
@@ -576,24 +579,25 @@ Qed.
 Lemma lft_kill (I : gmap lft lft_names) (K K' : gset lft) (κ : lft) :
   let Iinv := (
     own_ilft_auth I ∗
-    ([∗ set] κ' ∈ K, lft_alive κ') ∗
-    ([∗ set] κ' ∈ K', lft_dead κ'))%I in
+    ([∗ set] κ' ∈ K, lft_inv_alive κ') ∗
+    ([∗ set] κ' ∈ K', lft_inv_dead κ'))%I in
   (∀ κ', is_Some (I !! κ') → κ' ⊂ κ → κ' ∈ K) →
   (∀ κ', is_Some (I !! κ') → κ ⊂ κ' → κ' ∈ K') →
-  Iinv ⊢ lft_alive κ -∗ [†κ] ={⊤∖↑mgmtN}=∗ Iinv ∗ lft_dead κ.
+  Iinv ⊢ lft_inv_alive κ -∗ [†κ] ={⊤∖↑mgmtN}=∗ Iinv ∗ lft_inv_dead κ.
 Proof.
   iIntros (Iinv HK HK') "(HI & Halive & Hdead) Hlalive Hκ".
-  rewrite lft_alive_unfold; iDestruct "Hlalive" as (P Q) "(Hbor & Hvs & Hinh)".
+  rewrite lft_inv_alive_unfold;
+    iDestruct "Hlalive" as (P Q) "(Hbor & Hvs & Hinh)".
   rewrite /lft_bor_alive; iDestruct "Hbor" as (B) "(Hbox & Hbor & HB)".
   iAssert ⌜∀ i s, B !! i = Some s → s = Bor_in⌝%I with "[#]" as %HB.
   { iIntros (i s HBI).
     iDestruct (big_sepM_lookup _ B with "HB") as "HB"=> //.
     destruct s as [|q|κ']; rewrite /bor_cnt //.
-    { iDestruct (lft_own_dead_own with "HB Hκ") as "[]". }
+    { iDestruct (lft_tok_dead_own with "HB Hκ") as "[]". }
     iDestruct "HB" as "[% Hcnt]".
     iDestruct (own_cnt_auth with "HI Hcnt") as %?.
     iDestruct (big_sepS_elem_of _ K' with "Hdead") as "Hdead"; first by eauto.
-    rewrite /lft_dead; iDestruct "Hdead" as (R) "(_ & Hcnt' & _)".
+    rewrite /lft_inv_dead; iDestruct "Hdead" as (R) "(_ & Hcnt' & _)".
     iDestruct (own_cnt_valid_2 with "Hcnt' Hcnt")
       as %[?%nat_included _]%auth_valid_discrete_2; omega. }
   iMod (box_empty_all with "Hbox") as "[HP Hbox]"=>//; first solve_ndisj.
@@ -612,16 +616,16 @@ Proof.
   { apply auth_update_dealloc, (nat_local_update _ _ 0 0); omega. }
   rewrite /Iinv. iFrame "Hdead Halive' HI".
   iMod (lft_inh_kill with "[$Hinh $HQ]"); first solve_ndisj.
-  iModIntro. rewrite /lft_dead. iExists Q. by iFrame.
+  iModIntro. rewrite /lft_inv_dead. iExists Q. by iFrame.
 Qed.
 
 Lemma lfts_kill A (I : gmap lft lft_names) (K K' : gset lft) :
-  let Iinv K' := (own_ilft_auth I ∗ [∗ set] κ' ∈ K', lft_alive κ')%I in
+  let Iinv K' := (own_ilft_auth I ∗ [∗ set] κ' ∈ K', lft_inv_alive κ')%I in
   (∀ κ κ', κ ∈ K → is_Some (I !! κ') → κ ⊆ κ' → κ' ∈ K) →
   (∀ κ κ', κ ∈ K → lft_alive_in A κ → is_Some (I !! κ') →
     κ' ∉ K → κ' ⊂ κ → κ' ∈ K') →
   Iinv K' ⊢ ([∗ set] κ ∈ K, lft_inv A κ ∗ [†κ])
-    ={⊤∖↑mgmtN}=∗ Iinv K' ∗ [∗ set] κ ∈ K, lft_dead κ.
+    ={⊤∖↑mgmtN}=∗ Iinv K' ∗ [∗ set] κ ∈ K, lft_inv_dead κ.
 Proof.
   intros Iinv. revert K'.
   induction (collection_wf K) as [K _ IH]=> K' HK HK'.
@@ -637,7 +641,7 @@ Proof.
   rewrite {1}/lft_inv. iDestruct "Hκinv" as "[[Hκalive _]|[_ %]]"; last first.
   { by destruct (lft_alive_and_dead_in A κ). } 
   iAssert ⌜κ ∉ K'⌝%I with "[#]" as %HκK'.
-  { iIntros (Hκ). iApply (lft_alive_twice κ with "Hκalive").
+  { iIntros (Hκ). iApply (lft_inv_alive_twice κ with "Hκalive").
     by iApply (big_sepS_elem_of _ K' κ with "Halive"). }
   specialize (IH (K ∖ {[ κ ]})). feed specialize IH; [set_solver +HκK|].
   iMod (IH ({[ κ ]} ∪ K') with "[HI Halive Hκalive] HK") as "[[HI Halive] Hdead]".
@@ -710,11 +714,11 @@ Proof.
     - iLeft. iFrame "Hκ". iPureIntro. by apply lft_alive_in_insert.
     - iRight. iFrame "Hκ". iPureIntro. by apply lft_dead_in_insert. }
   iModIntro; iExists {[ Λ ]}.
-  rewrite {1}/lft_own big_sepMS_singleton. iFrame "HΛ".
+  rewrite {1}/lft_tok big_sepMS_singleton. iFrame "HΛ".
   clear I A HΛ. iIntros "!# HΛ".
   iApply (step_fupd_mask_mono ⊤ _ _ (⊤∖↑mgmtN)); [solve_ndisj..|].
   iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
-  rewrite /lft_own big_sepMS_singleton.
+  rewrite /lft_tok big_sepMS_singleton.
   iDestruct (own_valid_2 with "HA HΛ")
     as %[[s [?%leibniz_equiv ?]]%singleton_included _]%auth_valid_discrete_2.
   iMod (own_update_2 with "HA HΛ") as "[HA HΛ]".
@@ -727,19 +731,19 @@ Proof.
     (dom (gset lft) I))) as (K''&HI&?).
   { apply union_least. apply kill_set_subseteq. apply down_close_subseteq. }
   rewrite HI !big_sepS_union //. iDestruct "Hinv" as "[[HinvK HinvD] Hinv]".
-  iAssert ([∗ set] κ ∈ K', lft_alive κ)%I with "[HinvD]" as "HinvD".
+  iAssert ([∗ set] κ ∈ K', lft_inv_alive κ)%I with "[HinvD]" as "HinvD".
   { iApply (big_sepS_impl _ _ K' with "[$HinvD]"); iIntros "!#".
     rewrite /lft_inv. iIntros (κ Hκ) "[[$ _]|[_ %]]".
     destruct (lft_alive_and_dead_in A κ); eauto using down_close_lft_alive_in. }
   iAssert ([∗ set] κ ∈ K, lft_inv A κ ∗ [† κ])%I with "[HinvK]" as "HinvK". 
   { iApply (big_sepS_impl _ _ K with "[$HinvK]"); iIntros "!#".
-    iIntros (κ [? _]%elem_of_kill_set) "$". rewrite /lft_dead_own. eauto. }
+    iIntros (κ [? _]%elem_of_kill_set) "$". rewrite /lft_dead. eauto. }
   iMod (lfts_kill A I K K' with "[$HI $HinvD] HinvK") as "[[HI HinvD] HinvK]".
   { intros κ κ' [??]%elem_of_kill_set ??. apply elem_of_kill_set.
     split; last done. by eapply gmultiset_elem_of_subseteq. }
   { intros κ κ' ?????. apply elem_of_down_close; eauto 10. }
   iMod ("Hclose" with "[-]") as "_"; last first.
-  { iModIntro. rewrite /lft_dead_own. iExists Λ.
+  { iModIntro. rewrite /lft_dead. iExists Λ.
     rewrite elem_of_singleton. auto. }
   iNext. iExists (<[Λ:=false]>A), I.
   rewrite /own_alft_auth fmap_insert. iFrame "HA HI".
@@ -824,112 +828,120 @@ Lemma idx_bor_shorten κ κ' i P :
   κ ⊑ κ' ⊢ idx_bor κ' i P -∗ idx_bor κ i P.
 Proof. Admitted.
 
-(*
-  (*** Derived lemmas  *)
+(*** Derived lemmas  *)
+Lemma bor_acc E q κ P :
+  ↑lftN ⊆ E →
+  lft_ctx ⊢ &{κ}P -∗ q.[κ] ={E}=∗ ▷ P ∗ (▷ P ={E}=∗ &{κ}P ∗ q.[κ]).
+Proof.
+  iIntros (?) "#LFT HP Htok".
+  iMod (bor_acc_strong with "LFT HP Htok") as "[HP Hclose]"; first done.
+  iIntros "!> {$HP} HP". iApply "Hclose". by iIntros "{$HP}!>_$".
+Qed.
 
-  Lemma borrow_acc E q κ P : ↑lftN ⊆ E →
-      lft_ctx ⊢ &{κ}P -∗ q.[κ] ={E}=∗ ▷ P ∗ (▷ P ={E}=∗ &{κ}P ∗ q.[κ]).
-  Proof.
-    iIntros (?) "#LFT HP Htok".
-    iMod (borrow_acc_strong with "LFT HP Htok") as "[HP Hclose]". done.
-    iIntros "!> {$HP} HP". iApply "Hclose". by iIntros "{$HP}!>_$".
-  Qed.
+Lemma bor_exists {A} (Φ : A → iProp Σ) `{!Inhabited A} E κ :
+  ↑lftN ⊆ E →
+  lft_ctx ⊢ &{κ}(∃ x, Φ x) ={E}=∗ ∃ x, &{κ}Φ x.
+Proof.
+  iIntros (?) "#LFT Hb".
+  iMod (bor_acc_atomic_strong with "LFT Hb") as "[[HΦ Hclose]|[H† Hclose]]"; first done.
+  - iDestruct "HΦ" as (x) "HΦ". iExists x.
+    iApply "Hclose". iIntros "{$HΦ} !> _ ?"; eauto.
+  - iMod "Hclose" as "_". iExists inhabitant. by iApply (bor_fake with "LFT").
+Qed.
 
-  Lemma borrow_exists {A} `(↑lftN ⊆ E) κ (Φ : A → iProp Σ) {_:Inhabited A}:
-    lft_ctx ⊢ &{κ}(∃ x, Φ x) ={E}=∗ ∃ x, &{κ}Φ x.
-  Proof.
-    iIntros "#LFT Hb".
-    iMod (borrow_acc_atomic_strong with "LFT Hb") as "[[HΦ Hclose]|[H† Hclose]]". done.
-    - iDestruct "HΦ" as (x) "HΦ". iExists x. iApply "Hclose". iIntros "{$HΦ}!>_?". eauto.
-    - iMod "Hclose" as "_". iExists inhabitant. by iApply (borrow_fake with "LFT").
-  Qed.
+Lemma bor_or E κ P Q :
+  ↑lftN ⊆ E →
+  lft_ctx ⊢ &{κ}(P ∨ Q) ={E}=∗ (&{κ}P ∨ &{κ}Q).
+Proof.
+  iIntros (?) "#LFT H". rewrite uPred.or_alt.
+  iMod (bor_exists with "LFT H") as ([]) "H"; auto.
+Qed.
 
-  Lemma borrow_or `(↑lftN ⊆ E) κ P Q:
-    lft_ctx ⊢ &{κ}(P ∨ Q) ={E}=∗ (&{κ}P ∨ &{κ}Q).
-  Proof.
-    iIntros "#LFT H". rewrite uPred.or_alt.
-    iMod (borrow_exists with "LFT H") as ([]) "H"; auto.
-  Qed.
+Lemma bor_persistent `{!PersistentP P} E κ q :
+  ↑lftN ⊆ E →
+  lft_ctx ⊢ &{κ}P -∗ q.[κ] ={E}=∗ ▷ P ∗ q.[κ].
+Proof.
+  iIntros (?) "#LFT Hb Htok".
+  iMod (bor_acc with "LFT Hb Htok") as "[#HP Hob]"; first done.
+  by iMod ("Hob" with "HP") as "[_$]".
+Qed.
 
-  Lemma borrow_persistent `(↑lftN ⊆ E) `{PersistentP _ P} κ q:
-    lft_ctx ⊢ &{κ}P -∗ q.[κ] ={E}=∗ ▷ P ∗ q.[κ].
-  Proof.
-    iIntros "#LFT Hb Htok".
-    iMod (borrow_acc with "LFT Hb Htok") as "[#HP Hob]". done.
-    by iMod ("Hob" with "HP") as "[_$]".
-  Qed.
+Lemma lft_incl_acc E κ κ' q :
+  ↑lftN ⊆ E →
+  κ ⊑ κ' ⊢ q.[κ] ={E}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={E}=∗ q.[κ]).
+Proof.
+  rewrite /lft_incl.
+  iIntros (?) "#[H _] Hq". iApply fupd_mask_mono; first done.
+  iMod ("H" with "* Hq") as (q') "[Hq' Hclose]". iExists q'.
+  iIntros "{$Hq'} !> Hq". iApply fupd_mask_mono; first done. by iApply "Hclose".
+Qed.
 
-  Lemma lft_incl_acc `(↑lftN ⊆ E) κ κ' q:
-    κ ⊑ κ' ⊢ q.[κ] ={E}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={E}=∗ q.[κ]).
-  Proof.
-    iIntros "#[H _] Hq". iApply fupd_mask_mono. eassumption.
-    iMod ("H" with "*Hq") as (q') "[Hq' Hclose]". iExists q'.
-    iIntros "{$Hq'}!>Hq". iApply fupd_mask_mono. eassumption. by iApply "Hclose".
-  Qed.
+Lemma lft_incl_dead E κ κ' : ↑lftN ⊆ E → κ ⊑ κ' ⊢ [†κ'] ={E}=∗ [†κ].
+Proof.
+  rewrite /lft_incl.
+  iIntros (?) "#[_ H] Hq". iApply fupd_mask_mono; first done. by iApply "H".
+Qed.
 
-  Lemma lft_incl_dead `(↑lftN ⊆ E) κ κ': κ ⊑ κ' ⊢ [†κ'] ={E}=∗ [†κ].
-  Proof.
-    iIntros "#[_ H] Hq". iApply fupd_mask_mono. eassumption. by iApply "H".
-  Qed.
+Lemma lft_le_incl κ κ' : κ' ⊆ κ → True ⊢ κ ⊑ κ'.
+Proof. (*
+  iIntros (->%gmultiset_union_difference) "!#". iSplitR.
+  - iIntros (q). rewrite -lft_tok_op. iIntros (q) "[Hκ' Hκ0]". iExists q. iIntros "!>{$Hκ'}Hκ'!>". by iSplitR "Hκ0".
+  - iIntros "? !>". iApply lft_dead_or. auto.
+Qed. *) Admitted.
 
-  Lemma lft_le_incl κ κ': κ' ≼ κ → True ⊢ κ ⊑ κ'.
-  Proof.
-    iIntros ([κ0 ->%leibniz_equiv]) "!#". iSplitR.
-    - iIntros (q) "[Hκ' Hκ0]". iExists q. iIntros "!>{$Hκ'}Hκ'!>". by iSplitR "Hκ0".
-    - iIntros "? !>". iApply lft_dead_or. auto.
-  Qed.
+Lemma lft_incl_refl κ : True ⊢ κ ⊑ κ.
+Proof. by apply lft_le_incl. Qed.
 
-  Lemma lft_incl_refl κ : True ⊢ κ ⊑ κ.
-  Proof. by apply lft_le_incl. Qed.
+Lemma lft_incl_trans κ κ' κ'': κ ⊑ κ' ∗ κ' ⊑ κ'' ⊢ κ ⊑ κ''.
+Proof.
+  rewrite /lft_incl. iIntros "[#[H1 H1†] #[H2 H2†]] !#". iSplitR.
+  - iIntros (q) "Hκ".
+    iMod ("H1" with "*Hκ") as (q') "[Hκ' Hclose]".
+    iMod ("H2" with "*Hκ'") as (q'') "[Hκ'' Hclose']".
+    iExists q''. iIntros "{$Hκ''} !> Hκ''".
+    iMod ("Hclose'" with "Hκ''") as "Hκ'". by iApply "Hclose".
+  - iIntros "H†". iMod ("H2†" with "H†"). by iApply "H1†".
+Qed.
 
-  Lemma lft_incl_trans κ κ' κ'': κ ⊑ κ' ∗ κ' ⊑ κ'' ⊢ κ ⊑ κ''.
-  Proof.
-    unfold lft_incl. iIntros "[#[H1 H1†] #[H2 H2†]]!#". iSplitR.
-    - iIntros (q) "Hκ".
-      iMod ("H1" with "*Hκ") as (q') "[Hκ' Hclose]".
-      iMod ("H2" with "*Hκ'") as (q'') "[Hκ'' Hclose']".
-      iExists q''. iIntros "{$Hκ''}!>Hκ''". iMod ("Hclose'" with "Hκ''") as "Hκ'".
-        by iApply "Hclose".
-    - iIntros "H†". iMod ("H2†" with "H†"). by iApply "H1†".
-  Qed.
+Lemma bor_shorten κ κ' P: κ ⊑ κ' ⊢ &{κ'}P -∗ &{κ}P.
+Proof.
+  iIntros "Hκκ' H". rewrite /bor. iDestruct "H" as (i) "[??]".
+  iExists i. iFrame. (*
+Check idx_bor_shorten.
+ by iApply (idx_bor_shorten with "Hκκ'").
+  Qed. *) Admitted.
 
+Lemma lft_incl_lb κ κ' κ'' : κ ⊑ κ' ∗ κ ⊑ κ'' ⊢ κ ⊑ κ' ∪ κ''.
+Proof. (*
+  iIntros "[#[H1 H1†] #[H2 H2†]]!#". iSplitR.
+  - iIntros (q) "[Hκ'1 Hκ'2]".
+    iMod ("H1" with "*Hκ'1") as (q') "[Hκ' Hclose']".
+    iMod ("H2" with "*Hκ'2") as (q'') "[Hκ'' Hclose'']".
+    destruct (Qp_lower_bound q' q'') as (qq & q'0 & q''0 & -> & ->).
+    iExists qq. rewrite -lft_tok_op !lft_tok_frac_op.
+    iDestruct "Hκ'" as "[$ Hκ']". iDestruct "Hκ''" as "[$ Hκ'']".
+    iIntros "!>[Hκ'0 Hκ''0]".
+    iMod ("Hclose'" with "[$Hκ' $Hκ'0]") as "$".
+    by iMod ("Hclose''" with "[$Hκ'' $Hκ''0]") as "$".
+  - rewrite -lft_dead_or. iIntros "[H†|H†]". by iApply "H1†". by iApply "H2†".
+Qed. *) Admitted.
 
+Lemma lft_incl_static κ : True ⊢ κ ⊑ static.
+Proof.
+  iIntros "!#". iSplitR.
+  - iIntros (q) "?". iExists 1%Qp. iSplitR. by iApply lft_tok_static. auto.
+  - iIntros "Hst". by iDestruct (lft_dead_static with "Hst") as "[]".
+Qed.
 
-  Lemma borrow_shorten κ κ' P: κ ⊑ κ' ⊢ &{κ'}P -∗ &{κ}P.
-  Proof.
-    iIntros "H⊑ H". unfold borrow. iDestruct "H" as (i) "[??]".
-    iExists i. iFrame. by iApply (idx_borrow_shorten with "H⊑").
-  Qed.
-
-  Lemma lft_incl_lb κ κ' κ'' : κ ⊑ κ' ∗ κ ⊑ κ'' ⊢ κ ⊑ κ' ⋅ κ''.
-  Proof.
-    iIntros "[#[H1 H1†] #[H2 H2†]]!#". iSplitR.
-    - iIntros (q) "[Hκ'1 Hκ'2]".
-      iMod ("H1" with "*Hκ'1") as (q') "[Hκ' Hclose']".
-      iMod ("H2" with "*Hκ'2") as (q'') "[Hκ'' Hclose'']".
-      destruct (Qp_lower_bound q' q'') as (qq & q'0 & q''0 & -> & ->).
-      iExists qq. rewrite -lft_own_op !lft_own_frac_op.
-      iDestruct "Hκ'" as "[$ Hκ']". iDestruct "Hκ''" as "[$ Hκ'']".
-      iIntros "!>[Hκ'0 Hκ''0]".
-      iMod ("Hclose'" with "[$Hκ' $Hκ'0]") as "$".
-      by iMod ("Hclose''" with "[$Hκ'' $Hκ''0]") as "$".
-    - rewrite -lft_dead_or. iIntros "[H†|H†]". by iApply "H1†". by iApply "H2†".
-  Qed.
-
-  Lemma lft_incl_static κ : True ⊢ κ ⊑ static.
-  Proof.
-    iIntros "!#". iSplitR.
-    - iIntros (q) "?". iExists 1%Qp. iSplitR. by iApply lft_own_static. auto.
-    - iIntros "?". by iDestruct (lft_not_dead_static with "[-]") as "[]".
-  Qed.
-
-  Lemma reborrow `(↑lftN ⊆ E) P κ κ':
-    lft_ctx ⊢ κ' ⊑ κ -∗ &{κ}P ={E}=∗ &{κ'}P ∗ ([†κ'] ={E}=∗  &{κ}P).
-  Proof.
-    iIntros "#LFT #H⊑ HP". iMod (borrow_reborrow' with "LFT HP") as "[Hκ' H∋]".
-      done. by exists κ'.
-    iDestruct (borrow_shorten with "[H⊑] Hκ'") as "$".
-    { iApply lft_incl_lb. iSplit. done. iApply lft_incl_refl. }
-    iIntros "!>Hκ'". iApply ("H∋" with "[Hκ']"). iApply lft_dead_or. auto.
-  Qed.
+Lemma reborrow E P κ κ' :
+  ↑lftN ⊆ E →
+  lft_ctx ⊢ κ' ⊑ κ -∗ &{κ}P ={E}=∗ &{κ'}P ∗ ([†κ'] ={E}=∗  &{κ}P).
+Proof.
+  iIntros (?) "#LFT #H⊑ HP". iMod (bor_reborrow' with "LFT HP") as "[Hκ' H∋]".
+    done. (* by exists κ'.
+  iDestruct (borrow_shorten with "[H⊑] Hκ'") as "$".
+  { iApply lft_incl_lb. iSplit. done. iApply lft_incl_refl. }
+  iIntros "!>Hκ'". iApply ("H∋" with "[Hκ']"). iApply lft_dead_or. auto.
+Qed.
 *)
+Admitted.
