@@ -18,7 +18,7 @@ Notation "e1 <-[ i ]{ n } ! e2" :=
    format "e1  <-[ i ]{ n }  ! e2") : lrust_expr_scope.
 
 Lemma wp_memcpy `{heapG Σ} E l1 l2 vl1 vl2 q n:
-  nclose heapN ⊆ E →
+  ↑heapN ⊆ E →
   length vl1 = n → length vl2 = n →
   {{{ heap_ctx ∗ l1 ↦∗ vl1 ∗ l2 ↦∗{q} vl2 }}}
     #l1 <-{n} !#l2 @ E

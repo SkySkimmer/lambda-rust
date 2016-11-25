@@ -16,17 +16,18 @@ Section shared_borrows.
   Proof. solve_proper. Qed.
   Global Instance shr_borrow_persistent : PersistentP (&shr{κ} P) := _.
 
-  Lemma borrow_share `(nclose lftN ⊆ E) κ : &{κ}P ={E}=∗ &shr{κ}P.
+  Lemma borrow_share E κ : ↑lftN ⊆ E → &{κ}P ={E}=∗ &shr{κ}P.
   Proof.
-    iIntros "HP". unfold borrow. iDestruct "HP" as (i) "(#?&Hown)".
+    iIntros (?) "HP". unfold borrow. iDestruct "HP" as (i) "(#?&Hown)".
     iExists i. iFrame "#". iApply inv_alloc. auto.
   Qed.
 
-  Lemma shr_borrow_acc `(nclose lftN ⊆ E) κ :
-    lft_ctx ⊢ &shr{κ}P ={E,E∖lftN}=∗ ▷P ∗ (▷P ={E∖lftN,E}=∗ True) ∨
-                          [†κ] ∗ |={E∖lftN,E}=> True.
+  Lemma shr_borrow_acc E κ :
+    ↑lftN ⊆ E →
+    lft_ctx -∗ &shr{κ}P ={E,E∖↑lftN}=∗ ▷P ∗ (▷P ={E∖↑lftN,E}=∗ True) ∨
+               [†κ] ∗ |={E∖↑lftN,E}=> True.
   Proof.
-    iIntros "#LFT #HP". iDestruct "HP" as (i) "(#Hidx&#Hinv)".
+    iIntros (?) "#LFT #HP". iDestruct "HP" as (i) "(#Hidx&#Hinv)".
     iInv lftN as (q') ">Hq'" "Hclose".
     rewrite -(Qp_div_2 q') /idx_borrow_own -op_singleton auth_frag_op own_op.
     iDestruct "Hq'" as "[Hq'0 Hq'1]". iMod ("Hclose" with "[Hq'1]") as "_". by eauto.
@@ -35,16 +36,17 @@ Section shared_borrows.
     - iRight. iFrame. iIntros "!>". by iMod "Hclose".
   Qed.
 
-  Lemma shr_borrow_acc_tok `(nclose lftN ⊆ E) q κ :
-    lft_ctx ⊢ &shr{κ}P -∗ q.[κ] ={E,E∖lftN}=∗ ▷P ∗ (▷P ={E∖lftN,E}=∗ q.[κ]).
+  Lemma shr_borrow_acc_tok E q κ :
+    ↑lftN ⊆ E →
+    lft_ctx -∗ &shr{κ}P -∗ q.[κ] ={E,E∖↑lftN}=∗ ▷P ∗ (▷P ={E∖↑lftN,E}=∗ q.[κ]).
   Proof.
-    iIntros "#LFT #Hshr Hκ".
+    iIntros (?) "#LFT #Hshr Hκ".
     iMod (shr_borrow_acc with "LFT Hshr") as "[[$ Hclose]|[H† _]]". done.
     - iIntros "!>HP". by iMod ("Hclose" with "HP").
     - iDestruct (lft_own_dead with "Hκ H†") as "[]".
   Qed.
 
-  Lemma shr_borrow_shorten κ κ': κ ⊑ κ' ⊢ &shr{κ'}P -∗ &shr{κ}P.
+  Lemma shr_borrow_shorten κ κ': κ ⊑ κ' -∗ &shr{κ'}P -∗ &shr{κ}P.
   Proof.
     iIntros "#H⊑ H". iDestruct "H" as (i) "[??]". iExists i. iFrame.
       by iApply (idx_borrow_shorten with "H⊑").

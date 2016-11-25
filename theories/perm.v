@@ -24,14 +24,14 @@ Section perm.
     from_option (λ v, ty.(ty_own) tid [v]) False%I (eval_expr ν).
 
   Definition extract (κ : lifetime) (ρ : perm) : perm :=
-    λ tid, ([†κ] ={lftN}=∗ ρ tid)%I.
+    λ tid, ([†κ] ={↑lftN}=∗ ρ tid)%I.
 
   Definition tok (κ : lifetime) (q : Qp) : perm :=
     λ _, q.[κ]%I.
 
 
   Definition killable (κ : lifetime) : perm :=
-    λ _, (□ (1.[κ] ={⊤,⊤∖nclose lftN}▷=∗ [†κ]))%I.
+    λ _, (□ (1.[κ] ={⊤,⊤∖↑lftN}▷=∗ [†κ]))%I.
 
   Definition incl (κ κ' : lifetime) : perm :=
     λ _, (κ ⊑ κ')%I.
@@ -105,12 +105,13 @@ Section has_type.
   Qed.
 
   Lemma has_type_wp E (ν : expr) ty tid (Φ : val -> iProp _) :
-    (ν ◁ ty)%P tid ∗ (∀ (v : val), eval_expr ν = Some v ∗ (v ◁ ty)%P tid ={E}=∗ Φ v)
-    ⊢ WP ν @ E {{ Φ }}.
+    (ν ◁ ty)%P tid -∗
+    (∀ (v : val), ⌜eval_expr ν = Some v⌝ -∗ (v ◁ ty)%P tid ={E}=∗ Φ v) -∗
+    WP ν @ E {{ Φ }}.
   Proof.
-    iIntros "[H◁ HΦ]". setoid_rewrite has_type_value. unfold has_type.
+    iIntros "H◁ HΦ". setoid_rewrite has_type_value. unfold has_type.
     destruct (eval_expr ν) eqn:EQν; last by iDestruct "H◁" as "[]". simpl.
-    iMod ("HΦ" $! v with "[$H◁]") as "HΦ". done.
+    iMod ("HΦ" $! v with "[] H◁") as "HΦ". done.
     iInduction ν as [| | |[] e ? [|[]| | | | | | | | | |] _| | | | | | | |] "IH"
       forall (Φ v EQν); try done.
     - inversion EQν. subst. wp_value. auto.

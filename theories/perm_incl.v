@@ -10,13 +10,13 @@ Section defs.
 
   (* Definitions *)
   Definition perm_incl (ρ1 ρ2 : perm) :=
-    ∀ tid, lft_ctx ⊢ ρ1 tid ={⊤}=∗ ρ2 tid.
+    ∀ tid, lft_ctx -∗ ρ1 tid ={⊤}=∗ ρ2 tid.
 
   Global Instance perm_equiv : Equiv perm :=
     λ ρ1 ρ2, perm_incl ρ1 ρ2 ∧ perm_incl ρ2 ρ1.
 
   Definition borrowing κ (ρ ρ1 ρ2 : perm) :=
-    ∀ tid, lft_ctx ⊢ ρ tid -∗ ρ1 tid ={⊤}=∗ ρ2 tid ∗ (κ ∋ ρ1)%P tid.
+    ∀ tid, lft_ctx -∗ ρ tid -∗ ρ1 tid ={⊤}=∗ ρ2 tid ∗ (κ ∋ ρ1)%P tid.
 
 End defs.
 
@@ -93,15 +93,13 @@ Section props.
 
   Lemma perm_tok_plus κ q1 q2 :
     tok κ q1 ∗ tok κ q2 ⇔ tok κ (q1 + q2).
-  Proof.
-    rewrite /tok /sep /=; split; iIntros (tid) "_ ?"; rewrite lft_own_frac_op //.
-  Qed.
+  Proof. rewrite /tok /sep /=; split; by iIntros (tid) "_ [$$]". Qed.
 
   Lemma perm_lftincl_refl κ : ⊤ ⇒ κ ⊑ κ.
   Proof. iIntros (tid) "_ _!>". iApply lft_incl_refl. Qed.
 
   Lemma perm_lftincl_trans κ1 κ2 κ3 : κ1 ⊑ κ2 ∗ κ2 ⊑ κ3 ⇒ κ1 ⊑ κ3.
-  Proof. iIntros (tid) "_ [#?#?]!>". iApply lft_incl_trans. auto. Qed.
+  Proof. iIntros (tid) "_ [#?#?]!>". iApply (lft_incl_trans with "[] []"); auto. Qed.
 
   Lemma perm_incl_share q ν κ ty :
     ν ◁ &uniq{κ} ty ∗ q.[κ] ⇒ ν ◁ &shr{κ} ty ∗ q.[κ].
@@ -125,7 +123,7 @@ Section props.
       iDestruct "H" as (vl) "[H↦ H]". iDestruct "H" as (vl1 vl2) "(>% & H1 & H2)".
       subst. rewrite heap_mapsto_vec_app -heap_freeable_op_eq.
       iDestruct "H†" as "[H†1 H†2]". iDestruct "H↦" as "[H↦1 H↦2]".
-      iAssert (▷ (length vl1 = ty_size ty1))%I with "[#]" as ">EQ".
+      iAssert (▷ ⌜length vl1 = ty_size ty1⌝)%I with "[#]" as ">EQ".
       { iNext. by iApply ty_size_eq. }
       iDestruct "EQ" as %->. iSplitL "H↦1 H†1 H1".
       + iExists _. iSplitR. done. iFrame. iExists _. by iFrame.
@@ -136,7 +134,7 @@ Section props.
       iExists l. iSplitR. done. rewrite -heap_freeable_op_eq. iFrame.
       iDestruct "H↦1" as (vl1) "[H↦1 H1]". iDestruct "H↦2" as (vl2) "[H↦2 H2]".
       iExists (vl1 ++ vl2). rewrite heap_mapsto_vec_app. iFrame.
-      iAssert (▷ (length vl1 = ty_size ty1))%I with "[#]" as ">EQ".
+      iAssert (▷ ⌜length vl1 = ty_size ty1⌝)%I with "[#]" as ">EQ".
       { iNext. by iApply ty_size_eq. }
       iDestruct "EQ" as %->. iFrame. iExists vl1, vl2. iFrame. auto.
   Qed.
@@ -275,7 +273,7 @@ Section props.
     destruct (eval_expr ν) as [[[|l|]|]|];
       try by (iDestruct "Hown" as "[]" || iDestruct "Hown" as (l) "[% _]").
     iDestruct "Hown" as (l') "[EQ [Hown Hf]]". iDestruct "EQ" as %[=]. subst l'.
-    iApply (fupd_mask_mono lftN). done.
+    iApply (fupd_mask_mono (↑lftN)). done.
     iMod (borrow_create with "LFT Hown") as "[Hbor Hext]". done.
     iSplitL "Hbor". by simpl; eauto.
     iMod (borrow_create with "LFT Hf") as "[_ Hf]". done.
@@ -291,7 +289,7 @@ Section props.
     destruct (eval_expr ν) as [[[|l|]|]|];
       try by (iDestruct "H" as "[]" || iDestruct "H" as (l) "[% _]").
     iDestruct "H" as (l') "[EQ H]". iDestruct "EQ" as %[=]. subst l'.
-    iApply (fupd_mask_mono lftN). done.
+    iApply (fupd_mask_mono (↑lftN)). done.
     iMod (reborrow with "LFT Hord H") as "[H Hextr]". done.
     iModIntro. iSplitL "H". iExists _. by eauto.
     iIntros "H†". iMod ("Hextr" with "H†"). simpl. auto.
@@ -299,8 +297,8 @@ Section props.
 
   Lemma lftincl_borrowing κ κ' q : borrowing κ ⊤ q.[κ'] (κ ⊑ κ').
   Proof.
-    iIntros (tid) "#LFT _ Htok". iApply fupd_mask_mono. done.
-    iMod (borrow_create with "LFT [$Htok]") as "[Hbor Hclose]". reflexivity.
+    iIntros (tid) "#LFT _ Htok". iApply (fupd_mask_mono (↑lftN)). done.
+    iMod (borrow_create with "LFT [$Htok]") as "[Hbor Hclose]". done.
     iMod (borrow_fracture (λ q', (q * q').[κ'])%I with "LFT [Hbor]") as "Hbor". done.
     { by rewrite Qp_mult_1_r. }
     iSplitL "Hbor". iApply (frac_borrow_incl with "LFT Hbor").
