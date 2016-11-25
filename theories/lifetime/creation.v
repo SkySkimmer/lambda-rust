@@ -19,9 +19,9 @@ Proof.
   rewrite fmap_to_gmap. iModIntro. iExists E'. by iFrame.
 Qed.
 
-Lemma lft_vs_inv_frame (KI K : gset lft) κ :
+Lemma lft_inv_alive_acc (KI K : gset lft) κ :
   (∀ κ', κ' ∈ KI → κ' ⊂ κ → κ' ∈ K) →
-  ([∗ set] κ' ∈ K, lft_inv_alive κ') ⊢
+  ([∗ set] κ' ∈ K, lft_inv_alive κ') -∗
     ([∗ set] κ' ∈ KI, ⌜κ' ⊂ κ⌝ → lft_inv_alive κ') ∗
     (([∗ set] κ' ∈ KI, ⌜κ' ⊂ κ⌝ → lft_inv_alive κ') -∗
       ([∗ set] κ' ∈ K, lft_inv_alive κ')).
@@ -33,7 +33,7 @@ Proof.
 Qed.
 
 Lemma ilft_create A I κ :
-  own_ilft_auth I ⊢ own_alft_auth A -∗ ▷ ([∗ set] κ ∈ dom _ I, lft_inv A κ)
+  own_ilft_auth I -∗ own_alft_auth A -∗ ▷ ([∗ set] κ ∈ dom _ I, lft_inv A κ)
       ==∗ ∃ A' I', ⌜is_Some (I' !! κ)⌝ ∗
     own_ilft_auth I' ∗ own_alft_auth A' ∗ ▷ ([∗ set] κ ∈ dom _ I', lft_inv A' κ).
 Proof.
@@ -85,7 +85,7 @@ Proof.
     { rewrite /lft_inv. iNext. iRight. iSplit.
       { by iDestruct "Hdeadandalive" as "[? _]". }
       iPureIntro. exists Λ. rewrite lookup_insert; auto. }
-    iNext. iApply (big_sepS_impl _ _ (dom (gset lft) I) with "[$HA']").
+    iNext. iApply (@big_sepS_impl with "[$HA']").
     rewrite /lft_inv. iIntros "!#"; iIntros (κ' ?%elem_of_dom)
       "[[HA HA']|[HA HA']]"; iDestruct "HA'" as %HA.
     + iLeft. iFrame "HA". iPureIntro. by apply lft_alive_in_insert.
@@ -106,7 +106,7 @@ Lemma lft_kill (I : gmap lft lft_names) (K K' : gset lft) (κ : lft) :
     ([∗ set] κ' ∈ K', lft_inv_dead κ'))%I in
   (∀ κ', is_Some (I !! κ') → κ' ⊂ κ → κ' ∈ K) →
   (∀ κ', is_Some (I !! κ') → κ ⊂ κ' → κ' ∈ K') →
-  Iinv ⊢ lft_inv_alive κ -∗ [†κ] ={⊤∖↑mgmtN}=∗ Iinv ∗ lft_inv_dead κ.
+  Iinv -∗ lft_inv_alive κ -∗ [†κ] ={⊤∖↑mgmtN}=∗ Iinv ∗ lft_inv_dead κ.
 Proof.
   iIntros (Iinv HK HK') "(HI & Halive & Hdead) Hlalive Hκ".
   rewrite lft_inv_alive_unfold;
@@ -119,14 +119,14 @@ Proof.
     { iDestruct (lft_tok_dead_own with "HB Hκ") as "[]". }
     iDestruct "HB" as "[% Hcnt]".
     iDestruct (own_cnt_auth with "HI Hcnt") as %?.
-    iDestruct (big_sepS_elem_of _ K' with "Hdead") as "Hdead"; first by eauto.
+    iDestruct (@big_sepS_elem_of with "Hdead") as "Hdead"; first by eauto.
     rewrite /lft_inv_dead; iDestruct "Hdead" as (R) "(_ & Hcnt' & _)".
     iDestruct (own_cnt_valid_2 with "Hcnt' Hcnt")
       as %[?%nat_included _]%auth_valid_discrete_2; omega. }
   iMod (box_empty_all with "Hbox") as "[HP Hbox]"=>//; first solve_ndisj.
   { intros i s. by rewrite lookup_fmap fmap_Some=> -[? [/HB -> ->]]. }
   rewrite lft_vs_unfold; iDestruct "Hvs" as (n) "[Hcnt Hvs]".
-  iDestruct (lft_vs_inv_frame (dom _ I) _ κ with "Halive") as "[Halive Halive']".
+  iDestruct (lft_inv_alive_acc (dom _ I) _ κ with "Halive") as "[Halive Halive']".
   { intros κ'. rewrite elem_of_dom. eauto. }
   iMod ("Hvs" $! I with "[HI Halive Hbox Hbor] HP Hκ") as "(Hinv & HQ & Hcnt')".
   { rewrite lft_vs_inv_unfold. iFrame. rewrite /lft_bor_dead.
@@ -147,7 +147,7 @@ Lemma lfts_kill A (I : gmap lft lft_names) (K K' : gset lft) :
   (∀ κ κ', κ ∈ K → is_Some (I !! κ') → κ ⊆ κ' → κ' ∈ K) →
   (∀ κ κ', κ ∈ K → lft_alive_in A κ → is_Some (I !! κ') →
     κ' ∉ K → κ' ⊂ κ → κ' ∈ K') →
-  Iinv K' ⊢ ([∗ set] κ ∈ K, lft_inv A κ ∗ [†κ])
+  Iinv K' -∗ ([∗ set] κ ∈ K, lft_inv A κ ∗ [†κ])
     ={⊤∖↑mgmtN}=∗ Iinv K' ∗ [∗ set] κ ∈ K, lft_inv_dead κ.
 Proof.
   intros Iinv. revert K'.
@@ -156,16 +156,15 @@ Proof.
   pose (Kalive := filter (lft_alive_in A) K).
   destruct (decide (Kalive = ∅)) as [HKalive|].
   { iModIntro. rewrite /Iinv. iFrame.
-    iApply (big_sepS_impl _ _ K with "[$HK]"); iAlways.
+    iApply (@big_sepS_impl with "[$HK]"); iAlways.
     rewrite /lft_inv. iIntros (κ Hκ) "[[[_ %]|[$ _]] _]". set_solver. }
   destruct (minimal_exists_L (⊂) Kalive)
     as (κ & [Hκalive HκK]%elem_of_filter & Hκmin); first done.
-  iDestruct (big_sepS_delete _ K κ with "HK") as "[[Hκinv Hκ] HK]"; first done.
-  rewrite {1}/lft_inv. iDestruct "Hκinv" as "[[Hκalive _]|[_ %]]"; last first.
-  { by destruct (lft_alive_and_dead_in A κ). } 
+  iDestruct (@big_sepS_delete with "HK") as "[[Hκinv Hκ] HK]"; first done.
+  iDestruct (lft_inv_alive_in with "Hκinv") as "Hκalive"; first done.
   iAssert ⌜κ ∉ K'⌝%I with "[#]" as %HκK'.
   { iIntros (Hκ). iApply (lft_inv_alive_twice κ with "Hκalive").
-    by iApply (big_sepS_elem_of _ K' κ with "Halive"). }
+    by iApply (@big_sepS_elem_of with "Halive"). }
   specialize (IH (K ∖ {[ κ ]})). feed specialize IH; [set_solver +HκK|].
   iMod (IH ({[ κ ]} ∪ K') with "[HI Halive Hκalive] HK") as "[[HI Halive] Hdead]".
   { intros κ' κ''.
@@ -179,7 +178,7 @@ Proof.
        elem_of_union not_elem_of_singleton elem_of_singleton.
     intros [??] [?|?]; eauto. }
   { rewrite /Iinv big_sepS_insert //. iFrame. }
-  iDestruct (big_sepS_insert _ K' with "Halive") as "[Hκalive Halive]"; first done.
+  iDestruct (@big_sepS_insert with "Halive") as "[Hκalive Halive]"; first done.
   iMod (lft_kill with "[$HI $Halive $Hdead] Hκalive Hκ")
     as "[(HI&Halive&Hdead) Hκdead]".
   { intros κ' ??. eapply (HK' κ); eauto.
@@ -232,7 +231,7 @@ Proof.
   iMod ("Hclose" with "[HA HI Hinv]") as "_".
   { iNext. rewrite /lfts_inv /own_alft_auth.
     iExists (<[Λ:=true]>A), I; rewrite fmap_insert; iFrame.
-    iApply (big_sepS_impl _ _ (dom (gset lft) I) with "[$Hinv]").
+    iApply (@big_sepS_impl with "[$Hinv]").
     iAlways. rewrite /lft_inv. iIntros (κ ?) "[[Hκ %]|[Hκ %]]".
     - iLeft. iFrame "Hκ". iPureIntro. by apply lft_alive_in_insert.
     - iRight. iFrame "Hκ". iPureIntro. by apply lft_dead_in_insert. }
@@ -255,11 +254,11 @@ Proof.
   { apply union_least. apply kill_set_subseteq. apply down_close_subseteq. }
   rewrite HI !big_sepS_union //. iDestruct "Hinv" as "[[HinvK HinvD] Hinv]".
   iAssert ([∗ set] κ ∈ K', lft_inv_alive κ)%I with "[HinvD]" as "HinvD".
-  { iApply (big_sepS_impl _ _ K' with "[$HinvD]"); iIntros "!#".
-    rewrite /lft_inv. iIntros (κ Hκ) "[[$ _]|[_ %]]".
-    destruct (lft_alive_and_dead_in A κ); eauto using down_close_lft_alive_in. }
+  { iApply (@big_sepS_impl with "[$HinvD]"); iIntros "!#".
+    iIntros (κ Hκ) "?". iApply lft_inv_alive_in; last done.
+    eauto using down_close_lft_alive_in. }
   iAssert ([∗ set] κ ∈ K, lft_inv A κ ∗ [† κ])%I with "[HinvK]" as "HinvK". 
-  { iApply (big_sepS_impl _ _ K with "[$HinvK]"); iIntros "!#".
+  { iApply (@big_sepS_impl with "[$HinvK]"); iIntros "!#".
     iIntros (κ [? _]%elem_of_kill_set) "$". rewrite /lft_dead. eauto. }
   iMod (lfts_kill A I K K' with "[$HI $HinvD] HinvK") as "[[HI HinvD] HinvK]".
   { intros κ κ' [??]%elem_of_kill_set ??. apply elem_of_kill_set.
@@ -272,17 +271,17 @@ Proof.
   rewrite /own_alft_auth fmap_insert. iFrame "HA HI".
   rewrite HI !big_sepS_union //.
   iSplitL "HinvK HinvD"; first iSplitL "HinvK".
-  - iApply (big_sepS_impl _ _ K with "[$HinvK]"); iIntros "!#".
+  - iApply (@big_sepS_impl with "[$HinvK]"); iIntros "!#".
     iIntros (κ [? _]%elem_of_kill_set) "Hdead". rewrite /lft_inv.
     iRight. iFrame. iPureIntro. by apply lft_dead_in_insert_false'.
-  - iApply (big_sepS_impl _ _ K' with "[$HinvD]"); iIntros "!#".
+  - iApply (@big_sepS_impl with "[$HinvD]"); iIntros "!#".
     iIntros (κ Hκ) "Halive". rewrite /lft_inv.
     iLeft. iFrame "Halive". iPureIntro.
     assert (lft_alive_in A κ) as Halive by (by eapply down_close_lft_alive_in).
     apply lft_alive_in_insert_false; last done.
     apply elem_of_down_close in Hκ as (?&HFOO&_).
-    move: HFOO. by rewrite elem_of_kill_set not_and_l=> -[?|[] //].
-  - iApply (big_sepS_impl _ _ K'' with "[$Hinv]"); iIntros "!#".
+    move: HFOO. rewrite elem_of_kill_set. tauto.
+  - iApply (@big_sepS_impl with "[$Hinv]"); iIntros "!#".
     rewrite /lft_inv. iIntros (κ Hκ) "[[? %]|[? %]]".
     + iLeft. iFrame. iPureIntro.
       apply lft_alive_in_insert_false; last done.

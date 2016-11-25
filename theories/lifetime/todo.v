@@ -25,14 +25,6 @@ Lemma bor_acc_atomic_strong E κ P :
     (▷ P ∗ ∀ Q, ▷ Q ∗ ▷ ([†κ] -∗ ▷ Q ={⊤∖↑lftN}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ} Q) ∨
     [†κ] ∗ |={E∖↑lftN,E}=> True.
 Proof. Admitted.
-Lemma bor_reborrow' E κ κ' P :
-  ↑lftN ⊆ E → κ ⊆ κ' →
-  lft_ctx ⊢ &{κ} P ={E}=∗ &{κ'} P ∗ ([†κ'] ={E}=∗ &{κ} P).
-Proof. Admitted.
-Lemma bor_unnest E κ κ' P :
-  ↑lftN ⊆ E →
-  lft_ctx ⊢ &{κ'} &{κ} P ={E}▷=∗ &{κ ∪ κ'} P.
-Proof. Admitted.
 
 (** Indexed borrow *)
 Lemma idx_bor_acc E q κ i P :
