@@ -43,15 +43,10 @@ Proof.
   rewrite lft_inv_alive_unfold;
     iDestruct "HAκ" as (Pb' Pi') "(Hbor'&Hvs'&Hinh')".
   rewrite {2}/lft_bor_alive; iDestruct "Hbor'" as (B) "(Hbox & >HκB & HB)".
-  iDestruct (own_bor_valid_2 with "HκB Hraw") as %[HB _]%auth_valid_discrete_2.
-  move: HB=> /singleton_included=> -[qs].
-  rewrite leibniz_equiv_iff lookup_fmap fmap_Some=> -[[s [? ->]] /Some_pair_included [??]].
-SearchAbout Some included.
-  apply singleton_included in HB as (?&?&?).
-SearchAbout 
-simpl in *.
+  iDestruct (own_bor_valid_2 with "HκB Hraw")
+    as %[HB%to_borUR_included _]%auth_valid_discrete_2.
   
-  Check big_sepS_delete.
+
 Admitted.
 
 Lemma bor_rebor' E κ κ' P :
@@ -62,3 +57,4 @@ Lemma bor_unnest E κ κ' P :
   ↑lftN ⊆ E →
   lft_ctx ⊢ &{κ'} &{κ} P ={E}▷=∗ &{κ ∪ κ'} P.
 Proof. Admitted.
+End rebor.

@@ -63,7 +63,8 @@ Proof.
       rewrite /lft_inh. iExists ∅. rewrite to_gmap_empty.
       iSplitL; [|iApply box_alloc]. rewrite /own_inh. iExists γs. by iSplit.
     - rewrite lft_inv_alive_unfold. iExists True%I, True%I. iSplitL "Hbor".
-      { rewrite /lft_bor_alive. iExists ∅. rewrite !fmap_empty big_sepM_empty.
+      { rewrite /lft_bor_alive. iExists ∅.
+        rewrite /to_borUR !fmap_empty big_sepM_empty.
         iSplitR; [iApply box_alloc|]. iSplit=>//.
         rewrite /own_bor. iExists γs. by iFrame. }
       rewrite lft_vs_unfold. iSplitR "Hinh".
@@ -79,8 +80,8 @@ Proof.
       by rewrite lookup_fmap HAΛ. }
     iModIntro. iExists (<[Λ:=false]>A), (<[κ:=γs]> I).
     iSplit; first rewrite lookup_insert; eauto.
-    rewrite /own_ilft_auth /own_alft_auth !fmap_insert. iFrame "HA HI".
-    rewrite dom_insert_L big_sepS_insert ?not_elem_of_dom //.
+    rewrite /own_ilft_auth /own_alft_auth /to_ilftUR /to_alftUR !fmap_insert.
+    iFrame "HA HI". rewrite dom_insert_L big_sepS_insert ?not_elem_of_dom //.
     iSplitR "HA'".
     { rewrite /lft_inv. iNext. iRight. iSplit.
       { by iDestruct "Hdeadandalive" as "[? _]". }
@@ -92,7 +93,7 @@ Proof.
     + iRight. iFrame "HA". iPureIntro. by apply lft_dead_in_insert.
   - iModIntro. iExists A, (<[κ:=γs]> I).
     iSplit; first rewrite lookup_insert; eauto.
-    iSplitL "HI"; first by rewrite /own_ilft_auth fmap_insert.
+    iSplitL "HI"; first by rewrite /own_ilft_auth /to_ilftUR fmap_insert.
     rewrite dom_insert_L big_sepS_insert ?not_elem_of_dom //.
     iFrame "HA HA'". iNext. rewrite /lft_inv. destruct Haliveordead.
     + iLeft. by iDestruct "Hdeadandalive" as "[_ $]".
@@ -230,7 +231,7 @@ Proof.
     by rewrite lookup_fmap HΛ. }
   iMod ("Hclose" with "[HA HI Hinv]") as "_".
   { iNext. rewrite /lfts_inv /own_alft_auth.
-    iExists (<[Λ:=true]>A), I; rewrite fmap_insert; iFrame.
+    iExists (<[Λ:=true]>A), I. rewrite /to_alftUR fmap_insert; iFrame.
     iApply (@big_sepS_impl with "[$Hinv]").
     iAlways. rewrite /lft_inv. iIntros (κ ?) "[[Hκ %]|[Hκ %]]".
     - iLeft. iFrame "Hκ". iPureIntro. by apply lft_alive_in_insert.
@@ -268,7 +269,7 @@ Proof.
   { iModIntro. rewrite /lft_dead. iExists Λ.
     rewrite elem_of_singleton. auto. }
   iNext. iExists (<[Λ:=false]>A), I.
-  rewrite /own_alft_auth fmap_insert. iFrame "HA HI".
+  rewrite /own_alft_auth /to_alftUR fmap_insert. iFrame "HA HI".
   rewrite HI !big_sepS_union //.
   iSplitL "HinvK HinvD"; first iSplitL "HinvK".
   - iApply (@big_sepS_impl with "[$HinvK]"); iIntros "!#".

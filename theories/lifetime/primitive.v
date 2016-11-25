@@ -1,12 +1,21 @@
 From lrust.lifetime Require Export definitions.
 From iris.algebra Require Import csum auth frac gmap dec_agree gset.
 From iris.base_logic Require Import big_op.
+From iris.base_logic.lib Require Import boxes.
 From iris.proofmode Require Import tactics.
 Import uPred.
 
 Section primitive.
 Context `{invG Σ, lftG Σ}.
 Implicit Types κ : lft.
+
+Lemma to_borUR_included (B : gmap slice_name bor_state) i s :
+  {[i := (1%Qp, DecAgree s)]} ≼ to_borUR B → B !! i = Some s.
+Proof.
+  rewrite singleton_included=> -[qs [/leibniz_equiv_iff]].
+  rewrite lookup_fmap fmap_Some=> -[s' [? ->]].
+  by move=> /Some_pair_included [_] /Some_included_total /DecAgree_included=>->.
+Qed.
 
 (** Ownership *)
 Lemma own_ilft_auth_agree (I : gmap lft lft_names) κ γs :
@@ -15,19 +24,18 @@ Lemma own_ilft_auth_agree (I : gmap lft lft_names) κ γs :
 Proof.
   iIntros "HI Hκ". iDestruct (own_valid_2 with "HI Hκ")
     as %[[? [??]]%singleton_included _]%auth_valid_discrete_2.
-  simplify_map_eq; simplify_option_eq; eauto.
+  unfold to_ilftUR in *. simplify_map_eq; simplify_option_eq; eauto.
 Qed.
 
 Lemma own_alft_auth_agree (A : gmap atomic_lft bool) Λ b :
   own_alft_auth A ⊢
     own alft_name (◯ {[Λ := to_lft_stateR b]}) -∗ ⌜A !! Λ = Some b⌝.
 Proof.
-  iIntros "HA HΛ". iDestruct (own_valid_2 with "HA HΛ")
-    as %[[? [Heq Hle]]%singleton_included _]%auth_valid_discrete_2.
-  simplify_map_eq. destruct (A!!Λ) as [b'|]; last done. inversion Heq. subst x.
-  apply Some_included in Hle. destruct Hle as [->%leibniz_equiv%(inj _)|Hle]. done.
-  apply csum_included in Hle.
-  destruct Hle as [Hle|[(?&?&?&?&?)|(?&?&?&?&?)]], b, b'; try done.
+  iIntros "HA HΛ".
+  iDestruct (own_valid_2 with "HA HΛ") as %[HA _]%auth_valid_discrete_2.
+  iPureIntro. move: HA=> /singleton_included [qs [/leibniz_equiv_iff]].
+  rewrite lookup_fmap fmap_Some=> -[b' [? ->]] /Some_included.
+  move=> [/leibniz_equiv_iff|/csum_included]; destruct b, b'; naive_solver.
 Qed.
 
 Lemma own_bor_auth I κ x : own_ilft_auth I ⊢ own_bor κ x -∗ ⌜is_Some (I !! κ)⌝.
@@ -222,6 +230,7 @@ Proof. by rewrite /lft_tok big_sepMS_empty. Qed.
 Lemma lft_dead_static : [† static] ⊢ False.
 Proof. rewrite /lft_dead. iDestruct 1 as (Λ) "[% H']". set_solver. Qed.
 
+(** Lifetime inclusion *)
 Lemma lft_le_incl κ κ' : κ' ⊆ κ → True ⊢ κ ⊑ κ'.
 Proof.
   iIntros (->%gmultiset_union_difference) "!#". iSplitR.
@@ -243,5 +252,4 @@ Proof.
     iMod ("Hclose'" with "Hκ''") as "Hκ'". by iApply "Hclose".
   - iIntros "H†". iMod ("H2†" with "H†"). by iApply "H1†".
 Qed.
-
 End primitive.

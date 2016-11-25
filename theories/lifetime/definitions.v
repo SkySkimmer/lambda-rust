@@ -28,9 +28,6 @@ Definition lft_stateR := csumR fracR unitR.
 Definition to_lft_stateR (b : bool) : lft_stateR :=
   if b then Cinl 1%Qp else Cinr ().
 
-Instance to_lft_stateR_inj : Inj eq eq to_lft_stateR.
-Proof. by intros [] []. Qed.
-
 Record lft_names := LftNames {
   bor_name : gname;
   cnt_name : gname;
@@ -39,16 +36,26 @@ Record lft_names := LftNames {
 Instance lft_names_eq_dec : EqDecision lft_names.
 Proof. solve_decision. Defined.
 
+Definition alftUR := gmapUR atomic_lft lft_stateR.
+Definition to_alftUR : gmap atomic_lft bool → alftUR := fmap to_lft_stateR. 
+
+Definition ilftUR := gmapUR lft (dec_agreeR lft_names).
+Definition to_ilftUR : gmap lft lft_names → ilftUR := fmap DecAgree.
+
+Definition borUR := gmapUR slice_name (prodR fracR (dec_agreeR bor_state)).
+Definition to_borUR : gmap slice_name bor_state → borUR := fmap ((1%Qp,) ∘ DecAgree).
+
+Definition inhUR := gset_disjUR slice_name.
+
 Class lftG Σ := LftG {
   lft_box :> boxG Σ;
-  alft_inG :> inG Σ (authR (gmapUR atomic_lft lft_stateR));
+  alft_inG :> inG Σ (authR alftUR);
   alft_name : gname;
-  ilft_inG :> inG Σ (authR (gmapUR lft (dec_agreeR lft_names)));
+  ilft_inG :> inG Σ (authR ilftUR);
   ilft_name : gname;
-  lft_bor_box :>
-    inG Σ (authR (gmapUR slice_name (prodR fracR (dec_agreeR bor_state))));
+  lft_bor_box :> inG Σ (authR borUR);
   lft_cnt_inG :> inG Σ (authR natUR);
-  lft_inh_box :> inG Σ (authR (gset_disjUR slice_name));
+  lft_inh_box :> inG Σ (authR inhUR);
 }.
 
 Section defs.
@@ -61,9 +68,9 @@ Section defs.
     (∃ Λ, ⌜Λ ∈ κ⌝ ∗ own alft_name (◯ {[ Λ := Cinr () ]}))%I.
 
   Definition own_alft_auth (A : gmap atomic_lft bool) : iProp Σ :=
-    own alft_name (● (to_lft_stateR <$> A)).
+    own alft_name (● to_alftUR A).
   Definition own_ilft_auth (I : gmap lft lft_names) : iProp Σ :=
-    own ilft_name (● (DecAgree <$> I)).
+    own ilft_name (● to_ilftUR I).
 
   Definition own_bor (κ : lft)
       (x : auth (gmap slice_name (frac * dec_agree bor_state))) : iProp Σ :=
@@ -91,7 +98,7 @@ Section defs.
   Definition lft_bor_alive (κ : lft) (Pi : iProp Σ) : iProp Σ :=
     (∃ B : gmap slice_name bor_state,
       box borN (bor_filled <$> B) Pi ∗
-      own_bor κ (● ((1%Qp,) ∘ DecAgree <$> B)) ∗
+      own_bor κ (● to_borUR B) ∗
       [∗ map] s ∈ B, bor_cnt κ s)%I.
 
   Definition lft_bor_dead (κ : lft) : iProp Σ :=
@@ -140,9 +147,9 @@ Section defs.
       lft_inh κ true Pi)%I.
 
   Definition lft_alive_in (A : gmap atomic_lft bool) (κ : lft) : Prop :=
-    ∀ Λ:atomic_lft, Λ ∈ κ → A !! Λ = Some true.
+    ∀ Λ : atomic_lft, Λ ∈ κ → A !! Λ = Some true.
   Definition lft_dead_in (A : gmap atomic_lft bool) (κ : lft) : Prop :=
-    ∃ Λ:atomic_lft, Λ ∈ κ ∧ A !! Λ = Some false.
+    ∃ Λ : atomic_lft, Λ ∈ κ ∧ A !! Λ = Some false.
 
   Definition lft_inv (A : gmap atomic_lft bool) (κ : lft) : iProp Σ :=
     (lft_inv_alive κ ∗ ⌜lft_alive_in A κ⌝ ∨
