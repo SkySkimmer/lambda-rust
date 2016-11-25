@@ -59,21 +59,6 @@ Proof.
   iIntros (?) "#[_ H] Hq". iApply fupd_mask_mono; first done. by iApply "H".
 Qed.
 
-Lemma lft_incl_lb κ κ' κ'' : κ ⊑ κ' -∗ κ ⊑ κ'' -∗ κ ⊑ κ' ∪ κ''.
-Proof. (*
-  iIntros "[#[H1 H1†] #[H2 H2†]]!#". iSplitR.
-  - iIntros (q) "[Hκ'1 Hκ'2]".
-    iMod ("H1" with "*Hκ'1") as (q') "[Hκ' Hclose']".
-    iMod ("H2" with "*Hκ'2") as (q'') "[Hκ'' Hclose'']".
-    destruct (Qp_lower_bound q' q'') as (qq & q'0 & q''0 & -> & ->).
-    iExists qq. rewrite -lft_tok_op !lft_tok_frac_op.
-    iDestruct "Hκ'" as "[$ Hκ']". iDestruct "Hκ''" as "[$ Hκ'']".
-    iIntros "!>[Hκ'0 Hκ''0]".
-    iMod ("Hclose'" with "[$Hκ' $Hκ'0]") as "$".
-    by iMod ("Hclose''" with "[$Hκ'' $Hκ''0]") as "$".
-  - rewrite -lft_dead_or. iIntros "[H†|H†]". by iApply "H1†". by iApply "H2†".
-Qed. *) Admitted.
-
 Lemma lft_incl_static κ : (κ ⊑ static)%I.
 Proof.
   iIntros "!#". iSplitR.
