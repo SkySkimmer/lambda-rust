@@ -61,6 +61,11 @@ Lemma own_bor_update κ x y : x ~~> y → own_bor κ x ==∗ own_bor κ y.
 Proof.
   iDestruct 1 as (γs) "[#Hκ Hx]"; iExists γs. iFrame "Hκ". by iApply own_update.
 Qed.
+Lemma own_bor_update_2 κ x1 x2 y :
+  x1 ⋅ x2 ~~> y → own_bor κ x1 ⊢ own_bor κ x2 ==∗ own_bor κ y.
+Proof.
+  intros. apply wand_intro_r. rewrite -own_bor_op. by apply own_bor_update.
+Qed.
 
 Lemma own_cnt_auth I κ x : own_ilft_auth I -∗ own_cnt κ x -∗ ⌜is_Some (I !! κ)⌝.
 Proof.
@@ -113,6 +118,11 @@ Proof. apply wand_intro_r. rewrite -own_inh_op. apply own_inh_valid. Qed.
 Lemma own_inh_update κ x y : x ~~> y → own_inh κ x ==∗ own_inh κ y.
 Proof.
   iDestruct 1 as (γs) "[#Hκ Hx]"; iExists γs. iFrame "Hκ". by iApply own_update.
+Qed.
+Lemma own_inh_update_2 κ x1 x2 y :
+  x1 ⋅ x2 ~~> y → own_inh κ x1 ⊢ own_inh κ x2 ==∗ own_inh κ y.
+Proof.
+  intros. apply wand_intro_r. rewrite -own_inh_op. by apply own_inh_update.
 Qed.
 
 (** Alive and dead *)
