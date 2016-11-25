@@ -1,7 +1,7 @@
 From lrust.lifetime Require Export definitions.
 From iris.algebra Require Import csum auth frac gmap dec_agree gset.
 From iris.base_logic Require Import big_op.
-From iris.base_logic.lib Require Import boxes.
+From iris.base_logic.lib Require Import boxes fractional.
 From iris.proofmode Require Import tactics.
 Import uPred.
 
@@ -217,16 +217,7 @@ Proof.
   rewrite -sep_or_r -pure_or. do 2 f_equiv. set_solver.
 Qed.
 
-Lemma lft_tok_frac_op κ q q' : (q + q').[κ] ⊣⊢ q.[κ] ∗ q'.[κ].
-Proof.
-  rewrite /lft_tok -big_sepMS_sepMS. apply big_sepMS_proper=> Λ _.
-  by rewrite -own_op -auth_frag_op op_singleton.
-Qed.
-
-Lemma lft_tok_split κ q : q.[κ] ⊣⊢ (q/2).[κ] ∗ (q/2).[κ].
-Proof. by rewrite -lft_tok_frac_op Qp_div_2. Qed.
-
-Lemma lft_tok_dead_own q κ : q.[κ] -∗ [† κ] -∗ False.
+Lemma lft_tok_dead q κ : q.[κ] -∗ [† κ] -∗ False.
 Proof.
   rewrite /lft_tok /lft_dead. iIntros "H"; iDestruct 1 as (Λ') "[% H']".
   iDestruct (big_sepMS_elem_of _ _ Λ' with "H") as "H"=> //.
@@ -239,6 +230,24 @@ Proof. by rewrite /lft_tok big_sepMS_empty. Qed.
 
 Lemma lft_dead_static : [† static] -∗ False.
 Proof. rewrite /lft_dead. iDestruct 1 as (Λ) "[% H']". set_solver. Qed.
+
+(* Fractional and AsFractional instances *)
+Global Instance lft_tok_fractional κ : Fractional (λ q, q.[κ])%I.
+Proof.
+  intros p q. rewrite /lft_tok -big_sepMS_sepMS. apply big_sepMS_proper.
+  intros Λ ?. rewrite -Cinl_op -op_singleton auth_frag_op own_op //.
+Qed.
+Global Instance lft_tok_as_fractional κ q :
+  AsFractional q.[κ] (λ q, q.[κ])%I q.
+Proof. done. Qed.
+Global Instance idx_bor_own_fractional i : Fractional (λ q, idx_bor_own q i)%I.
+Proof.
+  intros p q. rewrite /idx_bor_own -own_bor_op /own_bor. f_equiv=>?.
+  by rewrite -auth_frag_op op_singleton.
+Qed.
+Global Instance idx_bor_own_as_fractional i q :
+  AsFractional (idx_bor_own q i) (λ q, idx_bor_own q i)%I q.
+Proof. done. Qed.
 
 (** Lifetime inclusion *)
 Lemma lft_le_incl κ κ' : κ' ⊆ κ → (κ ⊑ κ')%I.
@@ -264,18 +273,18 @@ Proof.
 Qed.
 
 Lemma lft_incl_glb κ κ' κ'' : κ ⊑ κ' -∗ κ ⊑ κ'' -∗ κ ⊑ κ' ∪ κ''.
-Proof. (*
-  iIntros "[#[H1 H1†] #[H2 H2†]]!#". iSplitR.
+Proof.
+  unfold lft_incl. iIntros "#[H1 H1†] #[H2 H2†]!#". iSplitR.
   - iIntros (q) "[Hκ'1 Hκ'2]".
     iMod ("H1" with "*Hκ'1") as (q') "[Hκ' Hclose']".
     iMod ("H2" with "*Hκ'2") as (q'') "[Hκ'' Hclose'']".
     destruct (Qp_lower_bound q' q'') as (qq & q'0 & q''0 & -> & ->).
-    iExists qq. rewrite -lft_tok_op !lft_tok_frac_op.
+    iExists qq. rewrite -lft_tok_op.
     iDestruct "Hκ'" as "[$ Hκ']". iDestruct "Hκ''" as "[$ Hκ'']".
     iIntros "!>[Hκ'0 Hκ''0]".
     iMod ("Hclose'" with "[$Hκ' $Hκ'0]") as "$".
-    by iMod ("Hclose''" with "[$Hκ'' $Hκ''0]") as "$".
+    iApply "Hclose''". iFrame.
   - rewrite -lft_dead_or. iIntros "[H†|H†]". by iApply "H1†". by iApply "H2†".
-Qed. *) Admitted.
+Qed.
 
 End primitive.

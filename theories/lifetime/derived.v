@@ -66,16 +66,4 @@ Proof.
   - iIntros "Hst". by iDestruct (lft_dead_static with "Hst") as "[]".
 Qed.
 
-Lemma reborrow E P κ κ' :
-  ↑lftN ⊆ E →
-  lft_ctx -∗ κ' ⊑ κ -∗ &{κ}P ={E}=∗ &{κ'}P ∗ ([†κ'] ={E}=∗  &{κ}P).
-Proof.
-  iIntros (?) "#LFT #H⊑ HP". (* iMod (bor_rebor' with "LFT HP") as "[Hκ' H∋]".
-    done. by exists κ'.
-  iDestruct (borrow_shorten with "[H⊑] Hκ'") as "$".
-  { iApply lft_incl_lb. iSplit. done. iApply lft_incl_refl. }
-  iIntros "!>Hκ'". iApply ("H∋" with "[Hκ']"). iApply lft_dead_or. auto.
-Qed.
-*)
-Admitted.
 End derived.

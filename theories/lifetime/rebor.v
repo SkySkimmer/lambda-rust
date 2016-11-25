@@ -119,8 +119,20 @@ Lemma bor_rebor' E κ κ' P :
   ↑lftN ⊆ E → κ ⊆ κ' →
   lft_ctx -∗ &{κ} P ={E}=∗ &{κ'} P ∗ ([†κ'] ={E}=∗ &{κ} P).
 Proof. Admitted.
+Lemma rebor E P κ κ' :
+  ↑lftN ⊆ E →
+  lft_ctx -∗ κ' ⊑ κ -∗ &{κ}P ={E}=∗ &{κ'}P ∗ ([†κ'] ={E}=∗  &{κ}P).
+Proof.
+  iIntros (?) "#LFT #H⊑ HP". (* iMod (bor_rebor' with "LFT HP") as "[Hκ' H∋]".
+    done. by exists κ'.
+  iDestruct (borrow_shorten with "[H⊑] Hκ'") as "$".
+  { iApply lft_incl_lb. iSplit. done. iApply lft_incl_refl. }
+  iIntros "!>Hκ'". iApply ("H∋" with "[Hκ']"). iApply lft_dead_or. auto.
+Qed.
+*)
+Admitted.
 Lemma bor_unnest E κ κ' P :
   ↑lftN ⊆ E →
-  lft_ctx -∗ &{κ'} &{κ} P ={E}▷=∗ &{κ ∪ κ'} P.
+  lft_ctx -∗ &{κ'} &{κ} P ={E, E∖↑lftN}▷=∗ &{κ ∪ κ'} P.
 Proof. Admitted.
 End rebor.
