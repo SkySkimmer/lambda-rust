@@ -15,7 +15,7 @@ Lemma lft_inh_kill E κ Q :
 Proof.
   rewrite /lft_inh. iIntros (?) "[Hinh HQ]".
   iDestruct "Hinh" as (E') "[Hinh Hbox]".
-  iMod (box_fill_all with "[$Hbox $HQ]") as "?"=>//.
+  iMod (box_fill_all with "Hbox HQ") as "?"=>//.
   rewrite fmap_to_gmap. iModIntro. iExists E'. by iFrame.
 Qed.
 

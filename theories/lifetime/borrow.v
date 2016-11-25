@@ -14,7 +14,7 @@ Lemma bor_fake_internal E κ P :
 Proof.
   iIntros (?) "Hdead". rewrite /lft_bor_dead.
   iDestruct "Hdead" as (B Pinh) "[>Hown Hbox]".
-  iMod (box_insert_empty _ _ _ _ P with "Hbox") as (γ) "(% & Hslice & Hbox)".
+  iMod (box_insert_empty _ P with "Hbox") as (γ) "(% & Hslice & Hbox)".
   iMod (own_bor_update with "Hown") as "Hown".
   { apply auth_update_alloc.
     apply: (alloc_local_update _ _ _ (1%Qp, DecAgree Bor_in)); last done.
@@ -57,10 +57,10 @@ Proof.
     iDestruct "Hinv" as (Pb Pi) "(Halive & Hvs & Hinh)".
     iDestruct "Halive" as (B) "(HboxB & >HownB & HB)".
     iDestruct "Hinh" as (PE) "[>HownE HboxE]".
-    iMod (box_insert_full _ _ _ _ P with "[$HboxB $HP]")
-      as (γB) "(HBlookup & HsliceB & HboxB)". by solve_ndisj.
+    iMod (box_insert_full with "HP HboxB") as (γB) "(HBlookup & HsliceB & HboxB)".
+      by solve_ndisj.
     rewrite lookup_fmap. iDestruct "HBlookup" as %HBlookup.
-    iMod (box_insert_empty _ _ _ _ P with "HboxE") as (γE) "(% & HsliceE & HboxE)".
+    iMod (box_insert_empty _ P with "HboxE") as (γE) "(% & HsliceE & HboxE)".
     rewrite -(fmap_insert bor_filled _ _ Bor_in) -to_gmap_union_singleton.
     iMod (own_bor_update with "HownB") as "HownB".
     { apply auth_update_alloc.
@@ -99,10 +99,9 @@ Proof.
       rewrite <-elem_of_subseteq_singleton in Hle.
       iMod (own_inh_update with "[HE◯ Hinh]") as "HE●"; [|iApply own_inh_op; by iFrame|].
       { apply auth_update_dealloc, gset_disj_dealloc_local_update. }
-      iMod (box_delete_full with "[$HsliceE $Hbox]") as "[$ Hbox]".
+      iMod (box_delete_full with "HsliceE Hbox") as (Pinh') "($ & _ & Hbox)".
         solve_ndisj. by rewrite lookup_to_gmap_Some.
-      iDestruct "Hbox" as (Pinh') "[_ Hbox]". iApply "Hclose".
-      iExists _, _. iFrame. iNext. iApply "Hclose'". iRight. iFrame "%".
+      iApply "Hclose". iExists _, _. iFrame. iNext. iApply "Hclose'". iRight. iFrame "%".
       iExists _. iFrame. iExists _. iFrame.
       rewrite {1}(union_difference_L {[γE]} ESlices); last set_solver.
       rewrite to_gmap_union_singleton delete_insert // lookup_to_gmap_None. set_solver.
@@ -112,5 +111,15 @@ Proof.
     { iNext. iRight. iFrame "∗%". eauto. }
     iFrame. iMod ("Hclose" with "[-]") as "_"; last by auto. iExists _, _. by iFrame.
 Qed.
+
+Lemma bor_sep E κ P Q :
+  ↑lftN ⊆ E →
+  lft_ctx ⊢ &{κ} (P ∗ Q) ={E}=∗ &{κ} P ∗ &{κ} Q.
+Proof.
+Admitted.
+Lemma bor_combine E κ P Q :
+  ↑lftN ⊆ E →
+  lft_ctx ⊢ &{κ} P -∗ &{κ} Q ={E}=∗ &{κ} (P ∗ Q).
+Proof. Admitted.
 
 End borrow.
