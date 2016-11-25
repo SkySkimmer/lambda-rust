@@ -17,11 +17,11 @@ Qed.
 Lemma bor_shorten κ κ' P: κ ⊑ κ' -∗ &{κ'}P -∗ &{κ}P.
 Proof.
   unfold bor. iIntros "#Hκκ' H". iDestruct "H" as (i) "[#? ?]".
-  iExists i. iFrame. iApply lft_incl_trans. eauto.
+  iExists i. iFrame. by iApply (lft_incl_trans with "Hκκ'").
 Qed.
 
 Lemma idx_bor_shorten κ κ' i P : κ ⊑ κ' -∗ &{κ',i} P -∗ &{κ,i} P.
-Proof. unfold idx_bor. iIntros "#Hκκ' [#? $]". iApply lft_incl_trans. eauto. Qed.
+Proof. unfold idx_bor. iIntros "#Hκκ' [#? $]". by iApply (lft_incl_trans with "Hκκ'"). Qed.
 
 Lemma bor_fake_internal E κ P :
   ↑borN ⊆ E →
@@ -41,7 +41,7 @@ Qed.
 
 Lemma bor_fake E κ P :
   ↑lftN ⊆ E →
-  lft_ctx ⊢ [†κ] ={E}=∗ &{κ}P.
+  lft_ctx -∗ [†κ] ={E}=∗ &{κ}P.
 Proof.
   iIntros (?) "#Hmgmt H†". iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
   iMod (ilft_create _ _ κ with "HI HA Hinv") as (A' I') "(Hκ & HI & HA & Hinv)".

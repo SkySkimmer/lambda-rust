@@ -19,7 +19,7 @@ Qed.
 
 (** Ownership *)
 Lemma own_ilft_auth_agree (I : gmap lft lft_names) κ γs :
-  own_ilft_auth I ⊢
+  own_ilft_auth I -∗
     own ilft_name (◯ {[κ := DecAgree γs]}) -∗ ⌜is_Some (I !! κ)⌝.
 Proof.
   iIntros "HI Hκ". iDestruct (own_valid_2 with "HI Hκ")
@@ -28,7 +28,7 @@ Proof.
 Qed.
 
 Lemma own_alft_auth_agree (A : gmap atomic_lft bool) Λ b :
-  own_alft_auth A ⊢
+  own_alft_auth A -∗
     own alft_name (◯ {[Λ := to_lft_stateR b]}) -∗ ⌜A !! Λ = Some b⌝.
 Proof.
   iIntros "HA HΛ".
@@ -38,7 +38,7 @@ Proof.
   move=> [/leibniz_equiv_iff|/csum_included]; destruct b, b'; naive_solver.
 Qed.
 
-Lemma own_bor_auth I κ x : own_ilft_auth I ⊢ own_bor κ x -∗ ⌜is_Some (I !! κ)⌝.
+Lemma own_bor_auth I κ x : own_ilft_auth I -∗ own_bor κ x -∗ ⌜is_Some (I !! κ)⌝.
 Proof.
   iIntros "HI"; iDestruct 1 as (γs) "[? _]".
   by iApply (own_ilft_auth_agree with "HI").
@@ -53,16 +53,16 @@ Proof.
   move: Hγs; rewrite /= op_singleton singleton_valid=> /dec_agree_op_inv [<-].
   iExists γs. iSplit. done. rewrite own_op; iFrame.
 Qed.
-Lemma own_bor_valid κ x : own_bor κ x ⊢ ✓ x.
+Lemma own_bor_valid κ x : own_bor κ x -∗ ✓ x.
 Proof. iDestruct 1 as (γs) "[#? Hx]". by iApply own_valid. Qed.
-Lemma own_bor_valid_2 κ x y : own_bor κ x ⊢ own_bor κ y -∗ ✓ (x ⋅ y).
+Lemma own_bor_valid_2 κ x y : own_bor κ x -∗ own_bor κ y -∗ ✓ (x ⋅ y).
 Proof. apply wand_intro_r. rewrite -own_bor_op. apply own_bor_valid. Qed.
 Lemma own_bor_update κ x y : x ~~> y → own_bor κ x ==∗ own_bor κ y.
 Proof.
   iDestruct 1 as (γs) "[#Hκ Hx]"; iExists γs. iFrame "Hκ". by iApply own_update.
 Qed.
 
-Lemma own_cnt_auth I κ x : own_ilft_auth I ⊢ own_cnt κ x -∗ ⌜is_Some (I !! κ)⌝.
+Lemma own_cnt_auth I κ x : own_ilft_auth I -∗ own_cnt κ x -∗ ⌜is_Some (I !! κ)⌝.
 Proof.
   iIntros "HI"; iDestruct 1 as (γs) "[? _]".
   by iApply (own_ilft_auth_agree with "HI").
@@ -77,21 +77,21 @@ Proof.
   move: Hγs; rewrite /= op_singleton singleton_valid=> /dec_agree_op_inv [<-].
   iExists γs. iSplit; first done. rewrite own_op; iFrame.
 Qed.
-Lemma own_cnt_valid κ x : own_cnt κ x ⊢ ✓ x.
+Lemma own_cnt_valid κ x : own_cnt κ x -∗ ✓ x.
 Proof. iDestruct 1 as (γs) "[#? Hx]". by iApply own_valid. Qed.
-Lemma own_cnt_valid_2 κ x y : own_cnt κ x ⊢ own_cnt κ y -∗ ✓ (x ⋅ y).
+Lemma own_cnt_valid_2 κ x y : own_cnt κ x -∗ own_cnt κ y -∗ ✓ (x ⋅ y).
 Proof. apply wand_intro_r. rewrite -own_cnt_op. apply own_cnt_valid. Qed.
 Lemma own_cnt_update κ x y : x ~~> y → own_cnt κ x ==∗ own_cnt κ y.
 Proof.
   iDestruct 1 as (γs) "[#Hκ Hx]"; iExists γs. iFrame "Hκ". by iApply own_update.
 Qed.
 Lemma own_cnt_update_2 κ x1 x2 y :
-  x1 ⋅ x2 ~~> y → own_cnt κ x1 ⊢ own_cnt κ x2 ==∗ own_cnt κ y.
+  x1 ⋅ x2 ~~> y → own_cnt κ x1 -∗ own_cnt κ x2 ==∗ own_cnt κ y.
 Proof.
   intros. apply wand_intro_r. rewrite -own_cnt_op. by apply own_cnt_update.
 Qed.
 
-Lemma own_inh_auth I κ x : own_ilft_auth I ⊢ own_inh κ x -∗ ⌜is_Some (I !! κ)⌝.
+Lemma own_inh_auth I κ x : own_ilft_auth I -∗ own_inh κ x -∗ ⌜is_Some (I !! κ)⌝.
 Proof.
   iIntros "HI"; iDestruct 1 as (γs) "[? _]".
   by iApply (own_ilft_auth_agree with "HI").
@@ -106,9 +106,9 @@ Proof.
   move: Hγs; rewrite /= op_singleton singleton_valid=> /dec_agree_op_inv [<-].
   iExists γs. iSplit. done. rewrite own_op; iFrame.
 Qed.
-Lemma own_inh_valid κ x : own_inh κ x ⊢ ✓ x.
+Lemma own_inh_valid κ x : own_inh κ x -∗ ✓ x.
 Proof. iDestruct 1 as (γs) "[#? Hx]". by iApply own_valid. Qed.
-Lemma own_inh_valid_2 κ x y : own_inh κ x ⊢ own_inh κ y -∗ ✓ (x ⋅ y).
+Lemma own_inh_valid_2 κ x y : own_inh κ x -∗ own_inh κ y -∗ ✓ (x ⋅ y).
 Proof. apply wand_intro_r. rewrite -own_inh_op. apply own_inh_valid. Qed.
 Lemma own_inh_update κ x y : x ~~> y → own_inh κ x ==∗ own_inh κ y.
 Proof.
@@ -178,7 +178,7 @@ Qed.
 Lemma lft_dead_in_insert_false' A κ Λ : Λ ∈ κ → lft_dead_in (<[Λ:=false]> A) κ.
 Proof. exists Λ. by rewrite lookup_insert. Qed.
 
-Lemma lft_inv_alive_twice κ : lft_inv_alive κ ⊢ lft_inv_alive κ -∗ False.
+Lemma lft_inv_alive_twice κ : lft_inv_alive κ -∗ lft_inv_alive κ -∗ False.
 Proof.
   rewrite lft_inv_alive_unfold /lft_inh.
   iDestruct 1 as (P Q) "(_&_&Hinh)"; iDestruct 1 as (P' Q') "(_&_&Hinh')".
@@ -216,7 +216,7 @@ Qed.
 Lemma lft_tok_split κ q : q.[κ] ⊣⊢ (q/2).[κ] ∗ (q/2).[κ].
 Proof. by rewrite -lft_tok_frac_op Qp_div_2. Qed.
 
-Lemma lft_tok_dead_own q κ : q.[κ] ⊢ [† κ] -∗ False.
+Lemma lft_tok_dead_own q κ : q.[κ] -∗ [† κ] -∗ False.
 Proof.
   rewrite /lft_tok /lft_dead. iIntros "H"; iDestruct 1 as (Λ') "[% H']".
   iDestruct (big_sepMS_elem_of _ _ Λ' with "H") as "H"=> //.
@@ -224,14 +224,14 @@ Proof.
   move: Hvalid=> /auth_own_valid /=; by rewrite op_singleton singleton_valid.
 Qed.
 
-Lemma lft_tok_static q : True ⊢ q.[static].
+Lemma lft_tok_static q : q.[static]%I.
 Proof. by rewrite /lft_tok big_sepMS_empty. Qed.
 
-Lemma lft_dead_static : [† static] ⊢ False.
+Lemma lft_dead_static : [† static] -∗ False.
 Proof. rewrite /lft_dead. iDestruct 1 as (Λ) "[% H']". set_solver. Qed.
 
 (** Lifetime inclusion *)
-Lemma lft_le_incl κ κ' : κ' ⊆ κ → True ⊢ κ ⊑ κ'.
+Lemma lft_le_incl κ κ' : κ' ⊆ κ → (κ ⊑ κ')%I.
 Proof.
   iIntros (->%gmultiset_union_difference) "!#". iSplitR.
   - iIntros (q). rewrite <-lft_tok_op. iIntros "[H Hf]". iExists q. iFrame.
@@ -239,12 +239,12 @@ Proof.
   - iIntros "? !>". iApply lft_dead_or. auto.
 Qed.
 
-Lemma lft_incl_refl κ : True ⊢ κ ⊑ κ.
+Lemma lft_incl_refl κ : (κ ⊑ κ)%I.
 Proof. by apply lft_le_incl. Qed.
 
-Lemma lft_incl_trans κ κ' κ'': κ ⊑ κ' ∗ κ' ⊑ κ'' ⊢ κ ⊑ κ''.
+Lemma lft_incl_trans κ κ' κ'': κ ⊑ κ' -∗ κ' ⊑ κ'' -∗ κ ⊑ κ''.
 Proof.
-  rewrite /lft_incl. iIntros "[#[H1 H1†] #[H2 H2†]] !#". iSplitR.
+  rewrite /lft_incl. iIntros "#[H1 H1†] #[H2 H2†] !#". iSplitR.
   - iIntros (q) "Hκ".
     iMod ("H1" with "*Hκ") as (q') "[Hκ' Hclose]".
     iMod ("H2" with "*Hκ'") as (q'') "[Hκ'' Hclose']".

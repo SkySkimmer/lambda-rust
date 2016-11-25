@@ -10,7 +10,7 @@ Implicit Types κ : lft.
 
 Lemma bor_fake E κ P :
   ↑lftN ⊆ E →
-  lft_ctx ⊢ [†κ] ={E}=∗ &{κ}P.
+  lft_ctx -∗ [†κ] ={E}=∗ &{κ}P.
 Proof.
 Admitted.
 
@@ -51,10 +51,10 @@ Admitted.
 
 Lemma bor_rebor' E κ κ' P :
   ↑lftN ⊆ E → κ ⊆ κ' →
-  lft_ctx ⊢ &{κ} P ={E}=∗ &{κ'} P ∗ ([†κ'] ={E}=∗ &{κ} P).
+  lft_ctx -∗ &{κ} P ={E}=∗ &{κ'} P ∗ ([†κ'] ={E}=∗ &{κ} P).
 Proof. Admitted.
 Lemma bor_unnest E κ κ' P :
   ↑lftN ⊆ E →
-  lft_ctx ⊢ &{κ'} &{κ} P ={E}▷=∗ &{κ ∪ κ'} P.
+  lft_ctx -∗ &{κ'} &{κ} P ={E}▷=∗ &{κ ∪ κ'} P.
 Proof. Admitted.
 End rebor.
