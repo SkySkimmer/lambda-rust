@@ -59,14 +59,6 @@ Proof.
   iIntros (?) "#[_ H] Hq". iApply fupd_mask_mono; first done. by iApply "H".
 Qed.
 
-Lemma bor_shorten κ κ' P: κ ⊑ κ' ⊢ &{κ'}P -∗ &{κ}P.
-Proof.
-  iIntros "Hκκ' H". rewrite /bor. iDestruct "H" as (i) "[??]".
-  iExists i. iFrame. (*
-Check idx_bor_shorten.
- by iApply (idx_bor_shorten with "Hκκ'").
-  Qed. *) Admitted.
-
 Lemma lft_incl_lb κ κ' κ'' : κ ⊑ κ' ∗ κ ⊑ κ'' ⊢ κ ⊑ κ' ∪ κ''.
 Proof. (*
   iIntros "[#[H1 H1†] #[H2 H2†]]!#". iSplitR.

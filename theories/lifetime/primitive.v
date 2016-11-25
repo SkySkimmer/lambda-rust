@@ -252,4 +252,5 @@ Proof.
     iMod ("Hclose'" with "Hκ''") as "Hκ'". by iApply "Hclose".
   - iIntros "H†". iMod ("H2†" with "H†"). by iApply "H1†".
 Qed.
+
 End primitive.
