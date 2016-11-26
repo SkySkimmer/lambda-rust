@@ -7,3 +7,5 @@ theories/lifetime/primitive.v
 theories/lifetime/todo.v
 theories/lifetime/borrow.v
 theories/lifetime/shr_borrow.v
+theories/lifetime/frac_borrow.v
+theories/lifetime/tl_borrow.v
