@@ -34,7 +34,7 @@ Proof.
   iMod (bor_exists with "LFT H") as ([]) "H"; auto.
 Qed.
 
-Lemma bor_persistent `{!PersistentP P} E κ q :
+Lemma bor_persistent P `{!PersistentP P} E κ q :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ}P -∗ q.[κ] ={E}=∗ ▷ P ∗ q.[κ].
 Proof.

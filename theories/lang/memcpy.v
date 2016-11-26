@@ -1,6 +1,6 @@
 From iris.base_logic.lib Require Import namespaces.
-From lrust Require Export notation.
-From lrust Require Import heap proofmode.
+From lrust.lang Require Export notation.
+From lrust.lang Require Import heap proofmode.
 
 Definition memcpy : val :=
   rec: "memcpy" ["dst";"len";"src"] :=

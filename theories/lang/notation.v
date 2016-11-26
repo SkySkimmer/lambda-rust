@@ -1,4 +1,4 @@
-From lrust Require Export derived.
+From lrust.lang Require Export derived.
 
 Coercion LitInt : Z >-> base_lit.
 Coercion LitLoc : loc >-> base_lit.

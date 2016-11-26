@@ -1,4 +1,4 @@
-From lrust Require Export lifting.
+From lrust.lang Require Export lifting.
 From iris.proofmode Require Import tactics.
 Import uPred.
 

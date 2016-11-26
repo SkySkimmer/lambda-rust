@@ -37,7 +37,7 @@ Instance lft_names_eq_dec : EqDecision lft_names.
 Proof. solve_decision. Defined.
 
 Definition alftUR := gmapUR atomic_lft lft_stateR.
-Definition to_alftUR : gmap atomic_lft bool → alftUR := fmap to_lft_stateR. 
+Definition to_alftUR : gmap atomic_lft bool → alftUR := fmap to_lft_stateR.
 
 Definition ilftUR := gmapUR lft (dec_agreeR lft_names).
 Definition to_ilftUR : gmap lft lft_names → ilftUR := fmap DecAgree.
