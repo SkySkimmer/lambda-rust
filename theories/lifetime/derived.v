@@ -1,4 +1,4 @@
-From lrust.lifetime Require Export primitive borrow todo.
+From lrust.lifetime Require Export primitive borrow accessors rebor.
 From iris.proofmode Require Import tactics.
 
 Section derived.

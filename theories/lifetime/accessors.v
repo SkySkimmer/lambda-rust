@@ -1,6 +1,6 @@
 From lrust.lifetime Require Export definitions.
 
-Section todo.
+Section accessors.
 Context `{invG Σ, lftG Σ}.
 Implicit Types κ : lft.
 
@@ -31,4 +31,4 @@ Lemma idx_bor_atomic_acc E q κ i P :
               [†κ] ∗ (|={E∖↑lftN,E}=> idx_bor_own q i).
 Proof. Admitted.
 
-End todo.
+End accessors.

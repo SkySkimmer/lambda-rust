@@ -1,7 +1,7 @@
 From iris.proofmode Require Import tactics.
 From lrust.typing Require Export type.
 From lrust.lang Require Export proofmode.
-From lrust.lifetime Require Import derived.
+From lrust.lifetime Require Import frac_borrow.
 
 Delimit Scope perm_scope with P.
 Bind Scope perm_scope with perm.

@@ -3,7 +3,7 @@ From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Export thread_local.
 From iris.program_logic Require Import hoare.
 From lrust.lang Require Export heap notation.
-From lrust.lifetime Require Import frac_borrow rebor.
+From lrust.lifetime Require Import frac_borrow.
 
 Class iris_typeG Σ := Iris_typeG {
   type_heapG :> heapG Σ;

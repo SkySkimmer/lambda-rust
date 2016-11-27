@@ -1,4 +1,4 @@
-From lrust.lifetime Require Export primitive creation.
+From lrust.lifetime Require Export primitive creation rebor.
 From iris.algebra Require Import csum auth frac gmap dec_agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
@@ -22,22 +22,6 @@ Qed.
 
 Lemma idx_bor_shorten κ κ' i P : κ ⊑ κ' -∗ &{κ',i} P -∗ &{κ,i} P.
 Proof. unfold idx_bor. iIntros "#Hκκ' [#? $]". by iApply (lft_incl_trans with "Hκκ'"). Qed.
-
-Lemma raw_bor_fake E κ P :
-  ↑borN ⊆ E →
-  ▷ lft_bor_dead κ ={E}=∗ ∃ i, ▷ lft_bor_dead κ ∗ raw_bor (κ, i) P.
-Proof.
-  iIntros (?) "Hdead". rewrite /lft_bor_dead.
-  iDestruct "Hdead" as (B Pinh) "[>Hown Hbox]".
-  iMod (box_insert_empty _ P with "Hbox") as (γ) "(% & Hslice & Hbox)".
-  iMod (own_bor_update with "Hown") as "Hown".
-  { apply auth_update_alloc.
-    apply: (alloc_local_update _ _ _ (1%Qp, DecAgree Bor_in)); last done.
-    do 2 eapply lookup_to_gmap_None. by eauto. }
-  rewrite own_bor_op insert_empty /bor /raw_bor /idx_bor_own. iExists _.
-  iDestruct "Hown" as "[H● H◯]". iSplitL "H● Hbox"; last by eauto.
-  iExists _, _. rewrite -!to_gmap_union_singleton. by iFrame.
-Qed.
 
 Lemma bor_fake E κ P :
   ↑lftN ⊆ E →
@@ -176,12 +160,6 @@ Proof.
       iRight. iSplit; last by auto. iExists _. iFrame. }
     unfold bor. iSplitL "Hbor1"; iExists (_, _); eauto.
 Qed.
-
-Lemma raw_rebor E κ κ' i P :
-  ↑lftN ⊆ E → κ ⊆ κ' →
-  lft_ctx -∗ raw_bor (κ, i) P ={E}=∗
-    ∃ j, raw_bor (κ', j) P ∗ ([†κ'] ={E}=∗ raw_bor (κ, i) P).
-Admitted.
 
 Lemma bor_combine E κ P Q :
   ↑lftN ⊆ E →

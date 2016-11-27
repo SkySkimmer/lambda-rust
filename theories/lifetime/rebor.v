@@ -1,4 +1,4 @@
-From lrust.lifetime Require Export primitive (* borrow *).
+From lrust.lifetime Require Export primitive.
 From iris.algebra Require Import csum auth frac gmap dec_agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
@@ -11,6 +11,22 @@ Proof. rewrite /IntoWand=>->. Admitted.
 Section rebor.
 Context `{invG Σ, lftG Σ}.
 Implicit Types κ : lft.
+
+Lemma raw_bor_fake E κ P :
+  ↑borN ⊆ E →
+  ▷ lft_bor_dead κ ={E}=∗ ∃ i, ▷ lft_bor_dead κ ∗ raw_bor (κ, i) P.
+Proof.
+  iIntros (?) "Hdead". rewrite /lft_bor_dead.
+  iDestruct "Hdead" as (B Pinh) "[>Hown Hbox]".
+  iMod (box_insert_empty _ P with "Hbox") as (γ) "(% & Hslice & Hbox)".
+  iMod (own_bor_update with "Hown") as "Hown".
+  { apply auth_update_alloc.
+    apply: (alloc_local_update _ _ _ (1%Qp, DecAgree Bor_in)); last done.
+    do 2 eapply lookup_to_gmap_None. by eauto. }
+  rewrite own_bor_op insert_empty /bor /raw_bor /idx_bor_own. iExists _.
+  iDestruct "Hown" as "[H● H◯]". iSplitL "H● Hbox"; last by eauto.
+  iExists _, _. rewrite -!to_gmap_union_singleton. by iFrame.
+Qed.
 
 Lemma raw_bor_unnest A I Pb Pi P κ κ' i :
   let Iinv := (
@@ -115,6 +131,13 @@ admit.
 
 Admitted.
 
+
+Lemma raw_rebor E κ κ' i P :
+  ↑lftN ⊆ E → κ ⊆ κ' →
+  lft_ctx -∗ raw_bor (κ, i) P ={E}=∗
+    ∃ j, raw_bor (κ', j) P ∗ ([†κ'] ={E}=∗ raw_bor (κ, i) P).
+Admitted.
+
 Lemma bor_rebor' E κ κ' P :
   ↑lftN ⊆ E → κ ⊆ κ' →
   lft_ctx -∗ &{κ} P ={E}=∗ &{κ'} P ∗ ([†κ'] ={E}=∗ &{κ} P).
@@ -131,8 +154,10 @@ Proof.
 Qed.
 *)
 Admitted.
+
 Lemma bor_unnest E κ κ' P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ'} &{κ} P ={E, E∖↑lftN}▷=∗ &{κ ∪ κ'} P.
 Proof. Admitted.
+
 End rebor.

@@ -1,7 +1,7 @@
 From Coq Require Import Qcanon.
 From iris.base_logic Require Import big_op.
 From lrust.typing Require Export type perm.
-From lrust.lifetime Require Import frac_borrow rebor.
+From lrust.lifetime Require Import frac_borrow.
 
 Import Perm Types.
 

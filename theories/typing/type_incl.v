@@ -1,7 +1,7 @@
 From iris.base_logic Require Import big_op.
 From iris.program_logic Require Import hoare.
 From lrust.typing Require Export type perm_incl.
-From lrust.lifetime Require Import derived frac_borrow.
+From lrust.lifetime Require Import frac_borrow.
 
 Import Types.
 
