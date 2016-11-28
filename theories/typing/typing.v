@@ -273,13 +273,14 @@ Section typing.
     iApply (has_type_wp with "H◁"). iIntros (v) "Hνv H◁!>". iDestruct "Hνv" as %Hνv.
     rewrite has_type_value. iDestruct "H◁" as (l) "[Heq H↦]". iDestruct "Heq" as %[=->].
     iMod (lft_incl_acc with "H⊑ Htok") as (q'') "[Htok Hclose]". done.
-    iMod (bor_acc_strong with "LFT H↦ Htok") as "[H↦ Hclose']". done.
+    iMod (bor_acc_strong with "LFT H↦ Htok") as (κ0) "(#Hκκ0 & H↦ & Hclose')". done.
     iDestruct "H↦" as (vl) "[>H↦ Hown]". iDestruct "Hown" as (l') "(>% & Hown & H†)".
     subst. rewrite heap_mapsto_vec_singleton. wp_read.
     iMod ("Hclose'" with "*[H↦ Hown H†][]") as "[Hbor Htok]"; last 1 first.
     - iMod (bor_sep with "LFT Hbor") as "[_ Hbor]". done.
       iMod (bor_sep with "LFT Hbor") as "[_ Hbor]". done.
-      iMod ("Hclose" with "Htok") as "$". iFrame "#". iExists _. eauto.
+      iMod ("Hclose" with "Htok") as "$". iFrame "#". iExists _.
+      iIntros "!>". iSplit. done. iApply (bor_shorten with "Hκκ0 Hbor").
     - iFrame "H↦ H† Hown".
     - iIntros "!>(?&?&?)_!>". iNext. iExists _.
       rewrite -heap_mapsto_vec_singleton. iFrame. iExists _. by iFrame.
