@@ -131,7 +131,7 @@ Qed.
 Lemma idx_bor_atomic_acc E q κ i P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ,i}P -∗ idx_bor_own q i ={E,E∖↑lftN}=∗
-              ▷ P ∗ (▷ P ={E∖↑lftN,E}=∗ idx_bor_own q i) ∨
+              (▷ P ∗ (▷ P ={E∖↑lftN,E}=∗ idx_bor_own q i)) ∨
               ([†κ] ∗ |={E∖↑lftN,E}=> idx_bor_own q i).
 Proof.
   unfold idx_bor, idx_bor_own. iIntros (HE) "#LFT [#Hle #Hs] Hbor".
@@ -230,7 +230,7 @@ Lemma bor_acc_atomic_strong E κ P :
   lft_ctx -∗ &{κ} P ={E,E∖↑lftN}=∗
    (∃ κ', κ ⊑ κ' ∗ ▷ P ∗
       ∀ Q, ▷ Q -∗ ▷ (▷ Q -∗ [†κ'] ={⊤∖↑lftN}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ'} Q) ∨
-    [†κ] ∗ |={E∖↑lftN,E}=> True.
+    ([†κ] ∗ |={E∖↑lftN,E}=> True).
 Proof.
   iIntros (HE) "#LFT Hbor". rewrite bor_unfold_idx /idx_bor /bor /raw_bor.
   iDestruct "Hbor" as (i) "((#Hle & #Hs) & Hbor)".
@@ -287,7 +287,7 @@ Qed.
 Lemma bor_acc_atomic E κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ}P ={E,E∖↑lftN}=∗
-       ▷ P ∗ (▷ P ={E∖↑lftN,E}=∗ &{κ}P) ∨ [†κ] ∗ |={E∖↑lftN,E}=> True.
+       (▷ P ∗ (▷ P ={E∖↑lftN,E}=∗ &{κ}P)) ∨ ([†κ] ∗ |={E∖↑lftN,E}=> True).
 Proof.
   iIntros (?) "#LFT HP".
   iMod (bor_acc_atomic_strong with "LFT HP") as "[H|[H† Hclose]]". done.
