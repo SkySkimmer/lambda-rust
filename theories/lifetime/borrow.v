@@ -127,8 +127,7 @@ Proof.
         as %[EQB%to_borUR_included _]%auth_valid_discrete_2.
     iMod (box_split with "Hslice Hbox") as (γ1 γ2) "(% & % & % & Hs1 & Hs2 & Hbox)".
       solve_ndisj. by rewrite lookup_fmap EQB.
-    iCombine "Hown" "Hbor" as "Hbor". rewrite -own_bor_op.
-    iMod (own_bor_update with "Hbor") as "Hbor".
+    iMod (own_bor_update_2 with "Hown Hbor") as "Hbor".
     { etrans; last etrans.
       - apply auth_update_dealloc. by apply delete_singleton_local_update, _.
       - apply auth_update_alloc,
