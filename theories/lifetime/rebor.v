@@ -10,45 +10,47 @@ Implicit Types κ : lft.
 
 Lemma raw_bor_fake E q κ P :
   ↑borN ⊆ E →
-  ▷?q lft_bor_dead κ ={E}=∗ ∃ i, ▷?q lft_bor_dead κ ∗ raw_bor (κ, i) P.
+  ▷?q lft_bor_dead κ ={E}=∗ ▷?q lft_bor_dead κ ∗ raw_bor κ P.
 Proof.
   iIntros (?) "Hdead". rewrite /lft_bor_dead.
   iDestruct "Hdead" as (B Pinh) "[>Hown Hbox]".
-  iMod (slice_insert_empty _ _ _ _ P with "Hbox") as (γ) "(% & Hslice & Hbox)".
+  iMod (slice_insert_empty _ _ _ _ P with "Hbox") as (γ) "(% & #Hslice & Hbox)".
   iMod (own_bor_update with "Hown") as "Hown".
   { eapply auth_update_alloc,
       (alloc_local_update _ _ _ (1%Qp, DecAgree Bor_in)); last done.
     by do 2 eapply lookup_to_gmap_None. }
-  rewrite own_bor_op insert_empty /bor /raw_bor /idx_bor_own /=. iExists γ.
-  iDestruct "Hown" as "[H● $]". iFrame "Hslice". iModIntro. iNext.
-  iExists ({[γ]} ∪ B), (P ∗ Pinh)%I. rewrite !to_gmap_union_singleton. by iFrame.
+  rewrite own_bor_op insert_empty /bor /raw_bor /idx_bor_own /=. 
+  iModIntro. iDestruct "Hown" as "[H● H◯]". iSplitR "H◯".
+  - iExists ({[γ]} ∪ B), (P ∗ Pinh)%I. rewrite !to_gmap_union_singleton. by iFrame.
+  - iExists γ. by iFrame.
 Qed.
 
-Lemma raw_bor_unnest A I Pb Pi P κ κ' i :
+Lemma raw_bor_unnest A I Pb Pi P κ κ' :
   let Iinv := (
     own_ilft_auth I ∗
     ▷ [∗ set] κ ∈ dom _ I ∖ {[κ']}, lft_inv A κ)%I in
   κ ⊆ κ' →
   lft_alive_in A κ' →
-  Iinv -∗ raw_bor (κ,i) P -∗ ▷ lft_bor_alive κ' Pb -∗
-  ▷ lft_vs κ' (Pb ∗ raw_bor (κ,i) P) Pi ={↑borN}=∗ ∃ Pb' j,
-    Iinv ∗ raw_bor (κ',j) P ∗ ▷ lft_bor_alive κ' Pb' ∗ ▷ lft_vs κ' Pb' Pi.
+  Iinv -∗ raw_bor κ P -∗ ▷ lft_bor_alive κ' Pb -∗
+  ▷ lft_vs κ' (Pb ∗ raw_bor κ P) Pi ={↑borN}=∗ ∃ Pb',
+    Iinv ∗ raw_bor κ' P ∗ ▷ lft_bor_alive κ' Pb' ∗ ▷ lft_vs κ' Pb' Pi.
 Proof.
   iIntros (Iinv Hκκ' Haliveκ') "(HI● & HI) Hraw Hκalive' Hvs".
   destruct (decide (κ = κ')) as [<-|Hκneq].
-  { iModIntro. iExists Pb, i. rewrite /Iinv. iFrame "HI● HI Hκalive' Hraw".
+  { iModIntro. iExists Pb. rewrite /Iinv. iFrame "HI● HI Hκalive' Hraw".
     iNext. rewrite !lft_vs_unfold. iDestruct "Hvs" as (n) "[Hn Hvs]".
     iExists n. iFrame "Hn". clear Iinv I.
-    iIntros (I). rewrite lft_vs_inv_unfold. iIntros "(Hdead & $ & HI) HPb Hκ†".
-    iMod (raw_bor_fake _ false _ P with "Hdead") as (i') "?"; first solve_ndisj.
-    (* We get the existential too late *)
-    admit. }
+    iIntros (I). rewrite {1}lft_vs_inv_unfold. iIntros "(Hdead & HI & Hκs) HPb #Hκ†".
+    iMod (raw_bor_fake _ false _ P with "Hdead") as "[Hdead Hraw]"; first solve_ndisj.
+    iApply ("Hvs" $! I with "[Hdead HI Hκs] [HPb Hraw] Hκ†").
+    - rewrite lft_vs_inv_unfold. by iFrame.
+    - iNext. by iFrame. }
   assert (κ ⊂ κ') by (by apply strict_spec_alt).
   rewrite lft_vs_unfold. iDestruct "Hvs" as (n) "[>Hcnt Hvs]".
   iMod (own_cnt_update with "Hcnt") as "Hcnt".
   { apply auth_update_alloc, (nat_local_update _ 0 (S n) 1); omega. }
   rewrite own_cnt_op; iDestruct "Hcnt" as "[Hcnt Hcnt1]".
-  rewrite {1}/raw_bor /idx_bor_own /=. iDestruct "Hraw" as "[Hbor #Hislice]".
+  rewrite {1}/raw_bor /idx_bor_own /=. iDestruct "Hraw" as (i) "[Hbor #Hislice]".
   iDestruct (own_bor_auth with "HI● Hbor") as %?.
   rewrite big_sepS_later.
   iDestruct (big_sepS_elem_of_acc _ (dom (gset lft) I ∖ _) κ with "HI")
@@ -88,9 +90,9 @@ Proof.
      (alloc_singleton_local_update _ j (1%Qp, DecAgree Bor_in)); last done.
     rewrite /to_borUR lookup_fmap. by rewrite HBj. }
   rewrite own_bor_op. iDestruct "HFOO" as "[HκB Hj]".
-  iModIntro. iExists (P ∗ Pb)%I, j. rewrite /Iinv. iFrame "HI● HI".
+  iModIntro. iExists (P ∗ Pb)%I. rewrite /Iinv. iFrame "HI● HI".
   iSplitL "Hj".
-  { rewrite /raw_bor /idx_bor_own. by iFrame. }
+  { rewrite /raw_bor /idx_bor_own. iExists j. by iFrame. }
   iSplitL "HB HκB Hbox".
   { rewrite /lft_bor_alive. iNext. iExists (<[j:=Bor_in]> B).
     rewrite /to_borUR !fmap_insert big_sepM_insert //. iFrame.
@@ -126,12 +128,12 @@ Proof.
   { rewrite /raw_bor /idx_bor_own /=. iFrame; auto. }
   iModIntro. rewrite -[S n]Nat.add_1_l -nat_op_plus auth_frag_op own_cnt_op.
   by iFrame.
-Admitted.
+Qed.
 
-Lemma raw_rebor E κ κ' i P :
+Lemma raw_rebor E κ κ' P :
   ↑lftN ⊆ E → κ ⊆ κ' →
-  lft_ctx -∗ raw_bor (κ, i) P ={E}=∗
-    ∃ j, raw_bor (κ', j) P ∗ ([†κ'] ={E}=∗ raw_bor (κ, i) P).
+  lft_ctx -∗ raw_bor κ P ={E}=∗
+    raw_bor κ' P ∗ ([†κ'] ={E}=∗ raw_bor κ P).
 Admitted.
 
 Lemma bor_rebor' E κ κ' P :

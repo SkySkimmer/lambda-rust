@@ -174,10 +174,10 @@ Section defs.
     own_bor (i.1) (◯ {[ i.2 := (q,DecAgree Bor_in) ]}).
   Definition idx_bor (κ : lft) (i : bor_idx) (P : iProp Σ) : iProp Σ :=
     (lft_incl κ (i.1) ∗ slice borN (i.2) P)%I.
-  Definition raw_bor (i : bor_idx) (P : iProp Σ) : iProp Σ :=
-    (idx_bor_own 1 i ∗ slice borN (i.2) P)%I.
+  Definition raw_bor (κ : lft) (P : iProp Σ) : iProp Σ :=
+    (∃ s : slice_name, idx_bor_own 1 (κ, s) ∗ slice borN s P)%I.
   Definition bor (κ : lft) (P : iProp Σ) : iProp Σ :=
-    (∃ i, lft_incl κ (i.1) ∗ raw_bor i P)%I.
+    (∃ κ', lft_incl κ κ' ∗ raw_bor κ' P)%I.
 End defs.
 
 Instance: Params (@lft_bor_alive) 4.

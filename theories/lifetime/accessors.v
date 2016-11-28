@@ -169,7 +169,7 @@ Lemma bor_acc_strong E q κ P :
     ∀ Q, ▷ Q -∗ ▷(▷ Q -∗ [†κ'] ={⊤∖↑lftN}=∗ ▷ P) ={E}=∗ &{κ'} Q ∗ q.[κ].
 Proof.
   unfold bor, raw_bor. iIntros (HE) "#LFT Hbor Htok".
-  iDestruct "Hbor" as (i) "(#Hle & Hbor & #Hs)".
+  iDestruct "Hbor" as (κ'') "(#Hle & Htmp)". iDestruct "Htmp" as (s'') "(Hbor & #Hs)".
   iMod (lft_incl_acc with "Hle Htok") as (q') "[Htok Hclose]". solve_ndisj.
   iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose'".
   iDestruct (own_bor_auth with "HI [Hbor]") as %Hκ'. by unfold idx_bor_own.
@@ -177,12 +177,12 @@ Proof.
           /lfts_inv /lft_inv /lft_inv_dead /lft_alive_in lft_inv_alive_unfold.
   iDestruct "Hinv" as "[[[Hinv >%]|[Hinv >%]] Hclose'']".
   - iDestruct "Hinv" as (Pb Pi) "(Halive & Hvs & Hinh)".
-    iMod (bor_open_internal with "Hs Halive Hbor Htok") as "(Halive & Hbor & $)".
+    iMod (bor_open_internal _ _ (κ'', s'') with "Hs Halive Hbor Htok") as "(Halive & Hbor & $)".
       solve_ndisj.
     iMod ("Hclose'" with "[-Hbor Hclose]") as "_".
     { iExists _, _. iFrame. rewrite big_sepS_later. iApply "Hclose''".
       iLeft. iFrame "%". iExists _, _. iFrame. }
-    iExists (i.1). iFrame "#". iIntros "!>*HQ HvsQ". clear -HE.
+    iExists κ''. iFrame "#". iIntros "!>*HQ HvsQ". clear -HE.
     iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose'".
     iDestruct (own_bor_auth with "HI Hbor") as %Hκ'.
     rewrite big_sepS_later big_sepS_elem_of_acc ?elem_of_dom //
@@ -214,8 +214,8 @@ Proof.
       iMod ("Hclose'" with "[-Hbor Htok Hclose]") as "_".
       { iExists _, _. iFrame. rewrite big_sepS_later /lft_bor_alive. iApply "Hclose''".
         iLeft. iFrame "%". iExists _, _. iFrame. }
-      iMod ("Hclose" with "Htok") as "$". iExists (i.1, j). iFrame "∗#".
-      iApply lft_incl_refl.
+      iMod ("Hclose" with "Htok") as "$". iExists κ''. iModIntro.
+      iSplit; first by iApply lft_incl_refl. iExists j. iFrame "∗#".
     + iDestruct "Hinv" as (?) "[Hinv _]". iDestruct "Hinv" as (B ?) "[>Hinv _]".
       iDestruct (own_bor_valid_2 with "Hinv Hbor")
         as %[(_ & <- & INCL%option_included)%singleton_included _]%auth_valid_discrete_2.
@@ -232,8 +232,8 @@ Lemma bor_acc_atomic_strong E κ P :
       ∀ Q, ▷ Q -∗ ▷ (▷ Q -∗ [†κ'] ={⊤∖↑lftN}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ'} Q) ∨
     [†κ] ∗ |={E∖↑lftN,E}=> True.
 Proof.
-  unfold bor, raw_bor. iIntros (HE) "#LFT Hbor".
-  iDestruct "Hbor" as (i) "(#Hle & Hbor & #Hs)".
+  iIntros (HE) "#LFT Hbor". rewrite bor_unfold_idx /idx_bor /bor /raw_bor.
+  iDestruct "Hbor" as (i) "((#Hle & #Hs) & Hbor)".
   iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose'".
   iDestruct (own_bor_auth with "HI [Hbor]") as %Hκ'. by unfold idx_bor_own.
   rewrite big_sepS_later big_sepS_elem_of_acc ?elem_of_dom //
@@ -251,18 +251,20 @@ Proof.
     iMod "Hclose" as "_". iDestruct (add_vs with "EQ Hvs HvsQ") as "Hvs".
     iMod (slice_insert_full _ _ true with "HQ Hbox") as (j) "(% & #Hs' & Hbox)".
       solve_ndisj.
-    iExists (i.1, j). iFrame "∗#".
     iMod (own_bor_update_2 with "Hown Hbor") as "Hown".
     { apply auth_update. etrans.
       - apply delete_singleton_local_update, _.
       - apply (alloc_singleton_local_update _ j (1%Qp, DecAgree (Bor_in))); last done.
         rewrite -fmap_delete lookup_fmap fmap_None
                 -fmap_None -lookup_fmap fmap_delete //. }
-    rewrite own_bor_op -lft_incl_refl. iDestruct "Hown" as "[Hown $]".
-    iApply "Hclose'". iExists _, _. iFrame. rewrite big_sepS_later. iApply "Hclose''".
-    iLeft. iFrame "%". iExists _, _. iFrame.
+    rewrite own_bor_op. iDestruct "Hown" as "[H● H◯]".
+    iMod ("Hclose'" with "[- H◯]"); last first.
+    { iModIntro. iExists (i.1). iSplit; first by iApply lft_incl_refl.
+      iExists j. iFrame. done. }
+    iExists _, _. iFrame. rewrite big_sepS_later. iApply "Hclose''".
+    iLeft. iFrame "%". iExists _, _. iFrame. iNext.
     rewrite -!fmap_delete -fmap_insert -(fmap_insert _ _ _ Bor_in).
-    iExists _. iFrame "Hbox Hown".
+    iExists _. iFrame "Hbox H●".
     rewrite big_sepM_insert. by rewrite big_sepM_delete.
       by rewrite -fmap_None -lookup_fmap fmap_delete.
   - iRight. iMod (create_dead with "HA") as "[HA #H†]". done.
