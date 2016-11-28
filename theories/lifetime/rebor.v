@@ -4,10 +4,6 @@ From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 From iris.proofmode Require Import tactics.
 
-Global Instance into_wand_bupd {M} (R P Q : uPred M) :
-  IntoWand R P Q → IntoWand R (▷ P) (▷ Q) | 100.
-Proof. rewrite /IntoWand=>->. Admitted.
-
 Section rebor.
 Context `{invG Σ, lftG Σ}.
 Implicit Types κ : lft.
