@@ -15,7 +15,7 @@ Lemma lft_inh_kill E κ Q :
 Proof.
   rewrite /lft_inh. iIntros (?) "[Hinh HQ]".
   iDestruct "Hinh" as (E') "[Hinh Hbox]".
-  iMod (box_fill_all with "Hbox HQ") as "?"=>//.
+  iMod (box_fill with "Hbox HQ") as "?"=>//.
   rewrite fmap_to_gmap. iModIntro. iExists E'. by iFrame.
 Qed.
 
@@ -124,7 +124,7 @@ Proof.
     rewrite /lft_inv_dead; iDestruct "Hdead" as (R) "(_ & Hcnt' & _)".
     iDestruct (own_cnt_valid_2 with "Hcnt' Hcnt")
       as %[?%nat_included _]%auth_valid_discrete_2; omega. }
-  iMod (box_empty_all with "Hbox") as "[HP Hbox]"=>//; first solve_ndisj.
+  iMod (box_empty with "Hbox") as "[HP Hbox]"=>//; first solve_ndisj.
   { intros i s. by rewrite lookup_fmap fmap_Some=> -[? [/HB -> ->]]. }
   rewrite lft_vs_unfold; iDestruct "Hvs" as (n) "[Hcnt Hvs]".
   iDestruct (lft_inv_alive_acc (dom _ I) _ κ with "Halive") as "[Halive Halive']".
