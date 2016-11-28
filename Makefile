@@ -12,15 +12,10 @@ clean: Makefile.coq
 Makefile.coq: _CoqProject Makefile
 	coq_makefile -f _CoqProject | sed 's/$$(COQCHK) $$(COQCHKFLAGS) $$(COQLIBS)/$$(COQCHK) $$(COQCHKFLAGS) $$(subst -Q,-R,$$(COQLIBS))/' > Makefile.coq
 
-# Use local Iris dependency
-iris-local:
-	git submodule update --init iris # If not initialized, then initialize; If not updated with this remote, then update
-	ln -nsf iris iris-enabled # If not linked, then link
-	+make -C iris -f Makefile # If not built, then build
-
-# Use system-installed Iris dependency
-iris-system: clean
-	rm -f iris-enabled
+build-dep:
+	cat opam.pins | build/opam-pins.sh
+	opam pin add coq-lambda-rust "$$(pwd)#HEAD" -k git -y -n
+	opam install coq-lambda-rust --deps-only -y
 
 _CoqProject: ;
 

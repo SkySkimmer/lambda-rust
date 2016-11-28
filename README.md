@@ -6,21 +6,17 @@ This is the Coq formalization of lambda-Rust.
 
 This version is known to compile with:
 
- - Coq 8.5pl2
+ - Coq 8.5pl3
  - Ssreflect 1.6
+ - A development version of [Iris](https://gitlab.mpi-sws.org/FP/iris-coq/)
 
-You will furthermore need an up-to-date version of
-[Iris](https://gitlab.mpi-sws.org/FP/iris-coq/).  Run `git submodule status` to
-see which git commit of Iris is known to work.  You can pick between using a
-system-installed Iris (from Coq's `user-contrib`) or a version of Iris locally
-compiled for lambda-Rust.
+The easiest way to install the correct versions of the dependencies is through
+opam.  Once you got opam set up, just run `make build-dep` to install the right
+versions of the dependencies.
+
+Alternatively, you can manually determine the required Iris commit by consulting
+the `opam.pins` file.
 
 ## Building Instructions
 
-To use the system-installed Iris (which is the default), run `make iris-system`.
-This only works if you previously built and installed a compatible version of the
-Iris Coq formalization.  To use a local Iris (which will always be the right
-version), run `make iris-local`.  Run this command again later to update the
-local Iris, in case the preferred Iris version changed.
-
-Now run `make` to build the full development.
+Run `make` to build the full development.

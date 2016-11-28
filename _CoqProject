@@ -1,5 +1,4 @@
 -Q theories lrust
--Q iris-enabled iris
 theories/adequacy.v
 theories/derived.v
 theories/heap.v
