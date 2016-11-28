@@ -117,7 +117,7 @@ Proof.
   { iIntros (i s HBI).
     iDestruct (big_sepM_lookup _ B with "HB") as "HB"=> //.
     destruct s as [|q|κ']; rewrite /bor_cnt //.
-    { iDestruct (lft_tok_dead_own with "HB Hκ") as "[]". }
+    { iDestruct (lft_tok_dead with "HB Hκ") as "[]". }
     iDestruct "HB" as "[% Hcnt]".
     iDestruct (own_cnt_auth with "HI Hcnt") as %?.
     iDestruct (@big_sepS_elem_of with "Hdead") as "Hdead"; first by eauto.

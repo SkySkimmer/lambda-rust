@@ -1,4 +1,4 @@
-From lrust Require Export tactics derived.
+From lrust.lang Require Export tactics derived.
 Import uPred.
 
 (** wp-specific helper tactics *)

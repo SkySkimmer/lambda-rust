@@ -1,4 +1,4 @@
-From lrust Require Export lifting.
+From lrust.lang Require Export lifting.
 From iris.proofmode Require Import tactics.
 Import uPred.
 
@@ -25,35 +25,35 @@ Lemma wp_lam E xl e e' el Φ :
   Forall (λ ei, is_Some (to_val ei)) el →
   Closed (xl +b+ []) e →
   subst_l xl el e = Some e' →
-  ▷ WP e' @ E {{ Φ }} ⊢ WP App (Lam xl e) el @ E {{ Φ }}.
+  ▷ WP e' @ E {{ Φ }} -∗ WP App (Lam xl e) el @ E {{ Φ }}.
 Proof. iIntros (???) "?". by iApply (wp_rec _ _ BAnon). Qed.
 
 Lemma wp_let E x e1 e2 v Φ :
   to_val e1 = Some v →
   Closed (x :b: []) e2 →
-  ▷ WP subst' x e1 e2 @ E {{ Φ }} ⊢ WP Let x e1 e2 @ E {{ Φ }}.
+  ▷ WP subst' x e1 e2 @ E {{ Φ }} -∗ WP Let x e1 e2 @ E {{ Φ }}.
 Proof. eauto using wp_lam. Qed.
 
 Lemma wp_seq E e1 e2 v Φ :
   to_val e1 = Some v →
   Closed [] e2 →
-  ▷ WP e2 @ E {{ Φ }} ⊢ WP Seq e1 e2 @ E {{ Φ }}.
+  ▷ WP e2 @ E {{ Φ }} -∗ WP Seq e1 e2 @ E {{ Φ }}.
 Proof. iIntros (??) "?". by iApply (wp_let _ BAnon). Qed.
 
-Lemma wp_skip E Φ : ▷ Φ (LitV LitUnit) ⊢ WP Skip @ E {{ Φ }}.
+Lemma wp_skip E Φ : ▷ Φ (LitV LitUnit) -∗ WP Skip @ E {{ Φ }}.
 Proof. iIntros. iApply wp_seq. done. iNext. by iApply wp_value. Qed.
 
 Lemma wp_le E (n1 n2 : Z) P Φ :
-  (n1 ≤ n2 → P ⊢ ▷ |={E}=> Φ (LitV true)) →
-  (n2 < n1 → P ⊢ ▷ |={E}=> Φ (LitV false)) →
-  P ⊢ WP BinOp LeOp (Lit (LitInt n1)) (Lit (LitInt n2)) @ E {{ Φ }}.
+  (n1 ≤ n2 → P -∗ ▷ |={E}=> Φ (LitV true)) →
+  (n2 < n1 → P -∗ ▷ |={E}=> Φ (LitV false)) →
+  P -∗ WP BinOp LeOp (Lit (LitInt n1)) (Lit (LitInt n2)) @ E {{ Φ }}.
 Proof.
   intros. rewrite -wp_bin_op //; [].
   destruct (bool_decide_reflect (n1 ≤ n2)); by eauto with omega.
 Qed.
 
 Lemma wp_if E (b : bool) e1 e2 Φ :
-  (if b then ▷ WP e1 @ E {{ Φ }} else ▷ WP e2 @ E {{ Φ }})%I
-  ⊢ WP If (Lit b) e1 e2 @ E {{ Φ }}.
+  (if b then ▷ WP e1 @ E {{ Φ }} else ▷ WP e2 @ E {{ Φ }})%I -∗
+  WP If (Lit b) e1 e2 @ E {{ Φ }}.
 Proof. iIntros "?". by destruct b; iApply wp_case. Qed.
 End derived.

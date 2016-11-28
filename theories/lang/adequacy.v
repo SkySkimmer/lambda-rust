@@ -1,7 +1,7 @@
 From iris.program_logic Require Export hoare adequacy.
-From lrust Require Export heap.
 From iris.algebra Require Import auth.
-From lrust Require Import proofmode notation.
+From lrust.lang Require Export heap.
+From lrust.lang Require Import proofmode notation.
 
 Class heapPreG Σ := HeapPreG {
   heap_preG_iris :> irisPreG lrust_lang Σ;
@@ -17,7 +17,7 @@ Instance subG_heapPreG {Σ} : subG heapΣ Σ → heapPreG Σ.
 Proof. intros [? [?%subG_inG ?%subG_inG]%subG_inv]%subG_inv. split; apply _. Qed.
 
 Definition heap_adequacy Σ `{heapPreG Σ} e σ φ :
-  (∀ `{heapG Σ}, {{ heap_ctx }} e {{ v, ■ φ v }}) →
+  (∀ `{heapG Σ}, {{ heap_ctx }} e {{ v, ⌜φ v⌝ }}) →
   adequate e σ φ.
 Proof.
   intros Hwp; eapply (wp_adequacy Σ). iIntros (?) "Hσ".

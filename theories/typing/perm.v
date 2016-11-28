@@ -1,5 +1,7 @@
 From iris.proofmode Require Import tactics.
-From lrust Require Export type proofmode.
+From lrust.typing Require Export type.
+From lrust.lang Require Export proofmode.
+From lrust.lifetime Require Import frac_borrow.
 
 Delimit Scope perm_scope with P.
 Bind Scope perm_scope with perm.
@@ -23,17 +25,17 @@ Section perm.
   Definition has_type (ν : expr) (ty : type) : perm := λ tid,
     from_option (λ v, ty.(ty_own) tid [v]) False%I (eval_expr ν).
 
-  Definition extract (κ : lifetime) (ρ : perm) : perm :=
-    λ tid, ([†κ] ={lftN}=∗ ρ tid)%I.
+  Definition extract (κ : lft) (ρ : perm) : perm :=
+    λ tid, ([†κ] ={↑lftN}=∗ ρ tid)%I.
 
-  Definition tok (κ : lifetime) (q : Qp) : perm :=
+  Definition tok (κ : lft) (q : Qp) : perm :=
     λ _, q.[κ]%I.
 
 
-  Definition killable (κ : lifetime) : perm :=
-    λ _, (□ (1.[κ] ={⊤,⊤∖nclose lftN}▷=∗ [†κ]))%I.
+  Definition killable (κ : lft) : perm :=
+    λ _, (□ (1.[κ] ={⊤,⊤∖↑lftN}▷=∗ [†κ]))%I.
 
-  Definition incl (κ κ' : lifetime) : perm :=
+  Definition incl (κ κ' : lft) : perm :=
     λ _, (κ ⊑ κ')%I.
 
   Definition exist {A : Type} (P : A -> perm) : @perm Σ :=
@@ -61,7 +63,7 @@ Notation "q .[ κ ]" := (tok κ q) (format "q .[ κ ]", at level 0) : perm_scope
 
 Notation "† κ" := (killable κ) (format "† κ", at level 75).
 
-Infix "⊑" := incl (at level 60) : perm_scope.
+Infix "⊑" := incl (at level 70) : perm_scope.
 
 Notation "∃ x .. y , P" :=
   (exist (λ x, .. (exist (λ y, P)) ..)) : perm_scope.
@@ -105,12 +107,13 @@ Section has_type.
   Qed.
 
   Lemma has_type_wp E (ν : expr) ty tid (Φ : val -> iProp _) :
-    (ν ◁ ty)%P tid ∗ (∀ (v : val), eval_expr ν = Some v ∗ (v ◁ ty)%P tid ={E}=∗ Φ v)
-    ⊢ WP ν @ E {{ Φ }}.
+    (ν ◁ ty)%P tid -∗
+    (∀ (v : val), ⌜eval_expr ν = Some v⌝ -∗ (v ◁ ty)%P tid ={E}=∗ Φ v) -∗
+    WP ν @ E {{ Φ }}.
   Proof.
-    iIntros "[H◁ HΦ]". setoid_rewrite has_type_value. unfold has_type.
+    iIntros "H◁ HΦ". setoid_rewrite has_type_value. unfold has_type.
     destruct (eval_expr ν) eqn:EQν; last by iDestruct "H◁" as "[]". simpl.
-    iMod ("HΦ" $! v with "[$H◁]") as "HΦ". done.
+    iMod ("HΦ" $! v with "[] H◁") as "HΦ". done.
     iInduction ν as [| | |[] e ? [|[]| | | | | | | | | |] _| | | | | | | |] "IH"
       forall (Φ v EQν); try done.
     - inversion EQν. subst. wp_value. auto.

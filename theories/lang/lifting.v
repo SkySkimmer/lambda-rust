@@ -1,7 +1,7 @@
 From iris.program_logic Require Export weakestpre.
 From iris.program_logic Require Import ectx_lifting.
-From lrust Require Export lang.
-From lrust Require Import tactics.
+From lrust.lang Require Export lang.
+From lrust.lang Require Import tactics.
 From iris.proofmode Require Import tactics.
 Import uPred.
 Local Hint Extern 0 (head_reducible _ _) => do_head_step eauto 2.
@@ -13,11 +13,11 @@ Implicit Types ef : option expr.
 
 (** Bind. This bundles some arguments that wp_ectx_bind leaves as indices. *)
 Lemma wp_bind {E e} K Φ :
-  WP e @ E {{ v, WP fill K (of_val v) @ E {{ Φ }} }} ⊢ WP fill K e @ E {{ Φ }}.
+  WP e @ E {{ v, WP fill K (of_val v) @ E {{ Φ }} }} -∗ WP fill K e @ E {{ Φ }}.
 Proof. exact: wp_ectx_bind. Qed.
 
 Lemma wp_bindi {E e} Ki Φ :
-  WP e @ E {{ v, WP fill_item Ki (of_val v) @ E {{ Φ }} }} ⊢
+  WP e @ E {{ v, WP fill_item Ki (of_val v) @ E {{ Φ }} }} -∗
      WP fill_item Ki e @ E {{ Φ }}.
 Proof. exact: weakestpre.wp_bind. Qed.
 
@@ -26,8 +26,8 @@ Lemma wp_alloc_pst E σ n:
   0 < n →
   {{{ ▷ ownP σ }}} Alloc (Lit $ LitInt n) @ E
   {{{ l σ', RET LitV $ LitLoc l;
-      ■ (∀ m, σ !! (shift_loc l m) = None) ∗
-      ■ (∃ vl, n = length vl ∧ init_mem l vl σ = σ') ∗
+      ⌜∀ m, σ !! (shift_loc l m) = None⌝ ∗
+      ⌜∃ vl, n = length vl ∧ init_mem l vl σ = σ'⌝ ∗
       ownP σ' }}}.
 Proof.
   iIntros (? Φ) "HP HΦ". iApply (wp_lift_atomic_head_step _ σ); eauto.
@@ -66,11 +66,11 @@ Proof.
 Qed.
 
 Lemma wp_read_na1_pst E l Φ :
-  (|={E,∅}=> ∃ σ n v, σ !! l = Some(RSt $ n, v) ∧
+  (|={E,∅}=> ∃ σ n v, ⌜σ !! l = Some(RSt $ n, v)⌝ ∧
      ▷ ownP σ ∗
      ▷ (ownP (<[l:=(RSt $ S n, v)]>σ) ={∅,E}=∗
-          WP Read Na2Ord (Lit $ LitLoc l) @ E {{ Φ }}))
-  ⊢ WP Read Na1Ord (Lit $ LitLoc l) @ E {{ Φ }}.
+          WP Read Na2Ord (Lit $ LitLoc l) @ E {{ Φ }})) -∗
+  WP Read Na1Ord (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
   iIntros "HΦP". iApply (wp_lift_head_step E); auto.
   iMod "HΦP" as (σ n v) "(%&HΦ&HP)". iModIntro. iExists σ. iSplit. done. iFrame.
@@ -97,11 +97,11 @@ Proof.
 Qed.
 
 Lemma wp_write_na1_pst E l v Φ :
-  (|={E,∅}=> ∃ σ v', σ !! l = Some(RSt 0, v') ∧
+  (|={E,∅}=> ∃ σ v', ⌜σ !! l = Some(RSt 0, v')⌝ ∧
      ▷ ownP σ ∗
      ▷ (ownP (<[l:=(WSt, v')]>σ) ={∅,E}=∗
-       WP Write Na2Ord (Lit $ LitLoc l) (of_val v) @ E {{ Φ }}))
-  ⊢ WP Write Na1Ord (Lit $ LitLoc l) (of_val v) @ E {{ Φ }}.
+       WP Write Na2Ord (Lit $ LitLoc l) (of_val v) @ E {{ Φ }})) -∗
+  WP Write Na1Ord (Lit $ LitLoc l) (of_val v) @ E {{ Φ }}.
 Proof.
   iIntros "HΦP". iApply (wp_lift_head_step E); auto.
   iMod "HΦP" as (σ v') "(%&HΦ&HP)". iModIntro. iExists σ. iSplit. done. iFrame.
@@ -147,8 +147,8 @@ Lemma wp_rec E e f xl erec erec' el Φ :
   Forall (λ ei, is_Some (to_val ei)) el →
   Closed (f :b: xl +b+ []) erec →
   subst_l xl el erec = Some erec' →
-  ▷ WP subst' f e erec' @ E {{ Φ }}
-  ⊢ WP App e el @ E {{ Φ }}.
+  ▷ WP subst' f e erec' @ E {{ Φ }} -∗
+  WP App e el @ E {{ Φ }}.
 Proof.
   iIntros (-> ???) "?". iApply wp_lift_pure_det_head_step; subst; eauto.
   by intros; inv_head_step; eauto. iNext. rewrite big_sepL_nil. by iFrame.
@@ -156,7 +156,7 @@ Qed.
 
 Lemma wp_bin_op E op l1 l2 l' Φ :
   bin_op_eval op l1 l2 = Some l' →
-  ▷ (|={E}=> Φ (LitV l')) ⊢ WP BinOp op (Lit l1) (Lit l2) @ E {{ Φ }}.
+  ▷ (|={E}=> Φ (LitV l')) -∗ WP BinOp op (Lit l1) (Lit l2) @ E {{ Φ }}.
 Proof.
   iIntros (?) "H". iApply wp_lift_pure_det_head_step; eauto.
   by intros; inv_head_step; eauto.
@@ -166,7 +166,7 @@ Qed.
 Lemma wp_case E i e el Φ :
   0 ≤ i →
   nth_error el (Z.to_nat i) = Some e →
-  ▷ WP e @ E {{ Φ }} ⊢ WP Case (Lit $ LitInt i) el @ E {{ Φ }}.
+  ▷ WP e @ E {{ Φ }} -∗ WP Case (Lit $ LitInt i) el @ E {{ Φ }}.
 Proof.
   iIntros (??) "?". iApply wp_lift_pure_det_head_step; eauto.
   by intros; inv_head_step; eauto. iNext. rewrite big_sepL_nil. by iFrame.
