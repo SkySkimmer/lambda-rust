@@ -1,6 +1,7 @@
 From Coq Require Import Qcanon.
 From iris.base_logic Require Import big_op.
-From lrust Require Export type perm.
+From lrust.typing Require Export type perm.
+From lrust.lifetime Require Import frac_borrow.
 
 Import Perm Types.
 
@@ -191,7 +192,7 @@ Section props.
         * etransitivity. apply IHl. by injection Hlen. do 3 f_equiv. lia.
   Qed.
 
-  Lemma perm_split_uniq_borrow_prod2 ty1 ty2 κ ν :
+  Lemma perm_split_uniq_bor_prod2 ty1 ty2 κ ν :
     ν ◁ &uniq{κ} (product2 ty1 ty2) ⇒
     ν ◁ &uniq{κ} ty1 ∗ ν +ₗ #(ty1.(ty_size)) ◁ &uniq{κ} ty2.
   Proof.
@@ -199,11 +200,11 @@ Section props.
     destruct (eval_expr ν) as [[[|l|]|]|];
       iIntros (tid) "#LFT H"; try iDestruct "H" as "[]";
         iDestruct "H" as (l0) "[EQ H]"; iDestruct "EQ" as %[=<-].
-    rewrite /= split_prod_mt. iMod (borrow_split with "LFT H") as "[H1 H2]".
+    rewrite /= split_prod_mt. iMod (bor_sep with "LFT H") as "[H1 H2]".
     set_solver. iSplitL "H1"; eauto.
   Qed.
 
-  Lemma perm_split_uniq_borrow_prod tyl κ ν :
+  Lemma perm_split_uniq_bor_prod tyl κ ν :
     ν ◁ &uniq{κ} (Π tyl) ⇒
       foldr (λ tyoffs acc,
              ν +ₗ #(tyoffs.2:nat) ◁ &uniq{κ} (tyoffs.1) ∗ acc)%P
@@ -214,12 +215,12 @@ Section props.
       iDestruct "H" as (l) "[Heq H]". iDestruct "Heq" as %[=->].
       rewrite shift_loc_0 /=. eauto. }
     generalize 0%nat. induction tyl as [|ty tyl IH]=>offs. by iIntros (tid) "_ H/=".
-    etransitivity. apply perm_split_uniq_borrow_prod2.
+    etransitivity. apply perm_split_uniq_bor_prod2.
     iIntros (tid) "#LFT /=[$ H]". iApply (IH with "LFT"). rewrite /has_type /=.
     destruct (eval_expr ν) as [[[]|]|]=>//=. by rewrite shift_loc_assoc_nat.
   Qed.
 
-  Lemma perm_split_shr_borrow_prod2 ty1 ty2 κ ν :
+  Lemma perm_split_shr_bor_prod2 ty1 ty2 κ ν :
     ν ◁ &shr{κ} (product2 ty1 ty2) ⇒
     ν ◁ &shr{κ} ty1 ∗ ν +ₗ #(ty1.(ty_size)) ◁ &shr{κ} ty2.
   Proof.
@@ -233,7 +234,7 @@ Section props.
     set_solver. iApply lft_incl_refl. set_solver. iApply lft_incl_refl.
   Qed.
 
-  Lemma perm_split_shr_borrow_prod tyl κ ν :
+  Lemma perm_split_shr_bor_prod tyl κ ν :
     ν ◁ &shr{κ} (Π tyl) ⇒
       foldr (λ tyoffs acc,
              (ν +ₗ #(tyoffs.2:nat))%E ◁ &shr{κ} (tyoffs.1) ∗ acc)%P
@@ -244,12 +245,12 @@ Section props.
       iDestruct "H" as (l) "[Heq H]". iDestruct "Heq" as %[=->].
       rewrite shift_loc_0 /=. iExists _. by iFrame "∗%". }
     generalize 0%nat. induction tyl as [|ty tyl IH]=>offs. by iIntros (tid) "_ H/=".
-    etransitivity. apply perm_split_shr_borrow_prod2.
+    etransitivity. apply perm_split_shr_bor_prod2.
     iIntros (tid) "#LFT /=[$ H]". iApply (IH with "LFT"). rewrite /has_type /=.
     destruct (eval_expr ν) as [[[]|]|]=>//=. by rewrite shift_loc_assoc_nat.
   Qed.
 
-  Lemma reborrow_shr_perm_incl κ κ' ν ty :
+  Lemma rebor_shr_perm_incl κ κ' ν ty :
     κ ⊑ κ' ∗ ν ◁ &shr{κ'}ty ⇒ ν ◁ &shr{κ}ty.
   Proof.
     iIntros (tid) "#LFT [#Hord #Hκ']". unfold has_type.
@@ -274,15 +275,15 @@ Section props.
       try by (iDestruct "Hown" as "[]" || iDestruct "Hown" as (l) "[% _]").
     iDestruct "Hown" as (l') "[EQ [Hown Hf]]". iDestruct "EQ" as %[=]. subst l'.
     iApply (fupd_mask_mono (↑lftN)). done.
-    iMod (borrow_create with "LFT Hown") as "[Hbor Hext]". done.
+    iMod (bor_create with "LFT Hown") as "[Hbor Hext]". done.
     iSplitL "Hbor". by simpl; eauto.
-    iMod (borrow_create with "LFT Hf") as "[_ Hf]". done.
+    iMod (bor_create with "LFT Hf") as "[_ Hf]". done.
     iIntros "!>#H†".
     iMod ("Hext" with "H†") as "Hext". iMod ("Hf" with "H†") as "Hf". iIntros "!>/=".
     iExists _. iFrame. auto.
   Qed.
 
-  Lemma reborrow_uniq_borrowing κ κ' ν ty :
+  Lemma rebor_uniq_borrowing κ κ' ν ty :
     borrowing κ (κ ⊑ κ') (ν ◁ &uniq{κ'}ty) (ν ◁ &uniq{κ}ty).
   Proof.
     iIntros (tid) "#LFT #Hord H". unfold has_type.
@@ -290,7 +291,7 @@ Section props.
       try by (iDestruct "H" as "[]" || iDestruct "H" as (l) "[% _]").
     iDestruct "H" as (l') "[EQ H]". iDestruct "EQ" as %[=]. subst l'.
     iApply (fupd_mask_mono (↑lftN)). done.
-    iMod (reborrow with "LFT Hord H") as "[H Hextr]". done.
+    iMod (rebor with "LFT Hord H") as "[H Hextr]". done.
     iModIntro. iSplitL "H". iExists _. by eauto.
     iIntros "H†". iMod ("Hextr" with "H†"). simpl. auto.
   Qed.
@@ -298,10 +299,10 @@ Section props.
   Lemma lftincl_borrowing κ κ' q : borrowing κ ⊤ q.[κ'] (κ ⊑ κ').
   Proof.
     iIntros (tid) "#LFT _ Htok". iApply (fupd_mask_mono (↑lftN)). done.
-    iMod (borrow_create with "LFT [$Htok]") as "[Hbor Hclose]". done.
-    iMod (borrow_fracture (λ q', (q * q').[κ'])%I with "LFT [Hbor]") as "Hbor". done.
+    iMod (bor_create with "LFT [$Htok]") as "[Hbor Hclose]". done.
+    iMod (bor_fracture (λ q', (q * q').[κ'])%I with "LFT [Hbor]") as "Hbor". done.
     { by rewrite Qp_mult_1_r. }
-    iSplitL "Hbor". iApply (frac_borrow_incl with "LFT Hbor").
+    iSplitL "Hbor". iApply (frac_bor_incl with "LFT Hbor").
     iIntros "!>H". by iMod ("Hclose" with "H") as ">$".
   Qed.
 

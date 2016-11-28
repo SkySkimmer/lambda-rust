@@ -1,7 +1,7 @@
+From iris.prelude Require Import gmap.
 From iris.program_logic Require Export hoare.
 From iris.program_logic Require Import adequacy.
-From lrust Require Import tactics.
-From iris.prelude Require Import gmap.
+From lrust.lang Require Import tactics.
 
 Inductive access_kind : Type := ReadAcc | WriteAcc | FreeAcc.
 

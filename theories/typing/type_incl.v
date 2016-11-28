@@ -1,6 +1,7 @@
 From iris.base_logic Require Import big_op.
 From iris.program_logic Require Import hoare.
-From lrust Require Export type perm_incl.
+From lrust.typing Require Export type perm_incl.
+From lrust.lifetime Require Import frac_borrow.
 
 Import Types.
 
@@ -68,16 +69,17 @@ Section ty_incl.
       by iDestruct ("Hshri" $! _ _ _ with "Hshr") as "[$ _]".
   Qed.
 
-  Lemma lft_incl_ty_incl_uniq_borrow ty κ1 κ2 :
+  Lemma lft_incl_ty_incl_uniq_bor ty κ1 κ2 :
     ty_incl (κ1 ⊑ κ2) (&uniq{κ2}ty) (&uniq{κ1}ty).
   Proof.
     iIntros (tid) "#LFT #Hincl!>". iSplit; iIntros "!#*H".
     - iDestruct "H" as (l) "[% Hown]". subst. iExists _. iSplit. done.
-      by iApply (borrow_shorten with "Hincl").
-    - iAssert (κ1 ⋅ κ ⊑ κ2 ⋅ κ)%I as "#Hincl'".
-      { iApply (lft_incl_lb with "[] []").
-        - iApply (lft_incl_trans with "[] Hincl"). iApply lft_le_incl. by exists κ.
-        - iApply lft_le_incl. exists κ1. by apply (comm _). }
+      by iApply (bor_shorten with "Hincl").
+    - iAssert (κ1 ∪ κ ⊑ κ2 ∪ κ)%I as "#Hincl'".
+      { iApply (lft_incl_glb with "[] []").
+        - iApply (lft_incl_trans with "[] Hincl"). iApply lft_le_incl.
+            apply gmultiset_union_subseteq_l.
+        - iApply lft_le_incl. apply gmultiset_union_subseteq_r. }
       iSplitL; last done. iDestruct "H" as (l') "[Hbor #Hupd]". iExists l'.
       iFrame. iIntros (q') "!#Htok".
       iMod (lft_incl_acc with "Hincl' Htok") as (q'') "[Htok Hclose]". set_solver.
@@ -86,7 +88,7 @@ Section ty_incl.
       by iApply (ty_shr_mono with "LFT Hincl' H").
   Qed.
 
-  Lemma lft_incl_ty_incl_shared_borrow ty κ1 κ2 :
+  Lemma lft_incl_ty_incl_shared_bor ty κ1 κ2 :
     ty_incl (κ1 ⊑ κ2) (&shr{κ2}ty) (&shr{κ1}ty).
   Proof.
     iIntros (tid) "#LFT #Hincl!>". iSplit; iIntros "!#*H".
@@ -172,15 +174,15 @@ Section ty_incl.
     apply (ty_incl_weaken _ ⊤). apply perm_incl_top.
     induction tyl1; last by apply (ty_incl_prod2 _ _ _ _ _ _).
     induction tyl2 as [|ty tyl2 IH]; simpl.
-    - iIntros (tid) "#LFT _". iMod (borrow_create with "LFT []") as "[Hbor _]".
+    - iIntros (tid) "#LFT _". iMod (bor_create with "LFT []") as "[Hbor _]".
       done. instantiate (1:=True%I). by auto. instantiate (1:=static).
-      iMod (borrow_fracture (λ _, True%I) with "LFT Hbor") as "#Hbor". done.
+      iMod (bor_fracture (λ _, True%I) with "LFT Hbor") as "#Hbor". done.
       iSplitL; iIntros "/=!>!#*H".
       + iExists [], vl. iFrame. auto.
       + iSplit; last done. iExists ∅, E. iSplit. iPureIntro; set_solver.
         rewrite shift_loc_0. iFrame. iExists []. iSplit; last auto.
         setoid_rewrite heap_mapsto_vec_nil.
-        iApply (frac_borrow_shorten with "[] Hbor"). iApply lft_incl_static.
+        iApply (frac_bor_shorten with "[] Hbor"). iApply lft_incl_static.
     - etransitivity; last apply ty_incl_prod2_assoc1.
       eapply (ty_incl_prod2 _ _ _ _ _ _). done. apply IH.
   Qed.
