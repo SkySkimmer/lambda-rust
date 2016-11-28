@@ -12,7 +12,7 @@ Lemma bor_acc E q κ P :
 Proof.
   iIntros (?) "#LFT HP Htok".
   iMod (bor_acc_strong with "LFT HP Htok") as "[HP Hclose]"; first done.
-  iIntros "!> {$HP} HP". iApply "Hclose". by iIntros "{$HP}!>_$".
+  iIntros "!> {$HP} HP". iApply "Hclose". by iIntros "{$HP} !> _ $".
 Qed.
 
 Lemma bor_exists {A} (Φ : A → iProp Σ) `{!Inhabited A} E κ :
@@ -40,7 +40,7 @@ Lemma bor_persistent P `{!PersistentP P} E κ q :
 Proof.
   iIntros (?) "#LFT Hb Htok".
   iMod (bor_acc with "LFT Hb Htok") as "[#HP Hob]"; first done.
-  by iMod ("Hob" with "HP") as "[_$]".
+  by iMod ("Hob" with "HP") as "[_ $]".
 Qed.
 
 Lemma lft_incl_acc E κ κ' q :
@@ -65,5 +65,4 @@ Proof.
   - iIntros (q) "?". iExists 1%Qp. iSplitR. by iApply lft_tok_static. auto.
   - iIntros "Hst". by iDestruct (lft_dead_static with "Hst") as "[]".
 Qed.
-
 End derived.

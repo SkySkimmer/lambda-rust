@@ -69,10 +69,9 @@ Section definitions.
   Proof. apply _. Qed.
 End definitions.
 
-Typeclasses Opaque heap_ctx heap_mapsto heap_freeable.
+Typeclasses Opaque heap_ctx heap_mapsto heap_freeable heap_mapsto_vec.
 Instance: Params (@heap_mapsto) 4.
 Instance: Params (@heap_freeable) 5.
-Instance: Params (@heap_ctx) 2.
 
 Notation "l ↦{ q } v" := (heap_mapsto l q v)
   (at level 20, q at level 50, format "l  ↦{ q }  v") : uPred_scope.
@@ -128,7 +127,7 @@ Section heap.
   Proof. done. Qed.
 
   Global Instance heap_mapsto_vec_timeless l q vl : TimelessP (l ↦∗{q} vl).
-  Proof. apply _. Qed.
+  Proof. rewrite /heap_mapsto_vec. apply _. Qed.
 
   Global Instance heap_mapsto_vec_fractional l vl: Fractional (λ q, l ↦∗{q} vl)%I.
   Proof.

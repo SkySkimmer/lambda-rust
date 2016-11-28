@@ -30,5 +30,4 @@ Lemma idx_bor_atomic_acc E q κ i P :
               ▷ P ∗ (▷ P ={E∖↑lftN,E}=∗ idx_bor_own q i) ∨
               [†κ] ∗ (|={E∖↑lftN,E}=> idx_bor_own q i).
 Proof. Admitted.
-
 End accessors.
