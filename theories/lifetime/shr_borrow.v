@@ -4,7 +4,7 @@ From lrust.lifetime Require Export derived.
 
 (** Shared bors  *)
 Definition shr_bor `{invG Σ, lftG Σ} κ (P : iProp Σ) :=
-  (∃ i, idx_bor κ i P ∗ inv lftN (∃ q, idx_bor_own q i))%I.
+  (∃ i, &{κ,i}P ∗ inv lftN (∃ q, idx_bor_own q i))%I.
 Notation "&shr{ κ } P" := (shr_bor κ P)
   (format "&shr{ κ } P", at level 20, right associativity) : uPred_scope.
 

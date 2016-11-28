@@ -4,7 +4,7 @@ From iris.proofmode Require Import tactics.
 
 Definition tl_bor `{invG Σ, lftG Σ, thread_localG Σ}
            (κ : lft) (tid : thread_id) (N : namespace) (P : iProp Σ) :=
-  (∃ i, idx_bor κ i P ∗ tl_inv tid N (idx_bor_own 1 i))%I.
+  (∃ i, &{κ,i}P ∗ tl_inv tid N (idx_bor_own 1 i))%I.
 
 Notation "&tl{ κ , tid , N } P" := (tl_bor κ tid N P)
   (format "&tl{ κ , tid , N } P", at level 20, right associativity) : uPred_scope.
