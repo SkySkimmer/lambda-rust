@@ -26,13 +26,13 @@ Section frac_bor.
   Proof.
     iIntros (?) "#LFT Hφ". iMod (own_alloc 1%Qp) as (γ) "?". done.
     iMod (bor_acc_atomic_strong with "LFT Hφ") as "[[Hφ Hclose]|[H† Hclose]]". done.
-    - iMod ("Hclose" with "*[-]") as "Hφ"; last first.
+    - iMod ("Hclose" with "*[-] []") as "Hφ"; last first.
       { iExists γ, κ. iSplitR; last by iApply (bor_share with "Hφ").
         iApply lft_incl_refl. }
-      iSplitL. by iExists 1%Qp; iFrame; auto.
-      iIntros "!>H† HΦ!>". iNext. iDestruct "HΦ" as (q') "(HΦ & _ & [%|Hκ])". by subst.
-      iDestruct "Hκ" as (q'') "[_ Hκ]".
-      iDestruct (lft_tok_dead with "Hκ H†") as "[]".
+      { iIntros "!>HΦ H†!>". iNext. iDestruct "HΦ" as (q') "(HΦ & _ & [%|Hκ])". by subst.
+        iDestruct "Hκ" as (q'') "[_ Hκ]".
+        iDestruct (lft_tok_dead with "Hκ H†") as "[]". }
+      iExists 1%Qp. iFrame. eauto.
     - iMod ("Hclose" with "*") as "HΦ"; last first.
       iExists γ, κ. iSplitR. by iApply lft_incl_refl.
       iMod (bor_fake with "LFT H†"). done. by iApply bor_share.

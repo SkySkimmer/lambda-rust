@@ -180,13 +180,11 @@ Section types.
     iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
     replace ((mgmtE ∪ ↑N) ∖ ↑N) with mgmtE by set_solver.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
-    - iAssert (&{κ}▷ l' ↦∗: ty_own ty tid)%I with "[Hbtok]" as "Hb".
+    - iMod (bor_later_tok with "LFT [Hbtok] Htok") as "Hb". set_solver.
       { rewrite bor_unfold_idx. iExists i. eauto. }
-      iMod (bor_acc_strong with "LFT Hb Htok") as "[Hown Hclose']". set_solver.
-      iIntros "!>". iNext.
-      iMod ("Hclose'" with "*[Hown]") as "[Hb Htok]". iFrame. by iIntros "!>?$".
-      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#Hshr Htok]"; try done.
-      iMod ("Hclose" with "[]") as "_"; by eauto.
+      iIntros "!>". iNext. iMod "Hb" as "[Hb Htok]".
+      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#$ $]"; try done.
+      iApply "Hclose". eauto.
     - iIntros "!>". iNext. iMod ("Hclose" with "[]") as "_"; by eauto.
   Qed.
   Next Obligation.

@@ -276,11 +276,12 @@ Section typing.
     iMod (bor_acc_strong with "LFT H↦ Htok") as "[H↦ Hclose']". done.
     iDestruct "H↦" as (vl) "[>H↦ Hown]". iDestruct "Hown" as (l') "(>% & Hown & H†)".
     subst. rewrite heap_mapsto_vec_singleton. wp_read.
-    iMod ("Hclose'" with "*[H↦ Hown H†]") as "[Hbor Htok]"; last first.
+    iMod ("Hclose'" with "*[H↦ Hown H†][]") as "[Hbor Htok]"; last 1 first.
     - iMod (bor_sep with "LFT Hbor") as "[_ Hbor]". done.
       iMod (bor_sep with "LFT Hbor") as "[_ Hbor]". done.
       iMod ("Hclose" with "Htok") as "$". iFrame "#". iExists _. eauto.
-    - iIntros "{$H↦ $H† $Hown}!>_(?&?&?)!>". iNext. iExists _.
+    - iFrame "H↦ H† Hown".
+    - iIntros "!>(?&?&?)_!>". iNext. iExists _.
       rewrite -heap_mapsto_vec_singleton. iFrame. iExists _. by iFrame.
   Qed.
 

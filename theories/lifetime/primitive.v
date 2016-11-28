@@ -9,8 +9,8 @@ Section primitive.
 Context `{invG Σ, lftG Σ}.
 Implicit Types κ : lft.
 
-Lemma to_borUR_included (B : gmap slice_name bor_state) i s :
-  {[i := (1%Qp, DecAgree s)]} ≼ to_borUR B → B !! i = Some s.
+Lemma to_borUR_included (B : gmap slice_name bor_state) i s q :
+  {[i := (q%Qp, DecAgree s)]} ≼ to_borUR B → B !! i = Some s.
 Proof.
   rewrite singleton_included=> -[qs [/leibniz_equiv_iff]].
   rewrite lookup_fmap fmap_Some=> -[s' [? ->]].
@@ -208,7 +208,7 @@ Proof.
 Qed.
 
 (** Basic rules about lifetimes  *)
-Lemma lft_tok_op q κ1 κ2 : q.[κ1] ∗ q.[κ2] ⊣⊢ q.[κ1 ∪ κ2].
+Lemma lft_tok_sep q κ1 κ2 : q.[κ1] ∗ q.[κ2] ⊣⊢ q.[κ1 ∪ κ2].
 Proof. by rewrite /lft_tok -big_sepMS_union. Qed.
 
 Lemma lft_dead_or κ1 κ2 : [†κ1] ∨ [†κ2] ⊣⊢ [† κ1 ∪ κ2].
@@ -253,8 +253,8 @@ Proof. done. Qed.
 Lemma lft_le_incl κ κ' : κ' ⊆ κ → (κ ⊑ κ')%I.
 Proof.
   iIntros (->%gmultiset_union_difference) "!#". iSplitR.
-  - iIntros (q). rewrite <-lft_tok_op. iIntros "[H Hf]". iExists q. iFrame.
-    rewrite <-lft_tok_op. by iIntros "!>{$Hf}$".
+  - iIntros (q). rewrite <-lft_tok_sep. iIntros "[H Hf]". iExists q. iFrame.
+    rewrite <-lft_tok_sep. by iIntros "!>{$Hf}$".
   - iIntros "? !>". iApply lft_dead_or. auto.
 Qed.
 
@@ -279,12 +279,28 @@ Proof.
     iMod ("H1" with "*Hκ'1") as (q') "[Hκ' Hclose']".
     iMod ("H2" with "*Hκ'2") as (q'') "[Hκ'' Hclose'']".
     destruct (Qp_lower_bound q' q'') as (qq & q'0 & q''0 & -> & ->).
-    iExists qq. rewrite -lft_tok_op.
+    iExists qq. rewrite -lft_tok_sep.
     iDestruct "Hκ'" as "[$ Hκ']". iDestruct "Hκ''" as "[$ Hκ'']".
     iIntros "!>[Hκ'0 Hκ''0]".
     iMod ("Hclose'" with "[$Hκ' $Hκ'0]") as "$".
     iApply "Hclose''". iFrame.
   - rewrite -lft_dead_or. iIntros "[H†|H†]". by iApply "H1†". by iApply "H2†".
+Qed.
+
+Lemma lft_incl_acc E κ κ' q :
+  ↑lftN ⊆ E →
+  κ ⊑ κ' -∗ q.[κ] ={E}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={E}=∗ q.[κ]).
+Proof.
+  rewrite /lft_incl.
+  iIntros (?) "#[H _] Hq". iApply fupd_mask_mono; first done.
+  iMod ("H" with "* Hq") as (q') "[Hq' Hclose]". iExists q'.
+  iIntros "{$Hq'} !> Hq". iApply fupd_mask_mono; first done. by iApply "Hclose".
+Qed.
+
+Lemma lft_incl_dead E κ κ' : ↑lftN ⊆ E → κ ⊑ κ' -∗ [†κ'] ={E}=∗ [†κ].
+Proof.
+  rewrite /lft_incl.
+  iIntros (?) "#[_ H] Hq". iApply fupd_mask_mono; first done. by iApply "H".
 Qed.
 
 End primitive.
