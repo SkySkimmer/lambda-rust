@@ -339,21 +339,6 @@ Proof.
   rewrite /idx_bor. iIntros "#Hκκ' [#? $]". by iApply (lft_incl_trans with "Hκκ'").
 Qed.
 
-Lemma raw_bor_fake E q κ P :
-  ↑borN ⊆ E →
-  ▷?q lft_bor_dead κ ={E}=∗ ▷?q lft_bor_dead κ ∗ raw_bor κ P.
-Proof.
-  iIntros (?). rewrite /lft_bor_dead. iDestruct 1 as (B Pinh) "[>HB● Hbox]".
-  iMod (slice_insert_empty _ _ _ _ P with "Hbox") as (γ) "(% & #Hslice & Hbox)".
-  iMod (own_bor_update with "HB●") as "[HB● H◯]".
-  { eapply auth_update_alloc,
-      (alloc_singleton_local_update _ _ (1%Qp, DecAgree Bor_in)); last done.
-    by do 2 eapply lookup_to_gmap_None. }
-  rewrite /bor /raw_bor /idx_bor_own /=. iModIntro. iSplitR "H◯".
-  - iExists ({[γ]} ∪ B), (P ∗ Pinh)%I. rewrite !to_gmap_union_singleton. by iFrame.
-  - iExists γ. by iFrame.
-Qed.
-
 (* Inheritance *)
 Lemma lft_inh_extend E κ P Q :
   ↑inhN ⊆ E →

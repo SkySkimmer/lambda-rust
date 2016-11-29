@@ -1,5 +1,5 @@
-From lrust.lifetime Require Export primitive creation.
-From lrust.lifetime Require Export raw_reborrow.
+From lrust.lifetime Require Export primitive.
+From lrust.lifetime Require Export faking raw_reborrow.
 From iris.algebra Require Import csum auth frac gmap dec_agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
