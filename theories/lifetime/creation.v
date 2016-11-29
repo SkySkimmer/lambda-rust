@@ -97,7 +97,7 @@ Lemma raw_bor_fake' E κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ [†κ] ={E}=∗ raw_bor κ P.
 Proof.
-  iIntros (?) "#Hmgmt H†". iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
+  iIntros (?) "#LFT H†". iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
   iMod (ilft_create _ _ κ with "HA HI Hinv") as (A' I') "(Hκ & HA & HI & Hinv)".
   iDestruct "Hκ" as %Hκ. rewrite /lft_dead. iDestruct "H†" as (Λ) "[% #H†]".
   iDestruct (own_alft_auth_agree A' Λ false with "HA H†") as %EQAΛ.
@@ -115,7 +115,7 @@ Lemma bor_fake E κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ [†κ] ={E}=∗ &{κ}P.
 Proof.
-  iIntros (?) "#Hmgmt H†". iMod (raw_bor_fake' with "Hmgmt H†"); first done.
+  iIntros (?) "#LFT H†". iMod (raw_bor_fake' with "LFT H†"); first done.
   iModIntro. unfold bor. iExists κ. iFrame. by rewrite -lft_incl_refl.
 Qed.
 
@@ -242,7 +242,7 @@ Lemma lft_create E :
   ↑lftN ⊆ E →
   lft_ctx ={E}=∗ ∃ κ, 1.[κ] ∗ □ (1.[κ] ={⊤,⊤∖↑lftN}▷=∗ [†κ]).
 Proof.
-  iIntros (?) "#Hmgmt".
+  iIntros (?) "#LFT".
   iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
   destruct (exist_fresh (dom (gset _) A)) as [Λ HΛ%not_elem_of_dom].
   iMod (own_update with "HA") as "[HA HΛ]".
