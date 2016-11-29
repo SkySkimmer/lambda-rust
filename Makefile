@@ -1,8 +1,3 @@
-# Process flags
-ifeq ($(Y), 1)
-	YFLAG=-y
-endif
-
 # Determine Coq version
 COQ_VERSION=$(shell coqc --version | egrep -o 'version 8.[0-9]' | egrep -o '8.[0-9]')
 COQ_MAKEFILE_FLAGS ?=
@@ -33,9 +28,8 @@ Makefile.coq: _CoqProject Makefile
 # Install build-dependencies
 build-dep:
 	cat opam.pins | build/opam-pins.sh
-	opam upgrade $(YFLAG)
 	opam pin add coq-lambda-rust "$$(pwd)#HEAD" -k git -n -y
-	opam install coq-lambda-rust --deps-only $(YFLAG)
+	opam install coq-lambda-rust --deps-only -y
 
 # some fiels that do *not* need to be forwarded to Makefile.coq
 Makefile: ;
