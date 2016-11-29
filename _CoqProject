@@ -5,8 +5,9 @@ theories/lifetime/derived.v
 theories/lifetime/creation.v
 theories/lifetime/primitive.v
 theories/lifetime/accessors.v
+theories/lifetime/raw_reborrow.v
 theories/lifetime/borrow.v
-theories/lifetime/rebor.v
+theories/lifetime/reborrow.v
 theories/lifetime/shr_borrow.v
 theories/lifetime/frac_borrow.v
 theories/lifetime/tl_borrow.v

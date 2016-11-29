@@ -3,21 +3,13 @@ From iris.algebra Require Import csum auth frac gmap dec_agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 From iris.proofmode Require Import tactics.
+(* TODO: move lft_inv_alive_acc, ilft_create and bor_fake to another file. The
+files raw_reborrow, borrow and derived solely depend on this file because of
+the aforementioned lemmas. *)
 
 Section creation.
 Context `{invG Σ, lftG Σ}.
 Implicit Types κ : lft.
-
-(* Lifetime creation *)
-Lemma lft_inh_kill E κ Q :
-  ↑inhN ⊆ E →
-  lft_inh κ false Q ∗ ▷ Q ={E}=∗ lft_inh κ true Q.
-Proof.
-  rewrite /lft_inh. iIntros (?) "[Hinh HQ]".
-  iDestruct "Hinh" as (E') "[Hinh Hbox]".
-  iMod (box_fill with "Hbox HQ") as "?"=>//.
-  rewrite fmap_to_gmap. iModIntro. iExists E'. by iFrame.
-Qed.
 
 Lemma lft_inv_alive_acc (KI K : gset lft) κ :
   (∀ κ', κ' ∈ KI → κ' ⊂ κ → κ' ∈ K) →
@@ -33,46 +25,46 @@ Proof.
 Qed.
 
 Lemma ilft_create A I κ :
-  own_ilft_auth I -∗ own_alft_auth A -∗ ▷ ([∗ set] κ ∈ dom _ I, lft_inv A κ)
+  own_alft_auth A -∗ own_ilft_auth I -∗ ▷ ([∗ set] κ ∈ dom _ I, lft_inv A κ)
       ==∗ ∃ A' I', ⌜is_Some (I' !! κ)⌝ ∗
-    own_ilft_auth I' ∗ own_alft_auth A' ∗ ▷ ([∗ set] κ ∈ dom _ I', lft_inv A' κ).
+    own_alft_auth A' ∗ own_ilft_auth I' ∗ ▷ ([∗ set] κ ∈ dom _ I', lft_inv A' κ).
 Proof.
-  iIntros "HI HA HA'".
+  iIntros "HA HI Hinv".
   destruct (decide (is_Some (I !! κ))) as [?|HIκ%eq_None_not_Some].
   { iModIntro. iExists A, I. by iFrame. }
   iMod (own_alloc (● 0 ⋅ ◯ 0)) as (γcnt) "[Hcnt Hcnt']"; first done.
   iMod (own_alloc ((● ∅ ⋅ ◯ ∅) :auth (gmap slice_name
       (frac * dec_agree bor_state)))) as (γbor) "[Hbor Hbor']";
     first by apply auth_valid_discrete_2.
-  iMod (own_alloc ((● ∅ ⋅ ◯ ∅) :auth (gset_disj slice_name)))
-    as (γinh) "[Hinh Hinh']"; first by apply auth_valid_discrete_2.
+  iMod (own_alloc ((● ∅) :auth (gset_disj slice_name)))
+     as (γinh) "Hinh"; first by done.
   set (γs := LftNames γbor γcnt γinh).
   iMod (own_update with "HI") as "[HI Hγs]".
   { apply auth_update_alloc,
       (alloc_singleton_local_update _ κ (DecAgree γs)); last done.
     by rewrite lookup_fmap HIκ. }
   iDestruct "Hγs" as "#Hγs".
+  iAssert (own_cnt κ (● 0)) with "[Hcnt]" as "Hcnt".
+  { rewrite /own_cnt. iExists γs. by iFrame. }
+  iAssert (own_cnt κ (◯ 0)) with "[Hcnt']" as "Hcnt'".
+  { rewrite /own_cnt. iExists γs. by iFrame. }
+  iAssert (∀ b, lft_inh κ b True)%I with "[Hinh]" as "Hinh".
+  { iIntros (b). rewrite /lft_inh. iExists ∅. rewrite to_gmap_empty.
+    iSplitL; [|iApply box_alloc]. rewrite /own_inh. iExists γs. by iFrame. }
   iAssert (lft_inv_dead κ ∧ lft_inv_alive κ)%I
-    with "[-HA HA' HI]" as "Hdeadandalive".
+    with "[-HA HI Hinv]" as "Hdeadandalive".
   { iSplit.
-    - rewrite /lft_inv_dead. iExists True%I. iSplitL "Hbor".
-      { rewrite /lft_bor_dead. iExists ∅, True%I. rewrite !to_gmap_empty.
-        iSplitL "Hbor". iExists γs. by iFrame. iApply box_alloc. }
-      iSplitL "Hcnt".
-      { rewrite /own_cnt. iExists γs. by iFrame. }
-      rewrite /lft_inh. iExists ∅. rewrite to_gmap_empty.
-      iSplitL; [|iApply box_alloc]. rewrite /own_inh. iExists γs. by iSplit.
+    - rewrite /lft_inv_dead. iExists True%I. iFrame "Hcnt".
+      iSplitL "Hbor"; last by iApply "Hinh".
+      rewrite /lft_bor_dead. iExists ∅, True%I. rewrite !to_gmap_empty.
+      iSplitL "Hbor". iExists γs. by iFrame. iApply box_alloc.
     - rewrite lft_inv_alive_unfold. iExists True%I, True%I. iSplitL "Hbor".
       { rewrite /lft_bor_alive. iExists ∅.
         rewrite /to_borUR !fmap_empty big_sepM_empty.
         iSplitR; [iApply box_alloc|]. iSplit=>//.
         rewrite /own_bor. iExists γs. by iFrame. }
-      rewrite lft_vs_unfold. iSplitR "Hinh".
-      { iExists 0. iSplitL "Hcnt".
-        { rewrite /own_cnt. iExists γs. by iFrame. }
-        iIntros (I') "$ $ _ !>". rewrite /own_cnt. iExists γs. by iFrame. }
-      rewrite /lft_inh. iExists ∅. rewrite to_gmap_empty.
-      iSplitL; [|iApply box_alloc]. rewrite /own_inh. iExists γs. by iFrame. }
+      iSplitR "Hinh"; last by iApply "Hinh".
+      rewrite lft_vs_unfold. iExists 0. iFrame "Hcnt Hcnt'". auto. }
   destruct (lft_alive_or_dead_in A κ) as [(Λ&?&HAΛ)|Haliveordead].
   - iMod (own_update with "HA") as "[HA _]".
     { apply auth_update_alloc,
@@ -82,22 +74,42 @@ Proof.
     iSplit; first rewrite lookup_insert; eauto.
     rewrite /own_ilft_auth /own_alft_auth /to_ilftUR /to_alftUR !fmap_insert.
     iFrame "HA HI". rewrite dom_insert_L big_sepS_insert ?not_elem_of_dom //.
-    iSplitR "HA'".
+    iSplitR "Hinv".
     { rewrite /lft_inv. iNext. iRight. iSplit.
       { by iDestruct "Hdeadandalive" as "[? _]". }
       iPureIntro. exists Λ. rewrite lookup_insert; auto. }
-    iNext. iApply (@big_sepS_impl with "[$HA']").
+    iNext. iApply (@big_sepS_impl with "[$Hinv]").
     rewrite /lft_inv. iIntros "!#"; iIntros (κ' ?%elem_of_dom)
       "[[HA HA']|[HA HA']]"; iDestruct "HA'" as %HA.
     + iLeft. iFrame "HA". iPureIntro. by apply lft_alive_in_insert.
     + iRight. iFrame "HA". iPureIntro. by apply lft_dead_in_insert.
   - iModIntro. iExists A, (<[κ:=γs]> I).
     iSplit; first rewrite lookup_insert; eauto.
-    iSplitL "HI"; first by rewrite /own_ilft_auth /to_ilftUR fmap_insert.
-    rewrite dom_insert_L big_sepS_insert ?not_elem_of_dom //.
-    iFrame "HA HA'". iNext. rewrite /lft_inv. destruct Haliveordead.
+    rewrite /own_ilft_auth /to_ilftUR fmap_insert. iFrame "HA HI".
+    rewrite dom_insert_L.
+    iApply @big_sepS_insert; first by apply not_elem_of_dom.
+    iFrame "Hinv". iNext. rewrite /lft_inv. destruct Haliveordead.
     + iLeft. by iDestruct "Hdeadandalive" as "[_ $]".
     + iRight. by iDestruct "Hdeadandalive" as "[$ _]".
+Qed.
+
+Lemma bor_fake E κ P :
+  ↑lftN ⊆ E →
+  lft_ctx -∗ [†κ] ={E}=∗ &{κ}P.
+Proof.
+  iIntros (?) "#Hmgmt H†". iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
+  iMod (ilft_create _ _ κ with "HA HI Hinv") as (A' I') "(Hκ & HA & HI & Hinv)".
+  iDestruct "Hκ" as %Hκ. rewrite /lft_dead. iDestruct "H†" as (Λ) "[% #H†]".
+  iDestruct (own_alft_auth_agree A' Λ false with "HA H†") as %EQAΛ.
+  iDestruct (@big_sepS_elem_of_acc with "Hinv")
+    as "[Hinv Hclose']"; first by apply elem_of_dom.
+  rewrite {1}/lft_inv; iDestruct "Hinv" as "[[_ >%]|[Hinv >%]]".
+  { unfold lft_alive_in in *; naive_solver. }
+  rewrite /lft_inv_dead; iDestruct "Hinv" as (Pinh) "(Hdead & Hcnt & Hinh)".
+  iMod (raw_bor_fake _ true _ P with "Hdead") as "[Hdead Hbor]"; first solve_ndisj.
+  unfold bor. iExists κ. iFrame. rewrite -lft_incl_refl.
+  iApply "Hclose". iExists A', I'. iFrame. iNext. iApply "Hclose'".
+  rewrite /lft_inv /lft_inv_dead. iRight. iFrame. eauto.
 Qed.
 
 Lemma lft_kill (I : gmap lft lft_names) (K K' : gset lft) (κ : lft) :
