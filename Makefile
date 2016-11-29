@@ -31,6 +31,10 @@ build-dep:
 	opam pin add coq-lambda-rust "$$(pwd)#HEAD" -k git -y -n
 	opam install coq-lambda-rust --deps-only -y
 
+# some fiels that do *not* need to be forwarded to Makefile.coq
+Makefile: ;
+_CoqProject: ;
+
 # Phony targets (i.e. targets that should be run no matter the timestamps of the involved files)
 phony: ;
 .PHONY: all clean phony
