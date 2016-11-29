@@ -27,7 +27,7 @@ done
 # Install/upgrade build-dependencies
 echo
 opam upgrade -y
-make build-dep
+make build-dep Y=1
 
 # done
 echo
