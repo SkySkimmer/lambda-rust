@@ -1,15 +1,14 @@
+From lrust.lifetime Require Export primitive.
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import csum auth frac gmap dec_agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
-From lrust.lifetime Require Export primitive rebor borrow.
 
 Section accessors.
 Context `{invG Σ, lftG Σ}.
 Implicit Types κ : lft.
 
 (* Helper internal lemmas *)
-
 Lemma bor_open_internal E P i Pb q :
   ↑borN ⊆ E →
   slice borN (i.2) P -∗ ▷ lft_bor_alive (i.1) Pb -∗
@@ -87,7 +86,6 @@ Proof.
 Qed.
 
 (** Indexed borrow *)
-
 Lemma idx_bor_acc E q κ i P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ,i}P -∗ idx_bor_own 1 i -∗ q.[κ] ={E}=∗

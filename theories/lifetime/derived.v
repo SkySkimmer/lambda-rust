@@ -1,21 +1,23 @@
-From lrust.lifetime Require Export primitive borrow accessors rebor.
+From lrust.lifetime Require Export primitive accessors creation.
+From lrust.lifetime Require Export raw_reborrow.
 From iris.proofmode Require Import tactics.
+(* TODO: the name derived makes no sense: reborrow/bor_unnest, which is proven
+in the model, depends on this file. *)
 
 Section derived.
 Context `{invG Σ, lftG Σ}.
 Implicit Types κ : lft.
-
-(*** Derived lemmas  *)
 
 Lemma bor_exists {A} (Φ : A → iProp Σ) `{!Inhabited A} E κ :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ}(∃ x, Φ x) ={E}=∗ ∃ x, &{κ}Φ x.
 Proof.
   iIntros (?) "#LFT Hb".
-  iMod (bor_acc_atomic_strong with "LFT Hb") as "[H|[H† Hclose]]"; first done.
-  - iDestruct "H" as (κ') "(Hκκ' & HΦ & Hclose)". iDestruct "HΦ" as (x) "HΦ". iExists x.
-    iApply (bor_shorten with "Hκκ'"). iApply ("Hclose" with "HΦ"). iIntros "!> ?"; eauto.
-  - iMod "Hclose" as "_". iExists inhabitant. by iApply (bor_fake with "LFT").
+  iMod (bor_acc_atomic_strong with "LFT Hb") as "[H|[H† >_]]"; first done.
+  - iDestruct "H" as (κ') "(Hκκ' & HΦ & Hclose)".
+    iDestruct "HΦ" as (x) "HΦ". iExists x. iApply (bor_shorten with "Hκκ'").
+    iApply ("Hclose" with "HΦ"). iIntros "!> ?"; eauto.
+  - iExists inhabitant. by iApply (bor_fake with "LFT").
 Qed.
 
 Lemma bor_or E κ P Q :
@@ -33,8 +35,9 @@ Proof.
   iIntros (?) "#LFT Hb".
   iMod (bor_acc_atomic_strong with "LFT Hb") as "[H|[H† Hclose]]"; first done.
   - iDestruct "H" as (κ') "(Hκκ' & HP & Hclose)". iModIntro. iNext.
-    iApply (bor_shorten with "Hκκ'"). iApply ("Hclose" with "* HP"). by iIntros "!>$_".
-  - iIntros "!>!>". iMod "Hclose" as "_". by iApply (bor_fake with "LFT").
+    iApply (bor_shorten with "Hκκ'"). iApply ("Hclose" with "* HP").
+    by iIntros "!> $ _".
+  - iIntros "!> !>". iMod "Hclose" as "_". by iApply (bor_fake with "LFT").
 Qed.
 
 Lemma bor_later_tok E q κ P :
@@ -43,7 +46,7 @@ Lemma bor_later_tok E q κ P :
 Proof.
   iIntros (?) "#LFT Hb Htok".
   iMod (bor_acc_strong with "LFT Hb Htok") as (κ') "(Hκκ' & HP & Hclose)"; first done.
-  iModIntro. iNext. iMod ("Hclose" with "* HP []") as "[Hb $]". by iIntros "!>$_".
+  iModIntro. iNext. iMod ("Hclose" with "* HP []") as "[Hb $]". by iIntros "!> $ _".
   by iApply (bor_shorten with "Hκκ'").
 Qed.
 

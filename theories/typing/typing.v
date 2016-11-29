@@ -3,7 +3,7 @@ From iris.base_logic Require Import big_op.
 From lrust.lang Require Export notation memcpy.
 From lrust.typing Require Export type perm.
 From lrust Require Import typing.perm_incl lang.proofmode.
-From lrust.lifetime Require Import frac_borrow.
+From lrust.lifetime Require Import frac_borrow reborrow.
 
 Import Types Perm.
 

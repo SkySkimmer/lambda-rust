@@ -1,6 +1,6 @@
 From iris.algebra Require Import gmap auth frac.
 From iris.proofmode Require Import tactics.
-From lrust.lifetime Require Export derived.
+From lrust.lifetime Require Export borrow derived.
 
 (** Shared bors  *)
 Definition shr_bor `{invG Σ, lftG Σ} κ (P : iProp Σ) :=
