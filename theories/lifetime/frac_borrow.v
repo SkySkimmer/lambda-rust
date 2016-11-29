@@ -51,7 +51,7 @@ Section frac_bor.
       iApply fupd_intro_mask. set_solver. done.
   Qed.
 
-  Lemma frac_bor_acc_strong E q κ Φ:
+  Lemma frac_bor_acc' E q κ Φ:
     ↑lftN ⊆ E →
     lft_ctx -∗ □ (∀ q1 q2, Φ (q1+q2)%Qp ↔ Φ q1 ∗ Φ q2) -∗
     &frac{κ}Φ -∗ q.[κ] ={E}=∗ ∃ q', ▷ Φ q' ∗ (▷ Φ q' ={E}=∗ q.[κ]).
@@ -101,7 +101,7 @@ Section frac_bor.
     ↑lftN ⊆ E →
     lft_ctx -∗ &frac{κ}Φ -∗ q.[κ] ={E}=∗ ∃ q', ▷ Φ q' ∗ (▷ Φ q' ={E}=∗ q.[κ]).
   Proof.
-    iIntros (?) "LFT". iApply (frac_bor_acc_strong with "LFT"). done.
+    iIntros (?) "LFT". iApply (frac_bor_acc' with "LFT"). done.
     iIntros "!#*". rewrite fractional. iSplit; auto.
   Qed.
 

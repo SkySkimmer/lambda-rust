@@ -272,14 +272,40 @@ Proof.
       iApply fupd_intro_mask'. solve_ndisj.
 Qed.
 
+Lemma bor_acc_cons E q κ P :
+  ↑lftN ⊆ E →
+  lft_ctx -∗ &{κ} P -∗ q.[κ] ={E}=∗ ▷ P ∗
+    ∀ Q, ▷ Q -∗ ▷(▷ Q ={⊤∖↑lftN}=∗ ▷ P) ={E}=∗ &{κ} Q ∗ q.[κ].
+Proof.
+  iIntros (?) "#LFT HP Htok".
+  iMod (bor_acc_strong with "LFT HP Htok") as (κ') "(#Hκκ' & $ & Hclose)"; first done.
+  iIntros "!>*HQ HPQ". iMod ("Hclose" with "*HQ [HPQ]") as "[Hb $]".
+  - iNext. iIntros "? _". by iApply "HPQ".
+  - iApply (bor_shorten with "Hκκ' Hb").
+Qed.
+
+Lemma bor_acc_atomic_cons E κ P :
+  ↑lftN ⊆ E →
+  lft_ctx -∗ &{κ} P ={E,E∖↑lftN}=∗
+    (▷ P ∗ ∀ Q, ▷ Q -∗ ▷ (▷ Q ={⊤∖↑lftN}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ} Q) ∨
+    ([†κ] ∗ |={E∖↑lftN,E}=> True).
+Proof.
+  iIntros (?) "#LFT HP".
+  iMod (bor_acc_atomic_strong with "LFT HP") as "[H|[??]]"; first done.
+  - iLeft. iDestruct "H" as (κ') "(#Hκκ' & $ & Hclose)". iIntros "!>*HQ HPQ".
+    iMod ("Hclose" with "* HQ [HPQ]") as "Hb".
+    + iNext. iIntros "? _". by iApply "HPQ".
+    + iApply (bor_shorten with "Hκκ' Hb").
+  - iRight. by iFrame.
+Qed.
+
 Lemma bor_acc E q κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ}P -∗ q.[κ] ={E}=∗ ▷ P ∗ (▷ P ={E}=∗ &{κ}P ∗ q.[κ]).
 Proof.
   iIntros (?) "#LFT HP Htok".
-  iMod (bor_acc_strong with "LFT HP Htok") as (κ') "(#Hκκ' & $ & Hclose)"; first done.
-  iIntros "!>HP". iMod ("Hclose" with "*HP []") as "[Hb $]". by iIntros "!> $ _".
-  iApply (bor_shorten with "Hκκ' Hb").
+  iMod (bor_acc_cons with "LFT HP Htok") as "($ & Hclose)"; first done.
+  iIntros "!>HP". iMod ("Hclose" with "*HP []") as "[$ $]"; auto.
 Qed.
 
 Lemma bor_acc_atomic E κ P :
@@ -288,9 +314,8 @@ Lemma bor_acc_atomic E κ P :
        (▷ P ∗ (▷ P ={E∖↑lftN,E}=∗ &{κ}P)) ∨ ([†κ] ∗ |={E∖↑lftN,E}=> True).
 Proof.
   iIntros (?) "#LFT HP".
-  iMod (bor_acc_atomic_strong with "LFT HP") as "[H|[H† Hclose]]". done.
-  - iLeft. iDestruct "H" as (κ') "(#Hκκ' & $ & Hclose)". iIntros "!>HP".
-    iApply (bor_shorten with "Hκκ'"). iApply ("Hclose" with "* HP []"). auto.
+  iMod (bor_acc_atomic_cons with "LFT HP") as "[[HP Hclose]|[? ?]]"; first done.
+  - iLeft. iIntros "!> {$HP} HP". iMod ("Hclose" with "* HP []"); auto.
   - iRight. by iFrame.
 Qed.
 End accessors.

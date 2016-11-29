@@ -13,10 +13,9 @@ Lemma bor_exists {A} (Φ : A → iProp Σ) `{!Inhabited A} E κ :
   lft_ctx -∗ &{κ}(∃ x, Φ x) ={E}=∗ ∃ x, &{κ}Φ x.
 Proof.
   iIntros (?) "#LFT Hb".
-  iMod (bor_acc_atomic_strong with "LFT Hb") as "[H|[H† >_]]"; first done.
-  - iDestruct "H" as (κ') "(Hκκ' & HΦ & Hclose)".
-    iDestruct "HΦ" as (x) "HΦ". iExists x. iApply (bor_shorten with "Hκκ'").
-    iApply ("Hclose" with "HΦ"). iIntros "!> ?"; eauto.
+  iMod (bor_acc_atomic_cons with "LFT Hb") as "[H|[H† >_]]"; first done.
+  - iDestruct "H" as "[HΦ Hclose]". iDestruct "HΦ" as (x) "HΦ".
+    iExists x. iApply ("Hclose" with "HΦ"). iIntros "!> ?"; eauto.
   - iExists inhabitant. by iApply (bor_fake with "LFT").
 Qed.
 
@@ -33,10 +32,9 @@ Lemma bor_later E κ P :
   lft_ctx -∗ &{κ}(▷ P) ={E,E∖↑lftN}▷=∗ &{κ}P.
 Proof.
   iIntros (?) "#LFT Hb".
-  iMod (bor_acc_atomic_strong with "LFT Hb") as "[H|[H† Hclose]]"; first done.
-  - iDestruct "H" as (κ') "(Hκκ' & HP & Hclose)". iModIntro. iNext.
-    iApply (bor_shorten with "Hκκ'"). iApply ("Hclose" with "* HP").
-    by iIntros "!> $ _".
+  iMod (bor_acc_atomic_cons with "LFT Hb") as "[H|[H† Hclose]]"; first done.
+  - iDestruct "H" as "[HP  Hclose]". iModIntro. iNext.
+    iApply ("Hclose" with "* HP"). by iIntros "!> $".
   - iIntros "!> !>". iMod "Hclose" as "_". by iApply (bor_fake with "LFT").
 Qed.
 
@@ -45,9 +43,8 @@ Lemma bor_later_tok E q κ P :
   lft_ctx -∗ &{κ}(▷ P) -∗ q.[κ] ={E}▷=∗ &{κ}P ∗ q.[κ].
 Proof.
   iIntros (?) "#LFT Hb Htok".
-  iMod (bor_acc_strong with "LFT Hb Htok") as (κ') "(Hκκ' & HP & Hclose)"; first done.
-  iModIntro. iNext. iMod ("Hclose" with "* HP []") as "[Hb $]". by iIntros "!> $ _".
-  by iApply (bor_shorten with "Hκκ'").
+  iMod (bor_acc_cons with "LFT Hb Htok") as "[HP Hclose]"; first done.
+  iModIntro. iNext. iApply ("Hclose" with "* HP []"). by iIntros "!> $".
 Qed.
 
 Lemma bor_persistent P `{!PersistentP P} E κ q :
