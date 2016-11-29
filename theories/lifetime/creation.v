@@ -93,9 +93,9 @@ Proof.
     + iRight. by iDestruct "Hdeadandalive" as "[$ _]".
 Qed.
 
-Lemma bor_fake E κ P :
+Lemma raw_bor_fake' E κ P :
   ↑lftN ⊆ E →
-  lft_ctx -∗ [†κ] ={E}=∗ &{κ}P.
+  lft_ctx -∗ [†κ] ={E}=∗ raw_bor κ P.
 Proof.
   iIntros (?) "#Hmgmt H†". iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
   iMod (ilft_create _ _ κ with "HA HI Hinv") as (A' I') "(Hκ & HA & HI & Hinv)".
@@ -107,9 +107,16 @@ Proof.
   { unfold lft_alive_in in *; naive_solver. }
   rewrite /lft_inv_dead; iDestruct "Hinv" as (Pinh) "(Hdead & Hcnt & Hinh)".
   iMod (raw_bor_fake _ true _ P with "Hdead") as "[Hdead Hbor]"; first solve_ndisj.
-  unfold bor. iExists κ. iFrame. rewrite -lft_incl_refl.
-  iApply "Hclose". iExists A', I'. iFrame. iNext. iApply "Hclose'".
+  iFrame. iApply "Hclose". iExists A', I'. iFrame. iNext. iApply "Hclose'".
   rewrite /lft_inv /lft_inv_dead. iRight. iFrame. eauto.
+Qed.
+
+Lemma bor_fake E κ P :
+  ↑lftN ⊆ E →
+  lft_ctx -∗ [†κ] ={E}=∗ &{κ}P.
+Proof.
+  iIntros (?) "#Hmgmt H†". iMod (raw_bor_fake' with "Hmgmt H†"); first done.
+  iModIntro. unfold bor. iExists κ. iFrame. by rewrite -lft_incl_refl.
 Qed.
 
 Lemma lft_kill (I : gmap lft lft_names) (K K' : gset lft) (κ : lft) :
