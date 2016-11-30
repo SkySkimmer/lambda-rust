@@ -1,5 +1,5 @@
-From lrust.lifetime Require Export primitive creation.
-From lrust.lifetime Require Export raw_reborrow.
+From lrust.lifetime Require Export primitive.
+From lrust.lifetime Require Export faking raw_reborrow.
 From iris.algebra Require Import csum auth frac gmap dec_agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
@@ -13,7 +13,7 @@ Lemma bor_create E κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ ▷ P ={E}=∗ &{κ} P ∗ ([†κ] ={E}=∗ ▷ P).
 Proof.
-  iIntros (HE) "#Hmgmt HP". iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
+  iIntros (HE) "#LFT HP". iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
   iMod (ilft_create _ _ κ with "HA HI Hinv") as (A' I') "(Hκ & HA & HI & Hinv)".
   iDestruct "Hκ" as %Hκ. iDestruct (@big_sepS_later with "Hinv") as "Hinv".
   iDestruct (big_sepS_elem_of_acc _ _ κ with "Hinv") as "[Hinv Hclose']".
@@ -22,7 +22,8 @@ Proof.
   - rewrite {1}lft_inv_alive_unfold;
       iDestruct "Hinv" as (Pb Pi) "(Halive & Hvs & Hinh)".
     rewrite /lft_bor_alive; iDestruct "Halive" as (B) "(HboxB & >HownB & HB)".
-    iMod (lft_inh_acc _ _ P with "Hinh") as "[Hinh Hinh_close]"; first solve_ndisj.
+    iMod (lft_inh_extend _ _ P with "Hinh")
+      as "(Hinh & HIlookup & Hinh_close)"; first solve_ndisj.
     iMod (slice_insert_full _ _ true with "HP HboxB")
       as (γB) "(HBlookup & HsliceB & HboxB)"; first by solve_ndisj.
     rewrite lookup_fmap. iDestruct "HBlookup" as %HBlookup.
@@ -45,9 +46,7 @@ Proof.
       iModIntro. iSplit; first by iApply lft_incl_refl. iExists γB. by iFrame.
     + clear -HE. iIntros "!> H†".
       iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
-      iAssert ⌜ is_Some (I !! κ) ⌝%I with "[#]" as %Hκ.
-      { iDestruct "Hinh_close" as "[H _]". by iApply "H". }
-      iDestruct "Hinh_close" as "[_ Hinh_close]".
+      iDestruct ("HIlookup" with "* HI") as %Hκ.
       iDestruct (big_sepS_elem_of_acc _ _ κ with "Hinv") as "[Hinv Hclose']".
       { by apply elem_of_dom. }
       rewrite /lft_dead; iDestruct "H†" as (Λ) "[% #H†]".
@@ -71,9 +70,9 @@ Lemma bor_sep E κ P Q :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ} (P ∗ Q) ={E}=∗ &{κ} P ∗ &{κ} Q.
 Proof.
-  iIntros (HE) "#Hmgmt HP". iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
-  rewrite {1}/bor /raw_bor /idx_bor_own.
-  iDestruct "HP" as (κ') "[#Hκκ' Htmp]". iDestruct "Htmp" as (s) "[Hbor Hslice]".
+  iIntros (HE) "#LFT Hbor". iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
+  rewrite {1}/bor. iDestruct "Hbor" as (κ') "[#Hκκ' Hbor]".
+  rewrite /raw_bor /idx_bor_own. iDestruct "Hbor" as (s) "[Hbor Hslice]".
   iDestruct (own_bor_auth with "HI Hbor") as %Hκ'.
   rewrite big_sepS_later big_sepS_elem_of_acc ?elem_of_dom //
           /lfts_inv /lft_inv /lft_inv_dead /lft_alive_in. simpl.
@@ -123,11 +122,11 @@ Lemma bor_combine E κ P Q :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ} P -∗ &{κ} Q ={E}=∗ &{κ} (P ∗ Q).
 Proof.
-  iIntros (?) "#Hmgmt HP HQ". rewrite {1 2}/bor.
+  iIntros (?) "#LFT HP HQ". rewrite {1 2}/bor.
   iDestruct "HP" as (κ1) "[#Hκ1 Hbor1]". iDestruct "HQ" as (κ2) "[#Hκ2 Hbor2]".
-  iMod (raw_rebor _ _ (κ1 ∪ κ2) with "Hmgmt Hbor1") as "[Hbor1 _]".
+  iMod (raw_rebor _ _ (κ1 ∪ κ2) with "LFT Hbor1") as "[Hbor1 _]".
     done. by apply gmultiset_union_subseteq_l.
-  iMod (raw_rebor _ _ (κ1 ∪ κ2) with "Hmgmt Hbor2") as "[Hbor2 _]".
+  iMod (raw_rebor _ _ (κ1 ∪ κ2) with "LFT Hbor2") as "[Hbor2 _]".
     done. by apply gmultiset_union_subseteq_r.
   iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose". unfold raw_bor, idx_bor_own.
   iDestruct "Hbor1" as (j1) "[Hbor1 Hslice1]". iDestruct "Hbor2" as (j2) "[Hbor2 Hslice2]".

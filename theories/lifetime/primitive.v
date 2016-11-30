@@ -339,26 +339,11 @@ Proof.
   rewrite /idx_bor. iIntros "#Hκκ' [#? $]". by iApply (lft_incl_trans with "Hκκ'").
 Qed.
 
-Lemma raw_bor_fake E q κ P :
-  ↑borN ⊆ E →
-  ▷?q lft_bor_dead κ ={E}=∗ ▷?q lft_bor_dead κ ∗ raw_bor κ P.
-Proof.
-  iIntros (?). rewrite /lft_bor_dead. iDestruct 1 as (B Pinh) "[>HB● Hbox]".
-  iMod (slice_insert_empty _ _ _ _ P with "Hbox") as (γ) "(% & #Hslice & Hbox)".
-  iMod (own_bor_update with "HB●") as "[HB● H◯]".
-  { eapply auth_update_alloc,
-      (alloc_singleton_local_update _ _ (1%Qp, DecAgree Bor_in)); last done.
-    by do 2 eapply lookup_to_gmap_None. }
-  rewrite /bor /raw_bor /idx_bor_own /=. iModIntro. iSplitR "H◯".
-  - iExists ({[γ]} ∪ B), (P ∗ Pinh)%I. rewrite !to_gmap_union_singleton. by iFrame.
-  - iExists γ. by iFrame.
-Qed.
-
 (* Inheritance *)
-Lemma lft_inh_acc E κ P Q :
+Lemma lft_inh_extend E κ P Q :
   ↑inhN ⊆ E →
   ▷ lft_inh κ false Q ={E}=∗ ▷ lft_inh κ false (P ∗ Q) ∗
-     (∀ I, own_ilft_auth I -∗ ⌜is_Some (I !! κ)⌝) ∧
+     (∀ I, own_ilft_auth I -∗ ⌜is_Some (I !! κ)⌝) ∗
      (∀ Q', ▷ lft_inh κ true Q' ={E}=∗ ∃ Q'',
             ▷ ▷ (Q' ≡ (P ∗ Q'')) ∗ ▷ P ∗ ▷ lft_inh κ true Q'').
 Proof.
@@ -371,8 +356,9 @@ Proof.
   iModIntro. iSplitL "Hbox HE".
   { iNext. rewrite /lft_inh. iExists ({[γE]} ∪ PE).
     rewrite to_gmap_union_singleton. iFrame. }
-  clear dependent PE. iSplit.
-  { iIntros (I) "HI". iApply (own_inh_auth with "HI HE◯"). }
+  clear dependent PE. rewrite -(left_id_L ∅ op (◯ GSet {[γE]})).
+  iDestruct "HE◯" as "[HE◯' HE◯]". iSplitL "HE◯'".
+  { iIntros (I) "HI". iApply (own_inh_auth with "HI HE◯'"). }
   iIntros (Q'). rewrite {1}/lft_inh. iDestruct 1 as (PE) "[>HE Hbox]".
   iDestruct (own_inh_valid_2 with "HE HE◯")
     as %[Hle%gset_disj_included _]%auth_valid_discrete_2.

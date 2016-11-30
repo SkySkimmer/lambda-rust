@@ -1,4 +1,5 @@
-From lrust.lifetime Require Export primitive creation.
+From lrust.lifetime Require Export primitive.
+From lrust.lifetime Require Import faking.
 From iris.algebra Require Import csum auth frac gmap dec_agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
@@ -18,7 +19,7 @@ Lemma raw_bor_unnest E A I Pb Pi P κ i κ' :
   κ ⊂ κ' →
   lft_alive_in A κ' →
   Iinv -∗ idx_bor_own 1 (κ, i) -∗ slice borN i P -∗ ▷ lft_bor_alive κ' Pb -∗
-  ▷ lft_vs κ' (idx_bor_own 1 (κ, i) ∗ (*slice borN i P ∗*) Pb) Pi ={E}=∗ ∃ Pb',
+  ▷ lft_vs κ' (idx_bor_own 1 (κ, i) ∗ Pb) Pi ={E}=∗ ∃ Pb',
     Iinv ∗ raw_bor κ' P ∗ ▷ lft_bor_alive κ' Pb' ∗ ▷ lft_vs κ' Pb' Pi.
 Proof.
   iIntros (? Iinv Hκκ' Haliveκ') "(HI & Hκ) Hi #Hislice Hκalive' Hvs".
@@ -27,8 +28,7 @@ Proof.
   { apply auth_update_alloc, (nat_local_update _ 0 (S n) 1); omega. }
   rewrite {1}/raw_bor /idx_bor_own /=.
   iDestruct (own_bor_auth with "HI Hi") as %?.
-  (* FIXME RJ: This is ugly. *)
-  assert (κ ⊆ κ'). { apply strict_spec_alt in Hκκ'. naive_solver. }
+  assert (κ ⊆ κ') by (by apply strict_include).
   iDestruct (lft_inv_alive_in with "Hκ") as "Hκ";
     first by eauto using lft_alive_in_subseteq.
   rewrite lft_inv_alive_unfold;
@@ -107,7 +107,7 @@ Lemma raw_rebor E κ κ' P :
 Proof.
   rewrite /lft_ctx. iIntros (??) "#LFT Hκ".
   destruct (decide (κ = κ')) as [<-|Hκneq].
-  { iFrame. iIntros "!> #Hκ†". iMod (raw_bor_fake' with "LFT Hκ†"); done. }
+  { iFrame. iIntros "!> #Hκ†". by iApply (raw_bor_fake' with "LFT Hκ†"). }
   assert (κ ⊂ κ') by (by apply strict_spec_alt).
   iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
   iMod (ilft_create _ _ κ' with "HA HI Hinv") as (A' I') "(% & HA & HI & Hinv)".
@@ -120,32 +120,30 @@ Proof.
     iMod ("Hclose" with "[-Hκ]") as "_"; last auto.
     iNext. rewrite {2}/lfts_inv. iExists A, I. iFrame "HA HI".
     iApply (big_sepS_delete _ _ κ'); first by apply elem_of_dom.
-    iFrame "Hinv". rewrite /lft_inv /lft_inv_dead. iRight. iSplit; last done.
-    iExists Pi. by iFrame. }
+    iFrame "Hinv". rewrite /lft_inv /lft_inv_dead. iRight.
+    iSplit; last done. iExists Pi. by iFrame. }
   rewrite lft_inv_alive_unfold; iDestruct "Hκinv'" as (Pb Pi) "(Hbor & Hvs & Hinh)".
   rewrite {1}/raw_bor. iDestruct "Hκ" as (i) "[Hi #Hislice]".
-  iMod (lft_inh_acc _ _ (idx_bor_own 1 (κ, i)) with "Hinh")
-    as "[Hinh Hinh_close]"; first solve_ndisj.
+  iMod (lft_inh_extend _ _ (idx_bor_own 1 (κ, i)) with "Hinh")
+    as "(Hinh & HIlookup & Hinh_close)"; first solve_ndisj.
   iDestruct (own_bor_auth with "HI [Hi]") as %?.
   { by rewrite /idx_bor_own. }
   iDestruct (big_sepS_elem_of_acc _ _ κ with "Hinv") as "[Hκ Hκclose]".
   { rewrite elem_of_difference elem_of_dom not_elem_of_singleton. done. }
-  iMod (raw_bor_unnest _ _ _ _ (idx_bor_own 1 (κ, i) ∗ Pi)%I with "[$HI $Hκ] Hi Hislice Hbor [Hvs]")
+  iMod (raw_bor_unnest _ _ _ _ (idx_bor_own 1 (κ, i) ∗ Pi)%I
+    with "[$HI $Hκ] Hi Hislice Hbor [Hvs]")
     as (Pb') "([HI Hκ] & $ & Halive & Hvs)"; [solve_ndisj|done|done|..].
   { iNext. by iApply lft_vs_frame. }
-  (* FIXME RJ: There should be sth. better than rewriting this. *)
-  rewrite {1}uPred.later_wand. iDestruct ("Hκclose" with "Hκ") as "Hinv".
+  iDestruct ("Hκclose" with "Hκ") as "Hinv".
   iMod ("Hclose" with "[HA HI Hinv Halive Hinh Hvs]") as "_".
   { iNext. rewrite {2}/lfts_inv. iExists A, I. iFrame "HA HI".
     iApply (big_sepS_delete _ _ κ'); first by apply elem_of_dom. iFrame "Hinv".
     rewrite /lft_inv. iLeft. iSplit; last done.
-    rewrite lft_inv_alive_unfold. iExists Pb', (idx_bor_own 1 (κ, i) ∗ Pi)%I. iFrame. }
-  iModIntro. iIntros "H†".
-  clear dependent A I Pb Pb' Pi.
+    rewrite lft_inv_alive_unfold. iExists Pb', (idx_bor_own 1 (κ, i) ∗ Pi)%I.
+    iFrame. }
+  clear dependent A I Pb Pb' Pi. iModIntro. iIntros "H†".
   iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
-  iAssert ⌜is_Some (I !! κ')⌝%I with "[#]" as %Hκ'.
-  { iDestruct "Hinh_close" as "[H _]". by iApply "H". }
-  iDestruct "Hinh_close" as "[_ Hinh_close]".
+  iDestruct ("HIlookup" with "* HI") as %Hκ'.
   iDestruct (big_sepS_delete _ _ κ' with "Hinv") as "[Hκinv' Hinv]";
     first by apply elem_of_dom.
   rewrite {1}/lft_inv; iDestruct "Hκinv'" as "[[Halive >%]|[Hdead >%]]".
@@ -160,7 +158,6 @@ Proof.
       iApply (big_sepS_delete _ _ κ'); first by apply elem_of_dom. iFrame "Hinv".
       rewrite /lft_inv /lft_inv_dead. iRight. iSplit; last done.
       iExists Pi'. iFrame. }
-    iModIntro. rewrite /raw_bor. iExists i. iFrame "∗#".
+    iModIntro. rewrite /raw_bor. iExists i. by iFrame.
 Qed.
-
 End rebor.
