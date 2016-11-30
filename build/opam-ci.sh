@@ -26,7 +26,7 @@ done
 
 # Install build-dependencies
 echo
-make build-dep
+make build-dep Y=1
 
 # done
 echo
