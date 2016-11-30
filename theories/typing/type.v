@@ -157,7 +157,8 @@ Section types.
          (∃ l:loc, ⌜vl = [ #l ]⌝ ∗ ▷ l ↦∗: ty.(ty_own) tid ∗ ▷ †{q}l…ty.(ty_size))%I;
        ty_shr κ tid E l :=
          (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ∗
-            ∀ q', □ (q'.[κ] ={mgmtE ∪ E, mgmtE}▷=∗ ty.(ty_shr) κ tid E l' ∗ q'.[κ]))%I
+            □ (∀ q' F, ⌜E ∪ mgmtE ⊆ F⌝ →
+                 q'.[κ] ={F,F∖E}▷=∗ ty.(ty_shr) κ tid E l' ∗ q'.[κ]))%I
     |}.
   Next Obligation. done. Qed.
   Next Obligation.
@@ -176,25 +177,26 @@ Section types.
     rewrite bor_unfold_idx. iDestruct "Hb2" as (i) "(#Hpb&Hpbown)".
     iMod (inv_alloc N _ (idx_bor_own 1 i ∨ ty_shr ty κ tid (↑N) l')%I
          with "[Hpbown]") as "#Hinv"; first by eauto.
-    iExists l'. iIntros "!>{$Hbf}".  iIntros (q'') "!#Htok".
+    iExists l'. iIntros "!>{$Hbf}!#". iIntros (q'' F) "% Htok".
     iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
-    replace ((mgmtE ∪ ↑N) ∖ ↑N) with mgmtE by set_solver.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
-    - iMod (bor_later_tok with "LFT [Hbtok] Htok") as "[Hb Htok]". set_solver.
-      { rewrite bor_unfold_idx. iExists i. eauto. }
-      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#$ $]"; try done.
-      iApply "Hclose". eauto.
-    - iIntros "!>". iNext. iMod ("Hclose" with "[]") as "_"; by eauto.
+    - iMod (bor_later_tok with "LFT [Hbtok] Htok") as "H". set_solver.
+      { rewrite bor_unfold_idx. eauto. }
+      iModIntro. iNext. iMod "H" as "[Hb Htok]".
+      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#$ $]". done. set_solver.
+      iApply "Hclose". auto.
+    - iModIntro. iNext. iMod ("Hclose" with "[]") as "_"; by eauto.
   Qed.
   Next Obligation.
     intros _ ty κ κ' tid E E' l ?. iIntros "#LFT #Hκ #H".
-    iDestruct "H" as (l') "[Hfb Hvs]".
-    iExists l'. iSplit. by iApply (frac_bor_shorten with "[]").
-    iIntros (q') "!#Htok".
-    iApply step_fupd_mask_mono. reflexivity. apply union_preserving_l. eassumption.
+    iDestruct "H" as (l') "[Hfb #Hvs]".
+    iExists l'. iSplit. by iApply (frac_bor_shorten with "[]"). iIntros "!#".
+    iIntros (q' F) "% Htok".
+    iApply (step_fupd_mask_mono F _ _ (F∖E)). set_solver. set_solver.
     iMod (lft_incl_acc with "Hκ Htok") as (q'') "[Htok Hclose]". set_solver.
-    iMod ("Hvs" $! q'' with "Htok") as "[Hshr Htok]".
-    iMod ("Hclose" with "Htok") as "$". by iApply (ty.(ty_shr_mono) with "LFT Hκ").
+    iMod ("Hvs" with "* [%] Htok") as "Hvs'". set_solver. iModIntro. iNext.
+    iMod "Hvs'" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
+      by iApply (ty.(ty_shr_mono) with "LFT Hκ").
   Qed.
   Next Obligation. done. Qed.
 
@@ -204,8 +206,8 @@ Section types.
          (∃ l:loc, ⌜vl = [ #l ]⌝ ∗ &{κ} l ↦∗: ty.(ty_own) tid)%I;
        ty_shr κ' tid E l :=
          (∃ l':loc, &frac{κ'}(λ q', l ↦{q'} #l') ∗
-            ∀ q', □ (q'.[κ∪κ']
-               ={mgmtE ∪ E, ↑tlN}▷=∗ ty.(ty_shr) (κ∪κ') tid E l' ∗ q'.[κ∪κ']))%I
+            □ ∀ q' F, ⌜E ∪ mgmtE ⊆ F⌝ → q'.[κ∪κ']
+               ={F, F∖E∖↑lftN}▷=∗ ty.(ty_shr) (κ∪κ') tid E l' ∗ q'.[κ∪κ'])%I
     |}.
   Next Obligation. done. Qed.
   Next Obligation.
@@ -223,16 +225,14 @@ Section types.
     rewrite {1}bor_unfold_idx. iDestruct "Hb2" as (i) "[#Hpb Hpbown]".
     iMod (inv_alloc N _ (idx_bor_own 1 i ∨ ty_shr ty (κ∪κ') tid (↑N) l')%I
          with "[Hpbown]") as "#Hinv"; first by eauto.
-    iExists l'. iIntros "!>{$Hbf}". iIntros (q'') "!#Htok".
-    iApply (step_fupd_mask_mono (mgmtE ∪ ↑N) _ _ ((mgmtE ∪ ↑N) ∖ ↑N ∖ ↑lftN)).
-    { assert (nclose lftN ⊥ ↑tlN) by solve_ndisj. set_solver. } set_solver.
+    iExists l'. iIntros "!>{$Hbf}!#". iIntros (q'' F) "% Htok".
     iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
-    - iAssert (&{κ'}&{κ} l' ↦∗: ty_own ty tid)%I with "[Hbtok]" as "Hb".
-      { rewrite (bor_unfold_idx κ'). eauto. }
-      iMod (bor_unnest with "LFT Hb") as "Hb". set_solver.
-      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#Hshr Htok]"; try done. set_solver.
-      iMod ("Hclose" with "[]") as "_". eauto. by iFrame.
+    - iMod (bor_unnest _ _ _ (l' ↦∗: ty_own ty tid)%I with "LFT [Hbtok]") as "Hb".
+      { set_solver. } { iApply bor_unfold_idx. eauto. }
+      iModIntro. iNext. iMod "Hb".
+      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#$ $]"; try done. set_solver.
+      iApply "Hclose". eauto.
     - iMod ("Hclose" with "[]") as "_". by eauto.
       iApply step_fupd_mask_mono; last by eauto. done. set_solver.
   Qed.
@@ -243,11 +243,13 @@ Section types.
       - iApply lft_le_incl. apply gmultiset_union_subseteq_l.
       - iApply (lft_incl_trans with "[] Hκ").
         iApply lft_le_incl. apply gmultiset_union_subseteq_r. }
-    iExists l'. iSplit. by iApply (frac_bor_shorten with "[]"). iIntros (q) "!#Htok".
-    iApply step_fupd_mask_mono. reflexivity. apply union_preserving_l. eassumption.
+    iExists l'. iSplit. by iApply (frac_bor_shorten with "[]").
+    iIntros "!#". iIntros (q F) "% Htok".
+    iApply (step_fupd_mask_mono F _ _ (F∖E∖ ↑lftN)). set_solver. set_solver.
     iMod (lft_incl_acc with "Hκ0 Htok") as (q') "[Htok Hclose]". set_solver.
-    iMod ("Hvs" $! q' with "Htok") as "[#Hshr Htok]".
-    iMod ("Hclose" with "Htok") as "$". by iApply (ty_shr_mono with "LFT Hκ0").
+    iMod ("Hvs" with "* [%] Htok") as "Hvs'". set_solver. iModIntro. iNext.
+    iMod "Hvs'" as "[#Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
+      by iApply (ty_shr_mono with "LFT Hκ0").
   Qed.
   Next Obligation. done. Qed.
 

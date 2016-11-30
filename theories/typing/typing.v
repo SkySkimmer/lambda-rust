@@ -292,17 +292,13 @@ Section typing.
     iApply (has_type_wp with "H◁"). iIntros (v) "Hνv H◁!>". iDestruct "Hνv" as %Hνv.
     rewrite has_type_value. iDestruct "H◁" as (l) "[Heq #H↦]". iDestruct "Heq" as %[=->].
     iMod (lft_incl_acc with "H⊑ Htok") as (q'') "[[Htok1 Htok2] Hclose]". done.
-    iDestruct "H↦" as (vl) "[H↦b Hown]".
+    iDestruct "H↦" as (vl) "[H↦b #Hown]".
     iMod (frac_bor_acc with "LFT H↦b Htok1") as (q''') "[>H↦ Hclose']". done.
-    iApply (wp_fupd_step _ (↑heapN) with "[Hown Htok2]"); try done.
-    - rewrite -(left_id (R:=eq) ∅ (∪) (↑heapN)). assert (⊤ = ⊤∖↑heapN ∪ ↑heapN) as ->.
-      { by rewrite (comm (R:=eq)) -union_difference_L. }
-      iApply step_fupd_mask_frame_r; try set_solver.
-      iApply step_fupd_mask_mono; last by iApply ("Hown" with "* Htok2").
-        set_solver. repeat apply union_least; solve_ndisj.
+    iApply (wp_fupd_step _ (⊤∖↑lrustN) with "[Hown Htok2]"); try done.
+    - iApply ("Hown" with "* [%] Htok2"). set_solver.
     - wp_read. iIntros "!>[Hshr ?]". iFrame "H⊑".
-      iSplitL "Hshr"; first by iExists _; auto.
-      iMod ("Hclose'" with "[$H↦]") as "?". iApply "Hclose". iFrame.
+      iSplitL "Hshr"; first by iExists _; auto. iApply ("Hclose" with ">").
+      iFrame. iApply "Hclose'". auto.
   Qed.
 
   Lemma typed_deref_uniq_bor_bor ty ν κ κ' κ'' q:
@@ -326,7 +322,7 @@ Section typing.
     wp_read. iIntros "!> Hbor". iFrame "#". iSplitL "Hbor".
     - iExists _. iSplitR; first by auto. iApply (bor_shorten with "[] Hbor").
       iApply (lft_incl_glb with "H⊑2"). iApply lft_incl_refl.
-    - iMod ("Hclose'" with "[$H↦]") as "[_ ?]". by iApply "Hclose".
+    - iApply ("Hclose" with ">"). by iMod ("Hclose'" with "[$H↦]") as "[_ $]".
   Qed.
 
   Lemma typed_deref_shr_bor_bor ty ν κ κ' κ'' q:
@@ -343,16 +339,12 @@ Section typing.
     iAssert (κ' ⊑ κ'' ∪ κ')%I as "#H⊑3".
     { iApply (lft_incl_glb with "H⊑2 []"). iApply lft_incl_refl. }
     iMod (lft_incl_acc with "H⊑3 Htok2") as (q''') "[Htok Hclose'']". done.
-    iApply (wp_fupd_step _ (↑heapN) with "[Hown Htok]"); try done.
-    - rewrite -(left_id (R:=eq) ∅ (∪) (↑heapN)). assert (⊤ = ⊤∖↑heapN ∪ ↑heapN) as ->.
-      { by rewrite (comm (R:=eq)) -union_difference_L. }
-      iApply step_fupd_mask_frame_r; try set_solver.
-      iApply step_fupd_mask_mono; last by iApply ("Hown" with "* Htok").
-        set_solver. repeat apply union_least; solve_ndisj.
+    iApply (wp_fupd_step _ (_∖_) with "[Hown Htok]"); try done.
+    - iApply ("Hown" with "* [%] Htok"). set_solver.
     - wp_read. iIntros "!>[Hshr Htok]". iFrame "H⊑1". iSplitL "Hshr".
       + iExists _. iSplitR. done. by iApply (ty_shr_mono with "LFT H⊑3 Hshr").
-      + iMod ("Hclose''" with "Htok"). iMod ("Hclose'" with "[$H↦]").
-        iApply "Hclose". iFrame.
+      + iApply ("Hclose" with ">"). iMod ("Hclose'" with "[$H↦]") as "$".
+        by iMod ("Hclose''" with "Htok") as "$".
   Qed.
 
   Definition update (ty : type) (ρ1 ρ2 : expr → perm) : Prop :=
@@ -421,7 +413,7 @@ Section typing.
     typed_program ρ2 e → (ρ1 ⇒ ρ2) → typed_program ρ1 e.
   Proof.
     iIntros (Hρ2 Hρ12 tid) "!#(#HEAP & #LFT & Hρ1 & Htl)".
-    iMod (Hρ12 with "LFT Hρ1"). iApply Hρ2. iFrame "∗#".
+    iApply (Hρ2 with ">"). iFrame "∗#". iApply (Hρ12 with "LFT Hρ1").
   Qed.
 
   Lemma typed_program_exists {A} ρ θ e:

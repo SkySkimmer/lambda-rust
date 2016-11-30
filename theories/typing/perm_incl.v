@@ -37,8 +37,8 @@ Section props.
   Proof.
     split.
     - iIntros (? tid) "H". eauto.
-    - iIntros (??? H12 H23 tid) "#LFT H".
-      iMod (H12 with "LFT H") as "H". by iApply (H23 with "LFT").
+    - iIntros (??? H12 H23 tid) "#LFT H". iApply (H23 with "LFT >").
+      by iApply (H12 with "LFT").
   Qed.
 
   Global Instance perm_equiv_equiv : Equivalence (⇔).
@@ -277,10 +277,7 @@ Section props.
     iApply (fupd_mask_mono (↑lftN)). done.
     iMod (bor_create with "LFT Hown") as "[Hbor Hext]". done.
     iSplitL "Hbor". by simpl; eauto.
-    iMod (bor_create with "LFT Hf") as "[_ Hf]". done.
-    iIntros "!>#H†".
-    iMod ("Hext" with "H†") as "Hext". iMod ("Hf" with "H†") as "Hf". iIntros "!>/=".
-    iExists _. iFrame. auto.
+    iIntros "!>#H†". iExists _. iMod ("Hext" with "H†") as "$". by iFrame.
   Qed.
 
   Lemma rebor_uniq_borrowing κ κ' ν ty :
@@ -293,7 +290,7 @@ Section props.
     iApply (fupd_mask_mono (↑lftN)). done.
     iMod (rebor with "LFT Hord H") as "[H Hextr]". done.
     iModIntro. iSplitL "H". iExists _. by eauto.
-    iIntros "H†". iMod ("Hextr" with "H†"). simpl. auto.
+    iIntros "H†". iExists _. by iMod ("Hextr" with "H†") as "$".
   Qed.
 
   Lemma lftincl_borrowing κ κ' q : borrowing κ ⊤ q.[κ'] (κ ⊑ κ').

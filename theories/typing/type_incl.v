@@ -38,8 +38,7 @@ Section ty_incl.
   Lemma ty_incl_weaken ρ θ ty1 ty2 :
     ρ ⇒ θ → ty_incl θ ty1 ty2 → ty_incl ρ ty1 ty2.
   Proof.
-    iIntros (Hρθ Hρ' tid) "#LFT H". iMod (Hρθ with "LFT H").
-    by iApply (Hρ' with "LFT").
+    iIntros (Hρθ Hρ' tid) "#LFT H". iApply (Hρ' with "LFT>"). iApply (Hρθ with "LFT H").
   Qed.
 
   Global Instance ty_incl_preorder ρ: Duplicable ρ → PreOrder (ty_incl ρ).
@@ -63,8 +62,9 @@ Section ty_incl.
       iDestruct (ty_size_eq with "Hown") as %<-. iFrame.
       iExists _. by iFrame.
     - iDestruct "H" as (l') "[Hfb #Hvs]". iSplit; last done. iExists l'. iFrame.
-      iIntros (q') "!#Hκ". iMod ("Hvs" $! _ with "Hκ") as "[Hshr $]".
-      by iDestruct ("Hshri" $! _ _ _ with "Hshr") as "[$ _]".
+      iIntros "!#". iIntros (q' F) "% Hκ".
+      iMod ("Hvs" with "* [%] Hκ") as "Hvs'". done. iModIntro. iNext.
+      iMod "Hvs'" as "[Hshr $]". by iDestruct ("Hshri" with "* Hshr") as "[$ _]".
   Qed.
 
   Lemma lft_incl_ty_incl_uniq_bor ty κ1 κ2 :
@@ -79,9 +79,10 @@ Section ty_incl.
             apply gmultiset_union_subseteq_l.
         - iApply lft_le_incl. apply gmultiset_union_subseteq_r. }
       iSplitL; last done. iDestruct "H" as (l') "[Hbor #Hupd]". iExists l'.
-      iFrame. iIntros (q') "!#Htok".
+      iFrame. iIntros "!#". iIntros (q' F) "% Htok".
       iMod (lft_incl_acc with "Hincl' Htok") as (q'') "[Htok Hclose]". set_solver.
-      iMod ("Hupd" with "*Htok") as "[H Htok]". iMod ("Hclose" with "Htok") as "$".
+      iMod ("Hupd" with "* [%] Htok") as "Hupd'"; try done. iModIntro. iNext.
+      iMod "Hupd'" as "[H Htok]". iMod ("Hclose" with "Htok") as "$".
       by iApply (ty_shr_mono with "LFT Hincl' H").
   Qed.
 
@@ -194,7 +195,7 @@ Section ty_incl.
                   → (nth i tyl2 ∅%T).(ty_own) tid vl)).
       { clear -FA DUP. induction FA as [|ty1 ty2 tyl1 tyl2 Hincl _ IH].
         - iIntros "_ _!>*!#". eauto.
-        - iIntros "#LFT #Hρ".  iMod (IH with "LFT Hρ") as "#IH".
+        - iIntros "#LFT #Hρ". iMod (IH with "LFT Hρ") as "#IH".
           iMod (Hincl with "LFT Hρ") as "[#Hh _]".
           iIntros "!>*!#*Hown". destruct i as [|i]. by iApply "Hh". by iApply "IH". }
       iMod (Hincl with "LFT Hρ") as "#Hincl". iIntros "!>!#*H".
@@ -219,8 +220,8 @@ Section ty_incl.
   Proof.
     iIntros (? Hρ1ρ2 tid) "#LFT #Hρ!>". iSplit; iIntros "!#*H"; last by auto.
     iDestruct "H" as (f) "[% Hwp]". subst. iExists _. iSplit. done.
-    iIntros (vl) "Hρ2 Htl". iMod (Hρ1ρ2 with "LFT [$Hρ2 $Hρ]").
-    by iApply ("Hwp" with "[-Htl] Htl").
+    iIntros (vl) "Hρ2 Htl". iApply ("Hwp" with ">[-Htl] Htl").
+    iApply (Hρ1ρ2 with "LFT"). by iFrame.
   Qed.
 
   Lemma ty_incl_fn {A n} ρ ρ1 ρ2 :
@@ -229,13 +230,12 @@ Section ty_incl.
   Proof.
     iIntros (? Hρ1ρ2 tid) "#LFT #Hρ!>". iSplit; iIntros "!#*#H".
     - iDestruct "H" as (f) "[% Hwp]". subst. iExists _. iSplit. done.
-      iIntros (x vl) "!#[Hρ2 Htl]". iMod (Hρ1ρ2 with "LFT [$Hρ2 $Hρ]").
-      iApply "Hwp". by iFrame.
+      iIntros (x vl) "!#[Hρ2 Htl]". iApply ("Hwp" with ">").
+      iFrame. iApply (Hρ1ρ2 with "LFT"). by iFrame.
     - iSplit; last done. simpl. iDestruct "H" as (vl0) "[? Hvl]".
       iExists vl0. iFrame "#". iNext. iDestruct "Hvl" as (f) "[% Hwp]".
-      iExists f. iSplit. done.
-      iIntros (x vl) "!#[Hρ2 Htl]". iMod (Hρ1ρ2 with "LFT [$Hρ2 $Hρ]").
-      iApply "Hwp". by iFrame.
+      iExists f. iSplit. done. iIntros (x vl) "!#[Hρ2 Htl]".
+      iApply ("Hwp" with ">"). iFrame. iApply (Hρ1ρ2 with "LFT >"). by iFrame.
   Qed.
 
   Lemma ty_incl_fn_cont {A n} ρ ρf (x : A) :
