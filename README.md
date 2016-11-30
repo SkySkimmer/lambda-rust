@@ -12,7 +12,8 @@ This version is known to compile with:
 
 The easiest way to install the correct versions of the dependencies is through
 opam.  Once you got opam set up, just run `make build-dep` to install the right
-versions of the dependencies.
+versions of the dependencies.  When the dependencies change (e.g., a newer
+version of Iris is needed), just run `make build-dep` again.
 
 Alternatively, you can manually determine the required Iris commit by consulting
 the `opam.pins` file.
