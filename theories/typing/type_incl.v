@@ -1,7 +1,7 @@
 From iris.base_logic Require Import big_op.
 From iris.program_logic Require Import hoare.
 From lrust.typing Require Export type perm_incl.
-From lrust.lifetime Require Import frac_borrow.
+From lrust.lifetime Require Import frac_borrow borrow.
 
 Import Types.
 
@@ -63,9 +63,7 @@ Section ty_incl.
       iDestruct (ty_size_eq with "Hown") as %<-. iFrame.
       iExists _. by iFrame.
     - iDestruct "H" as (l') "[Hfb #Hvs]". iSplit; last done. iExists l'. iFrame.
-      iIntros (q') "!#Hκ".
-      iMod ("Hvs" $! _ with "Hκ") as "Hvs'". iIntros "!>". iNext.
-      iMod "Hvs'" as "[Hshr $]". iModIntro.
+      iIntros (q') "!#Hκ". iMod ("Hvs" $! _ with "Hκ") as "[Hshr $]".
       by iDestruct ("Hshri" $! _ _ _ with "Hshr") as "[$ _]".
   Qed.
 
@@ -83,8 +81,7 @@ Section ty_incl.
       iSplitL; last done. iDestruct "H" as (l') "[Hbor #Hupd]". iExists l'.
       iFrame. iIntros (q') "!#Htok".
       iMod (lft_incl_acc with "Hincl' Htok") as (q'') "[Htok Hclose]". set_solver.
-      iMod ("Hupd" with "*Htok") as "Hupd'". iModIntro. iNext.
-      iMod "Hupd'" as "[H Htok]". iMod ("Hclose" with "Htok") as "$".
+      iMod ("Hupd" with "*Htok") as "[H Htok]". iMod ("Hclose" with "Htok") as "$".
       by iApply (ty_shr_mono with "LFT Hincl' H").
   Qed.
 

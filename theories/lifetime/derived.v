@@ -1,4 +1,4 @@
-From lrust.lifetime Require Export primitive accessors creation.
+From lrust.lifetime Require Export primitive accessors faking.
 From lrust.lifetime Require Export raw_reborrow.
 From iris.proofmode Require Import tactics.
 (* TODO: the name derived makes no sense: reborrow/bor_unnest, which is proven

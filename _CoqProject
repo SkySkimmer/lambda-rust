@@ -1,6 +1,7 @@
 -Q theories lrust
 theories/lifetime/definitions.v
 theories/lifetime/derived.v
+theories/lifetime/faking.v
 theories/lifetime/creation.v
 theories/lifetime/primitive.v
 theories/lifetime/accessors.v
