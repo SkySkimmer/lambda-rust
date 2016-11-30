@@ -3,7 +3,7 @@ From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Export thread_local.
 From iris.program_logic Require Import hoare.
 From lrust.lang Require Export heap notation.
-From lrust.lifetime Require Import frac_borrow reborrow.
+From lrust.lifetime Require Import borrow frac_borrow reborrow.
 
 Class iris_typeG Σ := Iris_typeG {
   type_heapG :> heapG Σ;
@@ -180,9 +180,8 @@ Section types.
     iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
     replace ((mgmtE ∪ ↑N) ∖ ↑N) with mgmtE by set_solver.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
-    - iMod (bor_later_tok with "LFT [Hbtok] Htok") as "Hb". set_solver.
+    - iMod (bor_later_tok with "LFT [Hbtok] Htok") as "[Hb Htok]". set_solver.
       { rewrite bor_unfold_idx. iExists i. eauto. }
-      iIntros "!>". iNext. iMod "Hb" as "[Hb Htok]".
       iMod (ty.(ty_share) with "LFT Hb Htok") as "[#$ $]"; try done.
       iApply "Hclose". eauto.
     - iIntros "!>". iNext. iMod ("Hclose" with "[]") as "_"; by eauto.
@@ -194,10 +193,8 @@ Section types.
     iIntros (q') "!#Htok".
     iApply step_fupd_mask_mono. reflexivity. apply union_preserving_l. eassumption.
     iMod (lft_incl_acc with "Hκ Htok") as (q'') "[Htok Hclose]". set_solver.
-    iMod ("Hvs" $! q'' with "Htok") as "Hvs'".
-    iIntros "!>". iNext. iMod "Hvs'" as "[Hshr Htok]".
-    iMod ("Hclose" with "Htok"). iFrame.
-    iApply (ty.(ty_shr_mono) with "LFT Hκ"); last done. done.
+    iMod ("Hvs" $! q'' with "Htok") as "[Hshr Htok]".
+    iMod ("Hclose" with "Htok") as "$". by iApply (ty.(ty_shr_mono) with "LFT Hκ").
   Qed.
   Next Obligation. done. Qed.
 
@@ -234,12 +231,10 @@ Section types.
     - iAssert (&{κ'}&{κ} l' ↦∗: ty_own ty tid)%I with "[Hbtok]" as "Hb".
       { rewrite (bor_unfold_idx κ'). eauto. }
       iMod (bor_unnest with "LFT Hb") as "Hb". set_solver.
-      iIntros "!>". iNext. iMod "Hb".
       iMod (ty.(ty_share) with "LFT Hb Htok") as "[#Hshr Htok]"; try done. set_solver.
       iMod ("Hclose" with "[]") as "_". eauto. by iFrame.
-    - iMod (step_fupd_mask_mono _ _ _ _ True%I with "[]") as "Hclose'"; last first.
-      iIntros "!>". iNext. iMod "Hclose'" as "_".
-      iMod ("Hclose" with "[]") as "_"; by eauto. eauto. done. set_solver.
+    - iMod ("Hclose" with "[]") as "_". by eauto.
+      iApply step_fupd_mask_mono; last by eauto. done. set_solver.
   Qed.
   Next Obligation.
     intros κ0 ty κ κ' tid E E' l ?. iIntros "#LFT #Hκ #H".
@@ -251,9 +246,8 @@ Section types.
     iExists l'. iSplit. by iApply (frac_bor_shorten with "[]"). iIntros (q) "!#Htok".
     iApply step_fupd_mask_mono. reflexivity. apply union_preserving_l. eassumption.
     iMod (lft_incl_acc with "Hκ0 Htok") as (q') "[Htok Hclose]". set_solver.
-    iMod ("Hvs" $! q' with "Htok") as "Hclose'".  iIntros "!>". iNext.
-    iMod "Hclose'" as "[#Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
-    iApply (ty_shr_mono with "LFT Hκ0"); last done. done.
+    iMod ("Hvs" $! q' with "Htok") as "[#Hshr Htok]".
+    iMod ("Hclose" with "Htok") as "$". by iApply (ty_shr_mono with "LFT Hκ0").
   Qed.
   Next Obligation. done. Qed.
 
@@ -319,8 +313,10 @@ Section types.
     repeat setoid_rewrite tl_own_union; first last.
     set_solver. set_solver. set_solver. set_solver.
     iDestruct "Htl" as "[[Htl1 Htl2] $]".
-    iMod (ty1.(ty_shr_acc) with "LFT H1 [$Htok1 $Htl1]") as (q1) "[H1 Hclose1]". done. set_solver.
-    iMod (ty2.(ty_shr_acc) with "LFT H2 [$Htok2 $Htl2]") as (q2) "[H2 Hclose2]". done. set_solver.
+    iMod (ty1.(ty_shr_acc) with "LFT H1 [$Htok1 $Htl1]") as (q1) "[H1 Hclose1]".
+      done. set_solver.
+    iMod (ty2.(ty_shr_acc) with "LFT H2 [$Htok2 $Htl2]") as (q2) "[H2 Hclose2]".
+      done. set_solver.
     destruct (Qp_lower_bound q1 q2) as (qq & q'1 & q'2 & -> & ->). iExists qq.
     iDestruct "H1" as (vl1) "[H↦1 H1]". iDestruct "H2" as (vl2) "[H↦2 H2]".
     rewrite !split_prod_mt.
@@ -352,8 +348,8 @@ Section types.
     ⊣⊢ ∃ (i : nat), l ↦{q} #i ∗ shift_loc l 1 ↦∗{q}: ty_own (nth i tyl emp) tid.
   Proof.
     iSplit; iIntros "H".
-    - iDestruct "H" as (vl) "[Hmt Hown]". iDestruct "Hown" as (i vl') "[% Hown]". subst.
-      iExists i. iDestruct (heap_mapsto_vec_cons with "Hmt") as "[$ Hmt]".
+    - iDestruct "H" as (vl) "[Hmt Hown]". iDestruct "Hown" as (i vl') "[% Hown]".
+      subst. iExists i. iDestruct (heap_mapsto_vec_cons with "Hmt") as "[$ Hmt]".
       iExists vl'. by iFrame.
     - iDestruct "H" as (i) "[Hmt1 Hown]". iDestruct "Hown" as (vl) "[Hmt2 Hown]".
       iExists (#i::vl). rewrite heap_mapsto_vec_cons. iFrame. eauto.
@@ -390,8 +386,8 @@ Section types.
     rewrite ->forallb_forall in Hdup. auto using Is_true_eq_left.
   Qed.
   Next Obligation.
-    iIntros (n tyl Hn tid vl) "Hown". iDestruct "Hown" as (i vl') "(%&Hown)". subst.
-    simpl. by iDestruct (sum_size_eq with "Hown") as %->.
+    iIntros (n tyl Hn tid vl) "Hown". iDestruct "Hown" as (i vl') "(%&Hown)".
+    subst. simpl. by iDestruct (sum_size_eq with "Hown") as %->.
   Qed.
   Next Obligation.
     intros n tyl Hn E N κ l tid q ??. iIntros "#LFT Hown Htok". rewrite split_sum_mt.
