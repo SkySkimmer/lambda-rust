@@ -16,12 +16,12 @@ test -d "$OPAMROOT/repo/coq-released" || opam repo add coq-released https://coq.
 opam update
 opam install ocamlfind -y # Remove this once the Coq crew fixed their package...
 
-# Install fixed versions of some dependencies
+# Fix versions of some dependencies
 echo
 for PIN in "${@}"
 do
     echo "Applying pin: $PIN"
-    opam pin add $PIN -k version -y
+    opam pin add $PIN -k version -y -n
 done
 
 # Install build-dependencies
