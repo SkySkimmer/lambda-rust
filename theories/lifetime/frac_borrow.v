@@ -84,7 +84,7 @@ Section frac_bor.
     { change (qΦ + qq ≤ 1)%Qc in Hval. apply Qp_eq in HqΦq'. simpl in Hval, HqΦq'.
       rewrite <-HqΦq', <-Qcplus_le_mono_l in Hval. apply Qcle_lt_or_eq in Hval.
       destruct Hval as [Hval|Hval].
-      by left; apply ->Qclt_minus_iff. right; apply Qp_eq, Qc_is_canon. by rewrite Hval. }
+      by left; apply ->Qclt_minus_iff. by right; apply Qp_eq, Qc_is_canon. }
     - assert (q' = mk_Qp _ Hq'q + qq)%Qp as ->. { apply Qp_eq. simpl. ring. }
       iDestruct "Hq'κ" as "[Hq'qκ Hqκ]".
       iMod ("Hclose'" with "[HqΦ HΦqΦ Hown Hq'qκ]") as "Hqκ2".

@@ -201,7 +201,7 @@ Proof.
 
   destruct Ha1 as [[]|[]| | |], Ha2 as [[]|[]| | |]=>//=; simpl in *;
     repeat match goal with
-    | H : _ = Na1Ord → _ |- _ => specialize (H (eq_refl Na1Ord)) || clear H
+    | H : _ = Na1Ord → _ |- _ => specialize (H (reflexivity Na1Ord)) || clear H
     | H : False |- _ => destruct H
     | H : ∃ _, _ |- _ => destruct H
     end;

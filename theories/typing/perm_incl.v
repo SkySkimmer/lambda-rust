@@ -176,35 +176,20 @@ Section props.
       { apply Qcplus_pos_nonneg. apply Qp_prf. clear. induction ql. done.
         apply Qcplus_nonneg_nonneg. apply Qclt_le_weak, Qp_prf. done. }
       assert (q = q0 + mk_Qp _ Hpos)%Qp as ->. by by apply Qp_eq; rewrite -Hq.
-      injection Hlen; intro Hlen'. rewrite perm_split_own_prod2 IH //=.
+      injection Hlen; intro Hlen'. rewrite perm_split_own_prod2 IH //.
       apply perm_sep_proper.
       + rewrite /has_type /sep /=.
         destruct (eval_expr ν) as [[[]|]|]; split; iIntros (tid) "_ H/=";
         (try by iDestruct "H" as "[]"); (try by iDestruct "H" as (l) "[% _]");
         (try by auto); by rewrite shift_loc_0.
-      + (* FIXME RJ: These two 'change' make the goal look like it did in Coq 8.5
-           I found no way to reproduce the magic 8.5 did. *)
-        change ( foldr
-                   (λ (qtyoffs : Qp * (type * nat)) (acc : perm),
-                    ν +ₗ #(ty_size ty0) +ₗ #((qtyoffs.2).2) ◁ own (qtyoffs.1) ((qtyoffs.2).1) ∗ acc) 
-                   ⊤ (combine (q1 :: ql) (combine_offs tyl 0))
-                   ⇔ foldr
-                   (λ (qtyoffs : Qp * (type * nat)) (acc : perm), ν +ₗ #((qtyoffs.2).2) ◁ own (qtyoffs.1) ((qtyoffs.2).1) ∗ acc)
-                   ⊤ (combine (q1 :: ql) (combine_offs tyl (0 + ty_size ty0)))).
-        cut (length tyl = length (q1 :: ql)); last done. clear. revert tyl.
-        generalize 0%nat. induction (q1 :: ql)=>offs -[|ty tyl] Hlen //=.
+      + cut (length tyl = length (q1 :: ql)); last done. clear. revert tyl.
+        generalize 0%nat. induction (q1 :: ql)=>offs -[|ty tyl] Hlen //.
         apply perm_sep_proper.
         * rewrite /has_type /sep /=.
           destruct (eval_expr ν) as [[[]|]|]; split; iIntros (tid) "_ H/=";
-          (try by iDestruct "H" as "[]"); [|]; by rewrite shift_loc_assoc_nat (comm plus).
-        * change ( foldr
-                     (λ (qtyoffs : Qp * (type * nat)) (acc : perm),
-                      ν +ₗ #(ty_size ty0) +ₗ #((qtyoffs.2).2) ◁ own (qtyoffs.1) ((qtyoffs.2).1) ∗ acc) 
-                     ⊤ (combine l (combine_offs tyl (offs + ty_size ty)))
-                     ⇔ foldr
-                     (λ (qtyoffs : Qp * (type * nat)) (acc : perm), ν +ₗ #((qtyoffs.2).2) ◁ own (qtyoffs.1) ((qtyoffs.2).1) ∗ acc)
-                     ⊤ (combine l (combine_offs tyl (offs + ty_size ty0 + ty_size ty)))).
-          etransitivity. apply IHl. by injection Hlen. do 3 f_equiv. lia.
+          (try by iDestruct "H" as "[]"); (try by iDestruct "H" as (l) "[% _]");
+          (try by auto); by rewrite shift_loc_assoc_nat (comm plus).
+        * etransitivity. apply IHl. by injection Hlen. do 3 f_equiv. lia.
   Qed.
 
   Lemma perm_split_uniq_bor_prod2 ty1 ty2 κ ν :
