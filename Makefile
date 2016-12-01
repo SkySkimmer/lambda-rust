@@ -25,17 +25,20 @@ clean: Makefile.coq
 
 # Create Coq Makefile
 Makefile.coq: _CoqProject Makefile
-	coq_makefile $(COQ_MAKEFILE_FLAGS) -f _CoqProject -o Makefile.coq.tmp
+	@# we want to pass the correct name to coq_makefile or it will be confused.
+	coq_makefile $(COQ_MAKEFILE_FLAGS) -f _CoqProject -o Makefile.coq
+	mv Makefile.coq Makefile.coq.tmp
+	@# The sed script is for Coq 8.5 only, it fixes 'make verify'.
+	@# The awk script fixes 'make uninstall'.
 	sed 's/$$(COQCHK) $$(COQCHKFLAGS) $$(COQLIBS)/$$(COQCHK) $$(COQCHKFLAGS) $$(subst -Q,-R,$$(COQLIBS))/' < Makefile.coq.tmp \
-	  | awk '/^install:$$/{print;print "\tif [ -d \"$$(DSTROOT)\"$$(COQLIBINSTALL)/iris/ ]; then find \"$$(DSTROOT)\"$$(COQLIBINSTALL)/iris/ -name \"*.vo\" -print -delete; fi";next}1' > Makefile.coq
+	  | awk '/^uninstall:/{print "uninstall:";print "\tif [ -d \"$$(DSTROOT)\"$$(COQLIBINSTALL)/iris/ ]; then find \"$$(DSTROOT)\"$$(COQLIBINSTALL)/iris/ -name \"*.vo\" -print -delete; fi";getline;next}1' > Makefile.coq
 	rm Makefile.coq.tmp
 
 # Install build-dependencies
 build-dep:
 	build/opam-pins.sh < opam.pins
-	opam upgrade $(YFLAG) # it is not nice that we upgrade *all* packages here, but I found no nice way to upgrade only those that we pinned
 	opam pin add coq-lambda-rust "$$(pwd)#HEAD" -k git -n -y
-	opam install coq-lambda-rust --deps-only $(YLFAG)
+	opam install coq-lambda-rust --deps-only --criteria="-removed,-notuptodate" $(YLFAG)
 	opam pin remove coq-lambda-rust
 
 # some fiels that do *not* need to be forwarded to Makefile.coq
