@@ -129,7 +129,7 @@ Proof.
   iDestruct (own_bor_auth with "HI [Hi]") as %?.
   { by rewrite /idx_bor_own. }
   iDestruct (big_sepS_elem_of_acc _ _ κ with "Hinv") as "[Hκ Hκclose]".
-  { rewrite elem_of_difference elem_of_dom not_elem_of_singleton. done. }
+  { by rewrite elem_of_difference elem_of_dom not_elem_of_singleton. }
   iMod (raw_bor_unnest _ _ _ _ (idx_bor_own 1 (κ, i) ∗ Pi)%I
     with "[$HI $Hκ] Hi Hislice Hbor [Hvs]")
     as (Pb') "([HI Hκ] & $ & Halive & Hvs)"; [solve_ndisj|done|done|..].
