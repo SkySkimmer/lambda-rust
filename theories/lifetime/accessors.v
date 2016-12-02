@@ -54,24 +54,6 @@ Proof.
   rewrite -insert_delete big_sepM_insert ?lookup_delete //. simpl. by iFrame.
 Qed.
 
-Lemma create_dead A κ:
-  lft_dead_in A κ →
-  own_alft_auth A ==∗ own_alft_auth A ∗ [†κ].
-Proof.
-  iIntros ((Λ & HΛκ & EQΛ)) "HA". unfold own_alft_auth, lft_dead.
-  iMod (own_update _ ((● to_alftUR A)) with "HA") as "HA".
-  { eapply (auth_update_alloc _ _ ({[Λ := Cinr ()]}⋅∅)), op_local_update_discrete=>HA Λ'.
-    specialize (HA Λ'). revert HA.
-    rewrite lookup_op lookup_fmap. destruct (decide (Λ = Λ')) as [<-|].
-    - by rewrite lookup_singleton EQΛ.
-    - rewrite lookup_singleton_ne //. by destruct (to_lft_stateR <$> A !! Λ'). }
-  rewrite right_id. iDestruct "HA" as "[HA HΛ]". iSplitL "HA"; last (iExists _; by iFrame).
-  assert ({[Λ := Cinr ()]} ⋅ to_alftUR A ≡ to_alftUR A) as ->; last done.
-  intros Λ'. rewrite lookup_op. destruct (decide (Λ = Λ')) as [<-|].
-  - by rewrite lookup_singleton lookup_fmap EQΛ.
-  - rewrite lookup_singleton_ne //. by case: (to_alftUR A !! Λ').
-Qed.
-
 Lemma add_vs Pb Pb' P Q Pi κ :
   ▷ ▷ (Pb ≡ (P ∗ Pb')) -∗ ▷ lft_vs κ Pb Pi -∗ ▷ (▷ Q -∗ [†κ] ={⊤∖↑lftN}=∗ ▷ P) -∗
   ▷ lft_vs κ (Q ∗ Pb') Pi.
@@ -122,7 +104,7 @@ Proof.
         as %[(_ & <- & INCL%option_included)%singleton_included _]%auth_valid_discrete_2.
       by destruct INCL as [[=]|(? & ? & [=<-] &
         [[_<-]%lookup_to_gmap_Some [[_[=]]|[]%(exclusive_included _)]])].
-  - iMod (create_dead with "HA") as "[_ H†]". done.
+  - iMod (lft_dead_in_tok with "HA") as "[_ H†]". done.
     iDestruct (lft_tok_dead with "Htok H†") as "[]".
 Qed.
 
@@ -152,7 +134,7 @@ Proof.
     iApply "Hclose''". iLeft. iFrame "%". iExists _, _. iFrame.
     iExists _. iFrame.
     rewrite insert_insert -(fmap_insert _ _ _ Bor_in) insert_id //.
-  - iRight. iMod (create_dead with "HA") as "[HA #H†]". done.
+  - iRight. iMod (lft_dead_in_tok with "HA") as "[HA #H†]". done.
     iMod ("Hclose'" with "[-Hbor]") as "_".
     + iExists _, _. iFrame. rewrite big_sepS_later. iApply "Hclose''". eauto.
     + iMod (lft_incl_dead with "Hle H†"). done. iFrame.
@@ -219,7 +201,7 @@ Proof.
         as %[(_ & <- & INCL%option_included)%singleton_included _]%auth_valid_discrete_2.
       by destruct INCL as [[=]|(? & ? & [=<-] &
         [[_<-]%lookup_to_gmap_Some [[_[=]]|[]%(exclusive_included _)]])].
-  - iMod (create_dead with "HA") as "[_ H†]". done.
+  - iMod (lft_dead_in_tok with "HA") as "[_ H†]". done.
     iDestruct (lft_tok_dead with "Htok H†") as "[]".
 Qed.
 
@@ -265,7 +247,7 @@ Proof.
     iExists _. iFrame "Hbox H●".
     rewrite big_sepM_insert. by rewrite big_sepM_delete.
       by rewrite -fmap_None -lookup_fmap fmap_delete.
-  - iRight. iMod (create_dead with "HA") as "[HA #H†]". done.
+  - iRight. iMod (lft_dead_in_tok with "HA") as "[HA #H†]". done.
     iMod ("Hclose'" with "[-Hbor]") as "_".
     + iExists _, _. iFrame. rewrite big_sepS_later. iApply "Hclose''". eauto.
     + iMod (lft_incl_dead with "Hle H†") as "$". done.

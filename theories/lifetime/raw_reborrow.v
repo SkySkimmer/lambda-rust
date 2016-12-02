@@ -13,14 +13,14 @@ Implicit Types κ : lft.
    κ ≠ κ'.  Still, it is probably more instructing to require
    κ ⊂ κ' in this lemma (as opposed to just κ ⊆ κ'), and it
    should not increase the burden on the user. *)
-Lemma raw_bor_unnest E A I Pb Pi P κ i κ' :
+Lemma raw_bor_unnest E q A I Pb Pi P κ i κ' :
   ↑borN ⊆ E →
-  let Iinv := (own_ilft_auth I ∗ ▷ lft_inv A κ)%I in
+  let Iinv := (own_ilft_auth I ∗ ▷?q lft_inv A κ)%I in
   κ ⊂ κ' →
   lft_alive_in A κ' →
-  Iinv -∗ idx_bor_own 1 (κ, i) -∗ slice borN i P -∗ ▷ lft_bor_alive κ' Pb -∗
-  ▷ lft_vs κ' (idx_bor_own 1 (κ, i) ∗ Pb) Pi ={E}=∗ ∃ Pb',
-    Iinv ∗ raw_bor κ' P ∗ ▷ lft_bor_alive κ' Pb' ∗ ▷ lft_vs κ' Pb' Pi.
+  Iinv -∗ idx_bor_own 1 (κ, i) -∗ slice borN i P -∗ ▷?q lft_bor_alive κ' Pb -∗
+  ▷?q lft_vs κ' (idx_bor_own 1 (κ, i) ∗ Pb) Pi ={E}=∗ ∃ Pb',
+    Iinv ∗ raw_bor κ' P ∗ ▷?q lft_bor_alive κ' Pb' ∗ ▷?q lft_vs κ' Pb' Pi.
 Proof.
   iIntros (? Iinv Hκκ' Haliveκ') "(HI & Hκ) Hi #Hislice Hκalive' Hvs".
   rewrite lft_vs_unfold. iDestruct "Hvs" as (n) "[>Hn● Hvs]".
@@ -36,13 +36,13 @@ Proof.
   rewrite {2}/lft_bor_alive; iDestruct "Hκalive" as (B) "(Hbox & >HB● & HB)".
   iDestruct (own_bor_valid_2 with "HB● Hi")
     as %[HB%to_borUR_included _]%auth_valid_discrete_2.
-  iMod (slice_empty _ _ true with "Hislice Hbox") as "[HP Hbox]"; first done.
+  iMod (slice_empty with "Hislice Hbox") as "[HP Hbox]"; first done.
   { by rewrite lookup_fmap HB. }
   iMod (own_bor_update_2 with "HB● Hi") as "[HB● Hi]".
   { eapply auth_update, singleton_local_update,
      (exclusive_local_update _ (1%Qp, DecAgree (Bor_rebor κ'))); last done.
     rewrite /to_borUR lookup_fmap. by rewrite HB. }
-  iAssert (▷ lft_inv A κ)%I with "[H◯ HB● HB Hvs' Hinh' Hbox]" as "Hκ".
+  iAssert (▷?q lft_inv A κ)%I with "[H◯ HB● HB Hvs' Hinh' Hbox]" as "Hκ".
   { iNext. rewrite /lft_inv. iLeft.
     iSplit; last by eauto using lft_alive_in_subseteq.
     rewrite lft_inv_alive_unfold. iExists Pb', Pi'. iFrame "Hvs' Hinh'".
@@ -53,7 +53,7 @@ Proof.
     rewrite -insert_delete delete_insert ?lookup_delete //=. iFrame; auto. }
   clear B HB Pb' Pi'.
   rewrite {1}/lft_bor_alive. iDestruct "Hκalive'" as (B) "(Hbox & >HB● & HB)".
-  iMod (slice_insert_full _ _ true with "HP Hbox")
+  iMod (slice_insert_full with "HP Hbox")
     as (j) "(HBj & #Hjslice & Hbox)"; first done.
   iDestruct "HBj" as %HBj; move: HBj; rewrite lookup_fmap fmap_None=> HBj.
   iMod (own_bor_update with "HB●") as "[HB● Hj]".
@@ -100,6 +100,36 @@ Proof.
   by iFrame.
 Qed.
 
+Lemma raw_bor_unnest' E q A I Pb Pi P κ κ' :
+  ↑borN ⊆ E →
+  let Iinv := (
+    own_ilft_auth I ∗
+    ▷?q [∗ set] κ ∈ dom _ I ∖ {[κ']}, lft_inv A κ)%I in
+  κ ⊆ κ' →
+  lft_alive_in A κ' →
+  Iinv -∗ raw_bor κ P -∗ ▷?q lft_bor_alive κ' Pb -∗
+  ▷?q lft_vs κ' (raw_bor κ P ∗ Pb) Pi ={E}=∗ ∃ Pb',
+    Iinv ∗ raw_bor κ' P ∗ ▷?q lft_bor_alive κ' Pb' ∗ ▷?q lft_vs κ' Pb' Pi.
+Proof.
+  iIntros (? Iinv Hκκ' Haliveκ') "(HI & Hinv) Hraw Hκalive' Hvs".
+  destruct (decide (κ = κ')) as [<-|Hκneq].
+  { iModIntro. iExists Pb. rewrite /Iinv. iFrame "HI Hinv Hκalive' Hraw".
+    iApply (lft_vs_cons with "[]"); last done.
+    iIntros "(Hdead & HPb)".
+    iMod (raw_bor_fake _ false _ P with "Hdead") as "[Hdead Hraw]"; first solve_ndisj.
+    by iFrame. }
+  assert (κ ⊂ κ') by (by apply strict_spec_alt).
+  iDestruct (raw_bor_inI with "HI Hraw") as %HI.
+  iDestruct (big_sepS_elem_of_acc _ _ κ with "Hinv") as "[Hinv Hclose]".
+  { rewrite elem_of_difference elem_of_dom not_elem_of_singleton. done. }
+  rewrite {1}/raw_bor. iDestruct "Hraw" as (i) "[Hi #Hislice]".
+  iMod (raw_bor_unnest with "[$HI $Hinv] Hi Hislice Hκalive' [Hvs]") as (Pb') "([HI Hκ] & ? & ? & ?)"; [done..| |].
+  { iApply (lft_vs_cons with "[]"); last done.
+    iIntros "[$ [>? $]]". iModIntro. iNext. rewrite /raw_bor.
+    iExists i. by iFrame. }
+  iExists Pb'. iModIntro. iFrame. iNext. by iApply "Hclose".
+Qed.
+
 Lemma raw_rebor E κ κ' P :
   ↑lftN ⊆ E → κ ⊆ κ' →
   lft_ctx -∗ raw_bor κ P ={E}=∗
@@ -130,7 +160,7 @@ Proof.
   { by rewrite /idx_bor_own. }
   iDestruct (big_sepS_elem_of_acc _ _ κ with "Hinv") as "[Hκ Hκclose]".
   { by rewrite elem_of_difference elem_of_dom not_elem_of_singleton. }
-  iMod (raw_bor_unnest _ _ _ _ (idx_bor_own 1 (κ, i) ∗ Pi)%I
+  iMod (raw_bor_unnest _ true _ _ _ (idx_bor_own 1 (κ, i) ∗ Pi)%I
     with "[$HI $Hκ] Hi Hislice Hbor [Hvs]")
     as (Pb') "([HI Hκ] & $ & Halive & Hvs)"; [solve_ndisj|done|done|..].
   { iNext. by iApply lft_vs_frame. }

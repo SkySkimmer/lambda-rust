@@ -202,6 +202,29 @@ Proof.
 Qed.
 Lemma lft_dead_in_insert_false' A κ Λ : Λ ∈ κ → lft_dead_in (<[Λ:=false]> A) κ.
 Proof. exists Λ. by rewrite lookup_insert. Qed.
+Lemma lft_dead_in_alive_in_union A κ κ' :
+  lft_dead_in A (κ ∪ κ') → lft_alive_in A κ → lft_dead_in A κ'.
+Proof.
+  intros (Λ & [Hin|Hin]%elem_of_union & HΛ) Halive.
+  - contradict HΛ. rewrite (Halive _ Hin). done.
+  - exists Λ. auto.
+Qed.
+
+Lemma lft_dead_in_tok A κ:
+  lft_dead_in A κ →
+  own_alft_auth A ==∗ own_alft_auth A ∗ [†κ].
+Proof.
+  iIntros ((Λ & HΛκ & EQΛ)) "HA". unfold own_alft_auth, lft_dead.
+  assert (({[Λ := Cinr ()]} ⋅ to_alftUR A) = to_alftUR A) as HAinsert.
+  { unfold_leibniz=>Λ'. destruct (decide (Λ = Λ')) as [<-|Hne].
+    + rewrite lookup_op lookup_fmap EQΛ lookup_singleton /=. done.
+    + rewrite lookup_op lookup_fmap !lookup_insert_ne // lookup_empty left_id -lookup_fmap. done. }
+  iMod (own_update _ ((● to_alftUR A)) with "HA") as "HA".
+  { eapply (auth_update_alloc _ _ ({[Λ := Cinr ()]}⋅∅)), op_local_update_discrete.
+    by rewrite HAinsert. }
+  rewrite right_id. iDestruct "HA" as "[HA HΛ]". iSplitL "HA"; last (iExists _; by iFrame).
+  by rewrite HAinsert.
+Qed.
 
 Lemma lft_inv_alive_twice κ : lft_inv_alive κ -∗ lft_inv_alive κ -∗ False.
 Proof.
@@ -349,11 +372,23 @@ Proof.
   rewrite /idx_bor. iIntros "#Hκκ' [#? $]". by iApply (lft_incl_trans with "Hκκ'").
 Qed.
 
+Lemma raw_bor_inI I κ P :
+  own_ilft_auth I -∗ raw_bor κ P -∗ ⌜is_Some (I !! κ)⌝.
+Proof.
+  iIntros "HI Hbor". rewrite /raw_bor /idx_bor_own. iDestruct "Hbor" as (?) "[Hbor _]".
+  iApply (own_bor_auth with "HI Hbor").
+Qed.
+
 (* Inheritance *)
 Lemma lft_inh_extend E κ P Q :
   ↑inhN ⊆ E →
   ▷ lft_inh κ false Q ={E}=∗ ▷ lft_inh κ false (P ∗ Q) ∗
+     (* This states that κ will henceforth always be allocated.
+        That's not at all related to extending the inheritance,
+        but it's useful to have it here. *)
      (∀ I, own_ilft_auth I -∗ ⌜is_Some (I !! κ)⌝) ∗
+     (* This is the extraction: Always in the future, we can get
+        ▷ P from whatever lft_inh is at the time. *)
      (∀ Q', ▷ lft_inh κ true Q' ={E}=∗ ∃ Q'',
             ▷ ▷ (Q' ≡ (P ∗ Q'')) ∗ ▷ P ∗ ▷ lft_inh κ true Q'').
 Proof.
@@ -401,5 +436,20 @@ Proof.
   rewrite !lft_vs_unfold. iDestruct 1 as (n) "[Hcnt Hvs]".
   iExists n. iFrame "Hcnt". iIntros (I'') "Hinv [$ HPb] H†".
   iApply ("Hvs" $! I'' with "Hinv HPb H†").
+Qed.
+
+(* TODO RJ: Are there still places where this lemma
+   is re-proven inline? *)
+Lemma lft_vs_cons q κ Pb Pb' Pi :
+  (lft_bor_dead κ ∗ ▷ Pb' ={⊤ ∖ ↑mgmtN}=∗ lft_bor_dead κ ∗ ▷ Pb) -∗
+  ▷?q lft_vs κ Pb Pi -∗ ▷?q lft_vs κ Pb' Pi.
+Proof.
+  iIntros "Hcons Hvs". iNext. rewrite !lft_vs_unfold.
+  iDestruct "Hvs" as (n) "[Hn● Hvs]". iExists n. iFrame "Hn●".
+  iIntros (I). rewrite {1}lft_vs_inv_unfold.
+  iIntros "(Hdead & Hinv & Hκs) HPb #Hκ†".
+  iMod ("Hcons" with "[$Hdead $HPb]") as "[Hdead HPb]". 
+  iApply ("Hvs" $! I with "[Hdead Hinv Hκs] HPb Hκ†").
+  rewrite lft_vs_inv_unfold. by iFrame.
 Qed.
 End primitive.
