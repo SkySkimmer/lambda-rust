@@ -64,7 +64,7 @@ Record simple_type `{iris_typeG Σ} :=
     st_own_persistent tid vl : PersistentP (st_own tid vl) }.
 Global Existing Instance st_own_persistent.
 
-Program Coercion ty_of_st (st : simple_type) : type :=
+Program Definition ty_of_st (st : simple_type) : type :=
   {| ty_size := st.(st_size); ty_dup := true;
      ty_own := st.(st_own);
 
@@ -105,6 +105,8 @@ Next Obligation.
 Qed.
 
 End type.
+
+Coercion ty_of_st : simple_type >-> type.
 
 Hint Extern 0 (Is_true _.(ty_dup)) =>
   exact I || assumption : typeclass_instances.
