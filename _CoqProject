@@ -27,3 +27,4 @@ theories/typing/type_incl.v
 theories/typing/perm.v
 theories/typing/perm_incl.v
 theories/typing/typing.v
+theories/typing/lft_contexts.v
