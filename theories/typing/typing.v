@@ -12,14 +12,14 @@ Section typing.
 
   (* TODO : good notations for [typed_step] and [typed_step_ty] ? *)
   Definition typed_step (ρ : perm) e (θ : val → perm) :=
-    ∀ tid, {{ heap_ctx ∗ lft_ctx ∗ ρ tid ∗ tl_own tid ⊤ }} e
-           {{ v, θ v tid ∗ tl_own tid ⊤ }}.
+    ∀ tid, {{ heap_ctx ∗ lft_ctx ∗ ρ tid ∗ na_own tid ⊤ }} e
+           {{ v, θ v tid ∗ na_own tid ⊤ }}.
 
   Definition typed_step_ty (ρ : perm) e ty :=
     typed_step ρ e (λ ν, ν ◁ ty)%P.
 
   Definition typed_program (ρ : perm) e :=
-    ∀ tid, {{ heap_ctx ∗ lft_ctx ∗ ρ tid ∗ tl_own tid ⊤ }} e {{ _, False }}.
+    ∀ tid, {{ heap_ctx ∗ lft_ctx ∗ ρ tid ∗ na_own tid ⊤ }} e {{ _, False }}.
 
   Lemma typed_frame ρ e θ ξ:
     typed_step ρ e θ → typed_step (ρ ∗ ξ) e (λ ν, θ ν ∗ ξ)%P.
@@ -174,10 +174,10 @@ Section typing.
 
   Definition consumes (ty : type) (ρ1 ρ2 : expr → perm) : Prop :=
     ∀ ν tid Φ E, mgmtE ∪ ↑lrustN ⊆ E →
-      lft_ctx -∗ ρ1 ν tid -∗ tl_own tid ⊤ -∗
+      lft_ctx -∗ ρ1 ν tid -∗ na_own tid ⊤ -∗
       (∀ (l:loc) vl q,
         (⌜length vl = ty.(ty_size)⌝ ∗ ⌜eval_expr ν = Some #l⌝ ∗ l ↦∗{q} vl ∗
-         |={E}▷=> (ty.(ty_own) tid vl ∗ (l ↦∗{q} vl ={E}=∗ ρ2 ν tid ∗ tl_own tid ⊤)))
+         |={E}▷=> (ty.(ty_own) tid vl ∗ (l ↦∗{q} vl ={E}=∗ ρ2 ν tid ∗ na_own tid ⊤)))
        -∗ Φ #l)
       -∗ WP ν @ E {{ Φ }}.
 
@@ -241,7 +241,7 @@ Section typing.
     rewrite has_type_value. iDestruct "H◁" as (l') "[Heq #Hshr]". iDestruct "Heq" as %[=->].
     iMod (lft_incl_acc with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
     rewrite (union_difference_L (↑lrustN) ⊤); last done.
-    setoid_rewrite ->tl_own_union; try set_solver. iDestruct "Htl" as "[Htl ?]".
+    setoid_rewrite ->na_own_union; try set_solver. iDestruct "Htl" as "[Htl ?]".
     iMod (ty_shr_acc with "LFT Hshr [$Htok $Htl]") as (q'') "[H↦ Hclose']"; try set_solver.
     iDestruct "H↦" as (vl) "[>H↦ #Hown]".
     iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".

@@ -1,6 +1,6 @@
 From Coq Require Import Qcanon.
 From iris.base_logic Require Import big_op.
-From iris.base_logic.lib Require Export thread_local.
+From iris.base_logic.lib Require Export na_invariants.
 From iris.program_logic Require Import hoare.
 From lrust.lang Require Export heap notation.
 From lrust.lifetime Require Import borrow frac_borrow reborrow.
@@ -8,11 +8,11 @@ From lrust.lifetime Require Import borrow frac_borrow reborrow.
 Class iris_typeG Σ := Iris_typeG {
   type_heapG :> heapG Σ;
   type_lftG :> lftG Σ;
-  type_thread_localG :> thread_localG Σ;
+  type_na_invG :> na_invG Σ;
   type_frac_borrowG Σ :> frac_borG Σ
 }.
 
-Definition mgmtE := ↑tlN ∪ ↑lftN.
+Definition mgmtE := ↑lftN.
 Definition lrustN := nroot .@ "lrust".
 
 (* [perm] is defined here instead of perm.v in order to define [cont] *)
@@ -48,8 +48,8 @@ Record type :=
     ty_shr_acc κ tid E F l q :
       ty_dup → mgmtE ∪ F ⊆ E →
       lft_ctx -∗ ty_shr κ tid F l -∗
-        q.[κ] ∗ tl_own tid F ={E}=∗ ∃ q', ▷l ↦∗{q'}: ty_own tid ∗
-           (▷l ↦∗{q'}: ty_own tid ={E}=∗ q.[κ] ∗ tl_own tid F)
+        q.[κ] ∗ na_own tid F ={E}=∗ ∃ q', ▷l ↦∗{q'}: ty_own tid ∗
+           (▷l ↦∗{q'}: ty_own tid ={E}=∗ q.[κ] ∗ na_own tid F)
   }.
 Global Existing Instances ty_shr_persistent ty_dup_persistent.
 
@@ -314,7 +314,7 @@ Section types.
     iIntros "#LFT H[[Htok1 Htok2] Htl]". iDestruct "H" as (E1 E2) "(% & H1 & H2)".
     assert (F = E1 ∪ E2 ∪ F∖(E1 ∪ E2)) as ->.
     { rewrite -union_difference_L; set_solver. }
-    repeat setoid_rewrite tl_own_union; first last.
+    repeat setoid_rewrite na_own_union; first last.
     set_solver. set_solver. set_solver. set_solver.
     iDestruct "Htl" as "[[Htl1 Htl2] $]".
     iMod (ty1.(ty_shr_acc) with "LFT H1 [$Htok1 $Htl1]") as (q1) "[H1 Hclose1]".
@@ -436,7 +436,7 @@ Section types.
   Program Definition cont {n : nat} (ρ : vec val n → @perm Σ) :=
     {| ty_size := 1; ty_dup := false;
        ty_own tid vl := (∃ f, ⌜vl = [f]⌝ ∗
-          ∀ vl, ρ vl tid -∗ tl_own tid ⊤
+          ∀ vl, ρ vl tid -∗ na_own tid ⊤
                  -∗ WP f (map of_val vl) {{λ _, False}})%I;
        ty_shr κ tid N l := True%I |}.
   Next Obligation. done. Qed.
@@ -454,7 +454,7 @@ Section types.
   Program Definition fn {A n} (ρ : A -> vec val n → @perm Σ) : type :=
     {| st_size := 1;
        st_own tid vl := (∃ f, ⌜vl = [f]⌝ ∗ ∀ x vl,
-         {{ ρ x vl tid ∗ tl_own tid ⊤ }} f (map of_val vl) {{λ _, False}})%I |}.
+         {{ ρ x vl tid ∗ na_own tid ⊤ }} f (map of_val vl) {{λ _, False}})%I |}.
   Next Obligation.
     iIntros (x n ρ tid vl) "H". iDestruct "H" as (f) "[% _]". by subst.
   Qed.

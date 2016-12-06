@@ -108,8 +108,8 @@ Section props.
     iIntros (tid) "#LFT [Huniq [Htok $]]". unfold has_type.
     destruct (eval_expr ν); last by iDestruct "Huniq" as "[]".
     iDestruct "Huniq" as (l) "[% Hown]".
-    iMod (ty.(ty_share) _ lrustN with "LFT Hown Htok") as "[Hown $]".
-    apply disjoint_union_l; solve_ndisj. done. iIntros "!>/=". eauto.
+    iMod (ty.(ty_share) _ lrustN with "LFT Hown Htok") as "[Hown $]"; [solve_ndisj|done|].
+    iIntros "!>/=". eauto.
   Qed.
 
   Lemma perm_split_own_prod2 ty1 ty2 (q1 q2 : Qp) ν :
