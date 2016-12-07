@@ -1,5 +1,6 @@
 From iris.proofmode Require Import tactics.
 From lrust.lifetime Require Import borrow frac_borrow.
+From lrust.lang Require Export new_delete.
 From lrust.typing Require Export type.
 From lrust.typing Require Import type_incl typing product.
 
@@ -21,7 +22,8 @@ Section own.
 
             Since this assertion is timeless, this should not cause
             problems. *)
-         (∃ l:loc, ⌜vl = [ #l ]⌝ ∗ ▷ l ↦∗: ty.(ty_own) tid ∗ ▷ †{q}l…ty.(ty_size))%I;
+         (∃ l:loc, ⌜vl = [ #l ]⌝ ∗ ▷ l ↦∗: ty.(ty_own) tid ∗
+                   ▷ (†{q}l…ty.(ty_size) ∨ ⌜ty.(ty_size) = 0%nat⌝))%I;
        ty_shr κ tid E l :=
          (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ∗
             □ (∀ q' F, ⌜E ∪ mgmtE ⊆ F⌝ →
@@ -82,29 +84,34 @@ Section own.
       iMod "Hvs'" as "[Hshr $]". by iDestruct ("Hshri" with "* Hshr") as "[$ _]".
   Qed.
 
-  Lemma typed_alloc ρ (n : nat):
-    0 < n → typed_step_ty ρ (Alloc #n) (own 1 (Π(replicate n uninit))).
+  Lemma typed_new ρ (n : nat):
+    0 ≤ n → typed_step_ty ρ (new [ #n]%E) (own 1 (Π(replicate n uninit))).
   Proof.
-    iIntros (Hn tid) "!#(#HEAP&_&_&$)". wp_alloc l vl as "H↦" "H†". iIntros "!>".
-    iExists _. iSplit. done. iNext. rewrite Nat2Z.id. iSplitR "H†".
+    iIntros (Hn tid) "!#(#HEAP&_&_&$)". iApply (wp_new with "HEAP"); try done.
+    iIntros "!>*(% & H† & H↦)". iExists _. iSplit. done. iNext.
+    rewrite Nat2Z.id. iSplitR "H†".
     - iExists vl. iFrame.
       match goal with H : Z.of_nat n = Z.of_nat (length vl) |- _ => rename H into Hlen end.
       clear Hn. apply (inj Z.of_nat) in Hlen. subst.
       iInduction vl as [|v vl] "IH". done.
       iExists [v], vl. iSplit. done. by iSplit.
-    - assert (ty_size (Π (replicate n uninit)) = n) as ->; last done.
-      clear. simpl. induction n. done. rewrite /= IHn //.
+    - assert (ty_size (Π (replicate n uninit)) = n) as ->.
+      { clear. induction n; rewrite //= IHn //. }
+      iDestruct "H†" as "[?|%]". by auto. rewrite (inj Z.of_nat n 0%nat); auto.
   Qed.
 
-  Lemma typed_free ty (ν : expr):
-    typed_step (ν ◁ own 1 ty) (Free #ty.(ty_size) ν) (λ _, top).
+  Lemma typed_delete ty (ν : expr):
+    typed_step (ν ◁ own 1 ty) (delete [ #ty.(ty_size); ν])%E (λ _, top).
   Proof.
     iIntros (tid) "!#(#HEAP&_&H◁&$)". wp_bind ν.
     iApply (has_type_wp with "[$H◁]"). iIntros (v) "_ H◁ !>".
     rewrite has_type_value.
     iDestruct "H◁" as (l) "(Hv & H↦∗: & >H†)". iDestruct "Hv" as %[=->].
     iDestruct "H↦∗:" as (vl) "[>H↦ Hown]".
-    rewrite ty_size_eq. iDestruct "Hown" as ">%". wp_free; eauto.
+    rewrite ty_size_eq. iDestruct "Hown" as ">Hown". iDestruct "Hown" as %<-.
+    iApply (wp_delete with "[-]"); try by auto.
+    iFrame "∗#". iDestruct "H†" as "[?|Hlen]". by auto.
+    iDestruct "Hlen" as %->. auto.
   Qed.
 
   Lemma update_strong ty1 ty2 q:
