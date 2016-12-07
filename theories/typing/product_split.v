@@ -13,17 +13,17 @@ Section product_split.
     | ty :: q => (ty, accu) :: combine_offs q (accu + ty.(ty_size))
     end.
 
-  Lemma perm_split_own_prod2 ty1 ty2 (q1 q2 : Qp) ν :
-    ν ◁ own (q1 + q2) (product2 ty1 ty2) ⇔
-      ν ◁ own q1 ty1 ∗ ν +ₗ #ty1.(ty_size) ◁ own q2 ty2.
+  Lemma perm_split_own_prod2 ty1 ty2 n ν :
+    ν ◁ own n (product2 ty1 ty2) ⇔
+      ν ◁ own n ty1 ∗ ν +ₗ #ty1.(ty_size) ◁ own n ty2.
   Proof.
     rewrite /has_type /own /sep /=.
     destruct (eval_expr ν) as [[[]|?]|]; last first; split; iIntros (tid) "_ H/=";
       (try by iDestruct "H" as "[_ []]"); (try by iDestruct "H" as (l) "[% _]").
     { by auto. }
-    - iDestruct "H" as (l') "(EQ & H & H†)". iDestruct "EQ" as %[=<-].
-      iDestruct "H" as (vl) "[H↦ H]". iDestruct "H" as (vl1 vl2) "(>% & H1 & H2)".
-      subst. rewrite heap_mapsto_vec_app -heap_freeable_op_eq.
+    - iDestruct "H" as (l') "(EQ & H & >H†)". iDestruct "EQ" as %[=<-].
+      iDestruct "H" as (vl) "[>H↦ H]". iDestruct "H" as (vl1 vl2) "(>% & H1 & H2)".
+      subst. rewrite heap_mapsto_vec_app -freeable_sz_split.
       iDestruct "H†" as "[H†1 H†2]". iDestruct "H↦" as "[H↦1 H↦2]".
       iAssert (▷ ⌜length vl1 = ty_size ty1⌝)%I with "[#]" as ">EQ".
       { iNext. by iApply ty_size_eq. }
@@ -33,7 +33,7 @@ Section product_split.
     - iDestruct "H" as "[H1 H2]".
       iDestruct "H1" as (l') "(EQ & H↦1 & H†1)". iDestruct "EQ" as %[=<-].
       iDestruct "H2" as (l') "(EQ & H↦2 & H†2)". iDestruct "EQ" as %[=<-].
-      iExists l. iSplitR. done. rewrite -heap_freeable_op_eq. iFrame.
+      iExists l. iSplitR. done. rewrite -freeable_sz_split. iFrame.
       iDestruct "H↦1" as (vl1) "[H↦1 H1]". iDestruct "H↦2" as (vl2) "[H↦2 H2]".
       iExists (vl1 ++ vl2). rewrite heap_mapsto_vec_app. iFrame.
       iAssert (▷ ⌜length vl1 = ty_size ty1⌝)%I with "[#]" as ">EQ".
@@ -41,49 +41,32 @@ Section product_split.
       iDestruct "EQ" as %->. iFrame. iExists vl1, vl2. iFrame. auto.
   Qed.
 
-  Lemma perm_split_own_prod tyl (q : Qp) (ql : list Qp) ν :
-    length tyl = length ql →
-    foldr (λ (q : Qp) acc, q + acc)%Qc 0%Qc ql = q →
-    ν ◁ own q (Π tyl) ⇔
+  Lemma perm_split_own_prod tyl n ν :
+    tyl ≠ [] →
+    ν ◁ own n (Π tyl) ⇔
       foldr (λ qtyoffs acc,
-             ν +ₗ #(qtyoffs.2.2:nat) ◁ own (qtyoffs.1) (qtyoffs.2.1) ∗ acc)
-            ⊤ (combine ql (combine_offs tyl 0)).
+             ν +ₗ #(qtyoffs.2:nat) ◁ own n (qtyoffs.1) ∗ acc)
+            ⊤ (combine_offs tyl 0).
   Proof.
-    revert q tyl ν. induction ql as [|q0 [|q1 ql] IH]=>q tyl ν Hlen Hq.
-    { destruct q. intros. simpl in *. by subst. }
-    - destruct tyl as [|ty0 [|ty1 tyl]]; try done. simpl in *.
-      assert (q0 = q) as ->. { apply Qp_eq. by rewrite -Hq Qcplus_0_r. }
-      rewrite /has_type /sep /=.
+    intros ?. revert ν. rewrite /product /=. induction tyl as [|ty tyl IH]=>ν. done.
+    rewrite /= perm_split_own_prod2. destruct tyl.
+    - rewrite /has_type /sep /=.
       destruct (eval_expr ν) as [[[]|]|]; split; iIntros (tid) "_ H/=";
-        (try by iDestruct "H" as "[[] _]"); (try by iDestruct "H" as (l) "[% _]");
-        (try by auto); rewrite (shift_loc_0 l) Nat.add_0_r.
-      + iSplitL; last done. iExists _. iSplitR. done.
-        iDestruct "H" as (l') "[Heq [H↦ H†]]". iDestruct "Heq" as %[=<-].
-        iDestruct "H↦" as (vl) "[H↦ H]".
-        iDestruct "H" as (vl1 vl2) "(>% & Hown & >%)". subst.
-        rewrite app_nil_r. iFrame. iExists _. by iFrame.
-      + iExists l. iSplitR. done.
-        iDestruct "H" as "[H _]". iDestruct "H" as (l') "[Heq [H↦ H†]]".
-        iDestruct "Heq" as %[=<-]. iFrame. iDestruct "H↦" as (vl) "[H↦ Hown]".
-        iExists vl. iFrame. iExists vl, []. iFrame. rewrite app_nil_r. auto.
-    - destruct tyl as [|ty0 tyl]. done.
-      assert (Hpos : (0 < foldr (λ (q : Qp) acc, (q + acc)%Qc) 0%Qc (q1 :: ql))%Qc).
-      { apply Qcplus_pos_nonneg. apply Qp_prf. clear. induction ql. done.
-        apply Qcplus_nonneg_nonneg. apply Qclt_le_weak, Qp_prf. done. }
-      assert (q = q0 + mk_Qp _ Hpos)%Qp as ->. by by apply Qp_eq; rewrite -Hq.
-      injection Hlen; intro Hlen'. rewrite perm_split_own_prod2 IH //.
-      set (q1l := q1::ql). cbn[combine_offs combine foldr]. apply perm_sep_proper.
+        (try by iDestruct "H" as "[_ []]"); (try by iDestruct "H" as "[[] _]");
+      rewrite shift_loc_0; iDestruct "H" as "[$ _]"; [done|].
+      iExists _. iSplitL. done. iSplitL; iIntros "!>!>"; last done.
+      iExists []. rewrite heap_mapsto_vec_nil. auto.
+    - rewrite IH //. f_equiv.
       + rewrite /has_type /sep /=.
         destruct (eval_expr ν) as [[[]|]|]; split; iIntros (tid) "_ H/=";
-        (try by iDestruct "H" as "[]"); (try by iDestruct "H" as (l) "[% _]");
-        (try by auto); by rewrite shift_loc_0.
-      + cut (length tyl = length (q1 :: ql)); last done. clear. revert tyl.
-        generalize 0%nat. induction (q1 :: ql)=>offs -[|ty tyl] Hlen //=.
-        apply perm_sep_proper.
+          (try by iDestruct "H" as "[]"); (try by iDestruct "H" as (l) "[% _]");
+          (try by auto); rewrite (shift_loc_0 l) //.
+      + clear. change (ty_size ty) with (0+ty_size ty)%nat at 2. generalize 0%nat.
+        induction (t :: tyl) as [|ty' tyl' IH]=>offs //=. apply perm_sep_proper.
         * rewrite /has_type /sep /=.
           destruct (eval_expr ν) as [[[]|]|]; split; iIntros (tid) "_ H/=";
           (try by iDestruct "H" as "[]"); [|]; by rewrite shift_loc_assoc_nat (comm plus).
-        * etrans. apply IHl. by injection Hlen. do 3 f_equiv. lia.
+        * etrans. apply IH. do 2 f_equiv. lia.
   Qed.
 
   Lemma perm_split_uniq_bor_prod2 ty1 ty2 κ ν :

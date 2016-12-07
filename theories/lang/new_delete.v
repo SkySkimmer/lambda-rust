@@ -31,7 +31,7 @@ Section specs.
 
   Lemma wp_delete E (n:Z) l vl :
     ↑heapN ⊆ E → n = length vl →
-    {{{ heap_ctx ∗ ▷ l ↦∗ vl ∗ (▷ †l…(length vl) ∨ ⌜n = 0⌝) }}}
+    {{{ heap_ctx ∗ l ↦∗ vl ∗ (†l…(length vl) ∨ ⌜n = 0⌝) }}}
       delete [ #n; #l] @ E
     {{{ RET LitV LitUnit; True }}}.
   Proof.
