@@ -10,7 +10,7 @@ theories/lifetime/borrow.v
 theories/lifetime/reborrow.v
 theories/lifetime/shr_borrow.v
 theories/lifetime/frac_borrow.v
-theories/lifetime/tl_borrow.v
+theories/lifetime/na_borrow.v
 theories/lang/adequacy.v
 theories/lang/derived.v
 theories/lang/heap.v
@@ -25,6 +25,14 @@ theories/lang/wp_tactics.v
 theories/typing/type.v
 theories/typing/type_incl.v
 theories/typing/perm.v
-theories/typing/perm_incl.v
 theories/typing/typing.v
 theories/typing/lft_contexts.v
+theories/typing/own.v
+theories/typing/uniq_bor.v
+theories/typing/shr_bor.v
+theories/typing/product.v
+theories/typing/product_split.v
+theories/typing/sum.v
+theories/typing/bool.v
+theories/typing/int.v
+theories/typing/function.v
