@@ -31,7 +31,7 @@ Lemma wp_alloc_pst E σ n:
       ownP σ' }}}.
 Proof.
   iIntros (? Φ) "HP HΦ". iApply (wp_lift_atomic_head_step _ σ); eauto.
-  iFrame "HP". iNext. iIntros (v2 σ2 ef) "[% HP]". inv_head_step.
+  iFrame "HP". iNext. iIntros (v2 σ2 ef) "% HP". inv_head_step.
   rewrite big_sepL_nil right_id. by iApply "HΦ"; iFrame; eauto.
 Qed.
 
@@ -42,7 +42,7 @@ Lemma wp_free_pst E σ l n :
   {{{ RET LitV $ LitUnit; ownP (free_mem l (Z.to_nat n) σ) }}}.
 Proof.
   iIntros (???)  "HP HΦ". iApply (wp_lift_atomic_head_step _ σ); eauto.
-  iFrame "HP". iNext. iIntros (v2 σ2 ef) "[% HP]". inv_head_step.
+  iFrame "HP". iNext. iIntros (v2 σ2 ef) "% HP". inv_head_step.
   rewrite big_sepL_nil right_id. by iApply "HΦ".
 Qed.
 
@@ -74,7 +74,7 @@ Lemma wp_read_na1_pst E l Φ :
 Proof.
   iIntros "HΦP". iApply (wp_lift_head_step E); auto.
   iMod "HΦP" as (σ n v) "(%&HΦ&HP)". iModIntro. iExists σ. iSplit. done. iFrame.
-  iNext. iIntros (e2 σ2 ef) "[% HΦ]". inv_head_step.
+  iNext. iIntros (e2 σ2 ef) "% HΦ". inv_head_step.
   rewrite big_sepL_nil right_id. iApply ("HP" with "HΦ").
 Qed.
 
@@ -105,32 +105,30 @@ Lemma wp_write_na1_pst E l v Φ :
 Proof.
   iIntros "HΦP". iApply (wp_lift_head_step E); auto.
   iMod "HΦP" as (σ v') "(%&HΦ&HP)". iModIntro. iExists σ. iSplit. done. iFrame.
-  iNext. iIntros (e2 σ2 ef) "[% HΦ]". inv_head_step.
+  iNext. iIntros (e2 σ2 ef) "% HΦ". inv_head_step.
   rewrite big_sepL_nil right_id. iApply ("HP" with "HΦ").
 Qed.
 
-Lemma wp_cas_fail_pst E σ l n e1 v1 v2 vl :
-  to_val e1 = Some v1 →
-  σ !! l = Some (RSt n, vl) →
-  value_eq σ v1 vl = Some false →
-  {{{ ▷ ownP σ }}} CAS (Lit $ LitLoc l) e1 (of_val v2) @ E
-  {{{ RET LitV $ LitInt 0; ownP σ }}}.
+Lemma wp_cas_pst E n σ l e1 lit1 lit2 litl :
+  to_val e1 = Some $ LitV lit1 →
+  σ !! l = Some (RSt n, LitV litl) →
+  (lit_eq σ lit1 litl ∨ lit_neq σ lit1 litl) →
+  (lit_eq σ lit1 litl → n = 0%nat) →
+  {{{ ▷ ownP σ }}} CAS (Lit $ LitLoc l) e1 (Lit lit2) @ E
+  {{{ b, RET LitV $ lit_of_bool b;
+      if b is true then ⌜lit_eq σ lit1 litl⌝ ∗ ownP (<[l:=(RSt 0, LitV lit2)]>σ)
+      else ⌜lit_neq σ lit1 litl⌝ ∗ ownP σ }}}.
 Proof.
-  iIntros (?%of_to_val ???) "HP HΦ". subst.
-  iApply wp_lift_atomic_det_head_step; eauto. by intros; inv_head_step; eauto.
-  iFrame. iNext. rewrite big_sepL_nil right_id. iIntros "?". by iApply "HΦ".
-Qed.
-
-Lemma wp_cas_suc_pst E σ l e1 v1 v2 vl :
-  to_val e1 = Some v1 →
-  σ !! l = Some (RSt 0, vl) →
-  value_eq σ v1 vl = Some true →
-  {{{ ▷ ownP σ }}} CAS (Lit $ LitLoc l) e1 (of_val v2) @ E
-  {{{ RET LitV $ LitInt 1; ownP (<[l:=(RSt 0, v2)]>σ) }}}.
-Proof.
-  iIntros (?%of_to_val ???) "HP HΦ". subst.
-  iApply wp_lift_atomic_det_head_step; eauto. by intros; inv_head_step; eauto.
-  iFrame. iNext. rewrite big_sepL_nil right_id. iIntros "?". by iApply "HΦ".
+  iIntros (?%of_to_val ? Hdec Hn ?) "HP HΦ". subst.
+  iApply wp_lift_atomic_head_step; eauto.
+  { destruct Hdec as [Heq|Hneq].
+    - specialize (Hn Heq). subst. do 3 eexists. by eapply CasSucS.
+    - do 3 eexists. by eapply CasFailS. }
+  iFrame. iNext. iIntros (e2 σ2 efs Hs) "Ho".
+  inv_head_step; rewrite big_sepL_nil right_id.
+  - iApply ("HΦ" $! false). eauto.
+  - iApply ("HΦ" $! true). eauto.
+  - exfalso. refine (_ (Hn _)); last done. intros. omega.
 Qed.
 
 (** Base axioms for core primitives of the language: Stateless reductions *)
@@ -154,13 +152,27 @@ Proof.
   by intros; inv_head_step; eauto. iNext. rewrite big_sepL_nil. by iFrame.
 Qed.
 
-Lemma wp_bin_op E op l1 l2 l' Φ :
-  bin_op_eval op l1 l2 = Some l' →
-  ▷ (|={E}=> Φ (LitV l')) -∗ WP BinOp op (Lit l1) (Lit l2) @ E {{ Φ }}.
+Lemma wp_bin_op_heap E σ op l1 l2 l' :
+  bin_op_eval σ op l1 l2 l' →
+  {{{ ▷ ownP σ }}} BinOp op (Lit l1) (Lit l2) @ E
+  {{{ l'', RET LitV l''; ⌜bin_op_eval σ op l1 l2 l''⌝ ∗ ownP σ }}}.
 Proof.
-  iIntros (?) "H". iApply wp_lift_pure_det_head_step; eauto.
-  by intros; inv_head_step; eauto.
-  iNext. rewrite big_sepL_nil right_id. iMod "H". by iApply wp_value.
+  iIntros (? Φ) "HP HΦ". iApply wp_lift_atomic_head_step; eauto.
+  iFrame "HP". iNext. iIntros (e2 σ2 efs Hs) "Ho". 
+  inv_head_step; rewrite big_sepL_nil right_id.
+  iApply "HΦ". eauto.
+Qed.
+
+Lemma wp_bin_op_pure E op l1 l2 l' :
+  (∀ σ, bin_op_eval σ op l1 l2 l') →
+  {{{ True }}} BinOp op (Lit l1) (Lit l2) @ E
+  {{{ l'' σ, RET LitV l''; ⌜bin_op_eval σ op l1 l2 l''⌝ }}}.
+Proof.
+  iIntros (? Φ) "HΦ". iApply wp_lift_pure_head_step; eauto.
+  { intros. inv_head_step. done. }
+  iNext. iIntros (e2 efs σ Hs). 
+  inv_head_step; rewrite big_sepL_nil right_id.
+  rewrite -wp_value //. iApply "HΦ". eauto.
 Qed.
 
 Lemma wp_case E i e el Φ :

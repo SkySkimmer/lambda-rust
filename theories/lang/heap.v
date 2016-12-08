@@ -529,8 +529,8 @@ Section heap.
     iNext. iExists _, hF. iFrame. eauto using heap_freeable_rel_stable.
   Qed.
 
-  Lemma wp_cas_int_fail E l q z1 e2 v2 zl :
-    ↑heapN ⊆ E → to_val e2 = Some v2 → z1 ≠ zl →
+  Lemma wp_cas_int_fail E l q z1 e2 lit2 zl :
+    ↑heapN ⊆ E → to_val e2 = Some $ LitV lit2 → z1 ≠ zl →
     {{{ heap_ctx ∗ ▷ l ↦{q} (LitV $ LitInt zl) }}}
       CAS (Lit $ LitLoc l) (Lit $ LitInt z1) e2 @ E
     {{{ RET LitV $ LitInt 0; l ↦{q} (LitV $ LitInt zl) }}}.
@@ -539,14 +539,36 @@ Section heap.
     rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
     iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
     iDestruct (heap_mapsto_lookup with "Hvalσ Hv") as %[n Hσl].
-    iApply (wp_cas_fail_pst with "[$Hσ]"); eauto.
-    { by rewrite /= bool_decide_false. }
-    iNext. iIntros "Hσ". iMod ("Hclose" with "[-Hv HΦ]") as "_"; last by iApply "HΦ".
+    iApply (wp_cas_pst with "[$Hσ]"); eauto.
+    { right. by constructor. }
+    { inversion 1. done. }
+    iNext. iIntros ([|]).
+    { iIntros "[Heq _]". iDestruct "Heq" as %Heq. inversion Heq. done. }
+    iIntros "[_ Hσ]". iMod ("Hclose" with "[-Hv HΦ]") as "_"; last by iApply "HΦ".
     iNext. iExists _, hF. iFrame. eauto using heap_freeable_rel_stable.
   Qed.
 
-  Lemma wp_cas_loc_fail E l q q' q1 l1 v1' e2 v2 l' vl' :
-    ↑heapN ⊆ E → to_val e2 = Some v2 → l1 ≠ l' →
+  Lemma wp_cas_int_suc E l z1 e2 lit2 :
+    ↑heapN ⊆ E → to_val e2 = Some $ LitV lit2 →
+    {{{ heap_ctx ∗ ▷ l ↦ (LitV $ LitInt z1) }}}
+      CAS (Lit $ LitLoc l) (Lit $ LitInt z1) e2 @ E
+    {{{ RET LitV $ LitInt 1; l ↦ LitV lit2 }}}.
+  Proof.
+    iIntros (? <-%of_to_val?) "[#Hinv >Hv] HΦ".
+    rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
+    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
+    iDestruct (heap_mapsto_lookup_1 with "Hvalσ Hv") as %?.
+    iApply (wp_cas_pst with "[$Hσ]"); eauto.
+    { left. by constructor. }
+    iNext. iIntros ([|]); last first.
+    { iIntros "[Hneq _]". iDestruct "Hneq" as %Hneq. inversion Hneq. done. }
+    iIntros "[_ Hσ]". iMod (heap_write_vs with "[$Hvalσ $Hv]") as "[Hvalσ Hv]"; first done.
+    iMod ("Hclose" with "[-Hv HΦ]"); last by iApply "HΦ"; iFrame.
+    iNext. iExists _, hF. iFrame. eauto using  heap_freeable_rel_stable.
+  Qed.
+
+  Lemma wp_cas_loc_fail E l q q' q1 l1 v1' e2 lit2 l' vl' :
+    ↑heapN ⊆ E → to_val e2 = Some $ LitV lit2 → l1 ≠ l' →
     {{{ heap_ctx ∗ ▷ l ↦{q} (LitV $ LitLoc l') ∗ ▷ l' ↦{q'} vl' ∗ ▷ l1 ↦{q1} v1' }}}
       CAS (Lit $ LitLoc l) (Lit $ LitLoc l1) e2 @ E
     {{{ RET LitV $ LitInt 0;
@@ -558,46 +580,33 @@ Section heap.
     iDestruct (heap_mapsto_lookup with "Hvalσ Hl") as %[n Hσl].
     iDestruct (heap_mapsto_lookup with "Hvalσ Hl'") as %[n' Hσl'].
     iDestruct (heap_mapsto_lookup with "Hvalσ Hl1") as %[n1 Hσl1].
-    iApply (wp_cas_fail_pst with "[$Hσ]"); eauto.
-    { by rewrite /= bool_decide_false // Hσl1 Hσl'. }
-    iNext. iIntros "Hσ ".
-    iMod ("Hclose" with "[-Hl Hl' Hl1 HΦ]") as "_"; last by iApply "HΦ"; iFrame.
+    iApply (wp_cas_pst with "[$Hσ]"); eauto.
+    { right. by constructor. }
+    { inversion 1; subst; simplify_option_eq. }
+    iNext. iIntros ([|]).
+    { iIntros "[Heq _]". iDestruct "Heq" as %Heq. inversion Heq; simplify_option_eq. }
+    iIntros "[_ Hσ]". iMod ("Hclose" with "[-Hl Hl' Hl1 HΦ]") as "_"; last by iApply "HΦ"; iFrame.
     iNext. iExists _, hF. by iFrame.
   Qed.
 
-  Lemma wp_cas_int_suc E l z1 e2 v2 :
-    ↑heapN ⊆ E → to_val e2 = Some v2 →
-    {{{ heap_ctx ∗ ▷ l ↦ (LitV $ LitInt z1) }}}
-      CAS (Lit $ LitLoc l) (Lit $ LitInt z1) e2 @ E
-    {{{ RET LitV $ LitInt 1; l ↦ v2 }}}.
+  Lemma wp_cas_loc_suc E l l1 e2 lit2 :
+    ↑heapN ⊆ E → to_val e2 = Some $ LitV lit2 →
+    {{{ heap_ctx ∗ ▷ l ↦ (LitV $ LitLoc l1) }}}
+      CAS (Lit $ LitLoc l) (Lit $ LitLoc l1) e2 @ E
+    {{{ RET LitV $ LitInt 1; l ↦ LitV lit2 }}}.
   Proof.
     iIntros (? <-%of_to_val?) "[#Hinv >Hv] HΦ".
     rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
     iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
     iDestruct (heap_mapsto_lookup_1 with "Hvalσ Hv") as %?.
-    iApply (wp_cas_suc_pst with "[$Hσ]"); eauto.
-    { by rewrite /= bool_decide_true. }
-    iNext. iIntros "Hσ".
-    iMod (heap_write_vs with "[$Hvalσ $Hv]") as "[Hvalσ Hv]"; first done.
+    iApply (wp_cas_pst with "[$Hσ]"); eauto.
+    { left. by constructor. }
+    iNext. iIntros ([|]); last first.
+    { iIntros "[Hneq _]". iDestruct "Hneq" as %Hneq. inversion Hneq. done. }
+    iIntros "[_ Hσ]". iMod (heap_write_vs with "[$Hvalσ $Hv]") as "[Hvalσ Hv]"; first done.
     iMod ("Hclose" with "[-Hv HΦ]"); last by iApply "HΦ"; iFrame.
     iNext. iExists _, hF. iFrame. eauto using  heap_freeable_rel_stable.
   Qed.
 
-  Lemma wp_cas_loc_suc E l l1 e2 v2 :
-    ↑heapN ⊆ E → to_val e2 = Some v2 →
-    {{{ heap_ctx ∗ ▷ l ↦ (LitV $ LitLoc l1) }}}
-      CAS (Lit $ LitLoc l) (Lit $ LitLoc l1) e2 @ E
-    {{{ RET LitV $ LitInt 1; l ↦ v2 }}}.
-  Proof.
-    iIntros (? <-%of_to_val?) "[#Hinv >Hv] HΦ".
-    rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
-    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
-    iDestruct (heap_mapsto_lookup_1 with "Hvalσ Hv") as %?.
-    iApply (wp_cas_suc_pst with "[$Hσ]"); eauto.
-    { by rewrite /= bool_decide_true. }
-    iNext. iIntros "Hσ".
-    iMod (heap_write_vs with "[$Hvalσ $Hv]") as "[Hvalσ Hv]"; first done.
-    iMod ("Hclose" with "[-Hv HΦ]"); last by iApply "HΦ"; iFrame.
-    iNext. iExists _, hF. iFrame. eauto using  heap_freeable_rel_stable.
-  Qed.
+  (* TODO: Add a lemma for non-deterministic CAS on locations. *)
 End heap.

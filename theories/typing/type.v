@@ -17,8 +17,8 @@ Section type.
 
   Record type :=
     { ty_size : nat;
-      ty_own : thread_id → list val → iProp Σ;
-      ty_shr : lft → thread_id → coPset → loc → iProp Σ;
+      ty_own : na_inv_pool_name → list val → iProp Σ;
+      ty_shr : lft → na_inv_pool_name → coPset → loc → iProp Σ;
 
       ty_shr_persistent κ tid E l : PersistentP (ty_shr κ tid E l);
 
@@ -54,7 +54,7 @@ Section type.
      bellow will not be acceptable by Coq. *)
   Record simple_type `{iris_typeG Σ} :=
     { st_size : nat;
-      st_own : thread_id → list val → iProp Σ;
+      st_own : na_inv_pool_name → list val → iProp Σ;
 
       st_size_eq tid vl : st_own tid vl -∗ ⌜length vl = st_size⌝;
       st_own_persistent tid vl : PersistentP (st_own tid vl) }.

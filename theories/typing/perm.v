@@ -6,11 +6,11 @@ From lrust.lifetime Require Import borrow frac_borrow.
 Section perm.
   Context `{iris_typeG Σ}.
 
-  Definition perm {Σ} := thread_id → iProp Σ.
+  Definition perm {Σ} := na_inv_pool_name → iProp Σ.
 
   Fixpoint eval_expr (ν : expr) : option val :=
     match ν with
-    | BinOp ProjOp e (Lit (LitInt n)) =>
+    | BinOp OffsetOp e (Lit (LitInt n)) =>
       match eval_expr e with
       | Some (#(LitLoc l)) => Some (#(shift_loc l n))
       | _ => None

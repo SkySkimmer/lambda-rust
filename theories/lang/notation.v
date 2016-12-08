@@ -49,7 +49,7 @@ Notation "'rec:' f [ ] := e" := (Rec f%RustB nil e%E)
   (at level 102, f at level 1, e at level 200) : expr_scope.
 Notation "'rec:' f [ ] := e" := (RecV f%RustB nil e%E)
   (at level 102, f at level 1, e at level 200) : val_scope.
-Notation "e1 +ₗ e2" := (BinOp ProjOp e1%E e2%E)
+Notation "e1 +ₗ e2" := (BinOp OffsetOp e1%E e2%E)
   (at level 50, left associativity) : expr_scope.
 
 (** Derived notions, in order of declaration. The notations for let and seq

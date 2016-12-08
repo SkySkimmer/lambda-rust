@@ -5,24 +5,50 @@ From lrust.lang Require Import tactics.
 
 Inductive access_kind : Type := ReadAcc | WriteAcc | FreeAcc.
 
+(* This is a crucial definition; if we forget to sync it with head_step,
+   the results proven here are worthless. *)
 Inductive next_access_head : expr → state → access_kind * order → loc → Prop :=
 | Access_read ord l σ :
     next_access_head (Read ord (Lit $ LitLoc l)) σ (ReadAcc, ord) l
 | Access_write ord l e σ :
     is_Some (to_val e) →
     next_access_head (Write ord (Lit $ LitLoc l) e) σ (WriteAcc, ord) l
-| Access_cas_fail l st e1 v1 e2 vl σ :
-    to_val e1 = Some v1 → is_Some (to_val e2) →  v1 ≠ vl →
-    σ !! l = Some (st, vl) →
+| Access_cas_fail l st e1 lit1 e2 lit2 litl σ :
+    to_val e1 = Some $ LitV lit1 → to_val e2 = Some $ LitV lit2 →
+    lit_neq σ lit1 litl → σ !! l = Some (st, LitV litl) →
     next_access_head (CAS (Lit $ LitLoc l) e1 e2) σ (ReadAcc, ScOrd) l
-| Access_cas_suc l st e1 v1 e2 v2 σ :
-    to_val e1 = Some v1 → to_val e2 = Some v2 →
-    σ !! l = Some (st, v1) →
+| Access_cas_suc l st e1 lit1 e2 lit2 litl σ :
+    to_val e1 = Some $ LitV lit1 → to_val e2 = Some $ LitV lit2 →
+    lit_eq σ lit1 litl → σ !! l = Some (st, LitV litl) →
     next_access_head (CAS (Lit $ LitLoc l) e1 e2) σ (WriteAcc, ScOrd) l
 | Access_free n l σ i :
     0 ≤ i < n →
     next_access_head (Free (Lit $ LitInt n) (Lit $ LitLoc l))
                      σ (FreeAcc, Na2Ord) (shift_loc l i).
+
+(* Some sanity checks to make sure the definition above is not entirely insensible. *)
+Goal ∀ e1 e2 e3 σ, head_reducible (CAS e1 e2 e3) σ →
+                   ∃ a l, next_access_head (CAS e1 e2 e3) σ a l.
+Proof.
+  intros ??? σ (?&?&?&?). inversion H; do 2 eexists;
+    (eapply Access_cas_fail; done) || eapply Access_cas_suc; done.
+Qed.
+Goal ∀ o e σ, head_reducible (Read o e) σ →
+              ∃ a l, next_access_head (Read o e) σ a l.
+Proof.
+  intros ?? σ (?&?&?&?). inversion H; do 2 eexists; eapply Access_read; done.
+Qed.
+Goal ∀ o e1 e2 σ, head_reducible (Write o e1 e2) σ →
+              ∃ a l, next_access_head (Write o e1 e2) σ a l.
+Proof.
+  intros ??? σ (?&?&?&?). inversion H; do 2 eexists;
+    eapply Access_write; try done; eexists; done.
+Qed.
+Goal ∀ e1 e2 σ, head_reducible (Free e1 e2) σ →
+              ∃ a l, next_access_head (Free e1 e2) σ a l.
+Proof.
+  intros ?? σ (?&?&?&?). inversion H; do 2 eexists; eapply Access_free; done.
+Qed.
 
 Definition next_access_thread (e: expr) (σ : state)
            (a : access_kind * order) (l : loc) : Prop :=
@@ -53,18 +79,20 @@ Qed.
 Lemma next_access_head_reductible_ctx e σ σ' a l K :
   next_access_head e σ' a l → reducible (fill K e) σ → head_reducible e σ.
 Proof.
-  intros Ha (e'&σ''&ef&Hstep). assert (to_val e = None). by destruct Ha.
-  change fill with ectx_language.fill in Hstep.
-  apply fill_step_inv in Hstep; last done. destruct Hstep as (e2'&_&Hstep).
-  clear K. destruct Hstep as [K e1' e2'' ?? Hstep]. subst. destruct K as [|K0 K].
-    by unfold head_reducible; eauto.
-  exfalso. simpl in Ha. apply next_access_head_head in Ha.
-  change to_val with ectxi_language.to_val in Ha.
-  rewrite fill_not_val in Ha. by eapply is_Some_None. by eapply val_stuck.
+  intros Ha. apply step_is_head.
+  - by destruct Ha.
+  - clear -Ha. intros Ki K e' Heq (?&?&?&Hstep).
+    subst e. apply next_access_head_head in Ha.
+    change to_val with ectxi_language.to_val in Ha.
+    rewrite fill_not_val in Ha. by eapply is_Some_None. by eapply val_stuck.
 Qed.
+
+Definition head_reduce_not_to_stuck e σ :=
+  ∀ e' σ' efs, ectx_language.head_step e σ e' σ' efs → e' ≠ App (Lit $ LitInt 0) [].
 
 Lemma next_access_head_reducible_state e σ a l :
   next_access_head e σ a l → head_reducible e σ →
+  head_reduce_not_to_stuck e σ →
   match a with
   | (ReadAcc, ScOrd | Na1Ord) => ∃ v n, σ !! l = Some (RSt n, v)
   | (ReadAcc, Na2Ord) => ∃ v n, σ !! l = Some (RSt (S n), v)
@@ -73,11 +101,14 @@ Lemma next_access_head_reducible_state e σ a l :
   | (FreeAcc, _) => ∃ v ls, σ !! l = Some (ls, v)
   end.
 Proof.
-  assert (Hrefl : ∀ v, value_eq σ v v ≠ Some false).
-  by destruct v as [[]|]=>//=; rewrite bool_decide_true.
-  intros Ha (e'&σ'&ef&Hstep). destruct Ha; inv_head_step; eauto.
-  by edestruct Hrefl.
-  match goal with H : ∀ m, _ |- _ => destruct (H i) as [_ [[]?]] end; eauto.
+(*  assert (Hrefl : ∀ l, ~lit_neq σ l l).
+    { intros ? Hneq. inversion Hneq; done. } *)
+  intros Ha (e'&σ'&ef&Hstep) Hrednonstuck. destruct Ha; inv_head_step; eauto.
+  - destruct n; first by eexists. exfalso. eapply Hrednonstuck; last done.
+    eapply CasStuckS; done.
+  - exfalso. eapply Hrednonstuck; last done.
+    eapply CasStuckS; done.
+  - match goal with H : ∀ m, _ |- _ => destruct (H i) as [_ [[]?]] end; eauto.
 Qed.
 
 Lemma next_access_head_Na1Ord_step e1 e2 ef σ1 σ2 a l :
@@ -96,7 +127,20 @@ Lemma next_access_head_Na1Ord_concurent_step e1 e1' e2 e'f σ σ' a1 a2 l :
   next_access_head e2 σ' a2 l.
 Proof.
   intros Ha1 Hstep Ha2. inversion Ha1; subst; clear Ha1; inv_head_step;
-  destruct Ha2; simplify_eq; econstructor; eauto; apply lookup_insert.
+  destruct Ha2; simplify_eq; econstructor; eauto; try apply lookup_insert.
+  (* Oh my. FIXME RJ. *)
+  - eapply lit_neq_state; last done.
+    setoid_rewrite <-not_elem_of_dom. rewrite dom_insert_L.
+    cut (is_Some (σ !! l)); last by eexists. rewrite -elem_of_dom. set_solver+.
+  - eapply lit_eq_state; last done.
+    setoid_rewrite <-not_elem_of_dom. rewrite dom_insert_L.
+    cut (is_Some (σ !! l)); last by eexists. rewrite -elem_of_dom. set_solver+.
+  - eapply lit_neq_state; last done.
+    setoid_rewrite <-not_elem_of_dom. rewrite dom_insert_L.
+    cut (is_Some (σ !! l)); last by eexists. rewrite -elem_of_dom. set_solver+.
+  - eapply lit_eq_state; last done.
+    setoid_rewrite <-not_elem_of_dom. rewrite dom_insert_L.
+    cut (is_Some (σ !! l)); last by eexists. rewrite -elem_of_dom. set_solver+.
 Qed.
 
 Lemma next_access_head_Free_concurent_step e1 e1' e2 e'f σ σ' o1 a2 l :
@@ -121,6 +165,38 @@ Proof.
   eapply (@is_Some_None (lock_state * val)). rewrite -FREE'. naive_solver.
 Qed.
 
+Lemma safe_step_not_reduce_to_stuck el σ K e e' σ' ef :
+  (∀ el' σ' e', rtc step (el, σ) (el', σ') →
+                e' ∈ el' → to_val e' = None → reducible e' σ') →
+  fill K e ∈ el → head_step e σ e' σ' ef → head_reduce_not_to_stuck e' σ'.
+Proof.
+  intros Hsafe Hi Hstep e1 σ1 ? Hstep1 Hstuck.
+  cut (reducible (fill K e1) σ1).
+  { subst. intros (?&?&?&?). eapply stuck_irreducible. done. }
+  destruct (elem_of_list_split _ _ Hi) as (?&?&->).
+  eapply Hsafe; last by (apply: fill_not_val; subst).
+  - eapply rtc_l, rtc_l, rtc_refl.
+    + econstructor. done. done. econstructor; done.
+    + econstructor. done. done. econstructor; done.
+  - subst. set_solver+.
+Qed.
+
+(* TODO: Unify this and the above. *)
+Lemma safe_not_reduce_to_stuck el σ K e :
+  (∀ el' σ' e', rtc step (el, σ) (el', σ') →
+                e' ∈ el' → to_val e' = None → reducible e' σ') →
+  fill K e ∈ el → head_reduce_not_to_stuck e σ.
+Proof.
+  intros Hsafe Hi e1 σ1 ? Hstep1 Hstuck.
+  cut (reducible (fill K e1) σ1).
+  { subst. intros (?&?&?&?). eapply stuck_irreducible. done. }
+  destruct (elem_of_list_split _ _ Hi) as (?&?&->).
+  eapply Hsafe; last by (apply: fill_not_val; subst).
+  - eapply rtc_l, rtc_refl.
+    + econstructor. done. done. econstructor; done.
+  - subst. set_solver+.
+Qed.
+
 Theorem safe_nonracing el σ :
   (∀ el' σ' e', rtc step (el, σ) (el', σ') →
                 e' ∈ el' → to_val e' = None → reducible e' σ') →
@@ -132,9 +208,11 @@ Proof.
   assert (to_val e1 = None). by destruct Ha1.
   assert (Hrede1:head_reducible e1 σ).
   { eapply (next_access_head_reductible_ctx e1 σ σ a1 l K1), Hsafe, fill_not_val=>//.
-    set_solver. }
-  assert (Hσe1:=next_access_head_reducible_state _ _ _ _ Ha1 Hrede1).
-  destruct Hrede1 as (e1'&σ1'&ef1&Hstep1).
+    abstract set_solver. }
+  assert (Hnse1:head_reduce_not_to_stuck e1 σ).
+  { eapply safe_not_reduce_to_stuck with (K:=K1); first done. set_solver+. }
+  assert (Hσe1:=next_access_head_reducible_state _ _ _ _ Ha1 Hrede1 Hnse1).
+  destruct Hrede1 as (e1'&σ1'&ef1&Hstep1). clear Hnse1.
   assert (Ha1' : a1.2 = Na1Ord → next_access_head e1' σ1' (a1.1, Na2Ord) l).
   { intros. eapply next_access_head_Na1Ord_step, Hstep1.
     by destruct a1; simpl in *; subst. }
@@ -147,13 +225,17 @@ Proof.
   { destruct a1 as [a1 []]=>// _.
     eapply (next_access_head_reductible_ctx e1' σ1' σ1' (a1, Na2Ord) l K1), Hsafe,
            fill_not_val=>//.
-    by auto. set_solver. by destruct Hstep1; inversion Ha1. }
+    by auto. abstract set_solver. by destruct Hstep1; inversion Ha1. }
+  assert (Hnse1: head_reduce_not_to_stuck e1' σ1').
+  { eapply safe_step_not_reduce_to_stuck with (K:=K1); first done; last done. set_solver+. }
 
   assert (to_val e2 = None). by destruct Ha2.
   assert (Hrede2:head_reducible e2 σ).
   { eapply (next_access_head_reductible_ctx e2 σ σ a2 l K2), Hsafe, fill_not_val=>//.
-    set_solver. }
-  assert (Hσe2:=next_access_head_reducible_state _ _ _ _ Ha2 Hrede2).
+    abstract set_solver. }
+  assert (Hnse2:head_reduce_not_to_stuck e2 σ).
+  { eapply safe_not_reduce_to_stuck with (K:=K2); first done. set_solver+. }
+  assert (Hσe2:=next_access_head_reducible_state _ _ _ _ Ha2 Hrede2 Hnse2).
   destruct Hrede2 as (e2'&σ2'&ef2&Hstep2).
   assert (Ha2' : a2.2 = Na1Ord → next_access_head e2' σ2' (a2.1, Na2Ord) l).
   { intros. eapply next_access_head_Na1Ord_step, Hstep2.
@@ -167,30 +249,39 @@ Proof.
   { destruct a2 as [a2 []]=>// _.
     eapply (next_access_head_reductible_ctx e2' σ2' σ2' (a2, Na2Ord) l K2), Hsafe,
            fill_not_val=>//.
-    by auto. set_solver. by destruct Hstep2; inversion Ha2. }
-
+    by auto. abstract set_solver. by destruct Hstep2; inversion Ha2. }
+  assert (Hnse2':head_reduce_not_to_stuck e2' σ2').
+  { eapply safe_step_not_reduce_to_stuck with (K:=K2); first done; last done. set_solver+. }
 
   assert (Ha1'2 : a1.2 = Na1Ord → next_access_head e2 σ1' a2 l).
   { intros HNa. eapply next_access_head_Na1Ord_concurent_step=>//.
     by rewrite <-HNa, <-surjective_pairing. }
   assert (Hrede1_2: head_reducible e2 σ1').
   { intros. eapply (next_access_head_reductible_ctx e2 σ1' σ  a2 l K2), Hsafe, fill_not_val=>//.
-    set_solver. }
+    abstract set_solver. }
+  assert (Hnse1_2:head_reduce_not_to_stuck e2 σ1').
+  { eapply safe_not_reduce_to_stuck with (K:=K2).
+    - intros. eapply Hsafe. etrans; last done. done. done. done.
+    - set_solver+. }
   assert (Hσe1'1:=
-    λ Hord, next_access_head_reducible_state _ _ _ _ (Ha1' Hord) (Hrede1 Hord)).
+    λ Hord, next_access_head_reducible_state _ _ _ _ (Ha1' Hord) (Hrede1 Hord) Hnse1).
   assert (Hσe1'2:=
-    λ Hord, next_access_head_reducible_state _ _ _ _ (Ha1'2 Hord) Hrede1_2).
+    λ Hord, next_access_head_reducible_state _ _ _ _ (Ha1'2 Hord) Hrede1_2 Hnse1_2).
 
   assert (Ha2'1 : a2.2 = Na1Ord → next_access_head e1 σ2' a1 l).
   { intros HNa. eapply next_access_head_Na1Ord_concurent_step=>//.
     by rewrite <-HNa, <-surjective_pairing. }
   assert (Hrede2_1: head_reducible e1 σ2').
   { intros. eapply (next_access_head_reductible_ctx e1 σ2' σ a1 l K1), Hsafe, fill_not_val=>//.
-    set_solver. }
+    abstract set_solver. }
+  assert (Hnse2_1:head_reduce_not_to_stuck e1 σ2').
+  { eapply safe_not_reduce_to_stuck with (K:=K1).
+    - intros. eapply Hsafe. etrans; last done. done. done. done.
+    - set_solver+. }
   assert (Hσe2'1:=
-    λ Hord, next_access_head_reducible_state _ _ _ _ (Ha2'1 Hord) Hrede2_1).
+    λ Hord, next_access_head_reducible_state _ _ _ _ (Ha2'1 Hord) Hrede2_1 Hnse2_1).
   assert (Hσe2'2:=
-    λ Hord, next_access_head_reducible_state _ _ _ _ (Ha2' Hord) (Hrede2 Hord)).
+    λ Hord, next_access_head_reducible_state _ _ _ _ (Ha2' Hord) (Hrede2 Hord) Hnse2').
 
   assert (a1.1 = FreeAcc → False).
   { destruct a1 as [[]?]; inversion 1.
@@ -207,7 +298,7 @@ Proof.
     end;
     try congruence.
 
-  clear e2' Hstep2 σ2' Hrtc_step2 Hrede2_1. destruct Hrede1_2 as (e2'&σ'&ef&?).
+  clear e2' Hnse2' Hnse2_1 Hstep2 σ2' Hrtc_step2 Hrede2_1. destruct Hrede1_2 as (e2'&σ'&ef&?).
   inv_head_step.
   match goal with
   | H : <[l:=_]> σ !! l = _ |- _ => by rewrite lookup_insert in H

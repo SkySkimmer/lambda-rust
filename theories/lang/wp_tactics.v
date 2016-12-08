@@ -85,8 +85,12 @@ Tactic Notation "wp_op" :=
   | |- _ ⊢ wp ?E ?e ?Q => reshape_expr e ltac:(fun K e' =>
     match eval hnf in e' with
     | BinOp LeOp _ _ => wp_bind_core K; apply wp_le; wp_finish
-    | BinOp _ _ _ =>
-       wp_bind_core K; etrans; [|eapply wp_bin_op; try fast_done]; wp_finish
+    | BinOp OffsetOp _ _ =>
+       wp_bind_core K; etrans; [|eapply wp_offset; try fast_done]; wp_finish
+    | BinOp PlusOp _ _ =>
+       wp_bind_core K; etrans; [|eapply wp_plus; try fast_done]; wp_finish
+    | BinOp MinusOp _ _ =>
+       wp_bind_core K; etrans; [|eapply wp_minus; try fast_done]; wp_finish
     end) || fail "wp_op: cannot find 'BinOp' in" e
   | _ => fail "wp_op: not a 'wp'"
   end.

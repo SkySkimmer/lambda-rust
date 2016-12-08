@@ -3,7 +3,7 @@ From iris.base_logic.lib Require Export na_invariants.
 From iris.proofmode Require Import tactics.
 
 Definition na_bor `{invG Σ, lftG Σ, na_invG Σ}
-           (κ : lft) (tid : thread_id) (N : namespace) (P : iProp Σ) :=
+           (κ : lft) (tid : na_inv_pool_name) (N : namespace) (P : iProp Σ) :=
   (∃ i, &{κ,i}P ∗ na_inv tid N (idx_bor_own 1 i))%I.
 
 Notation "&na{ κ , tid , N } P" := (na_bor κ tid N P)
@@ -11,7 +11,7 @@ Notation "&na{ κ , tid , N } P" := (na_bor κ tid N P)
 
 Section na_bor.
   Context `{invG Σ, lftG Σ, na_invG Σ}
-          (tid : thread_id) (N : namespace) (P : iProp Σ).
+          (tid : na_inv_pool_name) (N : namespace) (P : iProp Σ).
 
   Global Instance na_bor_persistent κ : PersistentP (&na{κ,tid,N} P) := _.
   Global Instance na_bor_proper κ :

@@ -11,7 +11,7 @@ Definition loc : Set := block * Z.
 Inductive base_lit : Set :=
 | LitUnit | LitLoc (l : loc) | LitInt (n : Z).
 Inductive bin_op : Set :=
-| PlusOp | MinusOp | LeOp | ProjOp.
+| PlusOp | MinusOp | LeOp | EqOp | OffsetOp.
 Inductive order : Set :=
 | ScOrd | Na1Ord | Na2Ord.
 
@@ -167,17 +167,7 @@ Fixpoint subst_l (xl : list binder) (esl : list expr) (e : expr) : option expr :
 Definition lit_of_bool (b : bool) : base_lit :=
   LitInt (if b then 1 else 0).
 
-Definition shift_loc (l : loc) (n : Z) : loc := (l.1, l.2 + n).
-
-Definition bin_op_eval (op : bin_op) (l1 l2 : base_lit) : option base_lit :=
-  match op, l1, l2 with
-  | PlusOp, LitInt n1, LitInt n2 => Some $ LitInt (n1 + n2)
-  | MinusOp, LitInt n1, LitInt n2 => Some $ LitInt (n1 - n2)
-  | LeOp, LitInt n1, LitInt n2 =>
-    Some $ lit_of_bool $ bool_decide (n1 ≤ n2)
-  | ProjOp, LitLoc l, LitInt n => Some $ LitLoc $ shift_loc l n
-  | _, _, _ => None
-  end.
+Definition shift_loc (l : loc) (z : Z) : loc := (l.1, l.2 + z).
 
 Fixpoint init_mem (l:loc) (init:list val) (σ:state) : state :=
   match init with
@@ -191,21 +181,41 @@ Fixpoint free_mem (l:loc) (n:nat) (σ:state) : state :=
   | S n => delete l (free_mem (shift_loc l 1) n σ)
   end.
 
-Definition value_eq (σ : state) (v1 v2 : val) : option bool :=
-  match v1, v2 with
-  | LitV (LitInt z1), LitV (LitInt z2) => Some (bool_decide (z1 = z2))
-  | LitV (LitLoc l1), LitV (LitLoc l2) =>
-    if bool_decide (l1 = l2) then Some true
-    else match σ !! l1, σ !! l2 with
-         | Some _, Some _ => Some false
-         | _, _ => None
-         end
-  | _, _ => None
-  end.
+Inductive lit_eq (σ : state) : base_lit → base_lit → Prop :=
+| IntRefl z : lit_eq σ (LitInt z) (LitInt z)
+| LocRefl l : lit_eq σ (LitLoc l) (LitLoc l)
+| LocUnallocL l1 l2 :
+    σ !! l1 = None →
+    lit_eq σ (LitLoc l1) (LitLoc l2)
+| LocUnallocR l1 l2 :
+    σ !! l2 = None →
+    lit_eq σ (LitLoc l1) (LitLoc l2).
+
+Inductive lit_neq (σ : state) : base_lit → base_lit → Prop :=
+| IntNeq z1 z2 :
+    z1 ≠ z2 → lit_neq σ (LitInt z1) (LitInt z2)
+| LocNeq l1 l2 :
+    l1 ≠ l2 → lit_neq σ (LitLoc l1) (LitLoc l2).
+
+Inductive bin_op_eval (σ : state) : bin_op → base_lit → base_lit → base_lit → Prop :=
+| BinOpPlus z1 z2 :
+    bin_op_eval σ PlusOp (LitInt z1) (LitInt z2) (LitInt (z1 + z2))
+| BinOpMinus z1 z2 :
+    bin_op_eval σ MinusOp (LitInt z1) (LitInt z2) (LitInt (z1 - z2))
+| BinOpLe z1 z2 :
+    bin_op_eval σ LeOp (LitInt z1) (LitInt z2) (lit_of_bool $ bool_decide (z1 ≤ z2))
+| BinOpEqTrue l1 l2 :
+    lit_eq σ l1 l2 → bin_op_eval σ EqOp l1 l2 (lit_of_bool true)
+| BinOpEqFalse l1 l2 :
+    lit_neq σ l1 l2 → bin_op_eval σ EqOp l1 l2 (lit_of_bool false)
+| BinOpOffset l z :
+    bin_op_eval σ OffsetOp (LitLoc l) (LitInt z) (LitLoc $ shift_loc l z).
+
+Definition stuck_term := App (Lit $ LitInt 0) [].
 
 Inductive head_step : expr → state → expr → state → list expr → Prop :=
 | BinOpS op l1 l2 l' σ :
-    bin_op_eval op l1 l2 = Some l' →
+    bin_op_eval σ op l1 l2 l' →
     head_step (BinOp op (Lit l1) (Lit l2)) σ (Lit l') σ []
 | BetaS f xl e e' el σ:
     Forall (λ ei, is_Some (to_val ei)) el →
@@ -243,17 +253,24 @@ Inductive head_step : expr → state → expr → state → list expr → Prop :
     head_step (Write Na2Ord (Lit $ LitLoc l) e) σ
               (Lit LitUnit) (<[l:=(RSt 0, v)]>σ)
               []
-| CasFailS l n e1 v1 e2 v2 vl σ :
-    to_val e1 = Some v1 → to_val e2 = Some v2 →
-    σ !! l = Some (RSt n, vl) →
-    value_eq σ v1 vl = Some false →
+| CasFailS l n e1 lit1 e2 lit2 litl σ :
+    to_val e1 = Some $ LitV lit1 → to_val e2 = Some $ LitV lit2 →
+    σ !! l = Some (RSt n, LitV litl) →
+    lit_neq σ lit1 litl →
     head_step (CAS (Lit $ LitLoc l) e1 e2) σ (Lit $ lit_of_bool false) σ  []
-| CasSucS l e1 v1 e2 v2 vl σ :
-    to_val e1 = Some v1 → to_val e2 = Some v2 →
-    σ !! l = Some (RSt 0, vl) →
-    value_eq σ v1 vl = Some true →
+| CasSucS l e1 lit1 e2 lit2 litl σ :
+    to_val e1 = Some $ LitV lit1 → to_val e2 = Some $ LitV lit2 →
+    σ !! l = Some (RSt 0, LitV litl) →
+    lit_eq σ lit1 litl →
     head_step (CAS (Lit $ LitLoc l) e1 e2) σ
-              (Lit $ lit_of_bool true) (<[l:=(RSt 0, v2)]>σ)
+              (Lit $ lit_of_bool true) (<[l:=(RSt 0, LitV lit2)]>σ)
+              []
+| CasStuckS l n e1 lit1 e2 lit2 litl σ :
+    to_val e1 = Some $ LitV lit1 → to_val e2 = Some $ LitV lit2 →
+    σ !! l = Some (RSt n, LitV litl) → 0 < n →
+    lit_eq σ lit1 litl →
+    head_step (CAS (Lit $ LitLoc l) e1 e2) σ
+              stuck_term σ
               []
 | AllocS n l init σ :
     0 < n →
@@ -451,6 +468,29 @@ Proof. intros. apply is_closed_subst with []; set_solver. Qed.
 Lemma is_closed_of_val X v : is_closed X (of_val v).
 Proof. apply is_closed_weaken_nil. induction v; simpl; auto. Qed.
 
+(* Operations on literals *)
+Lemma lit_eq_state σ1 σ2 l1 l2 :
+  (∀ l, σ1 !! l = None ↔ σ2 !! l = None) →
+  lit_eq σ1 l1 l2 → lit_eq σ2 l1 l2.
+Proof. intros Heq. inversion 1; econstructor; eauto; eapply Heq; done. Qed.
+
+Lemma lit_neq_state σ1 σ2 l1 l2 :
+  (∀ l, σ1 !! l = None ↔ σ2 !! l = None) →
+  lit_neq σ1 l1 l2 → lit_neq σ2 l1 l2.
+Proof. intros Heq. inversion 1; econstructor; eauto; eapply Heq; done. Qed.
+
+Lemma bin_op_eval_state σ1 σ2 op l1 l2 l' :
+  (∀ l, σ1 !! l = None ↔ σ2 !! l = None) →
+  bin_op_eval σ1 op l1 l2 l' → bin_op_eval σ2 op l1 l2 l'.
+Proof.
+  intros Heq. inversion 1; econstructor; eauto using lit_eq_state, lit_neq_state.
+Qed.
+
+(* Misc *)
+Lemma stuck_not_head_step σ e' σ' ef :
+  ¬head_step stuck_term σ e' σ' ef.
+Proof. inversion 1. Qed.
+
 (** Equality and other typeclass stuff *)
 Instance base_lit_dec_eq : EqDecision base_lit.
 Proof. solve_decision. Defined.
@@ -527,3 +567,16 @@ Solve Obligations with eauto using to_of_val, of_to_val,
   val_stuck, fill_item_val, fill_item_no_val_inj, head_ctx_step_val.
 
 Canonical Structure lrust_lang := ectx_lang expr.
+
+(* Lemmas about the language. *)
+Lemma stuck_irreducible K σ : irreducible (fill K stuck_term) σ.
+Proof.
+  intros ??? Hstep. edestruct step_is_head as (?&?&?&?); [..|by do 3 eexists|].
+  - done.
+  - clear. intros Ki K e' Heq (?&?&? & Hstep). destruct Ki; inversion Heq.
+    + destruct K as [|Ki K].
+      * simpl in *. subst. inversion Hstep.
+      * destruct Ki; simpl in *; done.
+    + destruct (map of_val vl); last done. destruct (fill K e'); done.
+  - by eapply stuck_not_head_step.
+Qed.

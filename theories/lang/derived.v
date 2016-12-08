@@ -48,9 +48,37 @@ Lemma wp_le E (n1 n2 : Z) P Φ :
   (n2 < n1 → P -∗ ▷ |={E}=> Φ (LitV false)) →
   P -∗ WP BinOp LeOp (Lit (LitInt n1)) (Lit (LitInt n2)) @ E {{ Φ }}.
 Proof.
-  intros. rewrite -wp_bin_op //; [].
-  destruct (bool_decide_reflect (n1 ≤ n2)); by eauto with omega.
+  iIntros (Hl Hg) "HP". iApply wp_fupd.
+  destruct (bool_decide_reflect (n1 ≤ n2)); [rewrite Hl //|rewrite Hg; last omega];
+    clear Hl Hg; (iApply wp_bin_op_pure; first by econstructor); iNext; iIntros (?? Heval);
+    inversion_clear Heval; [rewrite bool_decide_true //|rewrite bool_decide_false //].
 Qed.
+
+Lemma wp_offset E l z Φ :
+  ▷ (|={E}=> Φ (LitV $ LitLoc $ shift_loc l z)) -∗
+    WP BinOp OffsetOp (Lit $ LitLoc l) (Lit $LitInt z) @ E {{ Φ }}.
+Proof.
+  iIntros "HP". iApply wp_fupd. iApply wp_bin_op_pure; first by econstructor.
+  iNext. iIntros (?? Heval). inversion_clear Heval. done.
+Qed.
+
+Lemma wp_plus E z1 z2 Φ :
+  ▷ (|={E}=> Φ (LitV $ LitInt $ z1 + z2)) -∗
+    WP BinOp PlusOp (Lit $ LitInt z1) (Lit $LitInt z2) @ E {{ Φ }}.
+Proof.
+  iIntros "HP". iApply wp_fupd. iApply wp_bin_op_pure; first by econstructor.
+  iNext. iIntros (?? Heval). inversion_clear Heval. done.
+Qed.
+
+Lemma wp_minus E z1 z2 Φ :
+  ▷ (|={E}=> Φ (LitV $ LitInt $ z1 - z2)) -∗
+    WP BinOp MinusOp (Lit $ LitInt z1) (Lit $LitInt z2) @ E {{ Φ }}.
+Proof.
+  iIntros "HP". iApply wp_fupd. iApply wp_bin_op_pure; first by econstructor.
+  iNext. iIntros (?? Heval). inversion_clear Heval. done.
+Qed.
+
+(* TODO: Add lemmas for remaining binary operators. *)
 
 Lemma wp_if E (b : bool) e1 e2 Φ :
   (if b then ▷ WP e1 @ E {{ Φ }} else ▷ WP e2 @ E {{ Φ }})%I -∗

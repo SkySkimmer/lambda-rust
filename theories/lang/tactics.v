@@ -155,7 +155,8 @@ Proof.
   intros He. apply ectx_language_atomic.
   - intros σ e' σ' ef.
     destruct e; simpl; try done; repeat (case_match; try done);
-    inversion 1; rewrite ?to_of_val; naive_solver eauto.
+    inversion 1; try (apply val_irreducible; rewrite ?language.to_of_val; naive_solver eauto); [].
+    rewrite -[stuck_term](fill_empty). apply stuck_irreducible.
   - intros [|Ki K] e' Hfill Hnotval; [done|exfalso].
     apply (fill_not_val K), eq_None_not_Some in Hnotval. apply Hnotval. simpl.
     revert He. destruct e; simpl; try done; repeat (case_match; try done);
