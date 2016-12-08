@@ -39,7 +39,7 @@ build-dep:
 	build/opam-pins.sh < opam.pins
 	opam upgrade $(YFLAG) # it is not nice that we upgrade *all* packages here, but I found no nice way to upgrade only those that we pinned
 	opam pin add coq-lambda-rust "$$(pwd)#HEAD" -k git -n -y
-	opam install coq-lambda-rust --deps-only $(YLFAG)
+	opam install coq-lambda-rust --deps-only $(YFLAG)
 	opam pin remove coq-lambda-rust
 
 # some fiels that do *not* need to be forwarded to Makefile.coq
