@@ -1,4 +1,4 @@
-From iris.algebra Require Import cmra_big_op gmap frac dec_agree.
+From iris.algebra Require Import cmra_big_op gmap frac agree.
 From iris.algebra Require Import csum excl auth.
 From iris.base_logic Require Import big_op lib.invariants lib.fractional.
 From iris.proofmode Require Export tactics.
@@ -11,7 +11,7 @@ Definition lock_stateR : cmraT :=
   csumR (exclR unitC) natR.
 
 Definition heapUR : ucmraT :=
-  gmapUR loc (prodR (prodR fracR lock_stateR) (dec_agreeR val)).
+  gmapUR loc (prodR (prodR fracR lock_stateR) (agreeR valC)).
 
 Definition heap_freeableUR : ucmraT :=
   gmapUR block (prodR fracR (gmapR Z (exclR unitC))).
@@ -27,7 +27,7 @@ Class heapG Σ := HeapG {
 Definition to_lock_stateR (x : lock_state) : lock_stateR :=
   match x with RSt n => Cinr n | WSt => Cinl (Excl ()) end.
 Definition to_heap : state → heapUR :=
-  fmap (λ v, (1%Qp, to_lock_stateR (v.1), DecAgree (v.2))).
+  fmap (λ v, (1%Qp, to_lock_stateR (v.1), to_agree (v.2))).
 Definition heap_freeable_rel (σ : state) (hF : heap_freeableUR) : Prop :=
   ∀ blk qs, hF !! blk = Some qs →
   qs.2 ≠ ∅ ∧ ∀ i, is_Some (σ !! (blk, i)) ↔ is_Some (qs.2 !! i).
@@ -37,7 +37,7 @@ Section definitions.
 
   Definition heap_mapsto_st (st : lock_state)
              (l : loc) (q : Qp) (v: val) : iProp Σ :=
-    own heap_name (◯ {[ l := (q, to_lock_stateR st, DecAgree v) ]}).
+    own heap_name (◯ {[ l := (q, to_lock_stateR st, to_agree v) ]}).
 
   Definition heap_mapsto_def (l : loc) (q : Qp) (v: val) : iProp Σ :=
     heap_mapsto_st (RSt 0) l q v.
@@ -105,7 +105,7 @@ Section heap.
 
   Lemma to_heap_insert σ l x v :
     to_heap (<[l:=(x, v)]> σ)
-    = <[l:=(1%Qp, to_lock_stateR x, DecAgree v)]> (to_heap σ).
+    = <[l:=(1%Qp, to_lock_stateR x, to_agree v)]> (to_heap σ).
   Proof. by rewrite /to_heap fmap_insert. Qed.
 
   Lemma to_heap_delete σ l : to_heap (delete l σ) = delete l (to_heap σ).
@@ -119,8 +119,8 @@ Section heap.
 
   Global Instance heap_mapsto_fractional l v: Fractional (λ q, l ↦{q} v)%I.
   Proof.
-    intros p q. by rewrite heap_mapsto_eq -own_op
-      -auth_frag_op op_singleton pair_op dec_agree_idemp.
+    intros p q.
+    by rewrite heap_mapsto_eq -own_op -auth_frag_op op_singleton pair_op agree_idemp.
   Qed.
   Global Instance heap_mapsto_as_fractional l q v:
     AsFractional (l ↦{q} v) (λ q, l ↦{q} v)%I q.
@@ -141,15 +141,13 @@ Section heap.
   Global Instance heap_freeable_timeless q l n : TimelessP (†{q}l…n).
   Proof. rewrite heap_freeable_eq /heap_freeable_def. apply _. Qed.
 
-  Lemma heap_mapsto_op l q1 q2 v1 v2 :
-    l ↦{q1} v1 ∗ l ↦{q2} v2 ⊣⊢ ⌜v1 = v2⌝ ∧ l ↦{q1+q2} v1.
+  Lemma heap_mapsto_agree l q1 q2 v1 v2 :
+    l ↦{q1} v1 ∗ l ↦{q2} v2 ⊢ ⌜v1 = v2⌝.
   Proof.
-    destruct (decide (v1 = v2)) as [->|].
-    { by rewrite -(fractional (Φ := λ q, l ↦{q} _)%I) pure_True // left_id. }
-    apply (anti_symm (⊢)); last by apply pure_elim_l.
     rewrite heap_mapsto_eq -own_op -auth_frag_op own_valid discrete_valid.
     eapply pure_elim; [done|]=> /auth_own_valid /=.
-    rewrite op_singleton pair_op dec_agree_ne // singleton_valid. by intros [].
+    rewrite op_singleton pair_op singleton_valid. case.
+    rewrite /= to_agree_comp_valid=>? Heq. fold_leibniz. eauto.
   Qed.
 
   Lemma heap_mapsto_vec_nil l q : l ↦∗{q} [] ⊣⊢ True.
@@ -181,7 +179,9 @@ Section heap.
       rewrite !heap_mapsto_vec_cons. iIntros "[[Hv1 Hvl1] [Hv2 Hvl2]]".
       iDestruct (IH (shift_loc l 1) with "[Hvl1 Hvl2]") as "[% $]";
         subst; first by iFrame.
-      rewrite (inj_iff (:: vl2)). iApply heap_mapsto_op. by iFrame.
+      rewrite (inj_iff (:: vl2)).
+      iDestruct (heap_mapsto_agree with "[$Hv1 $Hv2]") as %<-.
+      iSplit; first done. iFrame.
     - by iIntros "[% [$ Hl2]]"; subst.
   Qed.
 
@@ -203,10 +203,10 @@ Section heap.
   Lemma heap_mapsto_vec_combine l q vl :
     vl ≠ [] →
     l ↦∗{q} vl ⊣⊢ own heap_name (◯ [⋅ list] i ↦ v ∈ vl,
-      {[shift_loc l i := (q, Cinr 0%nat, DecAgree v)]}).
+      {[shift_loc l i := (q, Cinr 0%nat, to_agree v)]}).
   Proof.
     rewrite /heap_mapsto_vec heap_mapsto_eq /heap_mapsto_def /heap_mapsto_st=>?.
-    by rewrite (big_opL_commute_L (Auth None)) big_opL_commute1 //.
+    by rewrite (big_opL_commute (Auth None)) big_opL_commute1 //.
   Qed.
 
   Lemma inter_lookup_Some i j (n : nat):
@@ -307,7 +307,7 @@ Section heap.
     own heap_name (● to_heap σ)
     ==∗ own heap_name (● to_heap (init_mem l vl σ))
        ∗ own heap_name (◯ [⋅ list] i ↦ v ∈ vl,
-           {[shift_loc l i := (1%Qp, Cinr 0%nat, DecAgree v)]}).
+           {[shift_loc l i := (1%Qp, Cinr 0%nat, to_agree v)]}).
   Proof.
     intros FREE. rewrite -own_op. apply own_update, auth_update_alloc.
     revert l FREE. induction vl as [|v vl IH]=> l FRESH; [done|].
@@ -315,7 +315,7 @@ Section heap.
     etrans; first apply (IH (shift_loc l 1)).
     { intros. by rewrite shift_loc_assoc. }
     rewrite shift_loc_0 -insert_singleton_op; last first.
-    { rewrite big_opL_commute_L big_opL_None=> l' v' ?.
+    { rewrite -equiv_None big_opL_commute equiv_None big_opL_None=> l' v' ?.
       rewrite lookup_singleton_None -{2}(shift_loc_0 l). apply not_inj; lia. }
     rewrite to_heap_insert. setoid_rewrite shift_loc_assoc.
     apply alloc_local_update; last done. apply lookup_to_heap_None.
@@ -348,7 +348,7 @@ Section heap.
 
   Lemma heap_free_vs l vl σ :
     own heap_name (● to_heap σ) ∗ own heap_name (◯ [⋅ list] i ↦ v ∈ vl,
-      {[shift_loc l i := (1%Qp, Cinr 0%nat, DecAgree v)]})
+      {[shift_loc l i := (1%Qp, Cinr 0%nat, to_agree v)]})
     ==∗ own heap_name (● to_heap (free_mem l (length vl) σ)).
   Proof.
     rewrite -own_op. apply own_update, auth_update_dealloc.
@@ -356,12 +356,12 @@ Section heap.
     rewrite (big_opL_consZ_l (λ k _, _ (_ k) _ )) /= shift_loc_0.
     apply local_update_total_valid=> _ Hvalid _.
     assert (([⋅ list] k↦y ∈ vl,
-      {[shift_loc l (1 + k) := (1%Qp, Cinr 0%nat, DecAgree y)]}) !! l
-      = @None (frac * lock_stateR * dec_agree val)).
+      {[shift_loc l (1 + k) := (1%Qp, Cinr 0%nat, to_agree y)]}) !! l
+      = @None (frac * lock_stateR * agree valC)).
     { move: (Hvalid l). rewrite lookup_op lookup_singleton.
       by move=> /(cmra_discrete_valid_iff 0) /exclusiveN_Some_l. }
     rewrite -insert_singleton_op //. etrans.
-    { apply (delete_local_update _ _ l (1%Qp, Cinr 0%nat, DecAgree v)).
+    { apply (delete_local_update _ _ l (1%Qp, Cinr 0%nat, to_agree v)).
       by rewrite lookup_insert. }
     rewrite delete_insert // -to_heap_delete delete_free_mem.
     setoid_rewrite <-shift_loc_assoc. apply IH.
@@ -396,17 +396,17 @@ Section heap.
 
   Lemma heap_mapsto_lookup l ls q v σ:
     own heap_name (● to_heap σ) -∗
-    own heap_name (◯ {[ l := (q, to_lock_stateR ls, DecAgree v) ]}) -∗
+    own heap_name (◯ {[ l := (q, to_lock_stateR ls, to_agree v) ]}) -∗
     ⌜∃ n' : nat,
         σ !! l = Some (match ls with RSt n => RSt (n+n') | WSt => WSt end, v)⌝.
   Proof.
     iIntros "H● H◯".
     iDestruct (own_valid_2 with "H● H◯") as %[Hl?]%auth_valid_discrete_2.
     iPureIntro. move: Hl=> /singleton_included [[[q' ls'] dv]].
-    rewrite leibniz_equiv_iff /to_heap lookup_fmap fmap_Some.
-    move=> [[[ls'' v'] [??]]]; simplify_eq.
+    rewrite /to_heap lookup_fmap fmap_Some_setoid.
+    move=> [[[ls'' v'] [?[[/=??]->]]]]; simplify_eq.
     move=> /Some_pair_included_total_2
-      [/Some_pair_included [_ Hincl] /DecAgree_included->].
+      [/Some_pair_included [_ Hincl] /to_agree_included->].
     destruct ls as [|n], ls'' as [|n''],
        Hincl as [[[|n'|]|] [=]%leibniz_equiv]; subst.
     by exists O. eauto. exists O. by rewrite Nat.add_0_r.
@@ -414,16 +414,16 @@ Section heap.
 
   Lemma heap_mapsto_lookup_1 l ls v σ:
     own heap_name (● to_heap σ) -∗
-    own heap_name (◯ {[ l := (1%Qp, to_lock_stateR ls, DecAgree v) ]}) -∗
+    own heap_name (◯ {[ l := (1%Qp, to_lock_stateR ls, to_agree v) ]}) -∗
     ⌜σ !! l = Some (ls, v)⌝.
   Proof.
     iIntros "H● H◯".
     iDestruct (own_valid_2 with "H● H◯") as %[Hl?]%auth_valid_discrete_2.
     iPureIntro. move: Hl=> /singleton_included [[[q' ls'] dv]].
-    rewrite leibniz_equiv_iff /to_heap lookup_fmap fmap_Some.
-    move=> [[[ls'' v'] [??]] Hincl]; simplify_eq.
-    apply (Some_included_exclusive _ _) in Hincl
-      as ?%leibniz_equiv; last by destruct ls''.
+    rewrite /to_heap lookup_fmap fmap_Some_setoid.
+    move=> [[[ls'' v'] [?[[/=??]->]]] Hincl]; simplify_eq.
+    apply (Some_included_exclusive _ _) in Hincl as [? Hval]; last by destruct ls''.
+    apply (inj to_agree) in Hval. fold_leibniz. subst.
     destruct ls, ls''; rewrite ?Nat.add_0_r; naive_solver.
   Qed.
 
@@ -582,9 +582,10 @@ Section heap.
     iDestruct (heap_mapsto_lookup with "Hvalσ Hl1") as %[n1 Hσl1].
     iApply (wp_cas_pst with "[$Hσ]"); eauto.
     { right. by constructor. }
-    { inversion 1; subst; simplify_option_eq. }
+    { inversion 1; subst; (by destruct (σ !! l1)) || by destruct (σ !! l'). }
     iNext. iIntros ([|]).
-    { iIntros "[Heq _]". iDestruct "Heq" as %Heq. inversion Heq; simplify_option_eq. }
+    { iIntros "[Heq _]". iDestruct "Heq" as %Heq. inversion Heq; subst.
+      done. by destruct (σ !! l1). by destruct (σ !! l'). }
     iIntros "[_ Hσ]". iMod ("Hclose" with "[-Hl Hl' Hl1 HΦ]") as "_"; last by iApply "HΦ"; iFrame.
     iNext. iExists _, hF. by iFrame.
   Qed.
