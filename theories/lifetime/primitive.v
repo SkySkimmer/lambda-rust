@@ -25,7 +25,7 @@ Proof.
   iIntros "HI Hκ". iDestruct (own_valid_2 with "HI Hκ")
     as %[[? [Hl ?]]%singleton_included _]%auth_valid_discrete_2.
   unfold to_ilftUR in *. simplify_map_eq.
-  destruct (fmap_Some_equiv' _ _ _ Hl) as (?&?&?). eauto.
+  destruct (fmap_Some_equiv_1 _ _ _ Hl) as (?&?&?). eauto.
 Qed.
 
 Lemma own_alft_auth_agree (A : gmap atomic_lft bool) Λ b :
