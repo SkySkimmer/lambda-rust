@@ -56,7 +56,7 @@ Qed.
 
 Lemma wp_offset E l z Φ :
   ▷ (|={E}=> Φ (LitV $ LitLoc $ shift_loc l z)) -∗
-    WP BinOp OffsetOp (Lit $ LitLoc l) (Lit $LitInt z) @ E {{ Φ }}.
+    WP BinOp OffsetOp (Lit $ LitLoc l) (Lit $ LitInt z) @ E {{ Φ }}.
 Proof.
   iIntros "HP". iApply wp_fupd. iApply wp_bin_op_pure; first by econstructor.
   iNext. iIntros (?? Heval). inversion_clear Heval. done.
@@ -64,7 +64,7 @@ Qed.
 
 Lemma wp_plus E z1 z2 Φ :
   ▷ (|={E}=> Φ (LitV $ LitInt $ z1 + z2)) -∗
-    WP BinOp PlusOp (Lit $ LitInt z1) (Lit $LitInt z2) @ E {{ Φ }}.
+    WP BinOp PlusOp (Lit $ LitInt z1) (Lit $ LitInt z2) @ E {{ Φ }}.
 Proof.
   iIntros "HP". iApply wp_fupd. iApply wp_bin_op_pure; first by econstructor.
   iNext. iIntros (?? Heval). inversion_clear Heval. done.
@@ -72,7 +72,7 @@ Qed.
 
 Lemma wp_minus E z1 z2 Φ :
   ▷ (|={E}=> Φ (LitV $ LitInt $ z1 - z2)) -∗
-    WP BinOp MinusOp (Lit $ LitInt z1) (Lit $LitInt z2) @ E {{ Φ }}.
+    WP BinOp MinusOp (Lit $ LitInt z1) (Lit $ LitInt z2) @ E {{ Φ }}.
 Proof.
   iIntros "HP". iApply wp_fupd. iApply wp_bin_op_pure; first by econstructor.
   iNext. iIntros (?? Heval). inversion_clear Heval. done.
