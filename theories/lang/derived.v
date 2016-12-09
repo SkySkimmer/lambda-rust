@@ -16,7 +16,7 @@ Definition Newlft := Lit LitUnit.
 Definition Endlft := Skip.
 
 Section derived.
-Context `{irisG lrust_lang Σ}.
+Context `{ownPG lrust_lang Σ}.
 Implicit Types P Q : iProp Σ.
 Implicit Types Φ : val → iProp Σ.
 

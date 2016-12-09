@@ -4,7 +4,7 @@ From lrust.lang Require Export proofmode notation.
 From lrust.lifetime Require Import borrow frac_borrow.
 
 Section perm.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   Definition perm {Σ} := na_inv_pool_name → iProp Σ.
 
@@ -81,7 +81,7 @@ Notation "ρ1 ⇔ ρ2" := (equiv (A:=perm) ρ1%P ρ2%P)
 Notation "(⇔)" := (equiv (A:=perm)) (only parsing) : C_scope.
 
 Section duplicable.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   Class Duplicable (ρ : @perm Σ) :=
     duplicable_persistent tid : PersistentP (ρ tid).
@@ -102,7 +102,7 @@ Section duplicable.
 End duplicable.
 
 Section has_type.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   Lemma has_type_value (v : val) ty tid :
     (v ◁ ty)%P tid ⊣⊢ ty.(ty_own) tid [v].
@@ -118,7 +118,7 @@ Section has_type.
     WP ν @ E {{ Φ }}.
   Proof.
     iIntros "H◁ HΦ". setoid_rewrite has_type_value. unfold has_type.
-    destruct (eval_expr ν) eqn:EQν; last by iDestruct "H◁" as "[]". simpl.
+    destruct (eval_expr ν) eqn:EQν; last by iDestruct "H◁" as "[]".
     iMod ("HΦ" $! v with "[] H◁") as "HΦ". done.
     iInduction ν as [| | |[] e ? [|[]| | | | | | | | | |] _| | | | | | | |] "IH"
       forall (Φ v EQν); try done.
@@ -130,7 +130,7 @@ Section has_type.
 End has_type.
 
 Section perm_incl.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   (* Properties *)
   Global Instance perm_incl_preorder : PreOrder (⇒).

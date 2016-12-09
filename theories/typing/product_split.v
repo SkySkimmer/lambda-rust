@@ -5,7 +5,7 @@ From lrust.typing Require Export type.
 From lrust.typing Require Import type_incl typing product own uniq_bor shr_bor.
 
 Section product_split.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   Fixpoint combine_offs (tyl : list type) (accu : nat) :=
     match tyl with

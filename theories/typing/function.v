@@ -5,7 +5,7 @@ From lrust.typing Require Export type.
 From lrust.typing Require Import type_incl typing.
 
 Section fn.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   Program Definition cont {n : nat} (ρ : vec val n → @perm Σ) :=
     {| ty_size := 1;

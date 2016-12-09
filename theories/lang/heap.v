@@ -17,7 +17,7 @@ Definition heap_freeableUR : ucmraT :=
   gmapUR block (prodR fracR (gmapR Z (exclR unitC))).
 
 Class heapG Σ := HeapG {
-  heapG_iris_inG :> irisG lrust_lang Σ;
+  heapG_ownP_inG :> ownPG lrust_lang Σ;
   heap_inG :> inG Σ (authR heapUR);
   heap_freeable_inG :> inG Σ (authR heap_freeableUR);
   heap_name : gname;
@@ -403,7 +403,7 @@ Section heap.
     iIntros "H● H◯".
     iDestruct (own_valid_2 with "H● H◯") as %[Hl?]%auth_valid_discrete_2.
     iPureIntro. move: Hl=> /singleton_included [[[q' ls'] dv]].
-    rewrite /to_heap lookup_fmap fmap_Some_setoid.
+    rewrite /to_heap lookup_fmap fmap_Some_equiv.
     move=> [[[ls'' v'] [?[[/=??]->]]]]; simplify_eq.
     move=> /Some_pair_included_total_2
       [/Some_pair_included [_ Hincl] /to_agree_included->].
@@ -420,7 +420,7 @@ Section heap.
     iIntros "H● H◯".
     iDestruct (own_valid_2 with "H● H◯") as %[Hl?]%auth_valid_discrete_2.
     iPureIntro. move: Hl=> /singleton_included [[[q' ls'] dv]].
-    rewrite /to_heap lookup_fmap fmap_Some_setoid.
+    rewrite /to_heap lookup_fmap fmap_Some_equiv.
     move=> [[[ls'' v'] [?[[/=??]->]]] Hincl]; simplify_eq.
     apply (Some_included_exclusive _ _) in Hincl as [? Hval]; last by destruct ls''.
     apply (inj to_agree) in Hval. fold_leibniz. subst.

@@ -3,7 +3,7 @@ From lrust.typing Require Export type.
 From lrust.typing Require Import typing bool perm.
 
 Section int.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   Program Definition int : type :=
     {| st_size := 1; st_own tid vl := (∃ z:Z, ⌜vl = [ #z ]⌝)%I |}.

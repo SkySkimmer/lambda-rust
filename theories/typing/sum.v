@@ -4,7 +4,7 @@ From lrust.typing Require Export type.
 From lrust.typing Require Import type_incl.
 
 Section sum.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   (* [emp] cannot be defined using [ty_of_st], because the least we
      would be able to prove from its [ty_shr] would be [▷ False], but
@@ -123,7 +123,7 @@ Notation "Σ[ ty1 ; .. ; tyn ]" :=
   (sum (cons ty1 (..(cons tyn nil)..))) : lrust_type_scope.
 
 Section incl.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   Lemma ty_incl_emp ρ ty : ty_incl ρ ∅ ty.
   Proof. iIntros (tid) "_ _!>". iSplit; iIntros "!#*/=[]". Qed.

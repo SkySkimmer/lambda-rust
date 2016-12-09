@@ -4,7 +4,7 @@ From lrust.typing Require Export type.
 From lrust.typing Require Import perm type_incl.
 
 Section product.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   Program Definition unit : type :=
     {| st_size := 0; st_own tid vl := ⌜vl = []⌝%I |}.
@@ -122,7 +122,7 @@ Arguments product : simpl never.
 Notation Π := product.
 
 Section typing.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   (* FIXME : do we still need this (flattening and unflattening)? *)
 

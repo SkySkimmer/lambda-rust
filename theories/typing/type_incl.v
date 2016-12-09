@@ -4,7 +4,7 @@ From lrust.typing Require Export type perm.
 From lrust.lifetime Require Import frac_borrow borrow.
 
 Section ty_incl.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   Definition ty_incl (ρ : perm) (ty1 ty2 : type) :=
     ∀ tid, lft_ctx -∗ ρ tid ={⊤}=∗

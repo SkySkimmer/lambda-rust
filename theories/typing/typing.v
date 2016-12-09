@@ -7,7 +7,7 @@ From lrust.lang Require Import proofmode.
 From lrust.lifetime Require Import frac_borrow reborrow borrow creation.
 
 Section typing.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   (* TODO : good notations for [typed_step] and [typed_step_ty] ? *)
   Definition typed_step (ρ : perm) e (θ : val → perm) :=

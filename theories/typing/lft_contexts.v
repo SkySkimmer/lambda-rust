@@ -33,8 +33,8 @@ Section lft_contexts.
     AsFractional (lectx_interp E q) (lectx_interp E) q.
   Proof. done. Qed.
   Global Instance lectx_interp_permut:
-    Proper ((≡ₚ) ==> pointwise_relation _ (⊣⊢)) lectx_interp.
-  Proof. intros ????. by apply big_opL_permutation. Qed.
+    Proper ((≡ₚ) ==> eq ==> (⊣⊢)) lectx_interp.
+  Proof. intros ????? ->. by apply big_opL_permutation. Qed.
   Typeclasses Opaque lectx_interp.
 
   (* Local lifetime contexts. *)
@@ -68,8 +68,8 @@ Section lft_contexts.
     AsFractional (llctx_interp L q) (llctx_interp L) q.
   Proof. done. Qed.
   Global Instance llctx_interp_permut:
-    Proper ((≡ₚ) ==> pointwise_relation _ (⊣⊢)) llctx_interp.
-  Proof. intros ????. by apply big_opL_permutation. Qed.
+    Proper ((≡ₚ) ==> eq ==> (⊣⊢)) llctx_interp.
+  Proof. intros ????? ->. by apply big_opL_permutation. Qed.
   Typeclasses Opaque llctx_interp.
 
   Context (E : lectx) (L : llctx).
@@ -200,5 +200,4 @@ Section lft_contexts.
     iExists q. rewrite {1 2 4 5}/lectx_interp big_sepL_cons /=.
     iIntros "{$Hincl $HE'}!>[_ ?]". by iApply "Hclose'".
   Qed.
-
 End lft_contexts.

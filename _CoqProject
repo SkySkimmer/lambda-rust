@@ -28,6 +28,7 @@ theories/typing/type_incl.v
 theories/typing/perm.v
 theories/typing/typing.v
 theories/typing/lft_contexts.v
+theories/typing/type_context.v
 theories/typing/own.v
 theories/typing/uniq_bor.v
 theories/typing/shr_bor.v

@@ -5,7 +5,7 @@ From lrust.typing Require Export type.
 From lrust.typing Require Import perm lft_contexts typing own.
 
 Section uniq_bor.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   Program Definition uniq_bor (κ:lft) (ty:type) :=
     {| ty_size := 1;
@@ -103,7 +103,7 @@ Notation "&uniq{ κ } ty" := (uniq_bor κ ty)
   (format "&uniq{ κ } ty", at level 20, right associativity) : lrust_type_scope.
 
 Section typing.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   Lemma own_uniq_borrowing ν q ty κ :
     borrowing κ ⊤ (ν ◁ own q ty) (ν ◁ &uniq{κ} ty).

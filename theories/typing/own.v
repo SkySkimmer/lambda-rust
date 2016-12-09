@@ -7,7 +7,7 @@ From lrust.typing Require Export type.
 From lrust.typing Require Import typing product perm.
 
 Section own.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   (* Even though it does not seem too natural to put this here, it is
      the only place where it is used. *)

@@ -1,10 +1,10 @@
 From iris.proofmode Require Import tactics.
 From lrust.lifetime Require Import frac_borrow.
 From lrust.typing Require Export type.
-From lrust.typing Require Import perm lft_contexts typing own uniq_bor.
+From lrust.typing Require Import perm lft_contexts type_context typing own uniq_bor.
 
 Section shr_bor.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   Program Definition shr_bor (κ : lft) (ty : type) : type :=
     {| st_size := 1;
@@ -42,7 +42,7 @@ Notation "&shr{ κ } ty" := (shr_bor κ ty)
   (format "&shr{ κ } ty", at level 20, right associativity) : lrust_type_scope.
 
 Section typing.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   Lemma perm_incl_share q ν κ ty :
     ν ◁ &uniq{κ} ty ∗ q.[κ] ⇒ ν ◁ &shr{κ} ty ∗ q.[κ].

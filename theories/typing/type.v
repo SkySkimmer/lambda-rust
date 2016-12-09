@@ -3,7 +3,7 @@ From lrust.lang Require Import heap.
 From lrust.lifetime Require Import borrow frac_borrow reborrow.
 From lrust.typing Require Import lft_contexts.
 
-Class iris_typeG Σ := Iris_typeG {
+Class typeG Σ := TypeG {
   type_heapG :> heapG Σ;
   type_lftG :> lftG Σ;
   type_na_invG :> na_invG Σ;
@@ -14,7 +14,7 @@ Definition mgmtE := ↑lftN.
 Definition lrustN := nroot .@ "lrust".
 
 Section type.
-  Context `{iris_typeG Σ}.
+  Context `{typeG Σ}.
 
   Definition thread_id := na_inv_pool_name.
 
@@ -55,7 +55,7 @@ Section type.
   (* We are repeating the typeclass parameter here jsut to make sure
      that simple_type does depend on it. Otherwise, the coercion defined
      bellow will not be acceptable by Coq. *)
-  Record simple_type `{iris_typeG Σ} :=
+  Record simple_type `{typeG Σ} :=
     { st_size : nat;
       st_own : thread_id → list val → iProp Σ;
 
@@ -111,16 +111,16 @@ Delimit Scope lrust_type_scope with T.
 Bind Scope lrust_type_scope with type.
 
 Section subtyping.
-  Context `{iris_typeG Σ} (E : lectx) (L : llctx).
+  Context `{typeG Σ} (E : lectx) (L : llctx).
 
   Record subtype (ty1 ty2 : type) : Prop :=
     { subtype_sz : ty1.(ty_size) = ty2.(ty_size);
       subtype_own qE qL :
         lft_ctx -∗ lectx_interp E qE -∗ llctx_interp L qL -∗
-          □ ∀ tid vl, ty1.(ty_own) tid vl → ty2.(ty_own) tid vl;
+          □ ∀ tid vl, ty1.(ty_own) tid vl -∗ ty2.(ty_own) tid vl;
       subtype_shr qE qL :
         lft_ctx -∗ lectx_interp E qE -∗ llctx_interp L qL -∗
-          □ ∀ κ tid F l, ty1.(ty_shr) κ tid F l → ty2.(ty_shr) κ tid F l }.
+          □ ∀ κ tid F l, ty1.(ty_shr) κ tid F l -∗ ty2.(ty_shr) κ tid F l }.
 
   Global Instance subtype_preorder : PreOrder subtype.
   Proof.
