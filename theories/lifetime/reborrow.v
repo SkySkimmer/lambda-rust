@@ -1,6 +1,6 @@
 From lrust.lifetime Require Export borrow derived.
 From lrust.lifetime Require Import raw_reborrow accessors.
-From iris.algebra Require Import csum auth frac gmap dec_agree gset.
+From iris.algebra Require Import csum auth frac gmap agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 From iris.proofmode Require Import tactics.
@@ -75,7 +75,7 @@ Proof.
     - rewrite big_sepM_delete; last done. iDestruct "HB" as "[_ $]". }
   iMod (raw_bor_unnest' _ false with "[$HI $Hinv] HP Halive [Hvs]") as (Pb'') "([HI Hinv] & HP & Halive & Hvs)";
     [solve_ndisj|exact: gmultiset_union_subseteq_l|done| |].
-  { (* TODO: Use iRewrite supporting cotnractive rewriting. *)
+  { (* TODO: Use iRewrite supporting contractive rewriting. *)
     iApply (lft_vs_cons with "[]"); last done.
      iIntros "[$ Hbor]". iModIntro. iNext. by iRewrite "EQ". }
   iMod ("Hclose" with "[-HP]") as "_".

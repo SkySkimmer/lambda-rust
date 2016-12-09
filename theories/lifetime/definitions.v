@@ -1,4 +1,4 @@
-From iris.algebra Require Import csum auth frac gmap dec_agree gset.
+From iris.algebra Require Import csum auth frac gmap agree gset.
 From iris.prelude Require Export gmultiset strings.
 From iris.base_logic.lib Require Export invariants.
 From iris.base_logic.lib Require Import boxes.
@@ -20,6 +20,7 @@ Inductive bor_state :=
   | Bor_rebor (κ : lft).
 Instance bor_state_eq_dec : EqDecision bor_state.
 Proof. solve_decision. Defined.
+Canonical bor_stateC := leibnizC bor_state.
 
 Definition bor_filled (s : bor_state) : bool :=
   match s with Bor_in => true | _ => false end.
@@ -35,15 +36,16 @@ Record lft_names := LftNames {
 }.
 Instance lft_names_eq_dec : EqDecision lft_names.
 Proof. solve_decision. Defined.
+Canonical lft_namesC := leibnizC lft_names.
 
 Definition alftUR := gmapUR atomic_lft lft_stateR.
 Definition to_alftUR : gmap atomic_lft bool → alftUR := fmap to_lft_stateR.
 
-Definition ilftUR := gmapUR lft (dec_agreeR lft_names).
-Definition to_ilftUR : gmap lft lft_names → ilftUR := fmap DecAgree.
+Definition ilftUR := gmapUR lft (agreeR lft_namesC).
+Definition to_ilftUR : gmap lft lft_names → ilftUR := fmap to_agree.
 
-Definition borUR := gmapUR slice_name (prodR fracR (dec_agreeR bor_state)).
-Definition to_borUR : gmap slice_name bor_state → borUR := fmap ((1%Qp,) ∘ DecAgree).
+Definition borUR := gmapUR slice_name (prodR fracR (agreeR bor_stateC)).
+Definition to_borUR : gmap slice_name bor_state → borUR := fmap ((1%Qp,) ∘ to_agree).
 
 Definition inhUR := gset_disjUR slice_name.
 
@@ -53,9 +55,9 @@ Class lftG Σ := LftG {
   alft_name : gname;
   ilft_inG :> inG Σ (authR ilftUR);
   ilft_name : gname;
-  lft_bor_box :> inG Σ (authR borUR);
+  lft_bor_inG :> inG Σ (authR borUR);
   lft_cnt_inG :> inG Σ (authR natUR);
-  lft_inh_box :> inG Σ (authR inhUR);
+  lft_inh_inG :> inG Σ (authR inhUR);
 }.
 
 Section defs.
@@ -73,19 +75,19 @@ Section defs.
     own ilft_name (● to_ilftUR I).
 
   Definition own_bor (κ : lft)
-      (x : auth (gmap slice_name (frac * dec_agree bor_state))) : iProp Σ :=
+      (x : authR borUR) : iProp Σ :=
     (∃ γs,
-      own ilft_name (◯ {[ κ := DecAgree γs ]}) ∗
+      own ilft_name (◯ {[ κ := to_agree γs ]}) ∗
       own (bor_name γs) x)%I.
 
-  Definition own_cnt (κ : lft) (x : auth nat) : iProp Σ :=
+  Definition own_cnt (κ : lft) (x : authR natUR) : iProp Σ :=
     (∃ γs,
-      own ilft_name (◯ {[ κ := DecAgree γs ]}) ∗
+      own ilft_name (◯ {[ κ := to_agree γs ]}) ∗
       own (cnt_name γs) x)%I.
 
-  Definition own_inh (κ : lft) (x : auth (gset_disj slice_name)) : iProp Σ :=
+  Definition own_inh (κ : lft) (x : authR inhUR) : iProp Σ :=
     (∃ γs,
-      own ilft_name (◯ {[ κ := DecAgree γs ]}) ∗
+      own ilft_name (◯ {[ κ := to_agree γs ]}) ∗
       own (inh_name γs) x)%I.
 
   Definition bor_cnt (κ : lft) (s : bor_state) : iProp Σ :=
@@ -103,7 +105,7 @@ Section defs.
 
   Definition lft_bor_dead (κ : lft) : iProp Σ :=
      (∃ (B: gset slice_name) (Pb : iProp Σ),
-       own_bor κ (● to_gmap (1%Qp, DecAgree Bor_in) B) ∗
+       own_bor κ (● to_gmap (1%Qp, to_agree Bor_in) B) ∗
        box borN (to_gmap false B) Pb)%I.
 
    Definition lft_inh (κ : lft) (s : bool) (Pi : iProp Σ) : iProp Σ :=
@@ -171,7 +173,7 @@ Section defs.
   Definition bor_idx := (lft * slice_name)%type.
 
   Definition idx_bor_own (q : frac) (i : bor_idx) : iProp Σ :=
-    own_bor (i.1) (◯ {[ i.2 := (q,DecAgree Bor_in) ]}).
+    own_bor (i.1) (◯ {[ i.2 := (q, to_agree Bor_in) ]}).
   Definition idx_bor (κ : lft) (i : bor_idx) (P : iProp Σ) : iProp Σ :=
     (lft_incl κ (i.1) ∗ slice borN (i.2) P)%I.
   Definition raw_bor (κ : lft) (P : iProp Σ) : iProp Σ :=
@@ -253,6 +255,13 @@ Lemma lft_vs_unfold κ Pb Pi :
       lft_vs_inv κ I -∗ ▷ Pb -∗ lft_dead κ ={⊤∖↑mgmtN}=∗
       lft_vs_inv κ I ∗ ▷ Pi ∗ own_cnt κ (◯ n).
 Proof. done. Qed.
+
+Global Instance own_bor_proper κ : Proper ((≡) ==> (≡)) (own_bor κ).
+Proof. solve_proper. Qed.
+Global Instance own_cnt_proper κ : Proper ((≡) ==> (≡)) (own_cnt κ).
+Proof. solve_proper. Qed.
+Global Instance own_inh_proper κ : Proper ((≡) ==> (≡)) (own_inh κ).
+Proof. solve_proper. Qed.
 
 Global Instance lft_bor_alive_ne κ n : Proper (dist n ==> dist n) (lft_bor_alive κ).
 Proof. solve_proper. Qed.

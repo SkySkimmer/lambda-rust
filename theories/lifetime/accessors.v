@@ -1,6 +1,6 @@
 From lrust.lifetime Require Export primitive.
 From iris.proofmode Require Import tactics.
-From iris.algebra Require Import csum auth frac gmap dec_agree gset.
+From iris.algebra Require Import csum auth frac gmap agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 
@@ -14,7 +14,7 @@ Lemma bor_open_internal E P i Pb q :
   slice borN (i.2) P -∗ ▷ lft_bor_alive (i.1) Pb -∗
   idx_bor_own 1%Qp i -∗ (q).[i.1] ={E}=∗
     ▷ lft_bor_alive (i.1) Pb ∗
-    own_bor (i.1) (◯ {[i.2 := (1%Qp, DecAgree (Bor_open q))]}) ∗ ▷ P.
+    own_bor (i.1) (◯ {[i.2 := (1%Qp, to_agree (Bor_open q))]}) ∗ ▷ P.
 Proof.
   iIntros (?) "Hslice Halive Hbor Htok". unfold lft_bor_alive, idx_bor_own.
   iDestruct "Halive" as (B) "(Hbox & >Hown & HB)".
@@ -25,7 +25,7 @@ Proof.
   rewrite -(fmap_insert bor_filled _ _ (Bor_open q)).
   iMod (own_bor_update_2 with "Hown Hbor") as "Hbor". apply auth_update.
   { eapply singleton_local_update. by rewrite lookup_fmap EQB.
-    by apply (exclusive_local_update _ (1%Qp, DecAgree (Bor_open q))). }
+    by apply (exclusive_local_update _ (1%Qp, to_agree (Bor_open q))). }
   rewrite own_bor_op -fmap_insert. iDestruct "Hbor" as "[Hown $]".
   iExists _. iFrame "∗".
   rewrite -insert_delete big_sepM_insert ?lookup_delete // big_sepM_delete /=; last done.
@@ -35,7 +35,7 @@ Qed.
 Lemma bor_close_internal E P i Pb q :
   ↑borN ⊆ E →
   slice borN (i.2) P -∗ ▷ lft_bor_alive (i.1) Pb -∗
-  own_bor (i.1) (◯ {[i.2 := (1%Qp, DecAgree (Bor_open q))]}) -∗ ▷ P ={E}=∗
+  own_bor (i.1) (◯ {[i.2 := (1%Qp, to_agree (Bor_open q))]}) -∗ ▷ P ={E}=∗
     ▷ lft_bor_alive (i.1) Pb ∗ idx_bor_own 1%Qp i ∗ (q).[i.1].
 Proof.
   iIntros (?) "Hslice Halive Hbor HP". unfold lft_bor_alive, idx_bor_own.
@@ -47,7 +47,7 @@ Proof.
   rewrite -(fmap_insert bor_filled _ _ Bor_in).
   iMod (own_bor_update_2 with "Hown Hbor") as "Hbor". apply auth_update.
   { eapply singleton_local_update. by rewrite lookup_fmap EQB.
-    by apply (exclusive_local_update _ (1%Qp, DecAgree Bor_in)). }
+    by apply (exclusive_local_update _ (1%Qp, to_agree Bor_in)). }
   rewrite own_bor_op -fmap_insert. iDestruct "Hbor" as "[Hown $]".
   rewrite big_sepM_delete //. simpl. iDestruct "HB" as "[>$ HB]".
   iExists _. iFrame "Hbox Hown".
@@ -103,7 +103,7 @@ Proof.
       iDestruct (own_bor_valid_2 with "Hinv Hf")
         as %[(_ & <- & INCL%option_included)%singleton_included _]%auth_valid_discrete_2.
       by destruct INCL as [[=]|(? & ? & [=<-] &
-        [[_<-]%lookup_to_gmap_Some [[_[=]]|[]%(exclusive_included _)]])].
+        [[_<-]%lookup_to_gmap_Some [[_ ?%(inj to_agree)]|[]%(exclusive_included _)]])].
   - iMod (lft_dead_in_tok with "HA") as "[_ H†]". done.
     iDestruct (lft_tok_dead with "Htok H†") as "[]".
 Qed.
@@ -181,7 +181,7 @@ Proof.
       { apply auth_update. etrans.
         - apply delete_singleton_local_update, _.
         - apply (alloc_singleton_local_update _ j
-                   (1%Qp, DecAgree (Bor_open q'))); last done.
+                   (1%Qp, to_agree (Bor_open q'))); last done.
           rewrite -fmap_delete lookup_fmap fmap_None
                   -fmap_None -lookup_fmap fmap_delete //. }
       rewrite own_bor_op. iDestruct "Hown" as "[Hown Hbor]".
@@ -200,7 +200,7 @@ Proof.
       iDestruct (own_bor_valid_2 with "Hinv Hbor")
         as %[(_ & <- & INCL%option_included)%singleton_included _]%auth_valid_discrete_2.
       by destruct INCL as [[=]|(? & ? & [=<-] &
-        [[_<-]%lookup_to_gmap_Some [[_[=]]|[]%(exclusive_included _)]])].
+        [[_<-]%lookup_to_gmap_Some [[_?%(inj to_agree)]|[]%(exclusive_included _)]])].
   - iMod (lft_dead_in_tok with "HA") as "[_ H†]". done.
     iDestruct (lft_tok_dead with "Htok H†") as "[]".
 Qed.
@@ -234,7 +234,7 @@ Proof.
     iMod (own_bor_update_2 with "Hown Hbor") as "Hown".
     { apply auth_update. etrans.
       - apply delete_singleton_local_update, _.
-      - apply (alloc_singleton_local_update _ j (1%Qp, DecAgree (Bor_in))); last done.
+      - apply (alloc_singleton_local_update _ j (1%Qp, to_agree (Bor_in))); last done.
         rewrite -fmap_delete lookup_fmap fmap_None
                 -fmap_None -lookup_fmap fmap_delete //. }
     rewrite own_bor_op. iDestruct "Hown" as "[H● H◯]".
