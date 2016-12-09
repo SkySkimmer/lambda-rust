@@ -78,7 +78,7 @@ Proof.
   iNext. iIntros (?? Heval). inversion_clear Heval. done.
 Qed.
 
-(* TODO: Add lemmas for remaining binary operators. *)
+(* TODO: Add lemmas for equality test. *)
 
 Lemma wp_if E (b : bool) e1 e2 Φ :
   (if b then ▷ WP e1 @ E {{ Φ }} else ▷ WP e2 @ E {{ Φ }})%I -∗

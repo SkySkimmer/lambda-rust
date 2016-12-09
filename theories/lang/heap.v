@@ -608,5 +608,28 @@ Section heap.
     iNext. iExists _, hF. iFrame. eauto using  heap_freeable_rel_stable.
   Qed.
 
-  (* TODO: Add a lemma for non-deterministic CAS on locations. *)
+  Lemma wp_cas_loc_nondet E l l1 e2 l2 ll :
+    ↑heapN ⊆ E → to_val e2 = Some $ LitV $ LitLoc l2 →
+    {{{ heap_ctx ∗ ▷ l ↦ (LitV $ LitLoc ll) }}}
+      CAS (Lit $ LitLoc l) (Lit $ LitLoc l1) e2 @ E
+    {{{ b, RET LitV $ lit_of_bool b;
+        if b is true then l ↦ LitV (LitLoc l2)
+        else ⌜l1 ≠ ll⌝ ∗ l ↦ LitV (LitLoc ll) }}}.
+  Proof.
+    iIntros (? <-%of_to_val?) "[#Hinv >Hv] HΦ".
+    rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
+    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
+    iDestruct (heap_mapsto_lookup_1 with "Hvalσ Hv") as %?.
+    iApply (wp_cas_pst with "[$Hσ]"); eauto.
+    { destruct (decide (l1 = ll)) as [->|Hne].
+      - left. by constructor.
+      - right. by constructor. }
+    iNext. iIntros ([|]).
+    - iIntros "[_ Hσ]". iMod (heap_write_vs with "[$Hvalσ $Hv]") as "[Hvalσ Hv]"; first done.
+      iMod ("Hclose" with "[-Hv HΦ]"); last by iApply "HΦ"; iFrame.
+      iNext. iExists _, hF. iFrame. eauto using  heap_freeable_rel_stable.
+    - iIntros "[Hneq Hσ]". iDestruct "Hneq" as %Hneq. inversion_clear Hneq.
+      iMod ("Hclose" with "[-Hv HΦ]"); last by iApply ("HΦ" $! false); iFrame.
+      iNext. iExists _, hF. iFrame. eauto using  heap_freeable_rel_stable.
+  Qed.
 End heap.
