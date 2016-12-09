@@ -4,7 +4,6 @@ From iris.base_logic.lib Require Import fractional.
 From lrust.lifetime Require Export derived.
 
 Section lft_contexts.
-
   Context `{invG Σ, lftG Σ}.
   Implicit Type (κ : lft).
 
@@ -77,6 +76,9 @@ Section lft_contexts.
 
   (* Lifetime inclusion *)
 
+  (* There does not seem to be a need in the type system for
+     "equivalence" of lifetimes. If so, TODO : add it, and the
+     corresponding [Proper] instances for the relevent types. *)
   Definition incl κ κ' : Prop :=
     ∀ qE qL, lectx_interp E qE -∗ llctx_interp L qL -∗ κ ⊑ κ'.
 

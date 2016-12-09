@@ -1,6 +1,7 @@
 From iris.base_logic.lib Require Export na_invariants.
 From lrust.lang Require Import heap.
 From lrust.lifetime Require Import borrow frac_borrow reborrow.
+From lrust.typing Require Import lft_contexts.
 
 Class iris_typeG Σ := Iris_typeG {
   type_heapG :> heapG Σ;
@@ -15,10 +16,12 @@ Definition lrustN := nroot .@ "lrust".
 Section type.
   Context `{iris_typeG Σ}.
 
+  Definition thread_id := na_inv_pool_name.
+
   Record type :=
     { ty_size : nat;
-      ty_own : na_inv_pool_name → list val → iProp Σ;
-      ty_shr : lft → na_inv_pool_name → coPset → loc → iProp Σ;
+      ty_own : thread_id → list val → iProp Σ;
+      ty_shr : lft → thread_id → coPset → loc → iProp Σ;
 
       ty_shr_persistent κ tid E l : PersistentP (ty_shr κ tid E l);
 
@@ -54,7 +57,7 @@ Section type.
      bellow will not be acceptable by Coq. *)
   Record simple_type `{iris_typeG Σ} :=
     { st_size : nat;
-      st_own : na_inv_pool_name → list val → iProp Σ;
+      st_own : thread_id → list val → iProp Σ;
 
       st_size_eq tid vl : st_own tid vl -∗ ⌜length vl = st_size⌝;
       st_own_persistent tid vl : PersistentP (st_own tid vl) }.
@@ -66,7 +69,7 @@ Section type.
 
        (* [st.(st_own) tid vl] needs to be outside of the fractured
           borrow, otherwise I do not know how to prove the shr part of
-          [lft_incl_ty_incl_shr_borrow]. *)
+          [subtype_shr_mono]. *)
        ty_shr := λ κ tid _ l,
                  (∃ vl, (&frac{κ} λ q, l ↦∗{q} vl) ∗ ▷ st.(st_own) tid vl)%I
     |}.
@@ -106,3 +109,43 @@ Coercion ty_of_st : simple_type >-> type.
 
 Delimit Scope lrust_type_scope with T.
 Bind Scope lrust_type_scope with type.
+
+Section subtyping.
+  Context `{iris_typeG Σ} (E : lectx) (L : llctx).
+
+  Record subtype (ty1 ty2 : type) : Prop :=
+    { subtype_sz : ty1.(ty_size) = ty2.(ty_size);
+      subtype_own qE qL :
+        lft_ctx -∗ lectx_interp E qE -∗ llctx_interp L qL -∗
+          □ ∀ tid vl, ty1.(ty_own) tid vl → ty2.(ty_own) tid vl;
+      subtype_shr qE qL :
+        lft_ctx -∗ lectx_interp E qE -∗ llctx_interp L qL -∗
+          □ ∀ κ tid F l, ty1.(ty_shr) κ tid F l → ty2.(ty_shr) κ tid F l }.
+
+  Global Instance subtype_preorder : PreOrder subtype.
+  Proof.
+    split.
+    - intros ty. split; [done| |]; iIntros (? ?) "_ _ _ !# * $".
+    - intros ty1 ty2 ty3 H1 H2. split.
+      + etrans. eapply H1. eapply H2.
+      + iIntros (? ?) "#LFT HE HL".
+        iDestruct (subtype_own _ _ H1 with "LFT HE HL") as "#H1".
+        iDestruct (subtype_own _ _ H2 with "LFT HE HL") as "#H2".
+        iIntros "{HE HL} !# * ?". iApply "H2". by iApply "H1".
+      + iIntros (? ?) "#LFT HE HL".
+        iDestruct (subtype_shr _ _ H1 with "LFT HE HL") as "#H1".
+        iDestruct (subtype_shr _ _ H2 with "LFT HE HL") as "#H2".
+        iIntros "{HE HL} !# * ?". iApply "H2". by iApply "H1".
+  Qed.
+
+  Definition eqtype (ty1 ty2 : type) : Prop :=
+    subtype ty1 ty2 ∧ subtype ty2 ty1.
+
+  Global Instance subtype_equivalence : Equivalence eqtype.
+  Proof.
+    split.
+    - split; done.
+    - intros ?? Heq; split; apply Heq.
+    - intros ??? H1 H2. split; etrans; (apply H1 || apply H2).
+  Qed.
+End subtyping.

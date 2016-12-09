@@ -2,8 +2,9 @@ From Coq Require Import Qcanon.
 From iris.proofmode Require Import tactics.
 From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.lang Require Export new_delete.
+From lrust.lang Require Import heap.
 From lrust.typing Require Export type.
-From lrust.typing Require Import type_incl typing product.
+From lrust.typing Require Import typing product perm.
 
 Section own.
   Context `{iris_typeG Σ}.
@@ -49,7 +50,7 @@ Section own.
        ty_own tid vl :=
          (* We put a later in front of the †{q}, because we cannot use
             [ty_size_eq] on [ty] at step index 0, which would in turn
-            prevent us to prove [ty_incl_own].
+            prevent us to prove [subtype_own].
 
             Since this assertion is timeless, this should not cause
             problems. *)
@@ -98,22 +99,30 @@ Section own.
       by iApply (ty.(ty_shr_mono) with "LFT Hκ").
   Qed.
 
-  Lemma ty_incl_own n ty1 ty2 ρ :
-    ty_incl ρ ty1 ty2 → ty_incl ρ (own n ty1) (own n ty2).
+  Global Instance own_mono E L n :
+    Proper (subtype E L ==> subtype E L) (own n).
   Proof.
-    iIntros (Hincl tid) "#LFT H/=". iMod (Hincl with "LFT H") as "[#Howni #Hshri]".
-    iModIntro. iSplit; iIntros "!#*H".
-    - iDestruct "H" as (l) "(%&Hmt&H†)". subst. iExists _. iSplit. done.
-      iDestruct "Hmt" as (vl') "[Hmt Hown]". iNext.
+    intros ty1 ty2 Hincl. split.
+    - done.
+    - iIntros (qE qL) "#LFT HE HL *".
+      iDestruct (Hincl.(subtype_own _ _ _ _) with "LFT HE HL") as "#Howni".
+      iIntros "{HE HL} !# * H". iDestruct "H" as (l) "(%&Hmt&H†)". subst.
+      iExists _. iSplit. done. iDestruct "Hmt" as (vl') "[Hmt Hown]". iNext.
       iDestruct (ty_size_eq with "Hown") as %<-.
-      iDestruct ("Howni" $! _ with "Hown") as "Hown".
+      iDestruct ("Howni" with "* Hown") as "Hown".
       iDestruct (ty_size_eq with "Hown") as %<-. iFrame.
       iExists _. by iFrame.
-    - iDestruct "H" as (l') "[Hfb #Hvs]". iSplit; last done. iExists l'. iFrame.
-      iIntros "!#". iIntros (q' F) "% Hκ".
+    - iIntros (qE qL) "#LFT HE HL *".
+      iDestruct (Hincl.(subtype_shr _ _ _ _) with "LFT HE HL") as "#Hshri".
+      iIntros "{HE HL} !# * H". iDestruct "H" as (l') "[Hfb #Hvs]".
+      iExists l'. iFrame. iIntros "!#". iIntros (q' F') "% Hκ".
       iMod ("Hvs" with "* [%] Hκ") as "Hvs'". done. iModIntro. iNext.
-      iMod "Hvs'" as "[Hshr $]". by iDestruct ("Hshri" with "* Hshr") as "[$ _]".
+      iMod "Hvs'" as "[Hshr $]". iApply ("Hshri" with "* Hshr").
   Qed.
+
+  Global Instance own_proper E L n :
+    Proper (eqtype E L ==> eqtype E L) (own n).
+  Proof. intros ?? Heq. split; f_equiv; apply Heq. Qed.
 
   Lemma typed_new ρ (n : nat):
     0 ≤ n → typed_step_ty ρ (new [ #n]%E) (own n (Π(replicate n uninit))).

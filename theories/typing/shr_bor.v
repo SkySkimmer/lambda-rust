@@ -1,7 +1,7 @@
 From iris.proofmode Require Import tactics.
 From lrust.lifetime Require Import frac_borrow.
 From lrust.typing Require Export type.
-From lrust.typing Require Import perm type_incl typing own uniq_bor.
+From lrust.typing Require Import perm lft_contexts typing own uniq_bor.
 
 Section shr_bor.
   Context `{iris_typeG Σ}.
@@ -14,6 +14,28 @@ Section shr_bor.
     iIntros (κ ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
   Qed.
 
+  Global Instance subtype_shr_mono E L :
+    Proper (flip (incl E L) ==> subtype E L ==> subtype E L) shr_bor.
+  Proof.
+    intros κ1 κ2 Hκ ty1 ty2 Hty. split.
+    - done.
+    - iIntros (qE qL) "#LFT HE HL *". iDestruct (Hκ with "HE HL") as "#Hκ".
+      iDestruct (subtype_shr _ _ _ _ Hty with "LFT HE HL") as "#Hty".
+      iIntros "{HE HL}!#*H". iDestruct "H" as (l) "(% & H)". subst. iExists _.
+      iSplit. done. by iApply (ty2.(ty_shr_mono) with "LFT Hκ"); last iApply "Hty".
+    - iIntros (qE qL) "#LFT HE HL *". iDestruct (Hκ with "HE HL") as "#Hκ".
+      iDestruct (subtype_shr _ _ _ _ Hty with "LFT HE HL") as "#Hst".
+      iIntros "{HE HL}!#*H". iDestruct "H" as (vl) "#[Hfrac Hty]".
+      iExists vl. iFrame "#". iNext.
+      iDestruct "Hty" as (l0) "(% & Hty)". subst. iExists _. iSplit. done.
+      by iApply (ty_shr_mono with "LFT Hκ"); last iApply "Hst".
+  Qed.
+  Global Instance subtype_shr_mono' E L :
+    Proper (incl E L ==> flip (subtype E L) ==> flip (subtype E L)) shr_bor.
+  Proof. intros ??????. by apply subtype_shr_mono. Qed.
+  Global Instance subtype_shr_proper E L κ :
+    Proper (eqtype E L ==> eqtype E L) (shr_bor κ).
+  Proof. intros ??[]. by split; apply subtype_shr_mono. Qed.
 End shr_bor.
 
 Notation "&shr{ κ } ty" := (shr_bor κ ty)
@@ -27,8 +49,9 @@ Section typing.
   Proof.
     iIntros (tid) "#LFT [Huniq [Htok $]]". unfold has_type.
     destruct (eval_expr ν); last by iDestruct "Huniq" as "[]".
-    iDestruct "Huniq" as (l) "[% Hown]".
-    iMod (ty.(ty_share) _ lrustN with "LFT Hown Htok") as "[Hown $]"; [solve_ndisj|done|].
+    iDestruct "Huniq" as (l P) "[[% #HPiff] HP]".
+    iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
+    iMod (ty.(ty_share) _ lrustN with "LFT H↦ Htok") as "[Hown $]"; [solve_ndisj|done|].
     iIntros "!>/=". eauto.
   Qed.
 
@@ -40,18 +63,6 @@ Section typing.
       try by (iDestruct "Hκ'" as "[]" || iDestruct "Hκ'" as (l) "[% _]").
     iDestruct "Hκ'" as (l') "[EQ Hκ']". iDestruct "EQ" as %[=]. subst l'.
     iModIntro. iExists _. iSplit. done. by iApply (ty_shr_mono with "LFT Hord Hκ'").
-  Qed.
-
-  Lemma lft_incl_ty_incl_shr_bor ty κ1 κ2 :
-    ty_incl (κ1 ⊑ κ2) (&shr{κ2}ty) (&shr{κ1}ty).
-  Proof.
-    iIntros (tid) "#LFT #Hincl!>". iSplit; iIntros "!#*H".
-    - iDestruct "H" as (l) "(% & H)". subst. iExists _.
-      iSplit. done. by iApply (ty.(ty_shr_mono) with "LFT Hincl").
-    - iDestruct "H" as (vl) "#[Hfrac Hty]". iSplit; last done.
-      iExists vl. iFrame "#". iNext.
-      iDestruct "Hty" as (l0) "(% & Hty)". subst. iExists _. iSplit. done.
-      by iApply (ty_shr_mono with "LFT Hincl Hty").
   Qed.
 
   Lemma consumes_copy_shr_bor ty κ κ' q:

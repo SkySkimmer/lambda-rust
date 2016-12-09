@@ -1,7 +1,8 @@
 From iris.program_logic Require Import hoare.
 From iris.base_logic Require Import big_op.
 From lrust.lang Require Export notation memcpy.
-From lrust.typing Require Export type perm.
+From lrust.typing Require Export type.
+From lrust.typing Require Import perm.
 From lrust.lang Require Import proofmode.
 From lrust.lifetime Require Import frac_borrow reborrow borrow creation.
 

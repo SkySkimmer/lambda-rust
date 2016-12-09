@@ -76,9 +76,10 @@ Section product_split.
     rewrite /has_type /sep /product2 /=.
     destruct (eval_expr ν) as [[[|l|]|]|];
       iIntros (tid) "#LFT H"; try iDestruct "H" as "[]";
-        iDestruct "H" as (l0) "[EQ H]"; iDestruct "EQ" as %[=<-].
-    rewrite /= split_prod_mt. iMod (bor_sep with "LFT H") as "[H1 H2]".
-    set_solver. iSplitL "H1"; eauto.
+        iDestruct "H" as (l0 P) "[[EQ #HPiff] HP]"; iDestruct "EQ" as %[=<-].
+    iMod (bor_iff with "LFT [] HP") as "Hown". set_solver. by eauto.
+    rewrite /= split_prod_mt. iMod (bor_sep with "LFT Hown") as "[H1 H2]".
+    set_solver. iSplitL "H1"; iExists _, _; erewrite <-uPred.iff_refl; auto.
   Qed.
 
   Lemma perm_split_uniq_bor_prod tyl κ ν :
@@ -88,10 +89,10 @@ Section product_split.
             ⊤ (combine_offs tyl 0).
   Proof.
     transitivity (ν +ₗ #0%nat ◁ &uniq{κ}Π tyl)%P.
-    { iIntros (tid) "_ H/=". rewrite /has_type /=.
-      destruct (eval_expr ν)=>//.
-      iDestruct "H" as (l) "[Heq H]". iDestruct "Heq" as %[=->].
-      rewrite shift_loc_0 /=. eauto. }
+    { iIntros (tid) "LFT H/=". rewrite /has_type /=. destruct (eval_expr ν)=>//.
+      iDestruct "H" as (l P) "[[Heq #HPiff] HP]". iDestruct "Heq" as %[=->].
+      iMod (bor_iff with "LFT [] HP") as "H". set_solver. by eauto.
+      iExists _, _; erewrite <-uPred.iff_refl, shift_loc_0; auto. }
     generalize 0%nat. induction tyl as [|ty tyl IH]=>offs. by iIntros (tid) "_ H/=".
     etransitivity. apply perm_split_uniq_bor_prod2.
     iIntros (tid) "#LFT /=[$ H]". iApply (IH with "LFT").

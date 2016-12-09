@@ -55,6 +55,27 @@ Section product.
     iSplitL "H1"; by iApply (ty_shr_mono with "LFT H⊑").
   Qed.
 
+  Global Instance product2_mono E L:
+    Proper (subtype E L ==> subtype E L ==> subtype E L) product2.
+  Proof.
+    iIntros (ty11 ty12 H1 ty21 ty22 H2). split.
+    - by rewrite /= (subtype_sz _ _ _ _ H1) (subtype_sz _ _ _ _ H2).
+    - iIntros (??) "#LFT HE HL".
+      iDestruct (subtype_own _ _ _ _ H1 with "LFT HE HL") as "#H1".
+      iDestruct (subtype_own _ _ _ _ H2 with "LFT HE HL") as "#H2".
+      iIntros "{HE HL}!# * H". iDestruct "H" as (vl1 vl2) "(% & Hown1 & Hown2)".
+      iExists _, _. iSplit. done. by iSplitL "Hown1"; [iApply "H1"|iApply "H2"].
+    - iIntros (??) "#LFT HE HL".
+      iDestruct (subtype_shr _ _ _ _ H1 with "LFT HE HL") as "#H1".
+      iDestruct (subtype_shr _ _ _ _ H2 with "LFT HE HL") as "#H2".
+      iIntros "{HE HL}!# * H". iDestruct "H" as (vl1 vl2) "(% & #Hshr1 & #Hshr2)".
+      iExists _, _. iSplit. done. erewrite subtype_sz; last done.
+      by iSplit; [iApply "H1"|iApply "H2"].
+  Qed.
+  Global Instance product2_proper E L:
+    Proper (eqtype E L ==> eqtype E L ==> eqtype E L) product2.
+  Proof. by intros ??[]??[]; split; apply product2_mono. Qed.
+
   Global Program Instance product2_copy `(!Copy ty1) `(!Copy ty2) :
     Copy (product2 ty1 ty2).
   Next Obligation.
@@ -91,6 +112,10 @@ Section product.
   Qed.
 
   Definition product := fold_right product2 unit.
+
+  (* Given that in practice, product will be used with concrete lists,
+     there should be no need to declare [Copy] and [Proper] instances
+     for [product]. *)
 End product.
 
 Arguments product : simpl never.
@@ -99,28 +124,7 @@ Notation Π := product.
 Section typing.
   Context `{iris_typeG Σ}.
 
-  (* We have the additional hypothesis that ρ should be duplicable.
-     The only way I can see to circumvent this limitation is to deeply
-     embed permissions (and their inclusion). Not sure this is worth it. *)
-  Lemma ty_incl_prod2 ρ ty11 ty12 ty21 ty22 :
-    Duplicable ρ → ty_incl ρ ty11 ty12 → ty_incl ρ ty21 ty22 →
-    ty_incl ρ (product2 ty11 ty21) (product2 ty12 ty22).
-  Proof.
-    iIntros (Hρ Hincl1 Hincl2 tid) "#LFT #Hρ".
-    iMod (Hincl1 with "LFT Hρ") as "[#Ho1#Hs1]".
-    iMod (Hincl2 with "LFT Hρ") as "[#Ho2#Hs2]".
-    iSplitL; iIntros "!>!#*H/=".
-    - iDestruct "H" as (vl1 vl2) "(% & H1 & H2)". iExists _, _. iSplit. done.
-      iSplitL "H1". iApply ("Ho1" with "H1"). iApply ("Ho2" with "H2").
-    - iDestruct "H" as (E1 E2) "(% & H1 & H2)".
-      iDestruct ("Hs1" with "*H1") as "[H1 EQ]". iDestruct ("Hs2" with "*H2") as "[H2 %]".
-      iDestruct "EQ" as %->. iSplit; last by iPureIntro; f_equal.
-      iExists _, _. by iFrame.
-  Qed.
-
-  Lemma ty_incl_prod ρ tyl1 tyl2 :
-    Duplicable ρ → Forall2 (ty_incl ρ) tyl1 tyl2 → ty_incl ρ (Π tyl1) (Π tyl2).
-  Proof. intros Hρ HFA. induction HFA. done. by apply ty_incl_prod2. Qed.
+  (* FIXME : do we still need this (flattening and unflattening)? *)
 
   Lemma ty_incl_prod2_assoc1 ρ ty1 ty2 ty3 :
     ty_incl ρ (product2 ty1 (product2 ty2 ty3)) (product2 (product2 ty1 ty2) ty3).
@@ -154,35 +158,37 @@ Section typing.
     ty_incl ρ (Π(tyl1 ++ Π tyl2 :: tyl3))
               (Π(tyl1 ++ tyl2 ++ tyl3)).
   Proof.
-    apply (ty_incl_weaken _ ⊤). apply perm_incl_top.
-    induction tyl1; last by apply (ty_incl_prod2 _ _ _ _ _ _).
-    induction tyl2 as [|ty tyl2 IH]; simpl.
-    - iIntros (tid) "#LFT _". iSplitL; iIntros "/=!>!#*H".
-      + iDestruct "H" as (vl1 vl2) "(% & % & Ho)". subst. done.
-      + iDestruct "H" as (E1 E2) "(% & H1 & Ho)". iSplit; last done.
-        rewrite shift_loc_0. iApply (ty_shr_mono with "LFT [] Ho"). set_solver.
-        iApply lft_incl_refl.
-    - etransitivity. apply ty_incl_prod2_assoc2.
-      eapply (ty_incl_prod2 _ _ _ _ _ _). done. apply IH.
-  Qed.
+  Admitted.
+  (*   apply (ty_incl_weaken _ ⊤). apply perm_incl_top. *)
+  (*   induction tyl1; last by apply (ty_incl_prod2 _ _ _ _ _ _). *)
+  (*   induction tyl2 as [|ty tyl2 IH]; simpl. *)
+  (*   - iIntros (tid) "#LFT _". iSplitL; iIntros "/=!>!#*H". *)
+  (*     + iDestruct "H" as (vl1 vl2) "(% & % & Ho)". subst. done. *)
+  (*     + iDestruct "H" as (E1 E2) "(% & H1 & Ho)". iSplit; last done. *)
+  (*       rewrite shift_loc_0. iApply (ty_shr_mono with "LFT [] Ho"). set_solver. *)
+  (*       iApply lft_incl_refl. *)
+  (*   - etransitivity. apply ty_incl_prod2_assoc2. *)
+  (*     eapply (ty_incl_prod2 _ _ _ _ _ _). done. apply IH. *)
+  (* Qed. *)
 
   Lemma ty_incl_prod_unflatten ρ tyl1 tyl2 tyl3 :
     ty_incl ρ (Π(tyl1 ++ tyl2 ++ tyl3))
               (Π(tyl1 ++ Π tyl2 :: tyl3)).
   Proof.
-    apply (ty_incl_weaken _ ⊤). apply perm_incl_top.
-    induction tyl1; last by apply (ty_incl_prod2 _ _ _ _ _ _).
-    induction tyl2 as [|ty tyl2 IH]; simpl.
-    - iIntros (tid) "#LFT _". iMod (bor_create with "LFT []") as "[Hbor _]".
-      done. instantiate (1:=True%I). by auto. instantiate (1:=static).
-      iMod (bor_fracture (λ _, True%I) with "LFT Hbor") as "#Hbor". done.
-      iSplitL; iIntros "/=!>!#*H".
-      + iExists [], vl. iFrame. auto.
-      + iSplit; last done. iExists ∅, E. iSplit. iPureIntro; set_solver.
-        rewrite shift_loc_0. iFrame. iExists []. iSplit; last auto.
-        setoid_rewrite heap_mapsto_vec_nil.
-        iApply (frac_bor_shorten with "[] Hbor"). iApply lft_incl_static.
-    - etransitivity; last apply ty_incl_prod2_assoc1.
-      eapply (ty_incl_prod2 _ _ _ _ _ _). done. apply IH.
-  Qed.
+  Admitted.
+  (*   apply (ty_incl_weaken _ ⊤). apply perm_incl_top. *)
+  (*   induction tyl1; last by apply (ty_incl_prod2 _ _ _ _ _ _). *)
+  (*   induction tyl2 as [|ty tyl2 IH]; simpl. *)
+  (*   - iIntros (tid) "#LFT _". iMod (bor_create with "LFT []") as "[Hbor _]". *)
+  (*     done. instantiate (1:=True%I). by auto. instantiate (1:=static). *)
+  (*     iMod (bor_fracture (λ _, True%I) with "LFT Hbor") as "#Hbor". done. *)
+  (*     iSplitL; iIntros "/=!>!#*H". *)
+  (*     + iExists [], vl. iFrame. auto. *)
+  (*     + iSplit; last done. iExists ∅, E. iSplit. iPureIntro; set_solver. *)
+  (*       rewrite shift_loc_0. iFrame. iExists []. iSplit; last auto. *)
+  (*       setoid_rewrite heap_mapsto_vec_nil. *)
+  (*       iApply (frac_bor_shorten with "[] Hbor"). iApply lft_incl_static. *)
+  (*   - etransitivity; last apply ty_incl_prod2_assoc1. *)
+  (*     eapply (ty_incl_prod2 _ _ _ _ _ _). done. apply IH. *)
+  (* Qed. *)
 End typing.

@@ -1,6 +1,6 @@
 From iris.proofmode Require Import tactics.
 From lrust.typing Require Export type.
-From lrust.typing Require Import typing bool.
+From lrust.typing Require Import typing bool perm.
 
 Section int.
   Context `{iris_typeG Σ}.
