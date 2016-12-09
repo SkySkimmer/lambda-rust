@@ -99,13 +99,12 @@ Section sum.
         by eapply List.Forall_forall. }
     destruct (Qp_lower_bound q'1 q'2) as (q' & q'01 & q'02 & -> & ->).
     rewrite -{1}heap_mapsto_vec_prop_op; last (by intros; apply sum_size_eq, Hn).
-    iDestruct "Hownq" as "[Hownq1 Hownq2]". iDestruct "Hown" as "[Hown1 Hown2]".
+    iDestruct "Hownq" as "[Hownq1 Hownq2]". iDestruct "Hown" as "[Hown1 >Hown2]".
     iExists q'. iModIntro. iSplitL "Hown1 Hownq1".
     - iNext. iExists i. by iFrame.
-    - iIntros "H". iDestruct "H" as (i') "[Hown1 Hownq1]".
-      iCombine "Hown1" "Hown2" as "Hown". rewrite heap_mapsto_op.
-      iDestruct "Hown" as "[>#Hi Hown]". iDestruct "Hi" as %[= ->%Z_of_nat_inj].
-      iMod ("Hclose" with "Hown") as "$".
+    - iIntros "H". iDestruct "H" as (i') "[>Hown1 Hownq1]".
+      iDestruct (heap_mapsto_agree with "[$Hown1 $Hown2]") as %[= ->%Z_of_nat_inj].
+      iCombine "Hown1" "Hown2" as "Hown". iMod ("Hclose" with "[Hown]") as "$"; first by eauto.
       iCombine "Hownq1" "Hownq2" as "Hownq".
       rewrite heap_mapsto_vec_prop_op; last (by intros; apply sum_size_eq, Hn).
       by iApply "Hclose'".
