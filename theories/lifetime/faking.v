@@ -1,5 +1,5 @@
 From lrust.lifetime Require Export primitive.
-From iris.algebra Require Import csum auth frac gmap dec_agree gset.
+From iris.algebra Require Import csum auth frac gmap agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 From iris.proofmode Require Import tactics.
@@ -18,14 +18,14 @@ Proof.
   { iModIntro. iExists A, I. by iFrame. }
   iMod (own_alloc (● 0 ⋅ ◯ 0)) as (γcnt) "[Hcnt Hcnt']"; first done.
   iMod (own_alloc ((● ∅ ⋅ ◯ ∅) :auth (gmap slice_name
-      (frac * dec_agree bor_state)))) as (γbor) "[Hbor Hbor']";
+      (frac * agree bor_stateC)))) as (γbor) "[Hbor Hbor']";
     first by apply auth_valid_discrete_2.
   iMod (own_alloc ((● ∅) :auth (gset_disj slice_name)))
      as (γinh) "Hinh"; first by done.
   set (γs := LftNames γbor γcnt γinh).
   iMod (own_update with "HI") as "[HI Hγs]".
   { apply auth_update_alloc,
-      (alloc_singleton_local_update _ κ (DecAgree γs)); last done.
+      (alloc_singleton_local_update _ κ (to_agree γs)); last done.
     by rewrite lookup_fmap HIκ. }
   iDestruct "Hγs" as "#Hγs".
   iAssert (own_cnt κ (● 0)) with "[Hcnt]" as "Hcnt".
@@ -85,7 +85,7 @@ Proof.
   iMod (slice_insert_empty _ _ _ _ P with "Hbox") as (γ) "(% & #Hslice & Hbox)".
   iMod (own_bor_update with "HB●") as "[HB● H◯]".
   { eapply auth_update_alloc,
-      (alloc_singleton_local_update _ _ (1%Qp, DecAgree Bor_in)); last done.
+      (alloc_singleton_local_update _ _ (1%Qp, to_agree Bor_in)); last done.
     by do 2 eapply lookup_to_gmap_None. }
   rewrite /bor /raw_bor /idx_bor_own /=. iModIntro. iSplitR "H◯".
   - iExists ({[γ]} ∪ B), (P ∗ Pinh)%I. rewrite !to_gmap_union_singleton. by iFrame.

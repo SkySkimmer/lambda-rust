@@ -1,6 +1,6 @@
 From lrust.lifetime Require Export primitive.
 From lrust.lifetime Require Import faking.
-From iris.algebra Require Import csum auth frac gmap dec_agree gset.
+From iris.algebra Require Import csum auth frac gmap agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 From iris.proofmode Require Import tactics.
@@ -42,7 +42,7 @@ Proof.
   iMod ("Hvs" $! I with "[HI Halive Hbox Hbor] HP Hκ") as "(Hinv & HQ & Hcnt')".
   { rewrite lft_vs_inv_unfold. iFrame. rewrite /lft_bor_dead.
     iExists (dom _ B), P. rewrite !to_gmap_dom -map_fmap_compose.
-    rewrite (map_fmap_ext _ ((1%Qp,) ∘ DecAgree) B); last naive_solver.
+    rewrite (map_fmap_ext _ ((1%Qp,) ∘ to_agree) B); last naive_solver.
     iFrame. }
   rewrite lft_vs_inv_unfold; iDestruct "Hinv" as "(?&HI&Halive)".
   iSpecialize ("Halive'" with "Halive").
@@ -198,7 +198,7 @@ Proof.
       apply lft_alive_in_insert_false; last done.
       assert (κ ∉ K). intros ?. eapply H5. 2: eauto. rewrite elem_of_union. eauto.
       move: H7. rewrite elem_of_kill_set not_and_l. intros [?|?]. done.
-contradict H7. apply elem_of_dom. set_solver +HI Hκ.
+      contradict H7. apply elem_of_dom. set_solver +HI Hκ.
     + iRight. iFrame. iPureIntro. by apply lft_dead_in_insert_false.
 Qed.
 End creation.

@@ -1,5 +1,5 @@
 From lrust.lifetime Require Export definitions.
-From iris.algebra Require Import csum auth frac gmap dec_agree gset.
+From iris.algebra Require Import csum auth frac gmap agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes fractional.
 From iris.proofmode Require Import tactics.
@@ -10,21 +10,22 @@ Context `{invG Σ, lftG Σ}.
 Implicit Types κ : lft.
 
 Lemma to_borUR_included (B : gmap slice_name bor_state) i s q :
-  {[i := (q%Qp, DecAgree s)]} ≼ to_borUR B → B !! i = Some s.
+  {[i := (q%Qp, to_agree s)]} ≼ to_borUR B → B !! i = Some s.
 Proof.
-  rewrite singleton_included=> -[qs [/leibniz_equiv_iff]].
-  rewrite lookup_fmap fmap_Some=> -[s' [? ->]].
-  by move=> /Some_pair_included [_] /Some_included_total /DecAgree_included=>->.
+  rewrite singleton_included=> -[qs []]. unfold_leibniz.
+  rewrite lookup_fmap fmap_Some_equiv=> -[s' [-> ->]].
+  by move=> /Some_pair_included [_] /Some_included_total /to_agree_included=>->.
 Qed.
 
 (** Ownership *)
 Lemma own_ilft_auth_agree (I : gmap lft lft_names) κ γs :
   own_ilft_auth I -∗
-    own ilft_name (◯ {[κ := DecAgree γs]}) -∗ ⌜is_Some (I !! κ)⌝.
+    own ilft_name (◯ {[κ := to_agree γs]}) -∗ ⌜is_Some (I !! κ)⌝.
 Proof.
   iIntros "HI Hκ". iDestruct (own_valid_2 with "HI Hκ")
-    as %[[? [??]]%singleton_included _]%auth_valid_discrete_2.
-  unfold to_ilftUR in *. simplify_map_eq; simplify_option_eq; eauto.
+    as %[[? [Hl ?]]%singleton_included _]%auth_valid_discrete_2.
+  unfold to_ilftUR in *. simplify_map_eq.
+  destruct (fmap_Some_equiv' _ _ _ Hl) as (?&?&?). eauto.
 Qed.
 
 Lemma own_alft_auth_agree (A : gmap atomic_lft bool) Λ b :
@@ -50,13 +51,13 @@ Proof.
   iIntros "[Hx Hy]".
   iDestruct "Hx" as (γs) "[Hγs Hx]"; iDestruct "Hy" as (γs') "[Hγs' Hy]".
   iDestruct (own_valid_2 with "Hγs Hγs'") as %Hγs%auth_own_valid.
-  move: Hγs; rewrite /= op_singleton singleton_valid=> /dec_agree_op_inv [<-].
+  move: Hγs; rewrite /= op_singleton singleton_valid=> /agree_op_inv /(inj to_agree) [<-].
   iExists γs. iSplit. done. rewrite own_op; iFrame.
 Qed.
 Global Instance own_bor_into_op κ x x1 x2 :
   IntoOp x x1 x2 → IntoAnd false (own_bor κ x) (own_bor κ x1) (own_bor κ x2).
 Proof.
-  rewrite /IntoOp /IntoAnd=> /leibniz_equiv_iff->. by rewrite -own_bor_op.
+  rewrite /IntoOp /IntoAnd=>->. by rewrite -own_bor_op.
 Qed.
 Lemma own_bor_valid κ x : own_bor κ x -∗ ✓ x.
 Proof. iDestruct 1 as (γs) "[#? Hx]". by iApply own_valid. Qed.
@@ -84,7 +85,7 @@ Proof.
   iIntros "[Hx Hy]".
   iDestruct "Hx" as (γs) "[Hγs Hx]"; iDestruct "Hy" as (γs') "[Hγs' Hy]".
   iDestruct (own_valid_2 with "Hγs Hγs'") as %Hγs%auth_own_valid.
-  move: Hγs; rewrite /= op_singleton singleton_valid=> /dec_agree_op_inv [<-].
+  move: Hγs; rewrite /= op_singleton singleton_valid=> /agree_op_inv /(inj to_agree) [<-].
   iExists γs. iSplit; first done. rewrite own_op; iFrame.
 Qed.
 Global Instance own_cnt_into_op κ x x1 x2 :
@@ -118,7 +119,7 @@ Proof.
   iIntros "[Hx Hy]".
   iDestruct "Hx" as (γs) "[Hγs Hx]"; iDestruct "Hy" as (γs') "[Hγs' Hy]".
   iDestruct (own_valid_2 with "Hγs Hγs'") as %Hγs%auth_own_valid.
-  move: Hγs; rewrite /= op_singleton singleton_valid=> /dec_agree_op_inv [<-].
+  move: Hγs; rewrite /= op_singleton singleton_valid=> /agree_op_inv /(inj to_agree) [<-].
   iExists γs. iSplit. done. rewrite own_op; iFrame.
 Qed.
 Global Instance own_inh_into_op κ x x1 x2 :
@@ -281,7 +282,7 @@ Proof. done. Qed.
 Global Instance idx_bor_own_fractional i : Fractional (λ q, idx_bor_own q i)%I.
 Proof.
   intros p q. rewrite /idx_bor_own -own_bor_op /own_bor. f_equiv=>?.
-  by rewrite -auth_frag_op op_singleton.
+  rewrite -auth_frag_op op_singleton pair_op agree_idemp. done.
 Qed.
 Global Instance idx_bor_own_as_fractional i q :
   AsFractional (idx_bor_own q i) (λ q, idx_bor_own q i)%I q.

@@ -1,6 +1,6 @@
 From lrust.lifetime Require Export primitive.
 From lrust.lifetime Require Import faking.
-From iris.algebra Require Import csum auth frac gmap dec_agree gset.
+From iris.algebra Require Import csum auth frac gmap agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 From iris.proofmode Require Import tactics.
@@ -39,8 +39,9 @@ Proof.
   iMod (slice_empty with "Hislice Hbox") as "[HP Hbox]"; first done.
   { by rewrite lookup_fmap HB. }
   iMod (own_bor_update_2 with "HB● Hi") as "[HB● Hi]".
-  { eapply auth_update, singleton_local_update,
-     (exclusive_local_update _ (1%Qp, DecAgree (Bor_rebor κ'))); last done.
+  { eapply auth_update. (* FIXME: eapply singleton_local_update loops. *)
+    apply: singleton_local_update; last eapply
+     (exclusive_local_update _ (1%Qp, to_agree (Bor_rebor κ'))); last done.
     rewrite /to_borUR lookup_fmap. by rewrite HB. }
   iAssert (▷?q lft_inv A κ)%I with "[H◯ HB● HB Hvs' Hinh' Hbox]" as "Hκ".
   { iNext. rewrite /lft_inv. iLeft.
@@ -58,7 +59,7 @@ Proof.
   iDestruct "HBj" as %HBj; move: HBj; rewrite lookup_fmap fmap_None=> HBj.
   iMod (own_bor_update with "HB●") as "[HB● Hj]".
   { apply auth_update_alloc,
-     (alloc_singleton_local_update _ j (1%Qp, DecAgree Bor_in)); last done.
+     (alloc_singleton_local_update _ j (1%Qp, to_agree Bor_in)); last done.
     rewrite /to_borUR lookup_fmap. by rewrite HBj. }
   iModIntro. iExists (P ∗ Pb)%I. rewrite /Iinv. iFrame "HI". iFrame.
   iSplitL "Hj".
@@ -80,7 +81,7 @@ Proof.
     as %[HB%to_borUR_included _]%auth_valid_discrete_2.
   iMod (own_bor_update_2 with "HB● Hi") as "[HB● Hi]".
   { eapply auth_update, singleton_local_update,
-     (exclusive_local_update _ (1%Qp, DecAgree Bor_in)); last done.
+     (exclusive_local_update _ (1%Qp, to_agree Bor_in)); last done.
     rewrite /to_borUR lookup_fmap. by rewrite HB. }
   iMod (slice_fill _ _ false with "Hislice HP Hbox")
      as "Hbox"; first by solve_ndisj.
