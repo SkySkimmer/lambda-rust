@@ -1,4 +1,4 @@
-image: opam
+image: ralfjung/opam-ci:latest
 
 lrust-coq8.5.3:
   tags:
