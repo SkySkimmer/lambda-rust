@@ -35,8 +35,8 @@ Section type.
          invariants, which does not need the mask.  Moreover, it is
          more consistent with thread-local tokens, which we do not
          give any. *)
-      ty_share E N κ l tid q : mgmtE ⊥ ↑N → mgmtE ⊆ E →
-        lft_ctx -∗ &{κ} (l ↦∗: ty_own tid) -∗ q.[κ] ={E}=∗ ty_shr κ tid (↑N) l ∗ q.[κ];
+      ty_share E N κ l tid : mgmtE ⊥ ↑N → mgmtE ⊆ E →
+        lft_ctx -∗ &{κ} (l ↦∗: ty_own tid) ={E}=∗ ty_shr κ tid (↑N) l;
       ty_shr_mono κ κ' tid E E' l : E ⊆ E' →
         lft_ctx -∗ κ' ⊑ κ -∗ ty_shr κ tid E l -∗ ty_shr κ' tid E' l
     }.
@@ -71,37 +71,43 @@ Section type.
           borrow, otherwise I do not know how to prove the shr part of
           [subtype_shr_mono]. *)
        ty_shr := λ κ tid _ l,
-                 (∃ vl, (&frac{κ} λ q, l ↦∗{q} vl) ∗ ▷ st.(st_own) tid vl)%I
+                 (∃ vl, (&frac{κ} λ q, l ↦∗{q} vl) ∗
+                        (▷ st.(st_own) tid vl ∨ □|={↑lftN}=>[†κ]))%I
     |}.
   Next Obligation. intros. apply st_size_eq. Qed.
   Next Obligation.
-    intros st E N κ l tid q ? ?. iIntros "#LFT Hmt Htok".
+    intros st E N κ l tid ? ?. iIntros "#LFT Hmt".
     iMod (bor_exists with "LFT Hmt") as (vl) "Hmt". set_solver.
     iMod (bor_sep with "LFT Hmt") as "[Hmt Hown]". set_solver.
-    iMod (bor_persistent with "LFT Hown Htok") as "[Hown $]". set_solver.
-    iMod (bor_fracture with "LFT [Hmt]") as "Hfrac"; last first.
-    { iExists vl. by iFrame. }
-    done. set_solver.
+    iMod (bor_persistent with "LFT Hown") as "[Hown|#H†]". set_solver.
+    - iMod (bor_fracture with "LFT [Hmt]") as "Hfrac"; last first.
+      { iExists vl. iFrame. auto. }
+      done. set_solver.
+    - iExists []. iSplitL; last by auto. iApply (frac_bor_fake with "LFT"); auto.
   Qed.
   Next Obligation.
     intros st κ κ' tid E E' l ?. iIntros "#LFT #Hord H".
-    iDestruct "H" as (vl) "[Hf Hown]".
-    iExists vl. iFrame. by iApply (frac_bor_shorten with "Hord").
+    iDestruct "H" as (vl) "[#Hf #Hown]".
+    iExists vl. iSplit. by iApply (frac_bor_shorten with "Hord").
+    iDestruct "Hown" as "[Hown|#H†]". auto. iRight. iIntros "!#".
+    by iApply (lft_incl_dead with "Hord >").
   Qed.
 
   Global Program Instance ty_of_st_copy st : Copy (ty_of_st st).
   Next Obligation.
     intros st κ tid E F l q ?. iIntros "#LFT #Hshr[Hlft $]".
-    iDestruct "Hshr" as (vl) "[Hf Hown]".
-    iMod (frac_bor_acc with "LFT Hf Hlft") as (q') "[Hmt Hclose]"; first set_solver.
-    iModIntro. iExists _. iDestruct "Hmt" as "[Hmt1 Hmt2]". iSplitL "Hmt1".
-    - iNext. iExists _. by iFrame.
-    - iIntros "Hmt1". iDestruct "Hmt1" as (vl') "[Hmt1 #Hown']".
-      iAssert (▷ ⌜length vl = length vl'⌝)%I as ">%".
-      { iNext. iDestruct (st_size_eq with "Hown") as %->.
-        iDestruct (st_size_eq with "Hown'") as %->. done. }
-      iCombine "Hmt1" "Hmt2" as "Hmt". rewrite heap_mapsto_vec_op // Qp_div_2.
-      iDestruct "Hmt" as "[>% Hmt]". subst. by iApply "Hclose".
+    iDestruct "Hshr" as (vl) "[Hf [Hown|#H†]]".
+    - iMod (frac_bor_acc with "LFT Hf Hlft") as (q') "[Hmt Hclose]"; first set_solver.
+      iModIntro. iExists _. iDestruct "Hmt" as "[Hmt1 Hmt2]". iSplitL "Hmt1".
+      + iNext. iExists _. by iFrame.
+      + iIntros "Hmt1". iDestruct "Hmt1" as (vl') "[Hmt1 #Hown']".
+        iAssert (▷ ⌜length vl = length vl'⌝)%I as ">%".
+        { iNext. iDestruct (st_size_eq with "Hown") as %->.
+          iDestruct (st_size_eq with "Hown'") as %->. done. }
+        iCombine "Hmt1" "Hmt2" as "Hmt". rewrite heap_mapsto_vec_op // Qp_div_2.
+        iDestruct "Hmt" as "[>% Hmt]". subst. by iApply "Hclose".
+    - iApply fupd_mask_mono; last iMod "H†". set_solver.
+      iDestruct (lft_tok_dead with "Hlft H†") as "[]".
   Qed.
 End type.
 

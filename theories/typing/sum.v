@@ -6,23 +6,9 @@ From lrust.typing Require Import type_incl.
 Section sum.
   Context `{typeG Σ}.
 
-  (* [emp] cannot be defined using [ty_of_st], because the least we
-     would be able to prove from its [ty_shr] would be [▷ False], but
-     we really need [False] to prove [ty_incl_emp]. *)
-  Program Definition emp :=
-    {| ty_size := 0; ty_own tid vl := False%I; ty_shr κ tid E l := False%I |}.
+  Program Definition emp : type := {| st_size := 0; st_own tid vl := False%I |}.
   Next Obligation. iIntros (tid vl) "[]". Qed.
-  Next Obligation.
-    iIntros (????????) "#LFT Hb Htok".
-    iMod (bor_exists with "LFT Hb") as (vl) "Hb". set_solver.
-    iMod (bor_sep with "LFT Hb") as "[_ Hb]". set_solver.
-    iMod (bor_persistent with "LFT Hb Htok") as "[>[] _]". set_solver.
-  Qed.
-  Next Obligation. intros. iIntros "_ _ []". Qed.
   Global Instance emp_empty : Empty type := emp.
-
-  Global Program Instance emp_copy : Copy emp.
-  Next Obligation. intros. iIntros "_ []". Qed.
 
   Lemma split_sum_mt l tid q tyl :
     (l ↦∗{q}: λ vl,
@@ -66,10 +52,10 @@ Section sum.
     subst. simpl. by iDestruct (sum_size_eq with "Hown") as %->.
   Qed.
   Next Obligation.
-    intros n tyl Hn E N κ l tid q ??. iIntros "#LFT Hown Htok". rewrite split_sum_mt.
+    intros n tyl Hn E N κ l tid ??. iIntros "#LFT Hown". rewrite split_sum_mt.
     iMod (bor_exists with "LFT Hown") as (i) "Hown". set_solver.
     iMod (bor_sep with "LFT Hown") as "[Hmt Hown]". set_solver.
-    iMod ((nth i tyl ∅).(ty_share) with "LFT Hown Htok") as "[#Hshr $]"; try done.
+    iMod ((nth i tyl ∅).(ty_share) with "LFT Hown") as "#Hshr"; try done.
     iMod (bor_fracture with "LFT [-]") as "H"; last by eauto. set_solver. iFrame.
   Qed.
   Next Obligation.
@@ -109,7 +95,6 @@ Section sum.
       rewrite heap_mapsto_vec_prop_op; last (by intros; apply sum_size_eq, Hn).
       by iApply "Hclose'".
   Qed.
-
 End sum.
 
 Existing Instance LstTySize_nil.
@@ -125,8 +110,10 @@ Notation "Σ[ ty1 ; .. ; tyn ]" :=
 Section incl.
   Context `{typeG Σ}.
 
+   (* FIXME : do we need that anywhere?. *)
   Lemma ty_incl_emp ρ ty : ty_incl ρ ∅ ty.
-  Proof. iIntros (tid) "_ _!>". iSplit; iIntros "!#*/=[]". Qed.
+  Proof.
+  Admitted.
 
   Lemma ty_incl_sum ρ n tyl1 tyl2 (_ : LstTySize n tyl1) (_ : LstTySize n tyl2) :
     Duplicable ρ → Forall2 (ty_incl ρ) tyl1 tyl2 →

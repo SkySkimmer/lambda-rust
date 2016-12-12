@@ -16,7 +16,7 @@ Section fn.
   Next Obligation.
     iIntros (n ρ tid vl) "H". iDestruct "H" as (f) "[% _]". by subst.
   Qed.
-  Next Obligation. intros. by iIntros "_ _ $". Qed.
+  Next Obligation. intros. by iIntros "_ _". Qed.
   Next Obligation. intros. by iIntros "_ _ _". Qed.
 
   (* TODO : For now, functions are not Send. This means they cannot be
@@ -49,10 +49,11 @@ Section fn.
     - iDestruct "H" as (f) "[% Hwp]". subst. iExists _. iSplit. done.
       iIntros (x vl) "!#[Hρ2 Htl]". iApply ("Hwp" with ">").
       iFrame. iApply (Hρ1ρ2 with "LFT"). by iFrame.
-    - iSplit; last done. simpl. iDestruct "H" as (vl0) "[? Hvl]".
-      iExists vl0. iFrame "#". iNext. iDestruct "Hvl" as (f) "[% Hwp]".
-      iExists f. iSplit. done. iIntros (x vl) "!#[Hρ2 Htl]".
-      iApply ("Hwp" with ">"). iFrame. iApply (Hρ1ρ2 with "LFT >"). by iFrame.
+    - iSplit; last done. simpl. iDestruct "H" as (vl0) "[? [Hvl|H†]]".
+      + iExists vl0. iFrame "#". iLeft. iNext. iDestruct "Hvl" as (f) "[% Hwp]".
+        iExists f. iSplit. done. iIntros (x vl) "!#[Hρ2 Htl]".
+        iApply ("Hwp" with ">"). iFrame. iApply (Hρ1ρ2 with "LFT >"). by iFrame.
+      + iExists _. iFrame "#". by iRight.
   Qed.
 
   Lemma ty_incl_fn_cont {A n} ρ ρf (x : A) :
@@ -70,9 +71,11 @@ Section fn.
     - iDestruct "H" as (fv) "[%#H]". subst. iExists _. iSplit. done.
       iIntros (x vl). by iApply "H".
     - iSplit; last done.
-      iDestruct "H" as (fvl) "[?Hown]". iExists _. iFrame. iNext.
-      iDestruct "Hown" as (fv) "[%H]". subst. iExists _. iSplit. done.
-      iIntros (x vl). by iApply "H".
+      iDestruct "H" as (fvl) "[?[Hown|H†]]".
+      + iExists _. iFrame. iLeft. iNext.
+        iDestruct "Hown" as (fv) "[%H]". subst. iExists _. iSplit. done.
+        iIntros (x vl). by iApply "H".
+      + iExists _. iFrame. by iRight.
   Qed.
 
   Lemma typed_fn {A n} `{Duplicable _ ρ, Closed (f :b: xl +b+ []) e} θ :
@@ -117,5 +120,4 @@ Section fn.
     iDestruct ("IH" with "Hρ") as (f') "[Hf' IH']".
     iDestruct "Hf'" as %[=<-]. iApply ("IH'" with "Hθ Htl").
   Qed.
-
 End fn.

@@ -39,7 +39,7 @@ Section type_context.
 
   Definition tctx_incl (E : lectx) (L : llctx) (T1 T2 : tctx): Prop :=
     ∀ qE qL, lft_ctx -∗ lectx_interp E qE -∗ llctx_interp L qL -∗
-          □ ∀ tid, tctx_interp tid T1 -∗ tctx_interp tid T2.
+          □ ∀ tid, tctx_interp tid T1 ={⊤}=∗ tctx_interp tid T2.
 
   Global Instance tctx_incl_preorder E L : PreOrder (tctx_incl E L).
   Proof.
@@ -48,7 +48,7 @@ Section type_context.
     - iIntros (??? H1 H2 ??) "#LFT HE HL".
       iDestruct (H1 with "LFT HE HL") as "#H1".
       iDestruct (H2 with "LFT HE HL") as "#H2".
-      iIntros "{HE HL}!# * H". iApply "H2". by iApply "H1".
+      iIntros "{HE HL}!# * H". iApply ("H2" with ">"). by iApply "H1".
   Qed.
 
   Lemma contains_tctx_incl E L T1 T2 : T1 `contains` T2 → tctx_incl E L T2 T1.

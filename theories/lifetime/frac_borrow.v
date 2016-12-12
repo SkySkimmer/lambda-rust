@@ -111,7 +111,14 @@ Section frac_bor.
     iApply (lft_incl_trans with "Hκκ' []"). auto.
   Qed.
 
-  Lemma frac_bor_incl κ κ' q:
+  Lemma frac_bor_fake E κ Φ:
+    ↑lftN ⊆ E → lft_ctx -∗ [†κ] ={E}=∗ &frac{κ}Φ.
+  Proof.
+    iIntros (?) "#LFT#H†". iApply (bor_fracture with "LFT >"). done.
+    by iApply (bor_fake with "LFT").
+  Qed.
+
+  Lemma frac_bor_lft_incl κ κ' q:
     lft_ctx -∗ &frac{κ}(λ q', (q * q').[κ']) -∗ κ ⊑ κ'.
   Proof.
     iIntros "#LFT#Hbor!#". iSplitR.
@@ -123,7 +130,6 @@ Section frac_bor.
       iDestruct "H" as (q') "[>Hκ' _]".
       iDestruct (lft_tok_dead with "Hκ' H†'") as "[]".
   Qed.
-
 End frac_bor.
 
 Typeclasses Opaque frac_bor.

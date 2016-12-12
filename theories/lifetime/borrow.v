@@ -163,9 +163,9 @@ Proof.
                 -fmap_None -lookup_fmap !fmap_delete //. }
     rewrite own_bor_op. iDestruct "Hbor" as "[H● H◯]".
     iAssert (&{κ}(P ∗ Q))%I with "[H◯ Hslice]" as "$".
-    { rewrite /bor /raw_bor /idx_bor_own. iExists (κ1 ∪ κ2). 
+    { rewrite /bor /raw_bor /idx_bor_own. iExists (κ1 ∪ κ2).
       iSplit; first by iApply (lft_incl_glb with "Hκ1 Hκ2").
-      iExists γ. iFrame. } 
+      iExists γ. iFrame. }
     iApply "Hclose". iExists A, I. iFrame. rewrite big_sepS_later.
     iApply "Hclose'". iLeft. iFrame "%". iExists Pb, Pi. iFrame. iExists _.
     rewrite /to_borUR -!fmap_delete -!fmap_insert. iFrame "Hbox H●".

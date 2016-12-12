@@ -58,7 +58,17 @@ Proof.
   - iMod "Hclose". by iApply (bor_fake with "LFT").
 Qed.
 
-Lemma bor_persistent P `{!PersistentP P} E κ q :
+Lemma bor_persistent P `{!PersistentP P} E κ :
+  ↑lftN ⊆ E →
+  lft_ctx -∗ &{κ}P ={E}=∗ ▷ P ∨ [†κ].
+Proof.
+  iIntros (?) "#LFT Hb".
+  iMod (bor_acc_atomic with "LFT Hb") as "[[#HP Hob]|[#H† Hclose]]"; first done.
+  - iMod ("Hob" with "HP") as "_". auto.
+  - iMod "Hclose" as "_". auto.
+Qed.
+
+Lemma bor_persistent_tok P `{!PersistentP P} E κ q :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ}P -∗ q.[κ] ={E}=∗ ▷ P ∗ q.[κ].
 Proof.
@@ -66,7 +76,6 @@ Proof.
   iMod (bor_acc with "LFT Hb Htok") as "[#HP Hob]"; first done.
   by iMod ("Hob" with "HP") as "[_ $]".
 Qed.
-
 
 Lemma lft_incl_static κ : (κ ⊑ static)%I.
 Proof.

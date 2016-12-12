@@ -51,6 +51,11 @@ Section shared_bors.
       by iApply (idx_bor_shorten with "H⊑").
   Qed.
 
+  Lemma shr_bor_fake E κ: ↑lftN ⊆ E → lft_ctx -∗ [†κ] ={E}=∗ &shr{κ}P.
+  Proof.
+    iIntros (?) "#LFT#H†". iApply (bor_share with ">"). done.
+    by iApply (bor_fake with "LFT H†").
+  Qed.
 End shared_bors.
 
 Typeclasses Opaque shr_bor.

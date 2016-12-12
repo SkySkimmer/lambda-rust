@@ -215,7 +215,7 @@ Section perm_incl.
     iMod (bor_create with "LFT [$Htok]") as "[Hbor Hclose]". done.
     iMod (bor_fracture (λ q', (q * q').[κ'])%I with "LFT [Hbor]") as "Hbor". done.
     { by rewrite Qp_mult_1_r. }
-    iSplitL "Hbor". iApply (frac_bor_incl with "LFT Hbor").
+    iSplitL "Hbor". iApply (frac_bor_lft_incl with "LFT Hbor").
     iIntros "!>H". by iMod ("Hclose" with "H") as ">$".
   Qed.
 End perm_incl.

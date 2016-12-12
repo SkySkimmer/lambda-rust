@@ -40,11 +40,10 @@ Section product.
     iDestruct "H1" as %->. iDestruct "H2" as %->. done.
   Qed.
   Next Obligation.
-    intros ty1 ty2 E N κ l tid q ??. iIntros "#LFT /=H Htok".
-    rewrite split_prod_mt.
+    intros ty1 ty2 E N κ l tid ??. iIntros "#LFT /=H". rewrite split_prod_mt.
     iMod (bor_sep with "LFT H") as "[H1 H2]". set_solver.
-    iMod (ty1.(ty_share) _ (N .@ 1) with "LFT H1 Htok") as "[? Htok]". solve_ndisj. done.
-    iMod (ty2.(ty_share) _ (N .@ 2) with "LFT H2 Htok") as "[? $]". solve_ndisj. done.
+    iMod (ty1.(ty_share) _ (N .@ 1) with "LFT H1") as "?". solve_ndisj. done.
+    iMod (ty2.(ty_share) _ (N .@ 2) with "LFT H2") as "?". solve_ndisj. done.
     iModIntro. iExists (↑N .@ 1). iExists (↑N .@ 2). iFrame.
     iPureIntro. split. solve_ndisj. split; apply nclose_subseteq.
   Qed.
