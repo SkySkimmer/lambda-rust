@@ -21,3 +21,11 @@ the `opam.pins` file.
 ## Building Instructions
 
 Run `make` to build the full development.
+
+## For Developers: How to update the Iris dependency
+
+- Do the change in Iris, push it.
+- In lambdaRust, change opam.pins to point to the new commit.
+- Run "make build-dep" (in lambdaRust) to install the new version of Iris.
+- You may have to do "make clean" as Coq will likely complain about .vo file
+  mismatches.
