@@ -5,7 +5,6 @@ maintainer: "Ralf Jung <jung@mpi-sws.org>"
 authors: "The RustBelt Team"
 homepage: "http://plv.mpi-sws.org/rustbelt/"
 bug-reports: "https://gitlab.mpi-sws.org/FP/lambdaRust-coq/issues"
-license: "BSD"
 dev-repo: "https://gitlab.mpi-sws.org/FP/lambdaRust-coq.git"
 build: [
   [make "-j%{jobs}%"]
