@@ -143,7 +143,8 @@ Section lft_contexts.
 
   Lemma incl_local κ κ' κs : (κ, κs) ∈ L → κ' ∈ κs → incl κ κ'.
   Proof.
-    iIntros (? Hκ'κs) "_ H". iDestruct "H" as %(κ0 & EQ). done. simpl in EQ; subst.
+    iIntros (? Hκ'κs) "_ H". iDestruct "H" as %HL.
+    edestruct HL as [κ0 EQ]. done. simpl in EQ; subst.
     iApply lft_le_incl. etrans; last by apply gmultiset_union_subseteq_l.
     clear -Hκ'κs. induction Hκ'κs.
     - apply gmultiset_union_subseteq_l.
