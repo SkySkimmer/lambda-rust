@@ -20,13 +20,13 @@ Section fn.
     iIntros (A n E tys ty tid vl) "H". iDestruct "H" as (f) "[% _]". by subst.
   Qed.
 
-  Lemma fn_subtype_ty A n E0 E L tys1 tys2 ty1 ty2:
-    (∀ x, Forall2 (subtype (E0 ++ E x) L) (tys2 x : vec _ _) (tys1 x : vec _ _)) →
-    (∀ x, subtype (E0 ++ E x) L (ty1 x) (ty2 x)) →
-    subtype E0 L (@fn A n E tys1 ty1) (@fn A n E tys2 ty2).
+  Lemma fn_subtype_ty A n E0 L0 E tys1 tys2 ty1 ty2 :
+    (∀ x, Forall2 (subtype (E0 ++ E x) L0) (tys2 x : vec _ _) (tys1 x : vec _ _)) →
+    (∀ x, subtype (E0 ++ E x) L0 (ty1 x) (ty2 x)) →
+    subtype E0 L0 (@fn A n E tys1 ty1) (@fn A n E tys2 ty2).
   Proof.
-    intros Htys Hty. apply subtype_simple_type=>//=.
-    iIntros (_ ?) "#LFT #HE0 #HL0 Hf". iDestruct "Hf" as (f) "[% #Hf]". subst.
+    intros Htys Hty. apply subtype_simple_type=>//= _ vl.
+    iIntros "#LFT #HE0 #HL0 Hf". iDestruct "Hf" as (f) "[% #Hf]". subst.
     iExists f. iSplit. done. rewrite /typed_body. iIntros "!# * _ HE HL HC HT".
     iDestruct (elctx_interp_persist with "HE") as "#HE'".
     iApply ("Hf" with "* LFT HE HL [HC] [HT]").
@@ -52,37 +52,36 @@ Section fn.
       rewrite /elctx_interp_0 big_sepL_app. by iSplit.
   Qed.
 
-  (* Lemma ty_incl_fn_specialize {A B n} (f : A → B) ρ ρfn : *)
-  (*   ty_incl ρ (fn (n:=n) ρfn) (fn (ρfn ∘ f)). *)
-  (* Proof. *)
-  (*   iIntros (tid) "_ _!>". iSplit; iIntros "!#*H". *)
-  (*   - iDestruct "H" as (fv) "[%#H]". subst. iExists _. iSplit. done. *)
-  (*     iIntros (x vl). by iApply "H". *)
-  (*   - iSplit; last done. *)
-  (*     iDestruct "H" as (fvl) "[?[Hown|H†]]". *)
-  (*     + iExists _. iFrame. iLeft. iNext. *)
-  (*       iDestruct "Hown" as (fv) "[%H]". subst. iExists _. iSplit. done. *)
-  (*       iIntros (x vl). by iApply "H". *)
-  (*     + iExists _. iFrame. by iRight. *)
-  (* Qed. *)
+  Lemma fn_subtype_specialize {A B n} (σ : A → B) E0 L0 E tys ty :
+    subtype E0 L0 (fn (n:=n) E tys ty) (fn (E ∘ σ) (tys ∘ σ) (ty ∘ σ)).
+  Proof.
+    apply subtype_simple_type=>//= _ vl.
+    iIntros "#LFT _ _ Hf". iDestruct "Hf" as (f) "[% #Hf]". subst.
+    iExists f. iSplit. done. rewrite /typed_body. iIntros "!# *". iApply "Hf".
+  Qed.
 
-  (* Lemma typed_fn {A n} `{Duplicable _ ρ, Closed (f :b: xl +b+ []) e} θ : *)
-  (*   length xl = n → *)
-  (*   (∀ (a : A) (vl : vec val n) (fv : val) e', *)
-  (*       subst_l xl (map of_val vl) e = Some e' → *)
-  (*       typed_program (fv ◁ fn θ ∗ (θ a vl) ∗ ρ) (subst' f fv e')) → *)
-  (*   typed_step_ty ρ (Rec f xl e) (fn θ). *)
-  (* Proof. *)
-  (*   iIntros (Hn He tid) "!#(#HEAP&#LFT&#Hρ&$)". *)
-  (*   assert (Rec f xl e = RecV f xl e) as -> by done. iApply wp_value'. *)
-  (*   rewrite has_type_value. *)
-  (*   iLöb as "IH". iExists _. iSplit. done. iIntros (a vl) "!#[Hθ?]". *)
-  (*   assert (is_Some (subst_l xl (map of_val vl) e)) as [e' He']. *)
-  (*   { clear -Hn. revert xl Hn e. induction vl=>-[|x xl] //=. by eauto. *)
-  (*     intros ? e. edestruct IHvl as [e' ->]. congruence. eauto. } *)
-  (*   iApply wp_rec; try done. *)
-  (*   { apply List.Forall_forall=>?. rewrite in_map_iff=>-[?[<- _]]. *)
-  (*     rewrite to_of_val. eauto. } *)
-  (*   iNext. iApply He. done. iFrame "∗#". by rewrite has_type_value. *)
-  (* Qed. *)
+  Lemma fn_subtype_elctx_sat {A n} E0 L0 E E' tys ty :
+    (∀ x, elctx_sat (E x) [] (E' x)) →
+    subtype E0 L0 (@fn A n E' tys ty) (fn E tys ty).
+  Proof.
+    intros HEE'. apply subtype_simple_type=>//= _ vl.
+    iIntros "#LFT _ _ Hf". iDestruct "Hf" as (f) "[% #Hf]". subst.
+    iExists f. iSplit. done. rewrite /typed_body. iIntros "!# * _ HE #HL HC HT".
+    iMod (HEE' x with "[%] HE HL") as (qE') "[HE Hclose]". done.
+    iApply ("Hf" with "* LFT HE HL [Hclose HC] HT"). iIntros "HE".
+    iApply fupd_cctx_interp. iApply ("HC" with ">").
+    by iMod ("Hclose" with "HE") as "[$ _]".
+  Qed.
+
+  Lemma fn_subtype_lft_incl {A n} E0 L0 E κ κ' tys ty :
+    incl E0 L0 κ κ' →
+    subtype E0 L0 (@fn A n (λ x, ELCtx_Incl κ κ' :: E x) tys ty) (fn E tys ty).
+  Proof.
+    intros Hκκ'. apply subtype_simple_type=>//= _ vl.
+    iIntros "#LFT #HE0 #HL0 Hf". iDestruct "Hf" as (f) "[% #Hf]". subst.
+    iExists f. iSplit. done. rewrite /typed_body. iIntros "!# * _ HE #HL HC HT".
+    iApply ("Hf" with "* LFT [HE] HL [HC] HT").
+    { rewrite /elctx_interp big_sepL_cons. iFrame. iApply (Hκκ' with "HE0 HL0"). }
+    rewrite /elctx_interp big_sepL_cons. iIntros "[_ HE]". by iApply "HC".
+  Qed.
 End fn.
