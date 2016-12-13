@@ -127,10 +127,10 @@ Section lft_contexts.
   (* There does not seem to be a need in the type system for
      "equivalence" of lifetimes. If so, TODO : add it, and the
      corresponding [Proper] instances for the relevent types. *)
-  Definition incl κ κ' : Prop :=
+  Definition lctx_lft_incl κ κ' : Prop :=
     elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗ κ ⊑ κ'.
 
-  Global Instance incl_preorder : PreOrder incl.
+  Global Instance lctx_lft_incl_preorder : PreOrder lctx_lft_incl.
   Proof.
     split.
     - iIntros (?) "_ _". iApply lft_incl_refl.
@@ -138,10 +138,10 @@ Section lft_contexts.
       iApply (H1 with "HE HL"). iApply (H2 with "HE HL").
   Qed.
 
-  Lemma incl_static κ : incl κ static.
+  Lemma lctx_lft_incl_static κ : lctx_lft_incl κ static.
   Proof. iIntros "_ _". iApply lft_incl_static. Qed.
 
-  Lemma incl_local κ κ' κs : (κ, κs) ∈ L → κ' ∈ κs → incl κ κ'.
+  Lemma lctx_lft_incl_local κ κ' κs : (κ, κs) ∈ L → κ' ∈ κs → lctx_lft_incl κ κ'.
   Proof.
     iIntros (? Hκ'κs) "_ H". iDestruct "H" as %HL.
     edestruct HL as [κ0 EQ]. done. simpl in EQ; subst.
@@ -151,7 +151,7 @@ Section lft_contexts.
     - etrans. done. apply gmultiset_union_subseteq_r.
   Qed.
 
-  Lemma incl_external κ κ' : ELCtx_Incl κ κ' ∈ E → incl κ κ'.
+  Lemma lctx_lft_incl_external κ κ' : ELCtx_Incl κ κ' ∈ E → lctx_lft_incl κ κ'.
   Proof.
     iIntros (?) "H _".
     rewrite /elctx_interp_0 /elctx_elt_interp_0 big_sepL_elem_of //. done.
@@ -159,16 +159,17 @@ Section lft_contexts.
 
   (* Lifetime aliveness *)
 
-  Definition alive (κ : lft) : Prop :=
+  Definition lctx_lft_alive (κ : lft) : Prop :=
     ∀ F qE qL, ⌜↑lftN ⊆ F⌝ -∗ elctx_interp E qE -∗ llctx_interp L qL ={F}=∗
           ∃ q', q'.[κ] ∗ (q'.[κ] ={F}=∗ elctx_interp E qE ∗ llctx_interp L qL).
 
-  Lemma alive_static : alive static.
+  Lemma lctx_lft_alive_static : lctx_lft_alive static.
   Proof.
     iIntros (F qE qL) "%$$". iExists 1%Qp. iSplitL. by iApply lft_tok_static. auto.
   Qed.
 
-  Lemma alive_llctx κ κs: (κ, κs) ∈ L → Forall alive κs → alive κ.
+  Lemma lctx_lft_alive_local κ κs:
+    (κ, κs) ∈ L → Forall lctx_lft_alive κs → lctx_lft_alive κ.
   Proof.
     iIntros ([i HL]%elem_of_list_lookup_1 Hκs F qE qL) "% HE HL".
     iDestruct "HL" as "[HL1 HL2]". rewrite {2}/llctx_interp /llctx_elt_interp.
@@ -195,7 +196,7 @@ Section lft_contexts.
     rewrite /llctx_interp /llctx_elt_interp. iApply "Hclose". iExists κ0. iFrame. auto.
   Qed.
 
-  Lemma alive_elctx κ: ELCtx_Alive κ ∈ E → alive κ.
+  Lemma lctx_lft_alive_external κ: ELCtx_Alive κ ∈ E → lctx_lft_alive κ.
   Proof.
     iIntros ([i HE]%elem_of_list_lookup_1 F qE qL) "% HE $ !>".
     rewrite /elctx_interp /elctx_elt_interp.
@@ -203,7 +204,8 @@ Section lft_contexts.
     iExists qE. iFrame. iIntros "?!>". by iApply "Hclose".
   Qed.
 
-  Lemma alive_incl κ κ': alive κ → incl κ κ' → alive κ'.
+  Lemma lctx_lft_alive_incl κ κ':
+    lctx_lft_alive κ → lctx_lft_incl κ κ' → lctx_lft_alive κ'.
   Proof.
     iIntros (Hal Hinc F qE qL) "% HE HL".
     iAssert (κ ⊑ κ')%I with "[#]" as "#Hincl". iApply (Hinc with "[HE] [HL]").
@@ -227,7 +229,7 @@ Section lft_contexts.
   Qed.
 
   Lemma elctx_sat_alive E' κ :
-    alive κ → elctx_sat E' → elctx_sat (ELCtx_Alive κ :: E').
+    lctx_lft_alive κ → elctx_sat E' → elctx_sat (ELCtx_Alive κ :: E').
   Proof.
     iIntros (Hκ HE' qE qL F) "% [HE1 HE2] [HL1 HL2]".
     iMod (Hκ with "[%] HE1 HL1") as (q) "[Htok Hclose]". done.
@@ -241,7 +243,7 @@ Section lft_contexts.
   Qed.
 
   Lemma elctx_sat_incl E' κ κ' :
-    incl κ κ' → elctx_sat E' → elctx_sat (ELCtx_Incl κ κ' :: E').
+    lctx_lft_incl κ κ' → elctx_sat E' → elctx_sat (ELCtx_Incl κ κ' :: E').
   Proof.
     iIntros (Hκκ' HE' qE qL F) "% HE HL".
     iAssert (κ ⊑ κ')%I with "[#]" as "#Hincl". iApply (Hκκ' with "[HE] [HL]").

@@ -65,7 +65,7 @@ Section uniq_bor.
   Qed.
 
   Global Instance subtype_uniq_mono E L :
-    Proper (flip (incl E L) ==> eqtype E L ==> subtype E L) uniq_bor.
+    Proper (lctx_lft_incl E L --> eqtype E L ==> subtype E L) uniq_bor.
   Proof.
     intros κ1 κ2 Hκ ty1 ty2 [Hty1 Hty2]. split.
     - done.
@@ -90,7 +90,7 @@ Section uniq_bor.
       by iApply (Hty1.(subtype_shr _ _ _ _) with "LFT HE HL").
   Qed.
   Global Instance subtype_uniq_mono' E L :
-    Proper (incl E L ==> eqtype E L ==> flip (subtype E L)) uniq_bor.
+    Proper (lctx_lft_incl E L ==> eqtype E L ==> flip (subtype E L)) uniq_bor.
   Proof. intros ??????. apply subtype_uniq_mono. done. by symmetry. Qed.
   Global Instance subtype_uniq_proper E L κ :
     Proper (eqtype E L ==> eqtype E L) (uniq_bor κ).
@@ -118,7 +118,7 @@ Section typing.
   Qed.
 
   Lemma tctx_reborrow_uniq E L p ty κ κ' :
-    incl E L κ' κ →
+    lctx_lft_incl E L κ' κ →
     tctx_incl E L [TCtx_holds p (&uniq{κ}ty)]
                   [TCtx_holds p (&uniq{κ'}ty); TCtx_guarded p κ (&uniq{κ}ty)].
   Proof.

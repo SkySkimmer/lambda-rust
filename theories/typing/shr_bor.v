@@ -16,7 +16,7 @@ Section shr_bor.
   Qed.
 
   Global Instance subtype_shr_bor_mono E L :
-    Proper (flip (incl E L) ==> subtype E L ==> subtype E L) shr_bor.
+    Proper (lctx_lft_incl E L --> subtype E L ==> subtype E L) shr_bor.
   Proof.
     intros κ1 κ2 Hκ ty1 ty2 Hty. apply subtype_simple_type. done.
     iIntros (??) "#LFT #HE #HL H". iDestruct (Hκ with "HE HL") as "#Hκ".
@@ -25,7 +25,7 @@ Section shr_bor.
     by iApply (Hty.(subtype_shr _ _ _ _ ) with "LFT HE HL").
   Qed.
   Global Instance subtype_shr_bor_mono' E L :
-    Proper (incl E L ==> flip (subtype E L) ==> flip (subtype E L)) shr_bor.
+    Proper (lctx_lft_incl E L ==> subtype E L --> flip (subtype E L)) shr_bor.
   Proof. intros ??????. by apply subtype_shr_bor_mono. Qed.
   Global Instance subtype_shr_bor_proper E L κ :
     Proper (eqtype E L ==> eqtype E L) (shr_bor κ).
@@ -50,7 +50,7 @@ Section typing.
   Qed.
 
   Lemma tctx_reborrow_shr E L p ty κ κ' :
-    incl E L κ' κ →
+    lctx_lft_incl E L κ' κ →
     tctx_incl E L [TCtx_holds p (&shr{κ}ty)]
                   [TCtx_holds p (&shr{κ'}ty); TCtx_guarded p κ (&shr{κ}ty)].
   Proof.

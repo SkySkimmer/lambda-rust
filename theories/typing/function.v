@@ -74,7 +74,7 @@ Section fn.
   Qed.
 
   Lemma fn_subtype_lft_incl {A n} E0 L0 E κ κ' tys ty :
-    incl E0 L0 κ κ' →
+    lctx_lft_incl E0 L0 κ κ' →
     subtype E0 L0 (@fn A n (λ x, ELCtx_Incl κ κ' :: E x) tys ty) (fn E tys ty).
   Proof.
     intros Hκκ'. apply subtype_simple_type=>//= _ vl.
