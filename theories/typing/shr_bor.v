@@ -49,14 +49,18 @@ Section typing.
     iIntros "!>/=". eauto.
   Qed.
 
-  Lemma rebor_shr_perm_incl κ κ' ν ty :
-    κ ⊑ κ' ∗ ν ◁ &shr{κ'}ty ⇒ ν ◁ &shr{κ}ty.
+  Lemma tctx_reborrow_shr E L p ty κ κ' :
+    incl E L κ' κ →
+    tctx_incl E L [TCtx_holds p (&shr{κ}ty)]
+                  [TCtx_holds p (&shr{κ'}ty); TCtx_guarded p κ (&shr{κ}ty)].
   Proof.
-    iIntros (tid) "#LFT [#Hord #Hκ']". unfold has_type.
-    destruct (eval_expr ν) as [[[|l|]|]|];
-      try by (iDestruct "Hκ'" as "[]" || iDestruct "Hκ'" as (l) "[% _]").
-    iDestruct "Hκ'" as (l') "[EQ Hκ']". iDestruct "EQ" as %[=]. subst l'.
-    iModIntro. iExists _. iSplit. done. by iApply (ty_shr_mono with "LFT Hord Hκ'").
+    iIntros (Hκκ' tid) "#LFT #HE #HL H". iDestruct (Hκκ' with "HE HL") as "Hκκ'".
+    rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
+    iDestruct "H" as (v) "[% #H]". iDestruct "H" as (l) "[EQ Hshr]".
+    iDestruct "EQ" as %[=->]. simpl. iModIntro. iSplit.
+    - iExists _. iSplit. done. iExists _. iSplit. done.
+      by iApply (ty_shr_mono with "LFT Hκκ' Hshr").
+    - iExists _. iSplit. done. iIntros "_". eauto.
   Qed.
 
   Lemma consumes_copy_shr_bor ty κ κ' q:

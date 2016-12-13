@@ -28,7 +28,7 @@ Section type_context.
     match x with
     | TCtx_holds p ty => ∃ v, ⌜eval_path p = Some v⌝ ∗ ty.(ty_own) tid [v]
     | TCtx_guarded p κ ty => ∃ v, ⌜eval_path p = Some v⌝ ∗
-        ∀ E, ⌜↑lftN ⊆ E⌝ -∗ [†κ] ={E}=∗ ▷ ty.(ty_own) tid [v]
+                             ([†κ] ={⊤}=∗ ▷ ty.(ty_own) tid [v])
     end%I.
   Definition tctx_interp (tid : thread_id) (T : tctx) : iProp Σ :=
     ([∗ list] x ∈ T, tctx_elt_interp tid x)%I.
@@ -83,25 +83,25 @@ Section type_context.
     | _ => x
     end.
 
-  Lemma deguard_tctx_elt_interp tid E κ x :
-    ↑lftN ⊆ E → [†κ] -∗ tctx_elt_interp tid x ={E}=∗
+  Lemma deguard_tctx_elt_interp tid κ x :
+    [†κ] -∗ tctx_elt_interp tid x ={⊤}=∗
         ▷ tctx_elt_interp tid (deguard_tctx_elt κ x).
   Proof.
-    iIntros (?) "H† H". destruct x as [|? κ' ?]; simpl. by auto.
+    iIntros "H† H". destruct x as [|? κ' ?]; simpl. by auto.
     destruct (decide (κ = κ')) as [->|]; simpl; last by auto.
     iDestruct "H" as (v) "[% H]". iExists v. iSplitR. by auto.
-    by iApply ("H" with "[] H†").
+    by iApply ("H" with "H†").
   Qed.
 
   Definition deguard_tctx κ (T : tctx) : tctx :=
     deguard_tctx_elt κ <$> T.
 
-  Lemma deguard_tctx_interp tid E κ T :
-    ↑lftN ⊆ E → [†κ] -∗ tctx_interp tid T ={E}=∗
+  Lemma deguard_tctx_interp tid κ T :
+    [†κ] -∗ tctx_interp tid T ={⊤}=∗
         ▷ tctx_interp tid (deguard_tctx κ T).
   Proof.
-    iIntros (?) "#H† H". rewrite /tctx_interp big_sepL_fmap.
-    iApply (big_opL_forall (λ P Q, [†κ] -∗ P ={E}=∗ ▷ Q) with "H† H").
+    iIntros "#H† H". rewrite /tctx_interp big_sepL_fmap.
+    iApply (big_opL_forall (λ P Q, [†κ] -∗ P ={⊤}=∗ ▷ Q) with "H† H").
     { by iIntros (?) "_ $". }
     { iIntros (?? A ?? B) "#H† [H1 H2]". iSplitL "H1".
         by iApply (A with "H†"). by iApply (B with "H†"). }

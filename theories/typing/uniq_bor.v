@@ -1,8 +1,9 @@
 From iris.proofmode Require Import tactics.
+From iris.base_logic Require Import big_op.
 From lrust.lifetime Require Import borrow reborrow frac_borrow.
 From lrust.lang Require Import heap.
 From lrust.typing Require Export type.
-From lrust.typing Require Import perm lft_contexts typing own.
+From lrust.typing Require Import perm lft_contexts type_context typing own.
 
 Section uniq_bor.
   Context `{typeG Σ}.
@@ -102,33 +103,34 @@ Notation "&uniq{ κ } ty" := (uniq_bor κ ty)
 Section typing.
   Context `{typeG Σ}.
 
-  Lemma own_uniq_borrowing ν q ty κ :
-    borrowing κ ⊤ (ν ◁ own q ty) (ν ◁ &uniq{κ} ty).
+  Lemma tctx_borrow E L p n ty κ :
+    tctx_incl E L [TCtx_holds p (own n ty)]
+                  [TCtx_holds p (&uniq{κ}ty); TCtx_guarded p κ (own n ty)].
   Proof.
-    iIntros (tid) "#LFT _ Hown". unfold has_type.
-    destruct (eval_expr ν) as [[[|l|]|]|];
-      try by (iDestruct "Hown" as "[]" || iDestruct "Hown" as (l) "[% _]").
-    iDestruct "Hown" as (l') "[EQ [Hown Hf]]". iDestruct "EQ" as %[=]. subst l'.
-    iApply (fupd_mask_mono (↑lftN)). done.
-    iMod (bor_create with "LFT Hown") as "[Hbor Hext]". done. iSplitL "Hbor".
-    { iExists _, _. erewrite <-uPred.iff_refl. auto. }
-    iIntros "!>#H†". iExists _. iMod ("Hext" with "H†") as "$". by iFrame.
+    iIntros (tid) "#LFT _ _ H".
+    rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
+    iDestruct "H" as (v) "[% Hown]". iDestruct "Hown" as (l) "(EQ & Hmt & ?)".
+    iDestruct "EQ" as %[=->]. iMod (bor_create with "LFT Hmt") as "[Hbor Hext]". done.
+    iModIntro. iSplitL "Hbor".
+    - iExists _. iSplit. done. iExists _, _. erewrite <-uPred.iff_refl. eauto.
+    - iExists _. iSplit. done. iIntros "H†". iExists _. iFrame. iSplitR. by eauto.
+        by iMod ("Hext" with "H†") as "$".
   Qed.
 
-  Lemma rebor_uniq_borrowing κ κ' ν ty :
-    borrowing κ (κ ⊑ κ') (ν ◁ &uniq{κ'}ty) (ν ◁ &uniq{κ}ty).
+  Lemma tctx_reborrow_uniq E L p ty κ κ' :
+    incl E L κ' κ →
+    tctx_incl E L [TCtx_holds p (&uniq{κ}ty)]
+                  [TCtx_holds p (&uniq{κ'}ty); TCtx_guarded p κ (&uniq{κ}ty)].
   Proof.
-    iIntros (tid) "#LFT #Hord H". unfold has_type.
-    destruct (eval_expr ν) as [[[|l|]|]|];
-      try by (iDestruct "H" as "[]" || iDestruct "H" as (l P) "[[% _] _]").
-    iDestruct "H" as (l' P) "[[EQ #HPiff] H]". iDestruct "EQ" as %[=]. subst l'.
-    iApply (fupd_mask_mono (↑lftN)). done.
-    iMod (bor_iff with "LFT [] H") as "H". done. by eauto.
-    iMod (rebor with "LFT Hord H") as "[H Hextr]". done.
-    iModIntro. iSplitL "H".
-    - iExists _, _. erewrite <-uPred.iff_refl. auto.
-    - iIntros "H†". iExists _, _. iMod ("Hextr" with "H†") as "$".
-      iSplitR. done. iIntros "!>!#". apply uPred.iff_refl.
+    iIntros (Hκκ' tid) "#LFT #HE #HL H". iDestruct (Hκκ' with "HE HL") as "Hκκ'".
+    rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
+    iDestruct "H" as (v) "[% Hown]". iDestruct "Hown" as (l P) "[[EQ #Hiff] Hb]".
+    iDestruct "EQ" as %[=->]. iMod (bor_iff with "LFT [] Hb") as "Hb". done. by eauto.
+    iMod (rebor with "LFT Hκκ' Hb") as "[Hb Hext]". done. iModIntro. iSplitL "Hb".
+    - iExists _. iSplit. done. iExists _, _. erewrite <-uPred.iff_refl. eauto.
+    - iExists _. iSplit. done. iIntros "#H†".
+      iMod ("Hext" with ">[]") as "Hb". by iApply (lft_incl_dead with "Hκκ' H†").
+      iExists _, _. erewrite <-uPred.iff_refl. eauto.
   Qed.
 
   Lemma consumes_copy_uniq_bor `(!Copy ty) κ κ' q:

@@ -48,9 +48,6 @@ Section perm.
 
   Global Instance perm_equiv : Equiv perm :=
     λ ρ1 ρ2, perm_incl ρ1 ρ2 ∧ perm_incl ρ2 ρ1.
-
-  Definition borrowing κ (ρ ρ1 ρ2 : perm) :=
-    ∀ tid, lft_ctx -∗ ρ tid -∗ ρ1 tid ={⊤}=∗ ρ2 tid ∗ extract κ ρ1 tid.
 End perm.
 
 Delimit Scope perm_scope with P.
@@ -177,21 +174,4 @@ Section perm_incl.
 
   Lemma perm_lftincl_trans κ1 κ2 κ3 : κ1 ⊑ κ2 ∗ κ2 ⊑ κ3 ⇒ κ1 ⊑ κ3.
   Proof. iIntros (tid) "_ [#?#?]!>". iApply (lft_incl_trans with "[] []"); auto. Qed.
-
-  Lemma borrowing_perm_incl κ ρ ρ1 ρ2 θ :
-    borrowing κ ρ ρ1 ρ2 → ρ ∗ κ ∋ θ ∗ ρ1 ⇒ ρ2 ∗ κ ∋ (θ ∗ ρ1).
-  Proof.
-    iIntros (Hbor tid) "LFT (Hρ&Hθ&Hρ1)". iMod (Hbor with "LFT Hρ Hρ1") as "[$ Hρ1]".
-    iIntros "!>#H†". iSplitL "Hθ". by iApply "Hθ". by iApply "Hρ1".
-  Qed.
-
-  Lemma lftincl_borrowing κ κ' q : borrowing κ ⊤ q.[κ'] (κ ⊑ κ').
-  Proof.
-    iIntros (tid) "#LFT _ Htok". iApply (fupd_mask_mono (↑lftN)). done.
-    iMod (bor_create with "LFT [$Htok]") as "[Hbor Hclose]". done.
-    iMod (bor_fracture (λ q', (q * q').[κ'])%I with "LFT [Hbor]") as "Hbor". done.
-    { by rewrite Qp_mult_1_r. }
-    iSplitL "Hbor". iApply (frac_bor_lft_incl with "LFT Hbor").
-    iIntros "!>H". by iMod ("Hclose" with "H") as ">$".
-  Qed.
 End perm_incl.
