@@ -115,32 +115,33 @@ Section incl.
   Proof.
   Admitted.
 
-  Lemma ty_incl_sum ρ n tyl1 tyl2 (_ : LstTySize n tyl1) (_ : LstTySize n tyl2) :
-    Duplicable ρ → Forall2 (ty_incl ρ) tyl1 tyl2 →
-    ty_incl ρ (sum tyl1) (sum tyl2).
-  Proof.
-    iIntros (DUP FA tid) "#LFT #Hρ". rewrite /sum /=. iSplitR "".
-    - assert (Hincl : lft_ctx -∗ ρ tid ={⊤}=∗
-         (□ ∀ i vl, (nth i tyl1 ∅%T).(ty_own) tid vl
-                  → (nth i tyl2 ∅%T).(ty_own) tid vl)).
-      { clear -FA DUP. induction FA as [|ty1 ty2 tyl1 tyl2 Hincl _ IH].
-        - iIntros "_ _!>*!#". eauto.
-        - iIntros "#LFT #Hρ". iMod (IH with "LFT Hρ") as "#IH".
-          iMod (Hincl with "LFT Hρ") as "[#Hh _]".
-          iIntros "!>*!#*Hown". destruct i as [|i]. by iApply "Hh". by iApply "IH". }
-      iMod (Hincl with "LFT Hρ") as "#Hincl". iIntros "!>!#*H".
-      iDestruct "H" as (i vl') "[% Hown]". subst. iExists _, _. iSplit. done.
-        by iApply "Hincl".
-    - assert (Hincl : lft_ctx -∗ ρ tid ={⊤}=∗
-         (□ ∀ i κ E l, (nth i tyl1 ∅%T).(ty_shr) κ tid E l
-                     → (nth i tyl2 ∅%T).(ty_shr) κ tid E l)).
-      { clear -FA DUP. induction FA as [|ty1 ty2 tyl1 tyl2 Hincl _ IH].
-        - iIntros "#LFT _!>*!#". eauto.
-        - iIntros "#LFT #Hρ".
-          iMod (IH with "LFT Hρ") as "#IH". iMod (Hincl with "LFT Hρ") as "[_ #Hh]".
-          iIntros "!>*!#*Hown". destruct i as [|i]; last by iApply "IH".
-          by iDestruct ("Hh" $! _ _ _ with "Hown") as "[$ _]". }
-      iMod (Hincl with "LFT Hρ") as "#Hincl". iIntros "!>!#*H". iSplit; last done.
-      iDestruct "H" as (i) "[??]". iExists _. iSplit. done. by iApply "Hincl".
-  Qed.
+  (* TODO *)
+  (* Lemma ty_incl_sum ρ n tyl1 tyl2 (_ : LstTySize n tyl1) (_ : LstTySize n tyl2) : *)
+  (*   Duplicable ρ → Forall2 (ty_incl ρ) tyl1 tyl2 → *)
+  (*   ty_incl ρ (sum tyl1) (sum tyl2). *)
+  (* Proof. *)
+  (*   iIntros (DUP FA tid) "#LFT #Hρ". rewrite /sum /=. iSplitR "". *)
+  (*   - assert (Hincl : lft_ctx -∗ ρ tid ={⊤}=∗ *)
+  (*        (□ ∀ i vl, (nth i tyl1 ∅%T).(ty_own) tid vl *)
+  (*                 → (nth i tyl2 ∅%T).(ty_own) tid vl)). *)
+  (*     { clear -FA DUP. induction FA as [|ty1 ty2 tyl1 tyl2 Hincl _ IH]. *)
+  (*       - iIntros "_ _!>*!#". eauto. *)
+  (*       - iIntros "#LFT #Hρ". iMod (IH with "LFT Hρ") as "#IH". *)
+  (*         iMod (Hincl with "LFT Hρ") as "[#Hh _]". *)
+  (*         iIntros "!>*!#*Hown". destruct i as [|i]. by iApply "Hh". by iApply "IH". } *)
+  (*     iMod (Hincl with "LFT Hρ") as "#Hincl". iIntros "!>!#*H". *)
+  (*     iDestruct "H" as (i vl') "[% Hown]". subst. iExists _, _. iSplit. done. *)
+  (*       by iApply "Hincl". *)
+  (*   - assert (Hincl : lft_ctx -∗ ρ tid ={⊤}=∗ *)
+  (*        (□ ∀ i κ E l, (nth i tyl1 ∅%T).(ty_shr) κ tid E l *)
+  (*                    → (nth i tyl2 ∅%T).(ty_shr) κ tid E l)). *)
+  (*     { clear -FA DUP. induction FA as [|ty1 ty2 tyl1 tyl2 Hincl _ IH]. *)
+  (*       - iIntros "#LFT _!>*!#". eauto. *)
+  (*       - iIntros "#LFT #Hρ". *)
+  (*         iMod (IH with "LFT Hρ") as "#IH". iMod (Hincl with "LFT Hρ") as "[_ #Hh]". *)
+  (*         iIntros "!>*!#*Hown". destruct i as [|i]; last by iApply "IH". *)
+  (*         by iDestruct ("Hh" $! _ _ _ with "Hown") as "[$ _]". } *)
+  (*     iMod (Hincl with "LFT Hρ") as "#Hincl". iIntros "!>!#*H". iSplit; last done. *)
+  (*     iDestruct "H" as (i) "[??]". iExists _. iSplit. done. by iApply "Hincl". *)
+  (* Qed. *)
 End incl.

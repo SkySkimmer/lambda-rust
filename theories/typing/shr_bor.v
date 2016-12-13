@@ -18,19 +18,11 @@ Section shr_bor.
   Global Instance subtype_shr_bor_mono E L :
     Proper (flip (incl E L) ==> subtype E L ==> subtype E L) shr_bor.
   Proof.
-    intros κ1 κ2 Hκ ty1 ty2 Hty. split.
-    - done.
-    - iIntros (qE qL) "#LFT HE HL *". iDestruct (Hκ with "HE HL") as "#Hκ".
-      iDestruct (subtype_shr _ _ _ _ Hty with "LFT HE HL") as "#Hty".
-      iIntros "{HE HL}!#*H". iDestruct "H" as (l) "(% & H)". subst. iExists _.
-      iSplit. done. by iApply (ty2.(ty_shr_mono) with "LFT Hκ"); last iApply "Hty".
-    - iIntros (qE qL) "#LFT HE HL *". iDestruct (Hκ with "HE HL") as "#Hκ".
-      iDestruct (subtype_shr _ _ _ _ Hty with "LFT HE HL") as "#Hst".
-      iIntros "{HE HL}!#*H". iDestruct "H" as (vl) "#[Hfrac [Hty|H†]]".
-      + iExists vl. iFrame "#". iLeft. iNext. simpl.
-        iDestruct "Hty" as (l0) "(% & Hty)". subst. iExists _. iSplit. done.
-          by iApply (ty_shr_mono with "LFT Hκ"); last iApply "Hst".
-      + simpl. eauto.
+    intros κ1 κ2 Hκ ty1 ty2 Hty. apply subtype_simple_type. done.
+    iIntros (??) "#LFT #HE #HL H". iDestruct (Hκ with "HE HL") as "#Hκ".
+    iDestruct "H" as (l) "(% & H)". subst. iExists _. iSplit. done.
+    iApply (ty2.(ty_shr_mono) with "LFT Hκ"). reflexivity.
+    by iApply (Hty.(subtype_shr _ _ _ _ ) with "LFT HE HL").
   Qed.
   Global Instance subtype_shr_bor_mono' E L :
     Proper (incl E L ==> flip (subtype E L) ==> flip (subtype E L)) shr_bor.
@@ -49,7 +41,7 @@ Section typing.
   Lemma tctx_incl_share E L p κ ty :
     tctx_incl E L [TCtx_holds p (&uniq{κ}ty)] [TCtx_holds p (&shr{κ}ty)].
   Proof.
-    iIntros (??) "#LFT _ _ !# * Huniq". rewrite /tctx_interp !big_sepL_singleton /=.
+    iIntros (?) "#LFT _ _ Huniq". rewrite /tctx_interp !big_sepL_singleton /=.
     iDestruct "Huniq" as (v) "[% Huniq]". iExists _. iFrame "%".
     iDestruct "Huniq" as (l P) "[[% #HPiff] HP]".
     iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.

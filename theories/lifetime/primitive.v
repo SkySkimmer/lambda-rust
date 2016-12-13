@@ -278,7 +278,7 @@ Proof.
 Qed.
 Global Instance lft_tok_as_fractional κ q :
   AsFractional q.[κ] (λ q, q.[κ])%I q.
-Proof. done. Qed.
+Proof. split. done. apply _. Qed.
 Global Instance idx_bor_own_fractional i : Fractional (λ q, idx_bor_own q i)%I.
 Proof.
   intros p q. rewrite /idx_bor_own -own_bor_op /own_bor. f_equiv=>?.
@@ -286,7 +286,7 @@ Proof.
 Qed.
 Global Instance idx_bor_own_as_fractional i q :
   AsFractional (idx_bor_own q i) (λ q, idx_bor_own q i)%I q.
-Proof. done. Qed.
+Proof. split. done. apply _. Qed.
 
 (** Lifetime inclusion *)
 Lemma lft_le_incl κ κ' : κ' ⊆ κ → (κ ⊑ κ')%I.
@@ -355,7 +355,7 @@ Qed.
 (** Basic rules about borrows *)
 Lemma bor_unfold_idx κ P : &{κ}P ⊣⊢ ∃ i, &{κ,i}P ∗ idx_bor_own 1 i.
 Proof.
-  rewrite /bor /raw_bor /idx_bor /bor_idx. iProof; iSplit.
+  rewrite /bor /raw_bor /idx_bor /bor_idx. iSplit.
   - iDestruct 1 as (κ') "[? Hraw]". iDestruct "Hraw" as (s) "[??]".
     iExists (κ', s). by iFrame.
   - iDestruct 1 as ([κ' s]) "[[??]?]".

@@ -68,27 +68,25 @@ Section uniq_bor.
   Proof.
     intros κ1 κ2 Hκ ty1 ty2 [Hty1 Hty2]. split.
     - done.
-    - iIntros (qE qL) "#LFT HE HL *". iDestruct (Hκ with "HE HL") as "#Hκ".
-      iDestruct (subtype_own _ _ _ _ Hty1 with "LFT HE HL") as "#Hty1".
-      iDestruct (subtype_own _ _ _ _ Hty2 with "LFT HE HL") as "#Hty2".
-      iIntros "{HE HL} !# * H". iDestruct "H" as (l P) "[[% #HPiff] Hown]". subst.
+    - iIntros (??) "#LFT #HE #HL H". iDestruct (Hκ with "HE HL") as "#Hκ".
+      iDestruct "H" as (l P) "[[% #HPiff] Hown]". subst.
       iExists _, _. iSplitR; last by iApply (bor_shorten with "Hκ"). iSplit. done.
       iIntros "!#". iSplit; iIntros "H".
       + iDestruct ("HPiff" with "H") as (vl) "[??]". iExists vl. iFrame.
-        by iApply "Hty1".
+        by iApply (Hty1.(subtype_own _ _ _ _) with "LFT HE HL").
       + iDestruct "H" as (vl) "[??]". iApply "HPiff". iExists vl. iFrame.
-        by iApply "Hty2".
-    - iIntros (qE qL) "#LFT HE HL *". iDestruct (Hκ with "HE HL") as "#Hκ".
-      iDestruct (subtype_shr _ _ _ _ Hty1 with "LFT HE HL") as "#Hty".
-      iIntros "{HE HL} !# * H". iAssert (κ2 ∪ κ ⊑ κ1 ∪ κ)%I as "#Hincl'".
+        by iApply (Hty2.(subtype_own _ _ _ _) with "LFT HE HL").
+    - iIntros (????) "#LFT #HE #HL H". iDestruct (Hκ with "HE HL") as "#Hκ".
+      iAssert (κ2 ∪ κ ⊑ κ1 ∪ κ)%I as "#Hincl'".
       { iApply (lft_incl_glb with "[] []").
         - iApply (lft_incl_trans with "[] Hκ"). iApply lft_le_incl.
-            apply gmultiset_union_subseteq_l.
+          apply gmultiset_union_subseteq_l.
         - iApply lft_le_incl. apply gmultiset_union_subseteq_r. }
       iDestruct "H" as (l') "[Hbor #Hupd]". iExists l'. iIntros "{$Hbor}!#%%".
       iMod ("Hupd" with "* [%]") as "Hupd'"; try done. iModIntro. iNext.
       iMod "Hupd'" as "[H|H†]"; last by auto.
-      iLeft. iApply (ty_shr_mono with "LFT Hincl'"); last by iApply "Hty". done.
+      iLeft. iApply (ty_shr_mono with "LFT Hincl'"). reflexivity.
+      by iApply (Hty1.(subtype_shr _ _ _ _) with "LFT HE HL").
   Qed.
   Global Instance subtype_uniq_mono' E L :
     Proper (incl E L ==> eqtype E L ==> flip (subtype E L)) uniq_bor.

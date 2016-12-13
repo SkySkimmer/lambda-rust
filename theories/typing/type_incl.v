@@ -35,13 +35,6 @@ Section ty_incl.
     iIntros (Hρθ Hρ' tid) "#LFT H". iApply (Hρ' with "LFT>"). iApply (Hρθ with "LFT H").
   Qed.
 
-  Global Instance ty_incl_preorder ρ: Duplicable ρ → PreOrder (ty_incl ρ).
-  Proof.
-    split.
-    - iIntros (ty tid) "_ _!>". iSplit; iIntros "!#"; eauto.
-    - eauto using ty_incl_weaken, ty_incl_trans, perm_incl_duplicable.
-  Qed.
-
   Lemma ty_incl_perm_incl ρ ty1 ty2 ν :
     ty_incl ρ ty1 ty2 → ρ ∗ ν ◁ ty1 ⇒ ν ◁ ty2.
   Proof.

@@ -104,21 +104,17 @@ Section own.
   Proof.
     intros ty1 ty2 Hincl. split.
     - done.
-    - iIntros (qE qL) "#LFT HE HL *".
-      iDestruct (Hincl.(subtype_own _ _ _ _) with "LFT HE HL") as "#Howni".
-      iIntros "{HE HL} !# * H". iDestruct "H" as (l) "(%&Hmt&H†)". subst.
+    - iIntros (??) "#LFT #HE #HL H". iDestruct "H" as (l) "(%&Hmt&H†)". subst.
       iExists _. iSplit. done. iDestruct "Hmt" as (vl') "[Hmt Hown]". iNext.
       iDestruct (ty_size_eq with "Hown") as %<-.
-      iDestruct ("Howni" with "* Hown") as "Hown".
+      iDestruct (Hincl.(subtype_own _ _ _ _) with "LFT HE HL Hown") as "Hown".
       iDestruct (ty_size_eq with "Hown") as %<-. iFrame.
       iExists _. by iFrame.
-    - iIntros (qE qL) "#LFT HE HL *".
-      iDestruct (Hincl.(subtype_shr _ _ _ _) with "LFT HE HL") as "#Hshri".
-      iIntros "{HE HL} !# * H". iDestruct "H" as (l') "[Hfb #Hvs]".
+    - iIntros (????) "#LFT #HE #HL H". iDestruct "H" as (l') "[Hfb #Hvs]".
       iExists l'. iFrame. iIntros "!#". iIntros (F') "%".
       iMod ("Hvs" with "* [%]") as "Hvs'". done. iModIntro. iNext.
       iMod "Hvs'" as "[Hshr|H†]"; last by auto.
-      iLeft. iApply ("Hshri" with "* Hshr").
+      iLeft. iApply (Hincl.(subtype_shr _ _ _ _) with "LFT HE HL Hshr").
   Qed.
 
   Global Instance own_proper E L n :

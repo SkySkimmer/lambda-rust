@@ -2,7 +2,7 @@ From Coq Require Import Qcanon.
 From iris.proofmode Require Import tactics.
 From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.typing Require Export type.
-From lrust.typing Require Import type_incl typing product own uniq_bor shr_bor.
+From lrust.typing Require Import typing type_context perm product own uniq_bor shr_bor.
 
 Section product_split.
   Context `{typeG Σ}.

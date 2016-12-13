@@ -33,52 +33,47 @@ Section type_context.
   Definition tctx_interp (tid : thread_id) (T : tctx) : iProp Σ :=
     ([∗ list] x ∈ T, tctx_elt_interp tid x)%I.
 
-  Global Instance tctx_interp_permut:
-    Proper (eq ==> (≡ₚ) ==> (⊣⊢)) tctx_interp.
-  Proof. intros ?? -> ???. by apply big_opL_permutation. Qed.
+  Global Instance tctx_interp_permut tid:
+    Proper ((≡ₚ) ==> (⊣⊢)) (tctx_interp tid).
+  Proof. intros ???. by apply big_opL_permutation. Qed.
 
-  Definition tctx_incl (E : lectx) (L : llctx) (T1 T2 : tctx): Prop :=
-    ∀ qE qL, lft_ctx -∗ lectx_interp E qE -∗ llctx_interp L qL -∗
-          □ ∀ tid, tctx_interp tid T1 ={⊤}=∗ tctx_interp tid T2.
+  Definition tctx_incl (E : elctx) (L : llctx) (T1 T2 : tctx): Prop :=
+    ∀ tid, lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
+              tctx_interp tid T1 ={⊤}=∗ tctx_interp tid T2.
 
   Global Instance tctx_incl_preorder E L : PreOrder (tctx_incl E L).
   Proof.
     split.
-    - by iIntros (???) "_ _ _ !# * $".
-    - iIntros (??? H1 H2 ??) "#LFT HE HL".
-      iDestruct (H1 with "LFT HE HL") as "#H1".
-      iDestruct (H2 with "LFT HE HL") as "#H2".
-      iIntros "{HE HL}!# * H". iApply ("H2" with ">"). by iApply "H1".
+    - by iIntros (??) "_ _ _ $".
+    - iIntros (??? H1 H2 ?) "#LFT #HE #HL H".
+      iApply (H2 with "LFT HE HL >"). by iApply (H1 with "LFT HE HL").
   Qed.
 
   Lemma contains_tctx_incl E L T1 T2 : T1 `contains` T2 → tctx_incl E L T2 T1.
   Proof.
-    rewrite /tctx_incl. iIntros (EQ ??) "_ _ _ !# * H". by iApply big_sepL_contains.
+    rewrite /tctx_incl. iIntros (Hc ?) "_ _ _ H". by iApply big_sepL_contains.
   Qed.
 
   Lemma tctx_incl_frame E L T T1 T2 :
     tctx_incl E L T2 T1 → tctx_incl E L (T++T2) (T++T1).
   Proof.
-    iIntros (Hincl ??) "#LFT HE HL". rewrite /tctx_interp.
-    iDestruct (Hincl with "LFT HE HL") as"#Hincl".
-    iIntros "{HE HL} !# *". rewrite !big_sepL_app.
-    iIntros "[$ ?]". by iApply "Hincl".
+    intros Hincl ?. rewrite /tctx_interp !big_sepL_app. iIntros "#LFT #HE #HL [$ ?]".
+    by iApply (Hincl with "LFT HE HL").
   Qed.
 
   Lemma copy_tctx_incl E L p `(!Copy ty) :
     tctx_incl E L [TCtx_holds p ty] [TCtx_holds p ty; TCtx_holds p ty].
   Proof.
-    iIntros (??) "_ _ _ !# *". rewrite /tctx_interp !big_sepL_cons big_sepL_nil.
+    iIntros (?) "_ _ _ *". rewrite /tctx_interp !big_sepL_cons big_sepL_nil.
     by iIntros "[#$ $]".
   Qed.
 
   Lemma subtype_tctx_incl E L p ty1 ty2 :
     subtype E L ty1 ty2 → tctx_incl E L [TCtx_holds p ty1] [TCtx_holds p ty2].
   Proof.
-    iIntros (Hst ??) "#LFT HE HL".
-    iDestruct (subtype_own _ _ _ _ Hst with "LFT HE HL") as "#Hst".
-    iIntros "{HE HL} !# * H". rewrite /tctx_interp !big_sepL_singleton /=.
-    iDestruct "H" as (v) "[% H]". iExists _. iFrame "%". by iApply "Hst".
+    iIntros (Hst ?) "#LFT #HE #HL H". rewrite /tctx_interp !big_sepL_singleton /=.
+    iDestruct "H" as (v) "[% H]". iExists _. iFrame "%".
+    by iApply (Hst.(subtype_own _ _ _ _) with "LFT HE HL").
   Qed.
 
   Definition deguard_tctx_elt κ x :=

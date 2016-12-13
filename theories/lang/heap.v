@@ -124,7 +124,7 @@ Section heap.
   Qed.
   Global Instance heap_mapsto_as_fractional l q v:
     AsFractional (l ↦{q} v) (λ q, l ↦{q} v)%I q.
-  Proof. done. Qed.
+  Proof. split. done. apply _. Qed.
 
   Global Instance heap_mapsto_vec_timeless l q vl : TimelessP (l ↦∗{q} vl).
   Proof. rewrite /heap_mapsto_vec. apply _. Qed.
@@ -136,7 +136,7 @@ Section heap.
   Qed.
   Global Instance heap_mapsto_vec_as_fractional l q vl:
     AsFractional (l ↦∗{q} vl) (λ q, l ↦∗{q} vl)%I q.
-  Proof. done. Qed.
+  Proof. split. done. apply _. Qed.
 
   Global Instance heap_freeable_timeless q l n : TimelessP (†{q}l…n).
   Proof. rewrite heap_freeable_eq /heap_freeable_def. apply _. Qed.

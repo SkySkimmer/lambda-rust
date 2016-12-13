@@ -80,27 +80,6 @@ Notation "ρ1 ⇔ ρ2" := (equiv (A:=perm) ρ1%P ρ2%P)
    (at level 95, no associativity) : C_scope.
 Notation "(⇔)" := (equiv (A:=perm)) (only parsing) : C_scope.
 
-Section duplicable.
-  Context `{typeG Σ}.
-
-  Class Duplicable (ρ : @perm Σ) :=
-    duplicable_persistent tid : PersistentP (ρ tid).
-  Global Existing Instance duplicable_persistent.
-
-  Global Instance has_type_dup v ty : Copy ty → Duplicable (v ◁ ty).
-  Proof. intros Hdup tid. apply _. Qed.
-
-  Global Instance lft_incl_dup κ κ' : Duplicable (κ ⊑ κ').
-  Proof. intros tid. apply _. Qed.
-
-  Global Instance sep_dup P Q :
-    Duplicable P → Duplicable Q → Duplicable (P ∗ Q).
-  Proof. intros HP HQ tid. apply _. Qed.
-
-  Global Instance top_dup : Duplicable ⊤.
-  Proof. intros tid. apply _. Qed.
-End duplicable.
-
 Section has_type.
   Context `{typeG Σ}.
 
@@ -188,9 +167,6 @@ Section perm_incl.
 
   Global Instance perm_top_left_id : LeftId (⇔) ⊤ sep.
   Proof. intros ρ. by rewrite comm right_id. Qed.
-
-  Lemma perm_incl_duplicable ρ (_ : Duplicable ρ) : ρ ⇒ ρ ∗ ρ.
-  Proof. iIntros (tid) "_ #H!>". by iSplit. Qed.
 
   Lemma perm_tok_plus κ q1 q2 :
     tok κ q1 ∗ tok κ q2 ⇔ tok κ (q1 + q2).

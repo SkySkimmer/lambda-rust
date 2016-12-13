@@ -59,17 +59,15 @@ Section product.
   Proof.
     iIntros (ty11 ty12 H1 ty21 ty22 H2). split.
     - by rewrite /= (subtype_sz _ _ _ _ H1) (subtype_sz _ _ _ _ H2).
-    - iIntros (??) "#LFT HE HL".
-      iDestruct (subtype_own _ _ _ _ H1 with "LFT HE HL") as "#H1".
-      iDestruct (subtype_own _ _ _ _ H2 with "LFT HE HL") as "#H2".
-      iIntros "{HE HL}!# * H". iDestruct "H" as (vl1 vl2) "(% & Hown1 & Hown2)".
-      iExists _, _. iSplit. done. by iSplitL "Hown1"; [iApply "H1"|iApply "H2"].
-    - iIntros (??) "#LFT HE HL".
-      iDestruct (subtype_shr _ _ _ _ H1 with "LFT HE HL") as "#H1".
-      iDestruct (subtype_shr _ _ _ _ H2 with "LFT HE HL") as "#H2".
-      iIntros "{HE HL}!# * H". iDestruct "H" as (vl1 vl2) "(% & #Hshr1 & #Hshr2)".
-      iExists _, _. iSplit. done. erewrite subtype_sz; last done.
-      by iSplit; [iApply "H1"|iApply "H2"].
+    - iIntros (??) "#LFT #HE #HL H". iDestruct "H" as (vl1 vl2) "(% & Hown1 & Hown2)".
+      iExists _, _. iSplit. done. iSplitL "Hown1".
+      by iApply (H1.(subtype_own _ _ _ _) with "LFT HE HL").
+      by iApply (H2.(subtype_own _ _ _ _) with "LFT HE HL").
+    - iIntros (????) "#LFT #HE #HL H".
+      iDestruct "H" as (vl1 vl2) "(% & #Hshr1 & #Hshr2)".
+      iExists _, _. iSplit. done. erewrite subtype_sz; last done. iSplit.
+      by iApply (H1.(subtype_shr _ _ _ _) with "LFT HE HL").
+      by iApply (H2.(subtype_shr _ _ _ _) with "LFT HE HL").
   Qed.
   Global Instance product2_proper E L:
     Proper (eqtype E L ==> eqtype E L ==> eqtype E L) product2.

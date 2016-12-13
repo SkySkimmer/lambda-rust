@@ -117,31 +117,29 @@ Delimit Scope lrust_type_scope with T.
 Bind Scope lrust_type_scope with type.
 
 Section subtyping.
-  Context `{typeG Σ} (E : lectx) (L : llctx).
+  Context `{typeG Σ} (E : elctx) (L : llctx).
 
   Record subtype (ty1 ty2 : type) : Prop :=
     { subtype_sz : ty1.(ty_size) = ty2.(ty_size);
-      subtype_own qE qL :
-        lft_ctx -∗ lectx_interp E qE -∗ llctx_interp L qL -∗
-          □ ∀ tid vl, ty1.(ty_own) tid vl -∗ ty2.(ty_own) tid vl;
-      subtype_shr qE qL :
-        lft_ctx -∗ lectx_interp E qE -∗ llctx_interp L qL -∗
-          □ ∀ κ tid F l, ty1.(ty_shr) κ tid F l -∗ ty2.(ty_shr) κ tid F l }.
+      subtype_own tid vl:
+        lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
+           ty1.(ty_own) tid vl -∗ ty2.(ty_own) tid vl;
+      subtype_shr κ tid F l:
+        lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
+           ty1.(ty_shr) κ tid F l -∗ ty2.(ty_shr) κ tid F l }.
 
   Global Instance subtype_preorder : PreOrder subtype.
   Proof.
     split.
-    - intros ty. split; [done| |]; iIntros (? ?) "_ _ _ !# * $".
+    - intros ty. split; [done|intros|intros]; iIntros "_ _ _ $".
     - intros ty1 ty2 ty3 H1 H2. split.
       + etrans. eapply H1. eapply H2.
-      + iIntros (? ?) "#LFT HE HL".
-        iDestruct (subtype_own _ _ H1 with "LFT HE HL") as "#H1".
-        iDestruct (subtype_own _ _ H2 with "LFT HE HL") as "#H2".
-        iIntros "{HE HL} !# * ?". iApply "H2". by iApply "H1".
-      + iIntros (? ?) "#LFT HE HL".
-        iDestruct (subtype_shr _ _ H1 with "LFT HE HL") as "#H1".
-        iDestruct (subtype_shr _ _ H2 with "LFT HE HL") as "#H2".
-        iIntros "{HE HL} !# * ?". iApply "H2". by iApply "H1".
+      + iIntros (??) "#LFT #HE #HL * H".
+        iApply (H2.(subtype_own _ _) with "LFT HE HL *").
+        by iApply (H1.(subtype_own _ _) with "LFT HE HL *").
+      + iIntros (????) "#LFT #HE #HL * H".
+        iApply (H2.(subtype_shr _ _) with "LFT HE HL *").
+        by iApply (H1.(subtype_shr _ _) with "LFT HE HL *").
   Qed.
 
   Definition eqtype (ty1 ty2 : type) : Prop :=
@@ -153,5 +151,17 @@ Section subtyping.
     - split; done.
     - intros ?? Heq; split; apply Heq.
     - intros ??? H1 H2. split; etrans; (apply H1 || apply H2).
+  Qed.
+
+  Lemma subtype_simple_type (st1 st2 : simple_type) :
+    st1.(st_size) = st2.(st_size) →
+    (∀ tid vl, lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
+                 st1.(st_own) tid vl -∗ st2.(st_own) tid vl) →
+    subtype st1 st2.
+  Proof.
+    intros Hsz Hst. split; [done|by apply Hst|].
+    iIntros (????) "#LFT #HE #HL H /=".
+    iDestruct "H" as (vl) "[Hf [Hown|H†]]"; iExists vl; iFrame "Hf"; last by auto.
+    iLeft. by iApply (Hst with "LFT HE HL *").
   Qed.
 End subtyping.
