@@ -107,6 +107,17 @@ Section sum.
         iDestruct "Hlen" as %<-. done.
   Qed.
 
+  Global Instance sum_proper E L:
+    Proper (Forall2 (eqtype E L) ==> eqtype E L) sum.
+  Proof.
+    (* TODO: Isn't there sth. showing that Forall2 is monotnous wrt. the predicate? *)
+    intros tyl1 tyl2 Heq.
+    assert (Forall2 (subtype E L) tyl1 tyl2 ∧ Forall2 (subtype E L) tyl2 tyl1).
+    { induction Heq as [|???? Heq]; first done. destruct_and!.
+      destruct Heq. split; constructor; done. }
+    destruct_and!. split; apply sum_mono; done.
+  Qed.
+
   (* TODO : Make the Forall parameter a typeclass *)
   (* TODO : This next step is suspuciously slow. *)
   Global Instance sum_copy tyl :
