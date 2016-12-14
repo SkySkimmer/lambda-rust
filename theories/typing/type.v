@@ -153,8 +153,9 @@ Section subtyping.
       iApply (type_incl_trans with "[] []").
       + iApply (H12 with "[] []"); done.
       + iApply (H23 with "[] []"); done.
-Qed.
+  Qed.
 
+  (* TODO: The prelude should have a symmetric closure. *)
   Definition eqtype (ty1 ty2 : type) : Prop :=
     subtype ty1 ty2 ∧ subtype ty2 ty1.
 
