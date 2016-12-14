@@ -79,41 +79,68 @@ Section sum.
     - by iApply (frac_bor_shorten with "Hord").
   Qed.
 
+  Global Instance sum_mono E L:
+    Proper (Forall2 (subtype E L) ==> subtype E L) sum.
+  Proof.
+    intros tyl1 tyl2 Htyl. iIntros "#LFT #? %".
+    iAssert (⌜list_max (map ty_size tyl1) = list_max (map ty_size tyl2)⌝%I) with "[#]" as %Hleq.
+    { iInduction Htyl as [|???? Hsub] "IH"; first done.
+      iDestruct (Hsub with "LFT [] []") as "(% & _ & _)"; [done..|].
+      iDestruct "IH" as %IH. iPureIntro. simpl. inversion_clear IH. by f_equal. }
+    iAssert (∀ i, type_incl (nth i tyl1 ∅) (nth i tyl2 ∅))%I with "[#]" as "#Hty".
+      { iIntros (i). edestruct (nth_lookup_or_length tyl1 i) as [Hl1|Hl]; last first.
+        { rewrite nth_overflow // nth_overflow; first by iApply type_incl_refl.
+          by erewrite <-Forall2_length. } 
+        edestruct @Forall2_lookup_l as (ty2 & Hl2 & Hty2); [done..|].
+        rewrite (nth_lookup tyl2 _ _ ty2) //.
+        by iApply (Hty2 with "* [] []"). }
+    clear -Hleq. iSplit; last (iSplit; iAlways).
+    - simpl. by rewrite Hleq. 
+    - iIntros (tid vl) "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)".
+      iExists i, vl', vl''. iSplit; first done.
+      iSplit; first by rewrite -Hleq.
+      iDestruct ("Hty" $! i) as "(_ & #Htyi & _)". by iApply "Htyi".
+    - iIntros (κ tid F l) "H". iDestruct "H" as (i) "(Hmt & Hshr & Htail)".
+      iExists i. iFrame "Hmt". iSplitL "Hshr".
+      + iDestruct ("Hty" $! i) as "(_ & _ & #Htyi)". by iApply "Htyi".
+      + rewrite -Hleq. iDestruct ("Hty" $! i) as "(Hlen & _)".
+        iDestruct "Hlen" as %<-. done.
+  Qed.
+
   (* TODO : Make the Forall parameter a typeclass *)
   (* TODO : This next step is suspuciously slow. *)
-  Global Program Instance sum_copy tyl :
+  Global Instance sum_copy tyl :
     Forall Copy tyl → Copy (sum tyl).
-  Next Obligation.
-    intros tyl HFA tid vl.
-    cut (∀ i vl', PersistentP (ty_own (nth i tyl ∅) tid vl')). by apply _.
-    intros. apply @copy_persistent. edestruct nth_in_or_default as [| ->];
-      [by eapply List.Forall_forall| apply _].
-  Qed.
-  Next Obligation.
-    intros tyl HFA κ tid E F l q ?.
-    iIntros "#LFT #H[[Htok1 [Htok2 Htok3]] Htl]".
-    setoid_rewrite split_sum_mt. iDestruct "H" as (i) "[Hshr0 [Hshr Hshrtail]]".
-    iMod (frac_bor_acc with "LFT Hshr0 Htok1") as (q'1) "[Hown Hclose]". set_solver.
-    iMod (frac_bor_acc with "LFT Hshrtail Htok2") as (q'2) "[Htail Hclose']". set_solver.
-    iMod (@copy_shr_acc _ _ (nth i tyl ∅) with "LFT Hshr [Htok3 $Htl]")
-      as (q'3) "[Hownq Hclose'']"; try done.
-    { edestruct nth_in_or_default as [| ->]; last by apply _.
-        by eapply List.Forall_forall. }
-    destruct (Qp_lower_bound q'1 q'2) as (q'0 & q'01 & q'02 & -> & ->).
-    destruct (Qp_lower_bound q'0 q'3) as (q' & q'11 & q'12 & -> & ->).
-    rewrite -(heap_mapsto_vec_prop_op _ q' q'12); last (by intros; apply ty_size_eq).
-    rewrite -!Qp_plus_assoc.
-    rewrite -(heap_mapsto_vec_prop_op _ q' (q'11 + q'02)
-        (list_max (map ty_size tyl) - (ty_size (nth i tyl ∅)))%nat); last first.
-    { intros. iIntros (<-). iPureIntro. by rewrite minus_plus. }
-    iDestruct "Hownq" as "[Hownq1 Hownq2]". iDestruct "Hown" as "[Hown1 >Hown2]".
-    iDestruct "Htail" as "[Htail1 Htail2]".
-    iExists q'. iModIntro. iSplitL "Hown1 Hownq1 Htail1".
-    - iNext. iExists i. by iFrame.
-    - iIntros "H". iDestruct "H" as (i') "[>Hown1 [Hownq1 Htail1]]".
-      iDestruct (heap_mapsto_agree with "[$Hown1 $Hown2]") as %[= ->%Z_of_nat_inj].
-      iMod ("Hclose''" with "[$Hownq1 $Hownq2]"). iMod ("Hclose'" with "[$Htail1 $Htail2]").
-      iMod ("Hclose" with "[$Hown1 $Hown2]") as "$". by iFrame.
+  Proof.
+    intros HFA. split.
+    - intros tid vl.
+      cut (∀ i vl', PersistentP (ty_own (nth i tyl ∅) tid vl')). by apply _.
+      intros. apply @copy_persistent. edestruct nth_in_or_default as [| ->];
+                                        [by eapply List.Forall_forall| apply _].
+    - intros κ tid E F l q ?.
+      iIntros "#LFT #H[[Htok1 [Htok2 Htok3]] Htl]".
+      setoid_rewrite split_sum_mt. iDestruct "H" as (i) "[Hshr0 [Hshr Hshrtail]]".
+      iMod (frac_bor_acc with "LFT Hshr0 Htok1") as (q'1) "[Hown Hclose]". set_solver.
+      iMod (frac_bor_acc with "LFT Hshrtail Htok2") as (q'2) "[Htail Hclose']". set_solver.
+      iMod (@copy_shr_acc _ _ (nth i tyl ∅) with "LFT Hshr [Htok3 $Htl]")
+        as (q'3) "[Hownq Hclose'']"; try done.
+      { edestruct nth_in_or_default as [| ->]; last by apply _.
+          by eapply List.Forall_forall. }
+      destruct (Qp_lower_bound q'1 q'2) as (q'0 & q'01 & q'02 & -> & ->).
+      destruct (Qp_lower_bound q'0 q'3) as (q' & q'11 & q'12 & -> & ->).
+      rewrite -(heap_mapsto_vec_prop_op _ q' q'12); last (by intros; apply ty_size_eq).
+      rewrite -!Qp_plus_assoc.
+      rewrite -(heap_mapsto_vec_prop_op _ q' (q'11 + q'02)
+                                        (list_max (map ty_size tyl) - (ty_size (nth i tyl ∅)))%nat); last first.
+      { intros. iIntros (<-). iPureIntro. by rewrite minus_plus. }
+      iDestruct "Hownq" as "[Hownq1 Hownq2]". iDestruct "Hown" as "[Hown1 >Hown2]".
+      iDestruct "Htail" as "[Htail1 Htail2]".
+      iExists q'. iModIntro. iSplitL "Hown1 Hownq1 Htail1".
+      + iNext. iExists i. by iFrame.
+      + iIntros "H". iDestruct "H" as (i') "[>Hown1 [Hownq1 Htail1]]".
+        iDestruct (heap_mapsto_agree with "[$Hown1 $Hown2]") as %[= ->%Z_of_nat_inj].
+        iMod ("Hclose''" with "[$Hownq1 $Hownq2]"). iMod ("Hclose'" with "[$Htail1 $Htail2]").
+        iMod ("Hclose" with "[$Hown1 $Hown2]") as "$". by iFrame.
   Qed.
 End sum.
 

@@ -83,10 +83,11 @@ Section product.
     Proper (eqtype E L ==> eqtype E L ==> eqtype E L) product2.
   Proof. by intros ??[]??[]; split; apply product2_mono. Qed.
 
-  Global Program Instance product2_copy `(!Copy ty1) `(!Copy ty2) :
+  Global Instance product2_copy `(!Copy ty1) `(!Copy ty2) :
     Copy (product2 ty1 ty2).
-  Next Obligation.
-    intros ty1 ? ty2 ? κ tid E F l q ?. iIntros "#LFT H [[Htok1 Htok2] Htl]".
+  Proof.
+    split; first (intros; apply _).
+    intros κ tid E F l q ?. iIntros "#LFT H [[Htok1 Htok2] Htl]".
     iDestruct "H" as (E1 E2) "(% & H1 & H2)".
     assert (F = E1 ∪ E2 ∪ F∖(E1 ∪ E2)) as ->.
     { rewrite -union_difference_L; set_solver. }
