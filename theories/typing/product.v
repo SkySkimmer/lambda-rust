@@ -117,8 +117,7 @@ Section product.
       iMod ("Hclose2" with "[H2 H↦2]") as "[$$]". by iExists _; iFrame. done.
   Qed.
 
-  Definition product := fold_right product2 unit.
-
+  Definition product := foldr product2 unit.
   (* Given that in practice, product will be used with concrete lists,
      there should be no need to declare [Copy] and [Proper] instances
      for [product]. *)
@@ -169,7 +168,7 @@ Section typing.
     - iExists F, ∅. iFrame. by iPureIntro; set_solver.
   Qed.
 
-  Lemma subtype_prod_flatten E L tyl1 tyl2 tyl3 :
+  Lemma eqtype_prod_flatten E L tyl1 tyl2 tyl3 :
     eqtype E L (Π(tyl1 ++ Π tyl2 :: tyl3)) (Π(tyl1 ++ tyl2 ++ tyl3)).
   Proof.
     unfold product. induction tyl1; simpl; last by f_equiv.
