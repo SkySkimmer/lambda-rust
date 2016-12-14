@@ -1,3 +1,4 @@
+From Coq Require Import Min.
 From iris.algebra Require Import cmra_big_op gmap frac agree.
 From iris.algebra Require Import csum excl auth.
 From iris.base_logic Require Import big_op lib.invariants lib.fractional.
@@ -208,6 +209,33 @@ Section heap.
     rewrite /heap_mapsto_vec heap_mapsto_eq /heap_mapsto_def /heap_mapsto_st=>?.
     by rewrite (big_opL_commute (Auth None)) big_opL_commute1 //.
   Qed.
+
+  Global Instance heap_mapsto_vec_pred_fractional l (P : list val → iProp Σ):
+    (∀ vl, PersistentP (P vl)) → Fractional (λ q, l ↦∗{q}: P)%I.
+  Proof.
+    intros p q q'. iSplit.
+    - iIntros "H". iDestruct "H" as (vl) "[[Hown1 Hown2] #HP]".
+      iSplitL "Hown1"; eauto.
+    - iIntros "[H1 H2]". iDestruct "H1" as (vl1) "[Hown1 #HP1]".
+      iDestruct "H2" as (vl2) "[Hown2 #HP2]".
+      set (ll := min (length vl1) (length vl2)).
+      rewrite -[vl1](firstn_skipn ll) -[vl2](firstn_skipn ll) 2!heap_mapsto_vec_app.
+      iDestruct "Hown1" as "[Hown1 _]". iDestruct "Hown2" as "[Hown2 _]".
+      iCombine "Hown1" "Hown2" as "Hown". rewrite heap_mapsto_vec_op; last first.
+      { rewrite !firstn_length. subst ll.
+        rewrite -!min_assoc min_idempotent min_comm -min_assoc min_idempotent min_comm. done. }
+      iDestruct "Hown" as "[H Hown]". iDestruct "H" as %Hl. iExists (take ll vl1). iFrame.
+      destruct (min_spec (length vl1) (length vl2)) as [[Hne Heq]|[Hne Heq]].
+      + iClear "HP2". rewrite firstn_all2; last first.
+        { rewrite -Heq /ll. done. }
+        rewrite drop_ge; first by rewrite app_nil_r. by rewrite -Heq.
+      + iClear "HP1". rewrite Hl firstn_all2; last first.
+        { rewrite -Heq /ll. done. }
+        rewrite drop_ge; first by rewrite app_nil_r. by rewrite -Heq.
+  Qed.
+  Global Instance heap_mapsto_vec_pred_as_fractional l q (P : list val → iProp Σ):
+    (∀ vl, PersistentP (P vl)) → AsFractional (l ↦∗{q}: P) (λ q, l ↦∗{q}: P)%I q.
+  Proof. split. done. apply _. Qed.
 
   Lemma inter_lookup_Some i j (n : nat):
     i ≤ j < i+n → inter i n !! j = Excl' ().
