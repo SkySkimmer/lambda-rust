@@ -169,7 +169,7 @@ Section typing.
     - iExists F, ∅. iFrame. by iPureIntro; set_solver.
   Qed.
 
-  Lemma ty_incl_prod_flatten E L tyl1 tyl2 tyl3 :
+  Lemma subtype_prod_flatten E L tyl1 tyl2 tyl3 :
     eqtype E L (Π(tyl1 ++ Π tyl2 :: tyl3)) (Π(tyl1 ++ tyl2 ++ tyl3)).
   Proof.
     unfold product. induction tyl1; simpl; last by f_equiv.
