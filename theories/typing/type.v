@@ -56,16 +56,15 @@ Section type.
      that simple_type does depend on it. Otherwise, the coercion defined
      bellow will not be acceptable by Coq. *)
   Record simple_type `{typeG Σ} :=
-    { st_size : nat;
-      st_own : thread_id → list val → iProp Σ;
+    { st_own : thread_id → list val → iProp Σ;
 
-      st_size_eq tid vl : st_own tid vl -∗ ⌜length vl = st_size⌝;
+      st_size_eq tid vl : st_own tid vl -∗ ⌜length vl = 1%nat⌝;
       st_own_persistent tid vl : PersistentP (st_own tid vl) }.
 
   Global Existing Instance st_own_persistent.
 
   Program Definition ty_of_st (st : simple_type) : type :=
-    {| ty_size := st.(st_size); ty_own := st.(st_own);
+    {| ty_size := 1; ty_own := st.(st_own);
 
        (* [st.(st_own) tid vl] needs to be outside of the fractured
           borrow, otherwise I do not know how to prove the shr part of
@@ -168,12 +167,11 @@ Qed.
   Qed.
 
   Lemma subtype_simple_type (st1 st2 : simple_type) :
-    st1.(st_size) = st2.(st_size) →
     (∀ tid vl, lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
                  st1.(st_own) tid vl -∗ st2.(st_own) tid vl) →
     subtype st1 st2.
   Proof.
-    intros Hsz Hst. iIntros. iSplit; first done. iSplit; iAlways.
+    intros Hst. iIntros. iSplit; first done. iSplit; iAlways.
     - iIntros. iApply (Hst with "* [] [] []"); done.
     - iIntros (????) "H".
       iDestruct "H" as (vl) "[Hf [Hown|H†]]"; iExists vl; iFrame "Hf"; last by auto.

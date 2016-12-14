@@ -4,16 +4,10 @@ From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.lang Require Export new_delete.
 From lrust.lang Require Import heap.
 From lrust.typing Require Export type.
-From lrust.typing Require Import typing product perm.
+From lrust.typing Require Import typing product perm uninit.
 
 Section own.
   Context `{typeG Σ}.
-
-  (* Even though it does not seem too natural to put this here, it is
-     the only place where it is used. *)
-  Program Definition uninit : type :=
-    {| st_size := 1; st_own tid vl := ⌜length vl = 1%nat⌝%I |}.
-  Next Obligation. done. Qed.
 
   Program Definition freeable_sz (n : nat) (sz : nat) (l : loc) : iProp Σ :=
     match sz, n return _ with
@@ -123,7 +117,7 @@ Section own.
   Proof. intros ?? Heq. split; f_equiv; apply Heq. Qed.
 
   Lemma typed_new ρ (n : nat):
-    0 ≤ n → typed_step_ty ρ (new [ #n]%E) (own n (Π(replicate n uninit))).
+    0 ≤ n → typed_step_ty ρ (new [ #n]%E) (own n (uninit n)).
   Proof.
     iIntros (Hn tid) "!#(#HEAP&_&_&$)". iApply (wp_new with "HEAP"); try done.
     iIntros "!>*(% & H† & H↦)". iExists _. iSplit. done. iNext.
@@ -133,9 +127,7 @@ Section own.
       clear Hn. apply (inj Z.of_nat) in Hlen. subst.
       iInduction vl as [|v vl] "IH". done.
       iExists [v], vl. iSplit. done. by iSplit.
-    - assert (ty_size (Π (replicate n uninit)) = n) as ->.
-      { clear. induction n; rewrite //= IHn //. }
-      by rewrite freeable_sz_full.
+    - by rewrite uninit_sz freeable_sz_full.
   Qed.
 
   Lemma typed_delete ty (ν : expr):
@@ -178,8 +170,7 @@ Section own.
   Qed.
 
   Lemma consumes_move ty n:
-    consumes ty (λ ν, ν ◁ own n ty)%P
-             (λ ν, ν ◁ own n (Π(replicate ty.(ty_size) uninit)))%P.
+    consumes ty (λ ν, ν ◁ own n ty)%P (λ ν, ν ◁ own n (uninit ty.(ty_size)))%P.
   Proof.
     iIntros (ν tid Φ E ?) "_ H◁ Htl HΦ". iApply (has_type_wp with "H◁").
     iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
@@ -192,7 +183,6 @@ Section own.
     - rewrite -Hlen. iExists vl. iIntros "{$H↦}!>". clear.
       iInduction vl as [|v vl] "IH". done.
       iExists [v], vl. iSplit. done. by iSplit.
-    - assert (ty_size (Π (replicate (ty_size ty) uninit)) = ty_size ty) as ->; last by auto.
-      clear. induction ty.(ty_size). done. by apply (f_equal S).
+    - rewrite uninit_sz; auto.
   Qed.
 End own.

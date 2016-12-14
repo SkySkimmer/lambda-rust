@@ -6,7 +6,7 @@ Section bool.
   Context `{typeG Σ}.
 
   Program Definition bool : type :=
-    {| st_size := 1; st_own tid vl := (∃ z:bool, ⌜vl = [ #z ]⌝)%I |}.
+    {| st_own tid vl := (∃ z:bool, ⌜vl = [ #z ]⌝)%I |}.
   Next Obligation. iIntros (tid vl) "H". iDestruct "H" as (z) "%". by subst. Qed.
 
   Lemma typed_bool ρ (b:Datatypes.bool): typed_step_ty ρ #b bool.
