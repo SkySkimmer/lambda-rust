@@ -127,9 +127,7 @@ Section product.
   Global Instance product_proper E L:
     Proper (Forall2 (eqtype E L) ==> eqtype E L) product.
   Proof. intros ??. induction 1. done. by simpl; f_equiv. Qed.
-  (* FIXME : this instance is never going to be used, because Forall is
-     not a typeclass. *)
-  Global Instance product_copy tys : Forall Copy tys → Copy (product tys).
+  Global Instance product_copy tys : LstCopy tys → Copy (product tys).
   Proof. induction 1; apply _. Qed.
 End product.
 

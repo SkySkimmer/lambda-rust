@@ -110,18 +110,11 @@ Section sum.
   Global Instance sum_proper E L:
     Proper (Forall2 (eqtype E L) ==> eqtype E L) sum.
   Proof.
-    (* TODO: Isn't there sth. showing that Forall2 is monotnous wrt. the predicate? *)
-    intros tyl1 tyl2 Heq.
-    assert (Forall2 (subtype E L) tyl1 tyl2 ∧ Forall2 (subtype E L) tyl2 tyl1).
-    { induction Heq as [|???? Heq]; first done. destruct_and!.
-      destruct Heq. split; constructor; done. }
-    destruct_and!. split; apply sum_mono; done.
+    intros tyl1 tyl2 Heq; split; eapply sum_mono; [|rewrite -Forall2_flip];
+      (eapply Forall2_impl; [done|by intros ?? []]).
   Qed.
 
-  (* TODO : Make the Forall parameter a typeclass *)
-  (* TODO : This next step is suspuciously slow. *)
-  Global Instance sum_copy tyl :
-    Forall Copy tyl → Copy (sum tyl).
+  Global Instance sum_copy tyl: LstCopy tyl → Copy (sum tyl).
   Proof.
     intros HFA. split.
     - intros tid vl.
@@ -142,7 +135,7 @@ Section sum.
       rewrite -(heap_mapsto_vec_prop_op _ q' q'12); last (by intros; apply ty_size_eq).
       rewrite -!Qp_plus_assoc.
       rewrite -(heap_mapsto_vec_prop_op _ q' (q'11 + q'02)
-                                        (list_max (map ty_size tyl) - (ty_size (nth i tyl ∅)))%nat); last first.
+            (list_max (map ty_size tyl) - (ty_size (nth i tyl ∅)))%nat); last first.
       { intros. iIntros (<-). iPureIntro. by rewrite minus_plus. }
       iDestruct "Hownq" as "[Hownq1 Hownq2]". iDestruct "Hown" as "[Hown1 >Hown2]".
       iDestruct "Htail" as "[Htail1 Htail2]".

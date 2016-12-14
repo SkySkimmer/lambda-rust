@@ -42,15 +42,20 @@ Section type.
     }.
   Global Existing Instances ty_shr_persistent.
 
-  Class Copy (t : type) := {
-    copy_persistent tid vl : PersistentP (t.(ty_own) tid vl);
+  Class Copy (ty : type) := {
+    copy_persistent tid vl : PersistentP (ty.(ty_own) tid vl);
     copy_shr_acc κ tid E F l q :
       mgmtE ∪ F ⊆ E →
-      lft_ctx -∗ t.(ty_shr) κ tid F l -∗
-        q.[κ] ∗ na_own tid F ={E}=∗ ∃ q', ▷l ↦∗{q'}: t.(ty_own) tid ∗
-          (▷l ↦∗{q'}: t.(ty_own) tid ={E}=∗ q.[κ] ∗ na_own tid F)
+      lft_ctx -∗ ty.(ty_shr) κ tid F l -∗
+        q.[κ] ∗ na_own tid F ={E}=∗ ∃ q', ▷l ↦∗{q'}: ty.(ty_own) tid ∗
+          (▷l ↦∗{q'}: ty.(ty_own) tid ={E}=∗ q.[κ] ∗ na_own tid F)
   }.
   Global Existing Instances copy_persistent.
+
+  Class LstCopy (tys : list type) := lst_copy : Forall Copy tys.
+  Global Instance lst_copy_nil : LstCopy [] := List.Forall_nil _.
+  Global Instance lst_copy_cons ty tys :
+    Copy ty → LstCopy tys → LstCopy (ty::tys) := List.Forall_cons _ _ _.
 
   (* We are repeating the typeclass parameter here jsut to make sure
      that simple_type does depend on it. Otherwise, the coercion defined
