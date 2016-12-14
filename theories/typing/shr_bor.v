@@ -8,8 +8,7 @@ Section shr_bor.
   Context `{typeG Σ}.
 
   Program Definition shr_bor (κ : lft) (ty : type) : type :=
-    {| st_size := 1;
-       st_own tid vl :=
+    {| st_own tid vl :=
          (∃ (l:loc), ⌜vl = [ #l ]⌝ ∗ ty.(ty_shr) κ tid (↑lrustN) l)%I |}.
   Next Obligation.
     iIntros (κ ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
@@ -18,7 +17,7 @@ Section shr_bor.
   Global Instance subtype_shr_bor_mono E L :
     Proper (lctx_lft_incl E L --> subtype E L ==> subtype E L) shr_bor.
   Proof.
-    intros κ1 κ2 Hκ ty1 ty2 Hty. apply subtype_simple_type. done.
+    intros κ1 κ2 Hκ ty1 ty2 Hty. apply subtype_simple_type.
     iIntros (??) "#LFT #HE #HL H". iDestruct (Hκ with "HE HL") as "#Hκ".
     iDestruct "H" as (l) "(% & H)". subst. iExists _. iSplit. done.
     iApply (ty2.(ty_shr_mono) with "LFT Hκ"). reflexivity.

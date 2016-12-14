@@ -10,8 +10,7 @@ Section fn.
 
   Program Definition fn {A n} (E : A → elctx)
           (tys : A → vec type n) (ty : A → type) : type :=
-    {| st_size := 1;
-       st_own tid vl := (∃ f, ⌜vl = [f]⌝ ∗ □ ∀ (x : A) (args : vec val n) (k : val),
+    {| st_own tid vl := (∃ f, ⌜vl = [f]⌝ ∗ □ ∀ (x : A) (args : vec val n) (k : val),
          typed_body (E x) []
                     [CctxElt k [] 1 (λ v, [TCtx_holds (v!!!0) (ty x)])]
                     (zip_with (TCtx_holds ∘ of_val) args (tys x))

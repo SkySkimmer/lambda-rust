@@ -12,7 +12,7 @@ Section own.
   (* Even though it does not seem too natural to put this here, it is
      the only place where it is used. *)
   Program Definition uninit : type :=
-    {| st_size := 1; st_own tid vl := ⌜length vl = 1%nat⌝%I |}.
+    {| st_own tid vl := ⌜length vl = 1%nat⌝%I |}.
   Next Obligation. done. Qed.
 
   Program Definition freeable_sz (n : nat) (sz : nat) (l : loc) : iProp Σ :=

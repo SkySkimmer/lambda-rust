@@ -6,7 +6,7 @@ Section int.
   Context `{typeG Σ}.
 
   Program Definition int : type :=
-    {| st_size := 1; st_own tid vl := (∃ z:Z, ⌜vl = [ #z ]⌝)%I |}.
+    {| st_own tid vl := (∃ z:Z, ⌜vl = [ #z ]⌝)%I |}.
   Next Obligation. iIntros (tid vl) "H". iDestruct "H" as (z) "%". by subst. Qed.
 
   Lemma typed_int ρ (z:Datatypes.nat) :

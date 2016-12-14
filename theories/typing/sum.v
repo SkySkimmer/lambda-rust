@@ -6,7 +6,7 @@ From lrust.typing Require Import type_incl.
 Section sum.
   Context `{typeG Σ}.
 
-  Program Definition emp : type := {| st_size := 0; st_own tid vl := False%I |}.
+  Program Definition emp : type := {| st_own tid vl := False%I |}.
   Next Obligation. iIntros (tid vl) "[]". Qed.
   Global Instance emp_empty : Empty type := emp.
 
@@ -101,7 +101,6 @@ Existing Instance LstTySize_nil.
 Hint Extern 1 (LstTySize _ (_ :: _)) =>
   apply LstTySize_cons; [compute; reflexivity|] : typeclass_instances.
 
-
 (* Σ is commonly used for the current functor. So it cannot be defined
    as Π for products. We stick to the following form. *)
 Notation "Σ[ ty1 ; .. ; tyn ]" :=
@@ -109,11 +108,6 @@ Notation "Σ[ ty1 ; .. ; tyn ]" :=
 
 Section incl.
   Context `{typeG Σ}.
-
-   (* FIXME : do we need that anywhere?. *)
-  Lemma ty_incl_emp ρ ty : ty_incl ρ ∅ ty.
-  Proof.
-  Admitted.
 
   (* TODO *)
   (* Lemma ty_incl_sum ρ n tyl1 tyl2 (_ : LstTySize n tyl1) (_ : LstTySize n tyl2) : *)
