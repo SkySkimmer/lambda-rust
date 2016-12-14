@@ -67,18 +67,19 @@ Section uniq_bor.
   Global Instance subtype_uniq_mono E L :
     Proper (lctx_lft_incl E L --> eqtype E L ==> subtype E L) uniq_bor.
   Proof.
-    intros κ1 κ2 Hκ ty1 ty2 [Hty1 Hty2]. split.
-    - done.
-    - iIntros (??) "#LFT #HE #HL H". iDestruct (Hκ with "HE HL") as "#Hκ".
-      iDestruct "H" as (l P) "[[% #HPiff] Hown]". subst.
+    intros κ1 κ2 Hκ ty1 ty2 [Hty1 Hty2]. iIntros. iSplit; first done.
+    iDestruct (Hty1 with "* [] [] []") as "(_ & #Ho1 & #Hs1)"; [done..|clear Hty1].
+    iDestruct (Hty2 with "* [] [] []") as "(_ & #Ho2 & #Hs2)"; [done..|clear Hty2].
+    iDestruct (Hκ with "[] []") as "#Hκ"; [done..|].
+    iSplit; iAlways.
+    - iIntros (??) "H". iDestruct "H" as (l P) "[[% #HPiff] Hown]". subst.
       iExists _, _. iSplitR; last by iApply (bor_shorten with "Hκ"). iSplit. done.
       iIntros "!#". iSplit; iIntros "H".
       + iDestruct ("HPiff" with "H") as (vl) "[??]". iExists vl. iFrame.
-        by iApply (Hty1.(subtype_own _ _ _ _) with "LFT HE HL").
+        by iApply "Ho1".
       + iDestruct "H" as (vl) "[??]". iApply "HPiff". iExists vl. iFrame.
-        by iApply (Hty2.(subtype_own _ _ _ _) with "LFT HE HL").
-    - iIntros (????) "#LFT #HE #HL H". iDestruct (Hκ with "HE HL") as "#Hκ".
-      iAssert (κ2 ∪ κ ⊑ κ1 ∪ κ)%I as "#Hincl'".
+        by iApply "Ho2".
+    - iIntros (κ ???) "H". iAssert (κ2 ∪ κ ⊑ κ1 ∪ κ)%I as "#Hincl'".
       { iApply (lft_incl_glb with "[] []").
         - iApply (lft_incl_trans with "[] Hκ"). iApply lft_le_incl.
           apply gmultiset_union_subseteq_l.
@@ -86,8 +87,7 @@ Section uniq_bor.
       iDestruct "H" as (l') "[Hbor #Hupd]". iExists l'. iIntros "{$Hbor}!#%%".
       iMod ("Hupd" with "* [%]") as "Hupd'"; try done. iModIntro. iNext.
       iMod "Hupd'" as "[H|H†]"; last by auto.
-      iLeft. iApply (ty_shr_mono with "LFT Hincl'"). reflexivity.
-      by iApply (Hty1.(subtype_shr _ _ _ _) with "LFT HE HL").
+      iLeft. iApply (ty_shr_mono with "[] Hincl'"); [done..|]. by iApply "Hs1".
   Qed.
   Global Instance subtype_uniq_mono' E L :
     Proper (lctx_lft_incl E L ==> eqtype E L ==> flip (subtype E L)) uniq_bor.

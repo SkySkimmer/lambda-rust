@@ -102,19 +102,20 @@ Section own.
   Global Instance own_mono E L n :
     Proper (subtype E L ==> subtype E L) (own n).
   Proof.
-    intros ty1 ty2 Hincl. split.
-    - done.
-    - iIntros (??) "#LFT #HE #HL H". iDestruct "H" as (l) "(%&Hmt&H†)". subst.
+    intros ty1 ty2 Hincl. iIntros. iSplit; first done.
+    iDestruct (Hincl with "* [] [] []") as "(_ & #Ho & #Hs)"; [done..|clear Hincl].
+    iSplit; iAlways.
+    - iIntros (??) "H". iDestruct "H" as (l) "(%&Hmt&H†)". subst.
       iExists _. iSplit. done. iDestruct "Hmt" as (vl') "[Hmt Hown]". iNext.
       iDestruct (ty_size_eq with "Hown") as %<-.
-      iDestruct (Hincl.(subtype_own _ _ _ _) with "LFT HE HL Hown") as "Hown".
+      iDestruct ("Ho" with "* Hown") as "Hown".
       iDestruct (ty_size_eq with "Hown") as %<-. iFrame.
       iExists _. by iFrame.
-    - iIntros (????) "#LFT #HE #HL H". iDestruct "H" as (l') "[Hfb #Hvs]".
+    - iIntros (????) "H". iDestruct "H" as (l') "[Hfb #Hvs]".
       iExists l'. iFrame. iIntros "!#". iIntros (F') "%".
       iMod ("Hvs" with "* [%]") as "Hvs'". done. iModIntro. iNext.
       iMod "Hvs'" as "[Hshr|H†]"; last by auto.
-      iLeft. iApply (Hincl.(subtype_shr _ _ _ _) with "LFT HE HL Hshr").
+      iLeft. iApply ("Hs" with "Hshr").
   Qed.
 
   Global Instance own_proper E L n :

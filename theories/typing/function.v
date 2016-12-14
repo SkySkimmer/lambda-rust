@@ -48,8 +48,9 @@ Section fn.
       iDestruct "Hzip" as %(? & ? & ([? ?] & (? & Hty'1 &
         (? & Hty'2 & [=->->])%bind_Some)%bind_Some & [=->->->])%bind_Some)%bind_Some.
       specialize (Htys x). eapply Forall2_lookup_lr in Htys; try done.
-      iApply (Htys.(subtype_own _ _ _ _) with "LFT [] HL0 Hown").
-      rewrite /elctx_interp_0 big_sepL_app. by iSplit.
+      iDestruct (Htys with "* [] [] []") as "(_ & #Ho & _)"; [done| |done|].
+      + rewrite /elctx_interp_0 big_sepL_app. by iSplit.
+      + by iApply "Ho".
   Qed.
 
   Lemma fn_subtype_specialize {A B n} (σ : A → B) E0 L0 E tys ty :

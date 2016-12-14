@@ -57,17 +57,18 @@ Section product.
   Global Instance product2_mono E L:
     Proper (subtype E L ==> subtype E L ==> subtype E L) product2.
   Proof.
-    iIntros (ty11 ty12 H1 ty21 ty22 H2). split.
-    - by rewrite /= (subtype_sz _ _ _ _ H1) (subtype_sz _ _ _ _ H2).
-    - iIntros (??) "#LFT #HE #HL H". iDestruct "H" as (vl1 vl2) "(% & Hown1 & Hown2)".
+    iIntros (ty11 ty12 H1 ty21 ty22 H2). iIntros.
+    iDestruct (H1 with "* [] [] []") as "(% & #Ho1 & #Hs1)"; [done..|]. clear H1.
+    iDestruct (H2 with "* [] [] []") as "(% & #Ho2 & #Hs2)"; [done..|]. clear H2.
+    iSplit; first by (iPureIntro; simpl; f_equal). iSplit; iAlways.
+    - iIntros (??) "H". iDestruct "H" as (vl1 vl2) "(% & Hown1 & Hown2)".
       iExists _, _. iSplit. done. iSplitL "Hown1".
-      by iApply (H1.(subtype_own _ _ _ _) with "LFT HE HL").
-      by iApply (H2.(subtype_own _ _ _ _) with "LFT HE HL").
-    - iIntros (????) "#LFT #HE #HL H".
-      iDestruct "H" as (vl1 vl2) "(% & #Hshr1 & #Hshr2)".
-      iExists _, _. iSplit. done. erewrite subtype_sz; last done. iSplit.
-      by iApply (H1.(subtype_shr _ _ _ _) with "LFT HE HL").
-      by iApply (H2.(subtype_shr _ _ _ _) with "LFT HE HL").
+      + by iApply "Ho1".
+      + by iApply "Ho2".
+    - iIntros (????) "H". iDestruct "H" as (vl1 vl2) "(% & #Hshr1 & #Hshr2)".
+      iExists _, _. iSplit; first done. iSplit.
+      + by iApply "Hs1".
+      + rewrite -(_ : ty_size ty11 = ty_size ty12) //. by iApply "Hs2".
   Qed.
   Global Instance product2_proper E L:
     Proper (eqtype E L ==> eqtype E L ==> eqtype E L) product2.
@@ -151,11 +152,11 @@ Section typing.
       iExists E2, E3. iSplit. by iPureIntro; set_solver. by iFrame.
   Qed.
 
+(*
   Lemma ty_incl_prod_flatten ρ tyl1 tyl2 tyl3 :
     ty_incl ρ (Π(tyl1 ++ Π tyl2 :: tyl3))
               (Π(tyl1 ++ tyl2 ++ tyl3)).
   Proof.
-  Admitted.
   (*   apply (ty_incl_weaken _ ⊤). apply perm_incl_top. *)
   (*   induction tyl1; last by apply (ty_incl_prod2 _ _ _ _ _ _). *)
   (*   induction tyl2 as [|ty tyl2 IH]; simpl. *)
@@ -172,7 +173,6 @@ Section typing.
     ty_incl ρ (Π(tyl1 ++ tyl2 ++ tyl3))
               (Π(tyl1 ++ Π tyl2 :: tyl3)).
   Proof.
-  Admitted.
   (*   apply (ty_incl_weaken _ ⊤). apply perm_incl_top. *)
   (*   induction tyl1; last by apply (ty_incl_prod2 _ _ _ _ _ _). *)
   (*   induction tyl2 as [|ty tyl2 IH]; simpl. *)
@@ -188,4 +188,5 @@ Section typing.
   (*   - etransitivity; last apply ty_incl_prod2_assoc1. *)
   (*     eapply (ty_incl_prod2 _ _ _ _ _ _). done. apply IH. *)
   (* Qed. *)
+*)
 End typing.

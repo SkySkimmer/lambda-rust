@@ -117,30 +117,44 @@ Delimit Scope lrust_type_scope with T.
 Bind Scope lrust_type_scope with type.
 
 Section subtyping.
-  Context `{typeG Σ} (E : elctx) (L : llctx).
+  Context `{typeG Σ}.
+  Definition type_incl (ty1 ty2 : type) : iProp Σ :=
+    (⌜ty1.(ty_size) = ty2.(ty_size)⌝ ∗
+     (□ ∀ tid vl, ty1.(ty_own) tid vl -∗ ty2.(ty_own) tid vl) ∗
+     (□ ∀ κ tid F l, ty1.(ty_shr) κ tid F l -∗ ty2.(ty_shr) κ tid F l))%I.
 
-  Record subtype (ty1 ty2 : type) : Prop :=
-    { subtype_sz : ty1.(ty_size) = ty2.(ty_size);
-      subtype_own tid vl:
-        lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
-           ty1.(ty_own) tid vl -∗ ty2.(ty_own) tid vl;
-      subtype_shr κ tid F l:
-        lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
-           ty1.(ty_shr) κ tid F l -∗ ty2.(ty_shr) κ tid F l }.
+  Global Instance type_incl_persistent ty1 ty2 : PersistentP (type_incl ty1 ty2) := _.
+(*  Typeclasses Opaque type_incl. *)
+
+  Lemma type_incl_refl ty : type_incl ty ty.
+  Proof. iSplit; first done. iSplit; iAlways; iIntros; done. Qed.
+
+  Lemma type_incl_trans ty1 ty2 ty3 :
+    type_incl ty1 ty2 -∗ type_incl ty2 ty3 -∗ type_incl ty1 ty3.
+  Proof.
+    (* TODO: this iIntros takes suspiciously long. *)
+    iIntros "(% & #Ho12 & #Hs12) (% & #Ho23 & #Hs23)".
+    iSplit; first (iPureIntro; etrans; done).
+    iSplit; iAlways; iIntros.
+    - iApply "Ho23". iApply "Ho12". done.
+    - iApply "Hs23". iApply "Hs12". done.
+  Qed.
+
+  Context (E : elctx) (L : llctx).
+
+  Definition subtype (ty1 ty2 : type) : Prop :=
+    lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
+            type_incl ty1 ty2.
 
   Global Instance subtype_preorder : PreOrder subtype.
   Proof.
     split.
-    - intros ty. split; [done|intros|intros]; iIntros "_ _ _ $".
-    - intros ty1 ty2 ty3 H1 H2. split.
-      + etrans. eapply H1. eapply H2.
-      + iIntros (??) "#LFT #HE #HL * H".
-        iApply (H2.(subtype_own _ _) with "LFT HE HL *").
-        by iApply (H1.(subtype_own _ _) with "LFT HE HL *").
-      + iIntros (????) "#LFT #HE #HL * H".
-        iApply (H2.(subtype_shr _ _) with "LFT HE HL *").
-        by iApply (H1.(subtype_shr _ _) with "LFT HE HL *").
-  Qed.
+    - intros ty. iIntros. iApply type_incl_refl.
+    - intros ty1 ty2 ty3 H12 H23. iIntros.
+      iApply (type_incl_trans with "[] []").
+      + iApply (H12 with "[] []"); done.
+      + iApply (H23 with "[] []"); done.
+Qed.
 
   Definition eqtype (ty1 ty2 : type) : Prop :=
     subtype ty1 ty2 ∧ subtype ty2 ty1.
@@ -159,9 +173,10 @@ Section subtyping.
                  st1.(st_own) tid vl -∗ st2.(st_own) tid vl) →
     subtype st1 st2.
   Proof.
-    intros Hsz Hst. split; [done|by apply Hst|].
-    iIntros (????) "#LFT #HE #HL H /=".
-    iDestruct "H" as (vl) "[Hf [Hown|H†]]"; iExists vl; iFrame "Hf"; last by auto.
-    iLeft. by iApply (Hst with "LFT HE HL *").
+    intros Hsz Hst. iIntros. iSplit; first done. iSplit; iAlways.
+    - iIntros. iApply (Hst with "* [] [] []"); done.
+    - iIntros (????) "H".
+      iDestruct "H" as (vl) "[Hf [Hown|H†]]"; iExists vl; iFrame "Hf"; last by auto.
+      iLeft. by iApply (Hst with "* [] [] []").
   Qed.
 End subtyping.

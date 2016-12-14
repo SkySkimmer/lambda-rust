@@ -22,7 +22,8 @@ Section shr_bor.
     iIntros (??) "#LFT #HE #HL H". iDestruct (Hκ with "HE HL") as "#Hκ".
     iDestruct "H" as (l) "(% & H)". subst. iExists _. iSplit. done.
     iApply (ty2.(ty_shr_mono) with "LFT Hκ"). reflexivity.
-    by iApply (Hty.(subtype_shr _ _ _ _ ) with "LFT HE HL").
+    iDestruct (Hty with "* [] [] []") as "(_ & _ & #Hs1)"; [done..|clear Hty].
+    by iApply "Hs1".
   Qed.
   Global Instance subtype_shr_bor_mono' E L :
     Proper (lctx_lft_incl E L ==> subtype E L --> flip (subtype E L)) shr_bor.

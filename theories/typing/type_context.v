@@ -73,7 +73,8 @@ Section type_context.
   Proof.
     iIntros (Hst ?) "#LFT #HE #HL H". rewrite /tctx_interp !big_sepL_singleton /=.
     iDestruct "H" as (v) "[% H]". iExists _. iFrame "%".
-    by iApply (Hst.(subtype_own _ _ _ _) with "LFT HE HL").
+    iDestruct (Hst with "* [] [] []") as "(_ & #Ho & _)"; [done..|].
+    iApply ("Ho" with "*"). done.
   Qed.
 
   Definition deguard_tctx_elt κ x :=

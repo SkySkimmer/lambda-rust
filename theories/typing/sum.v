@@ -110,11 +110,6 @@ Notation "Σ[ ty1 ; .. ; tyn ]" :=
 Section incl.
   Context `{typeG Σ}.
 
-   (* FIXME : do we need that anywhere?. *)
-  Lemma ty_incl_emp ρ ty : ty_incl ρ ∅ ty.
-  Proof.
-  Admitted.
-
   (* TODO *)
   (* Lemma ty_incl_sum ρ n tyl1 tyl2 (_ : LstTySize n tyl1) (_ : LstTySize n tyl2) : *)
   (*   Duplicable ρ → Forall2 (ty_incl ρ) tyl1 tyl2 → *)
