@@ -11,14 +11,16 @@ Section uninit.
   Definition uninit (n : nat) : type :=
     Π (replicate n uninit_1).
 
-  Lemma eqtype_uninit_product E L ns :
-    eqtype E L (uninit (foldr plus 0%nat ns)) (Π(uninit <$> ns)).
-  Proof.
-    induction ns as [|n ns IH]. done.
-    rewrite /= /uninit replicate_plus (eqtype_prod_flatten E L []).
-    induction n. done. rewrite /product /=. by f_equiv.
-  Qed.
+  Global Instance uninit_copy n : Copy (uninit n).
+  Proof. apply product_copy, Forall_replicate, _. Qed.
 
   Lemma uninit_sz n : ty_size (uninit n) = n.
   Proof. induction n. done. simpl. by f_equal. Qed.
+
+  Lemma eqtype_uninit_product E L ns :
+    eqtype E L (uninit (foldr plus 0%nat ns)) (Π(uninit <$> ns)).
+  Proof.
+    induction ns as [|n ns IH]. done. revert IH.
+    by rewrite /= /uninit replicate_plus eqtype_prod_nil_flatten -!eqtype_prod_app=>->.
+  Qed.
 End uninit.

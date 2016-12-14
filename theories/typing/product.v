@@ -118,9 +118,17 @@ Section product.
   Qed.
 
   Definition product := foldr product2 unit.
-  (* Given that in practice, product will be used with concrete lists,
-     there should be no need to declare [Copy] and [Proper] instances
-     for [product]. *)
+
+  Global Instance product_mono E L:
+    Proper (Forall2 (subtype E L) ==> subtype E L) product.
+  Proof. intros ??. induction 1. done. by simpl; f_equiv. Qed.
+  Global Instance product_proper E L:
+    Proper (Forall2 (eqtype E L) ==> eqtype E L) product.
+  Proof. intros ??. induction 1. done. by simpl; f_equiv. Qed.
+  (* FIXME : this instance is never going to be used, because Forall is
+     not a typeclass. *)
+  Global Instance product_copy tys : Forall Copy tys → Copy (product tys).
+  Proof. induction 1; apply _. Qed.
 End product.
 
 Arguments product : simpl never.
@@ -174,4 +182,14 @@ Section typing.
     unfold product. induction tyl1; simpl; last by f_equiv.
     induction tyl2. by rewrite left_id. by rewrite /= -assoc; f_equiv.
   Qed.
+
+  Lemma eqtype_prod_nil_flatten E L tyl1 tyl2 :
+    eqtype E L (Π(Π tyl1 :: tyl2)) (Π(tyl1 ++ tyl2)).
+  Proof. apply (eqtype_prod_flatten _ _ []). Qed.
+  Lemma eqtype_prod_flatten_nil E L tyl1 tyl2 :
+    eqtype E L (Π(tyl1 ++ [Π tyl2])) (Π(tyl1 ++ tyl2)).
+  Proof. by rewrite (eqtype_prod_flatten E L tyl1 tyl2 []) app_nil_r. Qed.
+  Lemma eqtype_prod_app E L tyl1 tyl2 :
+    eqtype E L (Π[Π tyl1; Π tyl2]) (Π(tyl1 ++ tyl2)).
+  Proof. by rewrite -eqtype_prod_flatten_nil -eqtype_prod_nil_flatten. Qed.
 End typing.
