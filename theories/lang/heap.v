@@ -226,10 +226,10 @@ Section heap.
         rewrite -!min_assoc min_idempotent min_comm -min_assoc min_idempotent min_comm. done. }
       iDestruct "Hown" as "[H Hown]". iDestruct "H" as %Hl. iExists (take ll vl1). iFrame.
       destruct (min_spec (length vl1) (length vl2)) as [[Hne Heq]|[Hne Heq]].
-      + iClear "HP2". rewrite firstn_all2; last first.
+      + iClear "HP2". rewrite take_ge; last first.
         { rewrite -Heq /ll. done. }
         rewrite drop_ge; first by rewrite app_nil_r. by rewrite -Heq.
-      + iClear "HP1". rewrite Hl firstn_all2; last first.
+      + iClear "HP1". rewrite Hl take_ge; last first.
         { rewrite -Heq /ll. done. }
         rewrite drop_ge; first by rewrite app_nil_r. by rewrite -Heq.
   Qed.
