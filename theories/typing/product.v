@@ -140,7 +140,8 @@ Section typing.
 
   Global Instance prod2_assoc E L : Assoc (eqtype E L) product2.
   Proof.
-    split; (split; simpl; [by rewrite assoc| |]; intros; iIntros "_ _ _ H").
+    split; (iIntros; (iSplit; first by rewrite /= assoc); iSplit; iAlways;
+            last iIntros (??); iIntros (??) "H").
     - iDestruct "H" as (vl1 vl') "(% & Ho1 & H)".
       iDestruct "H" as (vl2 vl3) "(% & Ho2 & Ho3)". subst.
       iExists _, _. iSplit. by rewrite assoc. iFrame. iExists _, _. by iFrame.
@@ -152,29 +153,32 @@ Section typing.
       iDestruct "H" as (vl2 vl3) "(% & Ho1 & Ho2)". subst.
       iExists _, _. iSplit. by rewrite -assoc. iFrame. iExists _, _. by iFrame.
     - iDestruct "H" as (E1' E3) "(% & H & Hs3)".
-      iDestruct "H" as (E1 E2) "(% & Hs1 & Hs2)". rewrite shift_loc_assoc_nat.
+      iDestruct "H" as (E1 E2) "(% & Hs1 & Hs2)". rewrite /= shift_loc_assoc_nat.
       iExists E1, (E2 ∪ E3). iSplit. by iPureIntro; set_solver. iFrame.
       iExists E2, E3. iSplit. by iPureIntro; set_solver. by iFrame.
   Qed.
 
   Global Instance prod2_unit_leftid E L : LeftId (eqtype E L) unit product2.
   Proof.
-    intros ty. split; (split; [done| |]); intros; iIntros "#LFT _ _ H".
+    intros ty. split; (iIntros; (iSplit; first done); iSplit; iAlways;
+                  last iIntros (??); iIntros (??) "H").
     - iDestruct "H" as (? ?) "(% & % & ?)". by subst.
     - iDestruct "H" as (? ?) "(% & ? & ?)". rewrite shift_loc_0.
-      iApply (ty_shr_mono with "LFT []"); last done. set_solver. iApply lft_incl_refl.
+      iApply (ty_shr_mono with "[] []"); [|done| | done].
+      set_solver. iApply lft_incl_refl.
     - iExists [], _. eauto.
-    - iExists ∅, F. rewrite shift_loc_0. iFrame. by iPureIntro; set_solver.
+    - iExists ∅, _. rewrite shift_loc_0. iFrame. by iPureIntro; set_solver.
   Qed.
 
   Global Instance prod2_unit_rightid E L : RightId (eqtype E L) unit product2.
   Proof.
-    intros ty. split; (split; [by rewrite /= -plus_n_O| |]); intros; iIntros "#LFT _ _ H".
+    intros ty. split; (iIntros; (iSplit; first by rewrite /= -plus_n_O); iSplit; iAlways;
+                  last iIntros (??); iIntros (??) "H").
     - iDestruct "H" as (? ?) "(% & ? & %)". subst. by rewrite app_nil_r.
     - iDestruct "H" as (? ?) "(% & ? & _)".
-      iApply (ty_shr_mono with "LFT []"); last done. set_solver. iApply lft_incl_refl.
+      iApply (ty_shr_mono with "[] []"); [|done| |done]. set_solver. iApply lft_incl_refl.
     - iExists _, []. rewrite app_nil_r. eauto.
-    - iExists F, ∅. iFrame. by iPureIntro; set_solver.
+    - iExists _, ∅. iFrame. by iPureIntro; set_solver.
   Qed.
 
   Lemma eqtype_prod_flatten E L tyl1 tyl2 tyl3 :
