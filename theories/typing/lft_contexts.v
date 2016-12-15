@@ -160,18 +160,18 @@ Section lft_contexts.
   (* Lifetime aliveness *)
 
   Definition lctx_lft_alive (κ : lft) : Prop :=
-    ∀ F qE qL, ⌜↑lftN ⊆ F⌝ -∗ elctx_interp E qE -∗ llctx_interp L qL ={F}=∗
+    ∀ F qE qL, ↑lftN ⊆ F → elctx_interp E qE -∗ llctx_interp L qL ={F}=∗
           ∃ q', q'.[κ] ∗ (q'.[κ] ={F}=∗ elctx_interp E qE ∗ llctx_interp L qL).
 
   Lemma lctx_lft_alive_static : lctx_lft_alive static.
   Proof.
-    iIntros (F qE qL) "%$$". iExists 1%Qp. iSplitL. by iApply lft_tok_static. auto.
+    iIntros (F qE qL ?) "$$". iExists 1%Qp. iSplitL. by iApply lft_tok_static. auto.
   Qed.
 
   Lemma lctx_lft_alive_local κ κs:
     (κ, κs) ∈ L → Forall lctx_lft_alive κs → lctx_lft_alive κ.
   Proof.
-    iIntros ([i HL]%elem_of_list_lookup_1 Hκs F qE qL) "% HE HL".
+    iIntros ([i HL]%elem_of_list_lookup_1 Hκs F qE qL ?) "HE HL".
     iDestruct "HL" as "[HL1 HL2]". rewrite {2}/llctx_interp /llctx_elt_interp.
     iDestruct (big_sepL_lookup_acc with "HL2") as "[Hκ Hclose]". done.
     iDestruct "Hκ" as (κ0) "(EQ & Htok & #Hend)". simpl. iDestruct "EQ" as %->.
@@ -182,7 +182,7 @@ Section lft_contexts.
       iInduction Hκs as [|κ κs Hκ ?] "IH" forall (qE qL').
       - iExists 1%Qp. iFrame. iSplitR; last by auto. iApply lft_tok_static.
       - iDestruct "HL1" as "[HL1 HL2]". iDestruct "HE" as "[HE1 HE2]".
-        iMod (Hκ with "* [%] HE1 HL1") as (q') "[Htok' Hclose]". done.
+        iMod (Hκ with "* HE1 HL1") as (q') "[Htok' Hclose]". done.
         iMod ("IH" with "* HE2 HL2") as (q'') "[Htok'' Hclose']".
         destruct (Qp_lower_bound q' q'') as (q0 & q'2 & q''2 & -> & ->).
         iExists q0. rewrite -lft_tok_sep. iDestruct "Htok'" as "[$ Hr']".
@@ -198,7 +198,7 @@ Section lft_contexts.
 
   Lemma lctx_lft_alive_external κ: ELCtx_Alive κ ∈ E → lctx_lft_alive κ.
   Proof.
-    iIntros ([i HE]%elem_of_list_lookup_1 F qE qL) "% HE $ !>".
+    iIntros ([i HE]%elem_of_list_lookup_1 F qE qL ?) "HE $ !>".
     rewrite /elctx_interp /elctx_elt_interp.
     iDestruct (big_sepL_lookup_acc with "HE") as "[Hκ Hclose]". done.
     iExists qE. iFrame. iIntros "?!>". by iApply "Hclose".
@@ -207,10 +207,10 @@ Section lft_contexts.
   Lemma lctx_lft_alive_incl κ κ':
     lctx_lft_alive κ → lctx_lft_incl κ κ' → lctx_lft_alive κ'.
   Proof.
-    iIntros (Hal Hinc F qE qL) "% HE HL".
+    iIntros (Hal Hinc F qE qL ?) "HE HL".
     iAssert (κ ⊑ κ')%I with "[#]" as "#Hincl". iApply (Hinc with "[HE] [HL]").
       by iApply elctx_interp_persist. by iApply llctx_interp_persist.
-    iMod (Hal with "[%] HE HL") as (q') "[Htok Hclose]". done.
+    iMod (Hal with "HE HL") as (q') "[Htok Hclose]". done.
     iMod (lft_incl_acc with "Hincl Htok") as (q'') "[Htok Hclose']". done.
     iExists q''. iIntros "{$Htok}!>Htok". iApply ("Hclose" with ">").
     by iApply "Hclose'".
@@ -232,7 +232,7 @@ Section lft_contexts.
     lctx_lft_alive κ → elctx_sat E' → elctx_sat (ELCtx_Alive κ :: E').
   Proof.
     iIntros (Hκ HE' qE qL F) "% [HE1 HE2] [HL1 HL2]".
-    iMod (Hκ with "[%] HE1 HL1") as (q) "[Htok Hclose]". done.
+    iMod (Hκ with "HE1 HL1") as (q) "[Htok Hclose]". done.
     iMod (HE' with "[%] HE2 HL2") as (q') "[HE' Hclose']". done.
     destruct (Qp_lower_bound q q') as (q0 & q2 & q'2 & -> & ->). iExists q0.
     rewrite {5 6}/elctx_interp big_sepL_cons /=.

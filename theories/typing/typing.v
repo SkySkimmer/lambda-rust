@@ -26,11 +26,9 @@ Section typing.
   Proof.
     intros C1 C2 HC T1 T2 HT e ? <-. iIntros "H".
     iIntros (tid qE) "#LFT HE HL HC HT".
-    iMod (HT with "LFT [#] [#] HT") as "HT".
-      by iApply elctx_interp_persist. by iApply llctx_interp_persist.
+    iMod (HT with "LFT HE HL HT") as "(HE & HL & HT)".
     iApply ("H" with "LFT HE HL [HC] HT").
-    iIntros "HE". iApply (HC with "LFT [#]").
-    by iApply elctx_interp_persist. by iApply "HC".
+    iIntros "HE". by iApply (HC with "LFT HC").
   Qed.
 
   (* TODO : good notations for [typed_step] and [typed_step_ty] ? *)

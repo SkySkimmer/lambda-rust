@@ -52,45 +52,44 @@ Section own.
                    ▷ freeable_sz n ty.(ty_size) l)%I;
        ty_shr κ tid E l :=
          (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ∗
-            □ (∀ F, ⌜E ∪ mgmtE ⊆ F⌝ ={F,F∖E∖↑lftN}▷=∗ ty.(ty_shr) κ tid E l' ∨ [†κ]))%I
+            □ (∀ F q, ⌜E ∪ mgmtE ⊆ F⌝ -∗ q.[κ] ={F,F∖E∖↑lftN}▷=∗ ty.(ty_shr) κ tid E l' ∗ q.[κ]))%I
     |}.
   Next Obligation.
     iIntros (q ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
   Qed.
   Next Obligation.
-    move=>n ty E N κ l tid ?? /=. iIntros "#LFT Hshr".
+    move=>n ty E N κ l tid ??? /=. iIntros "#LFT Hshr Htok".
     iMod (bor_exists with "LFT Hshr") as (vl) "Hb". set_solver.
     iMod (bor_sep with "LFT Hb") as "[Hb1 Hb2]". set_solver.
-    iMod (bor_exists with "LFT Hb2") as (l') "Hb2". set_solver. iExists l'.
+    iMod (bor_exists with "LFT Hb2") as (l') "Hb2". set_solver. 
     iMod (bor_sep with "LFT Hb2") as "[EQ Hb2]". set_solver.
-    iMod (bor_persistent with "LFT EQ") as "[>%|#H†]". set_solver.
-    - subst. rewrite heap_mapsto_vec_singleton.
-      iMod (bor_sep with "LFT Hb2") as "[Hb2 _]". set_solver.
-      iMod (bor_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "$". set_solver.
-      rewrite bor_unfold_idx. iDestruct "Hb2" as (i) "(#Hpb&Hpbown)".
-      iMod (inv_alloc N _ (idx_bor_own 1 i ∨ ty_shr ty κ tid (↑N) l')%I
-            with "[Hpbown]") as "#Hinv"; first by eauto.
-      iIntros "!>!#*%". iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
-      iDestruct "INV" as "[>Hbtok|#Hshr]".
-      + iMod (bor_later with "LFT [Hbtok]") as "Hb". set_solver.
-        { rewrite bor_unfold_idx. eauto. }
-        iModIntro. iNext. iMod "Hb". iLeft.
-        iMod (ty.(ty_share) with "LFT Hb") as "#$". done. set_solver.
-        iApply "Hclose". auto.
-      + iMod fupd_intro_mask' as "Hclose'"; last iModIntro. set_solver.
-        iNext. iMod "Hclose'" as "_". iMod ("Hclose" with "[]") as "_"; by eauto.
-    - iSplitL. by iApply (frac_bor_fake with "LFT"). iIntros "!>!#*_".
-      iApply step_fupd_intro. set_solver. auto.
+    iMod (bor_persistent_tok with "LFT EQ Htok") as "[>% Htok]". set_solver.
+    iFrame "Htok". iExists l'.
+    subst. rewrite heap_mapsto_vec_singleton.
+    iMod (bor_sep with "LFT Hb2") as "[Hb2 _]". set_solver.
+    iMod (bor_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "$". set_solver.
+    rewrite bor_unfold_idx. iDestruct "Hb2" as (i) "(#Hpb&Hpbown)".
+    iMod (inv_alloc N _ (idx_bor_own 1 i ∨ ty_shr ty κ tid (↑N) l')%I
+          with "[Hpbown]") as "#Hinv"; first by eauto.
+    iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
+    iDestruct "INV" as "[>Hbtok|#Hshr]".
+    - iMod (bor_later with "LFT [Hbtok]") as "Hb". set_solver.
+      { rewrite bor_unfold_idx. eauto. }
+      iModIntro. iNext. iMod "Hb".
+      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#$ Htok]". done. set_solver.
+      iFrame "Htok". iApply "Hclose". auto.
+    - iMod fupd_intro_mask' as "Hclose'"; last iModIntro. set_solver.
+      iNext. iMod "Hclose'" as "_". iMod ("Hclose" with "[]") as "_"; by eauto.
   Qed.
   Next Obligation.
     intros _ ty κ κ' tid E E' l ?. iIntros "#LFT #Hκ #H".
     iDestruct "H" as (l') "[Hfb #Hvs]".
-    iExists l'. iSplit. by iApply (frac_bor_shorten with "[]"). iIntros "!#*%".
+    iExists l'. iSplit. by iApply (frac_bor_shorten with "[]"). iIntros "!# *% Htok".
     iApply (step_fupd_mask_mono F _ _ (F∖E∖↑lftN)). set_solver. set_solver.
-    iMod ("Hvs" with "* [%]") as "Hvs'". set_solver. iModIntro. iNext.
-    iMod "Hvs'" as "[Hshr|H†]".
-    - iLeft. by iApply (ty.(ty_shr_mono) with "LFT Hκ").
-    - iRight. iApply (lft_incl_dead with "Hκ H†"). set_solver.
+    iMod (lft_incl_acc with "Hκ Htok") as (q') "[Htok Hclose]"; first set_solver.
+    iMod ("Hvs" with "* [%] Htok") as "Hvs'". set_solver. iModIntro. iNext.
+    iMod "Hvs'" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
+    by iApply (ty.(ty_shr_mono) with "LFT Hκ").
   Qed.
 
   Global Instance own_mono E L n :
@@ -106,10 +105,9 @@ Section own.
       iDestruct (ty_size_eq with "Hown") as %<-. iFrame.
       iExists _. by iFrame.
     - iIntros (????) "H". iDestruct "H" as (l') "[Hfb #Hvs]".
-      iExists l'. iFrame. iIntros "!#". iIntros (F') "%".
-      iMod ("Hvs" with "* [%]") as "Hvs'". done. iModIntro. iNext.
-      iMod "Hvs'" as "[Hshr|H†]"; last by auto.
-      iLeft. iApply ("Hs" with "Hshr").
+      iExists l'. iFrame. iIntros "!#". iIntros (F' q) "% Htok".
+      iMod ("Hvs" with "* [%] Htok") as "Hvs'". done. iModIntro. iNext.
+      iMod "Hvs'" as "[Hshr $]". iApply ("Hs" with "Hshr").
   Qed.
 
   Global Instance own_proper E L n :

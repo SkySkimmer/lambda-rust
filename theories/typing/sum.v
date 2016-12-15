@@ -1,4 +1,5 @@
 From iris.proofmode Require Import tactics.
+From iris.base_logic Require Import fractional.
 From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.typing Require Export type.
 From lrust.typing Require Import type_incl.
@@ -8,20 +9,42 @@ Section sum.
 
   Local Obligation Tactic := idtac.
 
-  Program Definition emp : type := {| st_own tid vl := False%I |}.
+  Program Definition emp : type :=
+    {| ty_size := 1%nat;
+       ty_own tid vl := False%I;
+       ty_shr κ tid N l := False%I |}.
   Next Obligation. iIntros (tid vl) "[]". Qed.
+  Next Obligation.
+    iIntros (E N κ l tid ???) "#LFT Hown Htok".
+    iMod (bor_acc with "LFT Hown Htok") as "[>H _]"; first done.
+    iDestruct "H" as (?) "[_ []]".
+  Qed.
+  Next Obligation.
+    iIntros (κ κ' tid E E' l ?) "#LFT #Hord []".
+  Qed.
+
   Global Instance emp_empty : Empty type := emp.
 
+  Global Instance emp_copy : Copy ∅.
+  Proof.
+    split; first by apply _.
+    iIntros (???????) "? []".
+  Qed.
+
   Definition list_max (l : list nat) := foldr max 0%nat l.
+
+  Definition is_pad i tyl (vl : list val) : iProp Σ :=
+    ⌜((nth i tyl ∅).(ty_size) + length vl)%nat =
+                                         (list_max $ map ty_size $ tyl)⌝%I.
 
   Lemma split_sum_mt l tid q tyl :
     (l ↦∗{q}: λ vl,
          ∃ (i : nat) vl' vl'', ⌜vl = #i :: vl' ++ vl''⌝ ∗
                                ⌜length vl = S (list_max $ map ty_size $ tyl)⌝ ∗
                                ty_own (nth i tyl ∅) tid vl')%I
-    ⊣⊢ ∃ (i : nat), l ↦{q} #i ∗ shift_loc l 1 ↦∗{q}: (nth i tyl ∅).(ty_own) tid ∗
-                     shift_loc l (S $ (nth i tyl ∅).(ty_size)) ↦∗{q}: λ vl,
-                       ⌜((nth i tyl ∅).(ty_size) + length vl)%nat = (list_max $ map ty_size $ tyl)⌝.
+    ⊣⊢ ∃ (i : nat), (l ↦{q} #i ∗
+                       shift_loc l (S $ (nth i tyl ∅).(ty_size)) ↦∗{q}: is_pad i tyl) ∗
+                              shift_loc l 1 ↦∗{q}: (nth i tyl ∅).(ty_own) tid.
   Proof.
     iSplit; iIntros "H".
     - iDestruct "H" as (vl) "[Hmt Hown]". iDestruct "Hown" as (i vl' vl'') "(% & % & Hown)".
@@ -29,11 +52,11 @@ Section sum.
       (* TODO: I should not have to say '[#]' here, similar to iDestruct ... as %.... *)
       iAssert (⌜length vl' = (nth i tyl ∅).(ty_size)⌝%I) with "[#]" as %Hvl'.
       { iApply ty_size_eq. done. }
-      iDestruct (heap_mapsto_vec_app with "Hmt") as "[Hmt Htail]". iSplitR "Htail".
-      + iExists vl'. by iFrame.
+      iDestruct (heap_mapsto_vec_app with "Hmt") as "[Hmt Htail]". iSplitL "Htail".
       + iExists vl''. rewrite (shift_loc_assoc_nat _ 1) Hvl'. iFrame. iPureIntro.
         rewrite -Hvl'. simpl in *. rewrite -app_length. congruence.
-    - iDestruct "H" as (i) "(Hmt1 & Hown & Htail)".
+      + iExists vl'. by iFrame.
+    - iDestruct "H" as (i) "[[Hmt1 Htail] Hown]".
       iDestruct "Hown" as (vl') "[Hmt2 Hown]". iDestruct "Htail" as (vl'') "[Hmt3 %]".
       (* TODO: I should not have to say '[#]' here, similar to iDestruct ... as %.... *)
       iAssert (⌜length vl' = (nth i tyl ∅).(ty_size)⌝%I) with "[#]" as %Hvl'.
@@ -50,39 +73,36 @@ Section sum.
                                 ⌜length vl = S (list_max $ map ty_size $ tyl)⌝ ∗
                                 (nth i tyl ∅).(ty_own) tid vl')%I;
        ty_shr κ tid N l :=
-         (∃ (i : nat), (&frac{κ} λ q, l ↦{q} #i) ∗
-               (nth i tyl ∅).(ty_shr) κ tid N (shift_loc l 1) ∗
-               (&frac{κ} λ q, shift_loc l (S $ (nth i tyl ∅).(ty_size)) ↦∗{q}: λ vl,
-                       ⌜((nth i tyl ∅).(ty_size) + length vl)%nat = (list_max $ map ty_size $ tyl)⌝))%I
+         (∃ (i : nat),
+             (&frac{κ} λ q, l ↦{q} #i ∗
+                       shift_loc l (S $ (nth i tyl ∅).(ty_size)) ↦∗{q}: is_pad i tyl) ∗
+               (nth i tyl ∅).(ty_shr) κ tid N (shift_loc l 1))%I
     |}.
   Next Obligation.
     iIntros (tyl tid vl) "Hown". iDestruct "Hown" as (i vl' vl'') "(%&%&_)".
     subst. done.
   Qed.
   Next Obligation.
-    intros tyl E N κ l tid ??. iIntros "#LFT Hown". rewrite split_sum_mt.
+    intros tyl E N κ l tid. iIntros (???) "#LFT Hown Htok". rewrite split_sum_mt.
     iMod (bor_exists with "LFT Hown") as (i) "Hown". set_solver.
     iMod (bor_sep with "LFT Hown") as "[Hmt Hown]". solve_ndisj.
-    iMod (bor_sep with "LFT Hown") as "[Hown Htail]". solve_ndisj.
-    iMod ((nth i tyl ∅).(ty_share) with "LFT Hown") as "#Hshr"; try done.
-    iMod (bor_fracture with "LFT [Htail]") as "H";[set_solver| |]; last first.
-    - iMod (bor_fracture with "LFT [Hmt]") as "H'";[set_solver| |]; last eauto.
+    (* FIXME: Why can't I directly frame Htok in the destruct after the following mod? *)
+    iMod ((nth i tyl ∅).(ty_share) with "LFT Hown Htok") as "[#Hshr Htok]"; try done.
+    iFrame "Htok". iMod (bor_fracture with "LFT [Hmt]") as "H'";[set_solver| |]; last eauto.
       by iFrame.
-    - by iFrame.
   Qed.
   Next Obligation.
-    intros tyl κ κ' tid E E' l ?. iIntros "#LFT #Hord H".
-    iDestruct "H" as (i) "[Hown0 [Hown Htail]]". iExists i.
-    iSplitL "Hown0"; last iSplitL "Hown".
+    iIntros (tyl κ κ' tid E E' l ?) "#LFT #Hord H".
+    iDestruct "H" as (i) "[Hown0 Hown]". iExists i.
+    iSplitL "Hown0".
     - by iApply (frac_bor_shorten with "Hord").
     - iApply ((nth i tyl ∅).(ty_shr_mono) with "LFT Hord"); last done. done.
-    - by iApply (frac_bor_shorten with "Hord").
   Qed.
 
-  Global Instance sum_mono E L:
+  Global Instance sum_mono E L :
     Proper (Forall2 (subtype E L) ==> subtype E L) sum.
   Proof.
-    intros tyl1 tyl2 Htyl. iIntros "#LFT #? %".
+    iIntros (tyl1 tyl2 Htyl) "#LFT #? %".
     iAssert (⌜list_max (map ty_size tyl1) = list_max (map ty_size tyl2)⌝%I) with "[#]" as %Hleq.
     { iInduction Htyl as [|???? Hsub] "IH"; first done.
       iDestruct (Hsub with "LFT [] []") as "(% & _ & _)"; [done..|].
@@ -100,18 +120,34 @@ Section sum.
       iExists i, vl', vl''. iSplit; first done.
       iSplit; first by rewrite -Hleq.
       iDestruct ("Hty" $! i) as "(_ & #Htyi & _)". by iApply "Htyi".
-    - iIntros (κ tid F l) "H". iDestruct "H" as (i) "(Hmt & Hshr & Htail)".
-      iExists i. iFrame "Hmt". iSplitL "Hshr".
-      + iDestruct ("Hty" $! i) as "(_ & _ & #Htyi)". by iApply "Htyi".
-      + rewrite -Hleq. iDestruct ("Hty" $! i) as "(Hlen & _)".
+    - iIntros (κ tid F l) "H". iDestruct "H" as (i) "(Hmt & Hshr)".
+      iExists i. iSplitR "Hshr".
+      + rewrite /is_pad -Hleq. iDestruct ("Hty" $! i) as "(Hlen & _)".
         iDestruct "Hlen" as %<-. done.
+      + iDestruct ("Hty" $! i) as "(_ & _ & #Htyi)". by iApply "Htyi".
   Qed.
 
-  Global Instance sum_proper E L:
+  Global Instance sum_proper E L :
     Proper (Forall2 (eqtype E L) ==> eqtype E L) sum.
   Proof.
     intros tyl1 tyl2 Heq; split; eapply sum_mono; [|rewrite -Forall2_flip];
       (eapply Forall2_impl; [done|by intros ?? []]).
+  Qed.
+
+  Lemma nth_empty {A : Type} i (d : A) :
+    nth i [] d = d.
+  Proof. by destruct i. Qed.
+
+  Lemma emp_sum E L :
+    eqtype E L emp (sum []).
+  Proof.
+    split; (iIntros; iSplit; first done; iSplit; iAlways).
+    - iIntros (??) "[]".
+    - iIntros (κ tid F l) "[]".
+    - iIntros (??) "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)".
+      rewrite nth_empty. by iDestruct "Hown" as "[]".
+    - iIntros (????) "H". iDestruct "H" as (i) "(_ & Hshr)".
+      rewrite nth_empty. by iDestruct "Hshr" as "[]".
   Qed.
 
   Global Instance sum_copy tyl: LstCopy tyl → Copy (sum tyl).
@@ -122,28 +158,24 @@ Section sum.
       intros. apply @copy_persistent. edestruct nth_in_or_default as [| ->];
                                         [by eapply List.Forall_forall| apply _].
     - intros κ tid E F l q ?.
-      iIntros "#LFT #H[[Htok1 [Htok2 Htok3]] Htl]".
-      setoid_rewrite split_sum_mt. iDestruct "H" as (i) "[Hshr0 [Hshr Hshrtail]]".
+      iIntros "#LFT #H[[Htok1 Htok2] Htl]".
+      setoid_rewrite split_sum_mt. iDestruct "H" as (i) "[Hshr0 Hshr]".
       iMod (frac_bor_acc with "LFT Hshr0 Htok1") as (q'1) "[Hown Hclose]". set_solver.
-      iMod (frac_bor_acc with "LFT Hshrtail Htok2") as (q'2) "[Htail Hclose']". set_solver.
-      iMod (@copy_shr_acc _ _ (nth i tyl ∅) with "LFT Hshr [Htok3 $Htl]")
-        as (q'3) "[Hownq Hclose'']"; try done.
+      iMod (@copy_shr_acc _ _ (nth i tyl ∅) with "LFT Hshr [Htok2 $Htl]")
+        as (q'2) "[HownC Hclose']"; try done.
       { edestruct nth_in_or_default as [| ->]; last by apply _.
           by eapply List.Forall_forall. }
-      destruct (Qp_lower_bound q'1 q'2) as (q'0 & q'01 & q'02 & -> & ->).
-      destruct (Qp_lower_bound q'0 q'3) as (q' & q'11 & q'12 & -> & ->).
-      rewrite -(heap_mapsto_vec_prop_op _ q' q'12); last (by intros; apply ty_size_eq).
-      rewrite -!Qp_plus_assoc.
-      rewrite -(heap_mapsto_vec_prop_op _ q' (q'11 + q'02)
-            (list_max (map ty_size tyl) - (ty_size (nth i tyl ∅)))%nat); last first.
-      { intros. iIntros (<-). iPureIntro. by rewrite minus_plus. }
-      iDestruct "Hownq" as "[Hownq1 Hownq2]". iDestruct "Hown" as "[Hown1 >Hown2]".
-      iDestruct "Htail" as "[Htail1 Htail2]".
-      iExists q'. iModIntro. iSplitL "Hown1 Hownq1 Htail1".
-      + iNext. iExists i. by iFrame.
-      + iIntros "H". iDestruct "H" as (i') "[>Hown1 [Hownq1 Htail1]]".
-        iDestruct (heap_mapsto_agree with "[$Hown1 $Hown2]") as %[= ->%Z_of_nat_inj].
-        iMod ("Hclose''" with "[$Hownq1 $Hownq2]"). iMod ("Hclose'" with "[$Htail1 $Htail2]").
+      destruct (Qp_lower_bound q'1 q'2) as (q' & q'01 & q'02 & -> & ->).
+      rewrite -(heap_mapsto_vec_prop_op _ q' q'02); last (by intros; apply ty_size_eq).
+      rewrite (fractional (Φ := λ q, _ ↦{q} _ ∗ _ ↦∗{q}: _)%I).
+      iDestruct "HownC" as "[HownC1 HownC2]". iDestruct "Hown" as "[Hown1 >Hown2]".
+      iExists q'. iModIntro. iSplitL "Hown1 HownC1".
+      + iNext. iExists i. iFrame.
+      + iIntros "H". iDestruct "H" as (i') "[>Hown1 HownC1]".
+        iDestruct (heap_mapsto_agree with "[Hown1 Hown2]") as "#Heq".
+        { iDestruct "Hown1" as "[$ _]". iDestruct "Hown2" as "[$ _]". }
+        iDestruct "Heq" as %[= ->%Z_of_nat_inj].
+        iMod ("Hclose'" with "[$HownC1 $HownC2]").
         iMod ("Hclose" with "[$Hown1 $Hown2]") as "$". by iFrame.
   Qed.
 End sum.

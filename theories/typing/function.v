@@ -12,8 +12,8 @@ Section fn.
           (tys : A → vec type n) (ty : A → type) : type :=
     {| st_own tid vl := (∃ f, ⌜vl = [f]⌝ ∗ □ ∀ (x : A) (args : vec val n) (k : val),
          typed_body (E x) []
-                    [CctxElt k [] 1 (λ v, [TCtx_holds (v!!!0) (ty x)])]
-                    (zip_with (TCtx_holds ∘ of_val) args (tys x))
+                    [CctxElt k [] 1 (λ v, [TCtx_hasty (v!!!0) (ty x)])]
+                    (zip_with (TCtx_hasty ∘ of_val) args (tys x))
                     (f (of_val <$> (args : list val))))%I |}.
   Next Obligation.
     iIntros (A n E tys ty tid vl) "H". iDestruct "H" as (f) "[% _]". by subst.
@@ -34,8 +34,11 @@ Section fn.
       iSpecialize ("HC" with "HE"). unfold cctx_elt_interp.
       iApply ("HC" $! (CctxElt _ _ _ _) with "[%] * HL >").
         by apply elem_of_list_singleton.
-      iApply (subtype_tctx_incl with "LFT [HE0] HL0 HT"). by apply Hty.
-      rewrite /elctx_interp_0 big_sepL_app. by iSplit.
+      rewrite /tctx_interp !big_sepL_singleton /=.
+      iDestruct "HT" as (v) "[HP Hown]". iExists v. iFrame "HP".
+      iDestruct (Hty x with "LFT [HE0 HE'] HL0") as "(_ & #Hty & _)".
+      { rewrite /elctx_interp_0 big_sepL_app. by iSplit. }
+      by iApply "Hty".
     - rewrite /tctx_interp
          -(fst_zip (tys1 x) (tys2 x)) ?vec_to_list_length //
          -{1}(snd_zip (tys1 x) (tys2 x)) ?vec_to_list_length //

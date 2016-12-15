@@ -34,35 +34,37 @@ Section cont_context.
   Qed.
 
   Definition cctx_incl (E : elctx) (C1 C2 : cctx): Prop :=
-    ∀ tid, lft_ctx -∗ elctx_interp_0 E -∗
-               cctx_interp tid C1 -∗ cctx_interp tid C2.
+    ∀ tid q, lft_ctx -∗ (elctx_interp E q -∗ cctx_interp tid C1) -∗
+                        (elctx_interp E q -∗ cctx_interp tid C2).
 
   Global Instance cctx_incl_preorder E : PreOrder (cctx_incl E).
   Proof.
     split.
-    - iIntros (??) "_ _ $".
-    - iIntros (??? H1 H2 ?) "#LFT #HE H".
-      iApply (H2 with "LFT HE"). by iApply (H1 with "LFT HE").
+    - iIntros (???) "_ $".
+    - iIntros (??? H1 H2 ??) "#LFT HE".
+      iApply (H2 with "LFT"). by iApply (H1 with "LFT").
   Qed.
 
   Lemma incl_cctx_incl E C1 C2 : C1 ⊆ C2 → cctx_incl E C2 C1.
   Proof.
-    rewrite /cctx_incl /cctx_interp. iIntros (HC1C2 tid) "_ _ H * %".
-    iApply ("H" with "* [%]"). by apply HC1C2.
+    rewrite /cctx_incl /cctx_interp. iIntros (HC1C2 tid ?) "_ H HE * %".
+    iApply ("H" with "HE * [%]"). by apply HC1C2.
   Qed.
 
   Lemma cctx_incl_cons E k L n T1 T2 C1 C2:
     cctx_incl E C1 C2 → (∀ args, tctx_incl E L (T2 args) (T1 args)) →
     cctx_incl E (CctxElt k L n T1 :: C1) (CctxElt k L n T2 :: C2).
   Proof.
-    iIntros (HC1C2 HT1T2 ?) "#LFT #HE H". rewrite /cctx_interp.
+    iIntros (HC1C2 HT1T2 ??) "#LFT H HE". rewrite /cctx_interp.
     iIntros (x) "Hin". iDestruct "Hin" as %[->|Hin]%elem_of_cons.
-    - iIntros (args) "HL' HT".
-      iDestruct (llctx_interp_persist with "HL'") as "#HL".
-      iMod (HT1T2 with "LFT HE HL HT") as "HT".
-      iApply ("H" $! (CctxElt _ _ _ _) with "[%] * HL' HT").
-        by apply elem_of_cons; auto.
-    - iApply (HC1C2 with "LFT HE [H] * [%]"); last done.
-      iIntros (x') "%". iApply ("H" with "[%]"). by apply elem_of_cons; auto.
+    - iIntros (args) "HL HT".
+      iMod (HT1T2 with "LFT HE HL HT") as "(HE & HL & HT)".
+      iSpecialize ("H" with "HE").
+      iApply ("H" $! (CctxElt _ _ _ _) with "[%] * HL HT").
+      constructor.
+    - iApply (HC1C2 with "LFT [H] HE * [%]"); last done.
+      iIntros "HE". iIntros (x') "%".
+      (* FIXME: If specialize follows by apply works, why does doing both in one apply loop? *)
+      iSpecialize ("H" with "HE"). iApply ("H" with "[%]"). by apply elem_of_cons; auto.
   Qed.
 End cont_context.
