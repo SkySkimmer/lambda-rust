@@ -46,6 +46,12 @@ Section na_bor.
     iApply (idx_bor_shorten with "Hκκ' H").
   Qed.
 
+  Lemma na_bor_fake E κ: ↑lftN ⊆ E → lft_ctx -∗ [†κ] ={E}=∗ &na{κ,tid,N}P.
+  Proof.
+    iIntros (?) "#LFT#H†". iApply (bor_na with ">"). done.
+    by iApply (bor_fake with "LFT H†").
+  Qed.
+
 End na_bor.
 
 Typeclasses Opaque na_bor.
