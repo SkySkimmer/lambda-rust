@@ -105,7 +105,7 @@ Section typing.
 
   Lemma tctx_borrow E L p n ty κ :
     tctx_incl E L [TCtx_hasty p (own n ty)]
-                  [TCtx_hasty p (&uniq{κ}ty); TCtx_guarded p κ (own n ty)].
+                  [TCtx_hasty p (&uniq{κ}ty); TCtx_blocked p κ (own n ty)].
   Proof.
     iIntros (tid ??) "#LFT $ $ H".
     rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
@@ -120,7 +120,7 @@ Section typing.
   Lemma tctx_reborrow_uniq E L p ty κ κ' :
     lctx_lft_incl E L κ' κ →
     tctx_incl E L [TCtx_hasty p (&uniq{κ}ty)]
-                  [TCtx_hasty p (&uniq{κ'}ty); TCtx_guarded p κ (&uniq{κ}ty)].
+                  [TCtx_hasty p (&uniq{κ'}ty); TCtx_blocked p κ (&uniq{κ}ty)].
   Proof.
     iIntros (Hκκ' tid ??) "#LFT HE HL H".
     iDestruct (elctx_interp_persist with "HE") as "#HE'".

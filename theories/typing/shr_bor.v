@@ -55,7 +55,7 @@ Section typing.
   Lemma tctx_reborrow_shr E L p ty κ κ' :
     lctx_lft_incl E L κ' κ →
     tctx_incl E L [TCtx_hasty p (&shr{κ}ty)]
-                  [TCtx_hasty p (&shr{κ'}ty); TCtx_guarded p κ (&shr{κ}ty)].
+                  [TCtx_hasty p (&shr{κ'}ty); TCtx_blocked p κ (&shr{κ}ty)].
   Proof.
     iIntros (Hκκ' tid ??) "#LFT HE HL H".
     iDestruct (elctx_interp_persist with "HE") as "#HE'".

@@ -21,13 +21,13 @@ Section type_context.
 
   Inductive tctx_elt : Type :=
   | TCtx_hasty (p : path) (ty : type)
-  | TCtx_guarded (p : path) (κ : lft) (ty : type).
+  | TCtx_blocked (p : path) (κ : lft) (ty : type).
   Definition tctx := list tctx_elt.
 
   Definition tctx_elt_interp (tid : thread_id) (x : tctx_elt) : iProp Σ :=
     match x with
     | TCtx_hasty p ty => ∃ v, ⌜eval_path p = Some v⌝ ∗ ty.(ty_own) tid [v]
-    | TCtx_guarded p κ ty => ∃ v, ⌜eval_path p = Some v⌝ ∗
+    | TCtx_blocked p κ ty => ∃ v, ⌜eval_path p = Some v⌝ ∗
                              ([†κ] ={⊤}=∗ ▷ ty.(ty_own) tid [v])
     end%I.
   Definition tctx_interp (tid : thread_id) (T : tctx) : iProp Σ :=
@@ -83,7 +83,7 @@ Section type_context.
 
   Definition deguard_tctx_elt κ x :=
     match x with
-    | TCtx_guarded p κ' ty =>
+    | TCtx_blocked p κ' ty =>
       if decide (κ = κ') then TCtx_hasty p ty else x
     | _ => x
     end.
