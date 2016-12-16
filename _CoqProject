@@ -39,3 +39,4 @@ theories/typing/sum.v
 theories/typing/bool.v
 theories/typing/int.v
 theories/typing/function.v
+theories/typing/mem_instructions.v

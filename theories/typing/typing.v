@@ -6,6 +6,8 @@ From lrust.typing Require Import perm lft_contexts type_context cont_context.
 From lrust.lang Require Import proofmode.
 From lrust.lifetime Require Import frac_borrow reborrow borrow creation.
 
+(* TODO: Split this file into instructions.v and body.v. *)
+
 Section typing.
   Context `{typeG Σ}.
 

@@ -1,5 +1,5 @@
 From iris.base_logic.lib Require Export na_invariants.
-From lrust.lang Require Import heap.
+From lrust.lang Require Export proofmode notation.
 From lrust.lifetime Require Import borrow frac_borrow reborrow.
 From lrust.typing Require Import lft_contexts.
 

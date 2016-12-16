@@ -3,7 +3,7 @@ From iris.base_logic Require Import big_op.
 From lrust.lifetime Require Import borrow reborrow frac_borrow.
 From lrust.lang Require Import heap.
 From lrust.typing Require Export type.
-From lrust.typing Require Import perm lft_contexts type_context typing own.
+From lrust.typing Require Import lft_contexts type_context shr_bor perm typing.
 
 Section uniq_bor.
   Context `{typeG Σ}.
@@ -106,18 +106,18 @@ Notation "&uniq{ κ } ty" := (uniq_bor κ ty)
 Section typing.
   Context `{typeG Σ}.
 
-  Lemma tctx_borrow E L p n ty κ :
-    tctx_incl E L [TCtx_hasty p (own n ty)]
-                  [TCtx_hasty p (&uniq{κ}ty); TCtx_blocked p κ (own n ty)].
+  Lemma tctx_incl_share E L p κ ty :
+    lctx_lft_alive E L κ → tctx_incl E L [TCtx_hasty p (&uniq{κ}ty)] [TCtx_hasty p (&shr{κ}ty)].
   Proof.
-    iIntros (tid ??) "#LFT $ $ H".
-    rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
-    iDestruct "H" as (v) "[% Hown]". iDestruct "Hown" as (l) "(EQ & Hmt & ?)".
-    iDestruct "EQ" as %[=->]. iMod (bor_create with "LFT Hmt") as "[Hbor Hext]". done.
-    iModIntro. iSplitL "Hbor".
-    - iExists _. iSplit. done. iExists _, _. erewrite <-uPred.iff_refl. eauto.
-    - iExists _. iSplit. done. iIntros "H†". iExists _. iFrame. iSplitR. by eauto.
-        by iMod ("Hext" with "H†") as "$".
+    iIntros (Hκ ???) "#LFT HE HL Huniq".
+    iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; [try done..|].
+    rewrite /tctx_interp !big_sepL_singleton /=.
+    iDestruct "Huniq" as (v) "[% Huniq]". 
+    iDestruct "Huniq" as (l P) "[[% #HPiff] HP]".
+    iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
+    iMod (ty.(ty_share) with "LFT H↦ Htok") as "[Hown Htok]"; [solve_ndisj|].
+    iMod ("Hclose" with "Htok") as "[$ $]". iExists _. iFrame "%".
+    iIntros "!>/=". eauto.
   Qed.
 
   Lemma tctx_reborrow_uniq E L p ty κ κ' :
@@ -157,58 +157,6 @@ Section typing.
     iMod ("Hclose'" with "[H↦]") as "[H↦ Htok]". by iExists _; iFrame.
     iMod ("Hclose" with "Htok") as "$". rewrite /has_type Hνv.
     iExists _, _. erewrite <-uPred.iff_refl. auto.
-  Qed.
-
-  Lemma typed_deref_uniq_bor_own ty ν κ κ' q q':
-    typed_step (ν ◁ &uniq{κ} own q' ty ∗ κ' ⊑ κ ∗ q.[κ'])
-               (!ν)
-               (λ v, v ◁ &uniq{κ} ty ∗ κ' ⊑ κ ∗ q.[κ'])%P.
-  Proof.
-    iIntros (tid) "!#(#HEAP & #LFT & (H◁ & #H⊑ & Htok) & $)". wp_bind ν.
-    iApply (has_type_wp with "H◁"). iIntros (v) "Hνv H◁!>". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l P) "[[Heq #HPiff] HP]".
-    iDestruct "Heq" as %[=->].
-    iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
-    iMod (lft_incl_acc with "H⊑ Htok") as (q'') "[Htok Hclose]". done.
-    iMod (bor_acc_cons with "LFT H↦ Htok") as "[H↦ Hclose']". done.
-    iDestruct "H↦" as (vl) "[>H↦ Hown]". iDestruct "Hown" as (l') "(>% & Hown & H†)".
-    subst. rewrite heap_mapsto_vec_singleton. wp_read.
-    iMod ("Hclose'" with "*[H↦ Hown H†][]") as "[Hbor Htok]"; last 1 first.
-    - iMod (bor_sep with "LFT Hbor") as "[_ Hbor]". done.
-      iMod (bor_sep _ _ _ (l' ↦∗: ty_own ty tid) with "LFT Hbor") as "[_ Hbor]". done.
-      iMod ("Hclose" with "Htok") as "$". iFrame "#". iExists _, _.
-      iFrame. iSplitR. done. by rewrite -uPred.iff_refl.
-    - iFrame "H↦ H† Hown".
-    - iIntros "!>(?&?&?)!>". iNext. iExists _.
-      rewrite -heap_mapsto_vec_singleton. iFrame. iExists _. by iFrame.
-  Qed.
-
-  Lemma typed_deref_uniq_bor_bor ty ν κ κ' κ'' q:
-    typed_step (ν ◁ &uniq{κ'} &uniq{κ''} ty ∗ κ ⊑ κ' ∗ q.[κ] ∗ κ' ⊑ κ'')
-               (!ν)
-               (λ v, v ◁ &uniq{κ'} ty ∗ κ ⊑ κ' ∗ q.[κ])%P.
-  Proof.
-    iIntros (tid) "!#(#HEAP & #LFT & (H◁ & #H⊑1 & Htok & #H⊑2) & $)". wp_bind ν.
-    iApply (has_type_wp with "H◁"). iIntros (v) "Hνv H◁!>". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l P) "[[Heq #HPiff] HP]".
-    iDestruct "Heq" as %[=->].
-    iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
-    iMod (lft_incl_acc with "H⊑1 Htok") as (q'') "[Htok Hclose]". done.
-    iMod (bor_exists with "LFT H↦") as (vl) "Hbor". done.
-    iMod (bor_sep with "LFT Hbor") as "[H↦ Hbor]". done.
-    iMod (bor_exists with "LFT Hbor") as (l') "Hbor". done.
-    iMod (bor_exists with "LFT Hbor") as (P') "Hbor". done.
-    iMod (bor_sep with "LFT Hbor") as "[H Hbor]". done.
-    iMod (bor_persistent_tok with "LFT H Htok") as "[[>% #HP'iff] Htok]". done. subst.
-    iMod (bor_acc with "LFT H↦ Htok") as "[>H↦ Hclose']". done.
-    rewrite heap_mapsto_vec_singleton.
-    iApply (wp_fupd_step  _ (⊤∖↑lftN) with "[Hbor]"); try done.
-      by iApply (bor_unnest with "LFT Hbor").
-    wp_read. iIntros "!> Hbor". iFrame "#". iSplitL "Hbor".
-    - iExists _, _. iSplitR. by auto.
-      iApply (bor_shorten with "[] Hbor").
-      iApply (lft_incl_glb with "H⊑2"). iApply lft_incl_refl.
-    - iApply ("Hclose" with ">"). by iMod ("Hclose'" with "[$H↦]") as "[_ $]".
   Qed.
 
   Lemma update_weak ty q κ κ':

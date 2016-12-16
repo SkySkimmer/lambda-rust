@@ -1,7 +1,6 @@
 From iris.proofmode Require Import tactics.
 From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.typing Require Export type.
-From lrust.typing Require Import perm.
 
 Section product.
   Context `{typeG Σ}.
