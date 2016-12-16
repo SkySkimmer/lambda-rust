@@ -64,7 +64,6 @@ Section cont_context.
       constructor.
     - iApply (HC1C2 with "LFT [H] HE * [%]"); last done.
       iIntros "HE". iIntros (x') "%".
-      (* FIXME: If specialize follows by apply works, why does doing both in one apply loop? *)
-      iSpecialize ("H" with "HE"). iApply ("H" with "[%]"). by apply elem_of_cons; auto.
+      iApply ("H" with "HE * [%]"). by apply elem_of_cons; auto.
   Qed.
 End cont_context.
