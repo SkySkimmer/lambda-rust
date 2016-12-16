@@ -30,11 +30,15 @@ Section type.
          namespace N, for allowing more flexibility for the user of
          this type (typically for the [own] type). AFAIK, there is no
          fundamental reason for this.
-
          This should not be harmful, since sharing typically creates
          invariants, which does not need the mask.  Moreover, it is
          more consistent with thread-local tokens, which we do not
-         give any. *)
+         give any.
+ 
+         The lifetime token is needed (a) to make the definition of simple types
+         nicer (they would otherwise require a "∨ □|=>[†κ]"), and (b) so that
+         we can have emp == sum [].
+       *)
       ty_share E N κ l tid q : mgmtE ⊥ ↑N → mgmtE ⊆ E →
         lft_ctx -∗ &{κ} (l ↦∗: ty_own tid) -∗ q.[κ] ={E}=∗
         ty_shr κ tid (↑N) l ∗ q.[κ];
