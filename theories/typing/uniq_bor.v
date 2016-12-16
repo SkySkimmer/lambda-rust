@@ -8,6 +8,8 @@ From lrust.typing Require Import perm lft_contexts type_context typing own.
 Section uniq_bor.
   Context `{typeG Σ}.
 
+  Local Hint Extern 1000 (_ ⊆ _) => set_solver : ndisj.
+
   Program Definition uniq_bor (κ:lft) (ty:type) :=
     {| ty_size := 1;
        (* We quantify over [P]s so that the Proper lemma
@@ -38,15 +40,12 @@ Section uniq_bor.
           with "[Hpbown]") as "#Hinv"; first by eauto.
     iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
-    - iMod (bor_unnest _ _ _ P with "LFT [Hbtok]") as "Hb".
-      { apply ndisj_subseteq_difference. solve_ndisj. set_solver. } (* FIXME: some tactic should solve this in one go. *)
+    - iMod (bor_unnest _ _ _ P with "LFT [Hbtok]") as "Hb". solve_ndisj.
       { iApply bor_unfold_idx. eauto. }
       iModIntro. iNext. iMod "Hb".
-      iMod (bor_iff with "LFT [] Hb") as "Hb". 
-      { apply ndisj_subseteq_difference. solve_ndisj. set_solver. } (* FIXME: some tactic should solve this in one go. *)
+      iMod (bor_iff with "LFT [] Hb") as "Hb". solve_ndisj.
       { by eauto. }
-      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#Hshr $]".
-      { apply ndisj_subseteq_difference. solve_ndisj. set_solver. } (* FIXME: some tactic should solve this in one go. *)
+      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#Hshr $]". solve_ndisj.
       iMod ("Hclose" with "[]") as "_"; auto.
     - iMod ("Hclose" with "[]") as "_". by eauto.
       iApply step_fupd_intro. set_solver. auto.
