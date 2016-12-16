@@ -1,8 +1,7 @@
 From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import fractional.
 From lrust.lifetime Require Import borrow frac_borrow.
-From lrust.typing Require Export type.
-From lrust.typing Require Import type_incl.
+From lrust.typing Require Export type perm.
 
 Section sum.
   Context `{typeG Σ}.

@@ -3,7 +3,7 @@ From iris.proofmode Require Import tactics.
 From iris.program_logic Require Import hoare.
 From lrust.lifetime Require Import borrow.
 From lrust.typing Require Export type.
-From lrust.typing Require Import type_incl typing lft_contexts type_context cont_context.
+From lrust.typing Require Import typing lft_contexts type_context cont_context.
 
 Section fn.
   Context `{typeG Σ}.
