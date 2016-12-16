@@ -16,7 +16,7 @@ Section uniq_bor.
          (∃ (l:loc) P, (⌜vl = [ #l ]⌝ ∗ □ (P ↔ l ↦∗: ty.(ty_own) tid)) ∗ &{κ} P)%I;
        ty_shr κ' tid E l :=
          (∃ l':loc, &frac{κ'}(λ q', l ↦{q'} #l') ∗
-            □ ∀ F q, ⌜E ∪ mgmtE ⊆ F⌝ -∗ q.[κ∪κ']
+            □ ∀ F q, ⌜E ∪ lftE ⊆ F⌝ -∗ q.[κ∪κ']
                 ={F, F∖E∖↑lftN}▷=∗ ty.(ty_shr) (κ∪κ') tid E l' ∗ q.[κ∪κ'])%I
     |}.
   Next Obligation.

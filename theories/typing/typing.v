@@ -80,7 +80,7 @@ Section typing.
   Qed.
 
   Definition consumes (ty : type) (ρ1 ρ2 : expr → perm) : Prop :=
-    ∀ ν tid Φ E, mgmtE ∪ ↑lrustN ⊆ E →
+    ∀ ν tid Φ E, lftE ∪ ↑lrustN ⊆ E →
       lft_ctx -∗ ρ1 ν tid -∗ na_own tid ⊤ -∗
       (∀ (l:loc) vl q,
         (⌜length vl = ty.(ty_size)⌝ ∗ ⌜eval_expr ν = Some #l⌝ ∗ l ↦∗{q} vl ∗
@@ -100,7 +100,7 @@ Section typing.
   Qed.
 
   Definition update (ty : type) (ρ1 ρ2 : expr → perm) : Prop :=
-    ∀ ν tid Φ E, mgmtE ∪ (↑lrustN) ⊆ E →
+    ∀ ν tid Φ E, lftE ∪ (↑lrustN) ⊆ E →
       lft_ctx -∗ ρ1 ν tid -∗
       (∀ (l:loc) vl,
          (⌜length vl = ty.(ty_size)⌝ ∗ ⌜eval_expr ν = Some #l⌝ ∗ l ↦∗ vl ∗

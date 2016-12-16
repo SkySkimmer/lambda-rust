@@ -10,7 +10,7 @@ Class typeG Σ := TypeG {
   type_frac_borrowG Σ :> frac_borG Σ
 }.
 
-Definition mgmtE := ↑lftN.
+Definition lftE := ↑lftN.
 Definition lrustN := nroot .@ "lrust".
 
 Section type.
@@ -39,7 +39,7 @@ Section type.
          nicer (they would otherwise require a "∨ □|=>[†κ]"), and (b) so that
          we can have emp == sum [].
        *)
-      ty_share E N κ l tid q : mgmtE ⊥ ↑N → mgmtE ⊆ E →
+      ty_share E N κ l tid q : lftE ⊥ ↑N → lftE ⊆ E →
         lft_ctx -∗ &{κ} (l ↦∗: ty_own tid) -∗ q.[κ] ={E}=∗
         ty_shr κ tid (↑N) l ∗ q.[κ];
       ty_shr_mono κ κ' tid E E' l : E ⊆ E' →
@@ -50,7 +50,7 @@ Section type.
   Class Copy (t : type) := {
     copy_persistent tid vl : PersistentP (t.(ty_own) tid vl);
     copy_shr_acc κ tid E F l q :
-      mgmtE ∪ F ⊆ E →
+      lftE ∪ F ⊆ E →
       lft_ctx -∗ t.(ty_shr) κ tid F l -∗
         q.[κ] ∗ na_own tid F ={E}=∗ ∃ q', ▷l ↦∗{q'}: t.(ty_own) tid ∗
           (▷l ↦∗{q'}: t.(ty_own) tid ={E}=∗ q.[κ] ∗ na_own tid F)

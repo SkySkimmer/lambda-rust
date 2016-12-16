@@ -52,7 +52,7 @@ Section own.
                    ▷ freeable_sz n ty.(ty_size) l)%I;
        ty_shr κ tid E l :=
          (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ∗
-            □ (∀ F q, ⌜E ∪ mgmtE ⊆ F⌝ -∗ q.[κ] ={F,F∖E∖↑lftN}▷=∗ ty.(ty_shr) κ tid E l' ∗ q.[κ]))%I
+            □ (∀ F q, ⌜E ∪ lftE ⊆ F⌝ -∗ q.[κ] ={F,F∖E∖↑lftN}▷=∗ ty.(ty_shr) κ tid E l' ∗ q.[κ]))%I
     |}.
   Next Obligation.
     iIntros (q ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
