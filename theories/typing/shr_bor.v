@@ -80,9 +80,8 @@ Section typing.
     iMod (lft_incl_acc with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
     rewrite (union_difference_L (↑lrustN) ⊤); last done.
     setoid_rewrite ->na_own_union; try set_solver. iDestruct "Htl" as "[Htl ?]".
-    (* FIXME We shouldn't have to add this manually to make the set_solver below work (instead, solve_ndisj below should do it). *)
-    assert (↑shrN ⊆ (↑lrustN : coPset)). { solve_ndisj. }
-    iMod (copy_shr_acc with "LFT Hshr [$Htok $Htl]") as (q'') "[H↦ Hclose']"; first set_solver.
+    iMod (copy_shr_acc with "LFT Hshr [$Htok $Htl]") as (q'') "[H↦ Hclose']".
+    { assert (↑shrN ⊆ (↑lrustN : coPset)) by solve_ndisj. set_solver. } (* FIXME: some tactic should solve this in one go. *)
     { rewrite ->shr_locsE_shrN. solve_ndisj. }
     iDestruct "H↦" as (vl) "[>H↦ #Hown]".
     iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
@@ -104,11 +103,8 @@ Section typing.
     iDestruct "H↦" as (vl) "[H↦b #Hown]".
     iMod (frac_bor_acc with "LFT H↦b Htok1") as (q''') "[>H↦ Hclose']". done.
     iMod (lft_incl_acc with "H⊑ Htok2") as (q2) "[Htok2 Hclose'']". solve_ndisj.
-    iApply (wp_fupd_step _ (⊤∖↑lrustN∖↑lftN) with "[Hown Htok2]"); try done.
-    - (* FIXME: mask reasoning at its worst. Really we'd want the mask in the line above to be
-         ⊤∖↑shrN∖↑lftN, but then the wp_read fails. *)
-      assert (↑shrN ⊆ (↑lrustN : coPset)). { solve_ndisj. }
-      iApply step_fupd_mask_mono; last iApply ("Hown" with "* [%] Htok2"); [|reflexivity|]. set_solver. set_solver.
+    iApply (wp_fupd_step _ (_∖_) with "[Hown Htok2]"); try done.
+    - iApply ("Hown" with "* [%] Htok2"). set_solver+.
     - wp_read. iIntros "!>[Hshr Htok2]{$H⊑}". iMod ("Hclose''" with "Htok2") as "$".
       iSplitL "Hshr"; first by iExists _; auto. iApply ("Hclose" with ">").
       iFrame. iApply "Hclose'". auto.
@@ -129,11 +125,8 @@ Section typing.
     { iApply (lft_incl_glb with "H⊑2 []"). iApply lft_incl_refl. }
     iMod (lft_incl_acc with "[] Htok2") as (q2) "[Htok2 Hclose'']". solve_ndisj.
     { iApply (lft_incl_trans with "[]"); done. }
-    iApply (wp_fupd_step _ (⊤∖↑lrustN∖↑lftN) with "[Hown Htok2]"); try done.
-    - (* FIXME: mask reasoning at its worst. Really we'd want the mask in the line above to be
-         ⊤∖↑shrN∖↑lftN, but then the wp_read fails. *)
-      assert (↑shrN ⊆ (↑lrustN : coPset)). { solve_ndisj. }
-      iApply step_fupd_mask_mono; last iApply ("Hown" with "* [%] Htok2"); [|reflexivity|]. set_solver. set_solver.
+    iApply (wp_fupd_step _ (_∖_) with "[Hown Htok2]"); try done.
+    - iApply ("Hown" with "* [%] Htok2"). set_solver+.
     - wp_read. iIntros "!>[#Hshr Htok2]{$H⊑1}".
       iMod ("Hclose''" with "Htok2") as "$". iSplitR.
       * iExists _. iSplitR. done. by iApply (ty_shr_mono with "LFT H⊑3 Hshr").

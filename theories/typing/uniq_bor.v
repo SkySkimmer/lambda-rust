@@ -37,14 +37,16 @@ Section uniq_bor.
     iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty (κ∪κ') tid l')%I
           with "[Hpbown]") as "#Hinv"; first by eauto.
     iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
-    (* FIXME We shouldn't have to add this manually to make the set_solver below work (instead, solve_ndisj below should do it).  Also, this goal itself should be handled by solve_ndisj. *)
-    assert (↑shrN ⊥ ↑lftN). { eapply ndot_preserve_disjoint_l. solve_ndisj. }
     iDestruct "INV" as "[>Hbtok|#Hshr]".
     - iMod (bor_unnest _ _ _ P with "LFT [Hbtok]") as "Hb".
-      { set_solver. } { iApply bor_unfold_idx. eauto. }
-                      iModIntro. iNext. iMod "Hb".
-      iMod (bor_iff with "LFT [] Hb") as "Hb". set_solver. by eauto.
-      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#Hshr $]". set_solver.
+      { apply ndisj_subseteq_difference. solve_ndisj. set_solver. } (* FIXME: some tactic should solve this in one go. *)
+      { iApply bor_unfold_idx. eauto. }
+      iModIntro. iNext. iMod "Hb".
+      iMod (bor_iff with "LFT [] Hb") as "Hb". 
+      { apply ndisj_subseteq_difference. solve_ndisj. set_solver. } (* FIXME: some tactic should solve this in one go. *)
+      { by eauto. }
+      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#Hshr $]".
+      { apply ndisj_subseteq_difference. solve_ndisj. set_solver. } (* FIXME: some tactic should solve this in one go. *)
       iMod ("Hclose" with "[]") as "_"; auto.
     - iMod ("Hclose" with "[]") as "_". by eauto.
       iApply step_fupd_intro. set_solver. auto.

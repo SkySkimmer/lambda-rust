@@ -111,7 +111,7 @@ Section sum.
         { rewrite nth_overflow // nth_overflow; first by iApply type_incl_refl.
           by erewrite <-Forall2_length. } 
         edestruct @Forall2_lookup_l as (ty2 & Hl2 & Hty2); [done..|].
-        rewrite (nth_lookup tyl2 _ _ ty2) //.
+        rewrite (nth_lookup_Some tyl2 _ _ ty2) //.
         by iApply (Hty2 with "* [] []"). }
     clear -Hleq. iSplit; last (iSplit; iAlways).
     - simpl. by rewrite Hleq. 
