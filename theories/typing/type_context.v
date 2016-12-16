@@ -4,10 +4,11 @@ From lrust.lang Require Import notation.
 From lrust.lifetime Require Import definitions.
 From lrust.typing Require Import type lft_contexts.
 
+Definition path := expr.
+Bind Scope expr_scope with path.
+
 Section type_context.
   Context `{typeG Σ}.
-
-  Definition path := expr.
 
   Fixpoint eval_path (ν : path) : option val :=
     match ν with
@@ -19,6 +20,8 @@ Section type_context.
     | e => to_val e
     end.
 
+  (* TODO: Consider mking this a pair of a path and the rest. We could
+     then e.g. formulate tctx_elt_hasty_path more generally. *)
   Inductive tctx_elt : Type :=
   | TCtx_hasty (p : path) (ty : type)
   | TCtx_blocked (p : path) (κ : lft) (ty : type).
@@ -37,6 +40,17 @@ Section type_context.
     Proper ((≡ₚ) ==> (⊣⊢)) (tctx_interp tid).
   Proof. intros ???. by apply big_opL_permutation. Qed.
 
+  Lemma tctx_interp_cons tid x T :
+    tctx_interp tid (x :: T) ≡ (tctx_elt_interp tid x ∗ tctx_interp tid T)%I.
+  Proof. rewrite /tctx_interp big_sepL_cons //. Qed.
+
+  Definition tctx_interp_nil tid :
+    tctx_interp tid [] = True%I := eq_refl _.
+
+  Lemma tctx_interp_singleton tid x :
+    tctx_interp tid [x] ≡ tctx_elt_interp tid x.
+  Proof. rewrite tctx_interp_cons tctx_interp_nil right_id //. Qed.
+
   Definition tctx_incl (E : elctx) (L : llctx) (T1 T2 : tctx): Prop :=
     ∀ tid q1 q2, lft_ctx -∗ elctx_interp E q1 -∗ llctx_interp L q2 -∗
               tctx_interp tid T1 ={⊤}=∗ elctx_interp E q1 ∗ llctx_interp L q2 ∗
@@ -50,6 +64,12 @@ Section type_context.
       iMod (H1 with "LFT HE HL H") as "(HE & HL & H)".
       by iMod (H2 with "LFT HE HL H") as "($ & $ & $)".
   Qed.
+
+  Lemma tctx_elt_interp_hasty_path p1 p2 ty tid :
+    eval_path p1 = eval_path p2 →
+    tctx_elt_interp tid (TCtx_hasty p1 ty) ≡
+    tctx_elt_interp tid (TCtx_hasty p2 ty).
+  Proof. intros Hp. simpl. setoid_rewrite Hp. done. Qed.
 
   Lemma contains_tctx_incl E L T1 T2 : T1 `contains` T2 → tctx_incl E L T2 T1.
   Proof.

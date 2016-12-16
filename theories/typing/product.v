@@ -126,6 +126,11 @@ Section product.
   Proof. intros ??. induction 1. done. by simpl; f_equiv. Qed.
   Global Instance product_copy tys : LstCopy tys → Copy (product tys).
   Proof. induction 1; apply _. Qed.
+
+  Definition product_cons ty tyl :
+    product (ty :: tyl) = product2 ty (product tyl) := eq_refl _.
+  Definition product_nil :
+    product [] = unit := eq_refl _.
 End product.
 
 Arguments product : simpl never.
