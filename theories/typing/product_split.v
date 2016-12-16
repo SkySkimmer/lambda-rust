@@ -107,11 +107,9 @@ Section product_split.
     rewrite /has_type /sep /product2 /=.
     destruct (eval_expr ν) as [[[|l|]|]|];
       iIntros (tid) "#LFT H"; try iDestruct "H" as "[]";
-        iDestruct "H" as (l0) "(EQ & H)"; iDestruct "EQ" as %[=<-].
-    iDestruct "H" as (E1 E2) "(% & H1 & H2)".
+        iDestruct "H" as (l0) "(EQ & [H1 H2])"; iDestruct "EQ" as %[=<-].
     iSplitL "H1"; iExists _; (iSplitR; [done|]); iApply (ty_shr_mono with "LFT []");
-      try by iFrame.
-    set_solver. iApply lft_incl_refl. set_solver. iApply lft_incl_refl.
+      try by iFrame. iApply lft_incl_refl. iApply lft_incl_refl.
   Qed.
 
   Lemma perm_split_shr_bor_prod tyl κ ν :

@@ -50,15 +50,15 @@ Section own.
             problems. *)
          (∃ l:loc, ⌜vl = [ #l ]⌝ ∗ ▷ l ↦∗: ty.(ty_own) tid ∗
                    ▷ freeable_sz n ty.(ty_size) l)%I;
-       ty_shr κ tid E l :=
+       ty_shr κ tid l :=
          (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ∗
-            □ (∀ F q, ⌜E ∪ lftE ⊆ F⌝ -∗ q.[κ] ={F,F∖E∖↑lftN}▷=∗ ty.(ty_shr) κ tid E l' ∗ q.[κ]))%I
+            □ (∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ] ={F,F∖↑shrN∖↑lftN}▷=∗ ty.(ty_shr) κ tid l' ∗ q.[κ]))%I
     |}.
   Next Obligation.
     iIntros (q ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
   Qed.
   Next Obligation.
-    move=>n ty E N κ l tid ??? /=. iIntros "#LFT Hshr Htok".
+    move=>n ty N κ l tid ?? /=. iIntros "#LFT Hshr Htok".
     iMod (bor_exists with "LFT Hshr") as (vl) "Hb". set_solver.
     iMod (bor_sep with "LFT Hb") as "[Hb1 Hb2]". set_solver.
     iMod (bor_exists with "LFT Hb2") as (l') "Hb2". set_solver. 
@@ -69,23 +69,26 @@ Section own.
     iMod (bor_sep with "LFT Hb2") as "[Hb2 _]". set_solver.
     iMod (bor_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "$". set_solver.
     rewrite bor_unfold_idx. iDestruct "Hb2" as (i) "(#Hpb&Hpbown)".
-    iMod (inv_alloc N _ (idx_bor_own 1 i ∨ ty_shr ty κ tid (↑N) l')%I
+    iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty κ tid l')%I
           with "[Hpbown]") as "#Hinv"; first by eauto.
     iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
+    (* FIXME We shouldn't have to add this manually to make the set_solver below work (instead, solve_ndisj below should do it).  Also, this goal itself should be handled by solve_ndisj. *)
+    assert (↑shrN ⊥ ↑lftN). { eapply ndot_preserve_disjoint_l. solve_ndisj. }
     iDestruct "INV" as "[>Hbtok|#Hshr]".
-    - iMod (bor_later with "LFT [Hbtok]") as "Hb". set_solver.
+    - iMod (bor_later with "LFT [Hbtok]") as "Hb".
+      { set_solver. }
       { rewrite bor_unfold_idx. eauto. }
       iModIntro. iNext. iMod "Hb".
-      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#$ Htok]". done. set_solver.
+      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#$ Htok]". set_solver.
       iFrame "Htok". iApply "Hclose". auto.
     - iMod fupd_intro_mask' as "Hclose'"; last iModIntro. set_solver.
       iNext. iMod "Hclose'" as "_". iMod ("Hclose" with "[]") as "_"; by eauto.
   Qed.
   Next Obligation.
-    intros _ ty κ κ' tid E E' l ?. iIntros "#LFT #Hκ #H".
+    intros _ ty κ κ' tid l. iIntros "#LFT #Hκ #H".
     iDestruct "H" as (l') "[Hfb #Hvs]".
     iExists l'. iSplit. by iApply (frac_bor_shorten with "[]"). iIntros "!# *% Htok".
-    iApply (step_fupd_mask_mono F _ _ (F∖E∖↑lftN)). set_solver. set_solver.
+    iApply (step_fupd_mask_mono F _ _ (F∖↑shrN∖↑lftN)). set_solver. set_solver.
     iMod (lft_incl_acc with "Hκ Htok") as (q') "[Htok Hclose]"; first set_solver.
     iMod ("Hvs" with "* [%] Htok") as "Hvs'". set_solver. iModIntro. iNext.
     iMod "Hvs'" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
@@ -104,7 +107,7 @@ Section own.
       iDestruct ("Ho" with "* Hown") as "Hown".
       iDestruct (ty_size_eq with "Hown") as %<-. iFrame.
       iExists _. by iFrame.
-    - iIntros (????) "H". iDestruct "H" as (l') "[Hfb #Hvs]".
+    - iIntros (???) "H". iDestruct "H" as (l') "[Hfb #Hvs]".
       iExists l'. iFrame. iIntros "!#". iIntros (F' q) "% Htok".
       iMod ("Hvs" with "* [%] Htok") as "Hvs'". done. iModIntro. iNext.
       iMod "Hvs'" as "[Hshr $]". iApply ("Hs" with "Hshr").

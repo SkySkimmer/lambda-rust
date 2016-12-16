@@ -12,6 +12,7 @@ Class typeG Σ := TypeG {
 
 Definition lftE := ↑lftN.
 Definition lrustN := nroot .@ "lrust".
+Definition shrN  := lrustN .@ "shr".
 
 Section type.
   Context `{typeG Σ}.
@@ -21,9 +22,9 @@ Section type.
   Record type :=
     { ty_size : nat;
       ty_own : thread_id → list val → iProp Σ;
-      ty_shr : lft → thread_id → coPset → loc → iProp Σ;
+      ty_shr : lft → thread_id → loc → iProp Σ;
 
-      ty_shr_persistent κ tid E l : PersistentP (ty_shr κ tid E l);
+      ty_shr_persistent κ tid l : PersistentP (ty_shr κ tid l);
 
       ty_size_eq tid vl : ty_own tid vl -∗ ⌜length vl = ty_size⌝;
       (* The mask for starting the sharing does /not/ include the
@@ -39,19 +40,63 @@ Section type.
          nicer (they would otherwise require a "∨ □|=>[†κ]"), and (b) so that
          we can have emp == sum [].
        *)
-      ty_share E N κ l tid q : lftE ⊥ ↑N → lftE ⊆ E →
+      ty_share E κ l tid q : lftE ⊆ E →
         lft_ctx -∗ &{κ} (l ↦∗: ty_own tid) -∗ q.[κ] ={E}=∗
-        ty_shr κ tid (↑N) l ∗ q.[κ];
-      ty_shr_mono κ κ' tid E E' l : E ⊆ E' →
-        lft_ctx -∗ κ' ⊑ κ -∗ ty_shr κ tid E l -∗ ty_shr κ' tid E' l
+        ty_shr κ tid l ∗ q.[κ];
+      ty_shr_mono κ κ' tid l :
+        lft_ctx -∗ κ' ⊑ κ -∗ ty_shr κ tid l -∗ ty_shr κ' tid l
     }.
   Global Existing Instances ty_shr_persistent.
+
+  Fixpoint shr_locsE (l : loc) (n : nat) : coPset :=
+    match n with
+    | 0%nat => ∅
+    | S n => ↑shrN.@l ∪ shr_locsE (shift_loc l 1%nat) n
+    end.
+
+  Lemma shr_locsE_shift l n m :
+    shr_locsE l (n + m) = shr_locsE l n ∪ shr_locsE (shift_loc l n) m.
+  Proof.
+    revert l; induction n; intros l.
+    - rewrite shift_loc_0. set_solver+.
+    - rewrite -Nat.add_1_l Nat2Z.inj_add /= IHn shift_loc_assoc.
+      set_solver+.
+  Qed.
+  
+  Lemma shr_locsE_disj l n m :
+    shr_locsE l n ⊥ shr_locsE (shift_loc l n) m.
+  Proof.
+    revert l; induction n; intros l.
+    - simpl. set_solver+.
+    - rewrite -Nat.add_1_l Nat2Z.inj_add /=.
+      apply disjoint_union_l. split; last (rewrite -shift_loc_assoc; exact: IHn).
+      clear IHn. revert n; induction m; intros n; simpl; first set_solver+.
+      rewrite shift_loc_assoc. apply disjoint_union_r. split.
+      + apply ndot_ne_disjoint. destruct l. intros [=]. omega.
+      + rewrite -Z.add_assoc. move:(IHm (n + 1)%nat). rewrite Nat2Z.inj_add //.
+  Qed.
+
+  Lemma shr_locsE_shrN l n :
+    shr_locsE l n ⊆ ↑shrN.
+  Proof.
+    revert l; induction n; intros l.
+    - simpl. set_solver+.
+    - simpl. apply union_least; last by auto. solve_ndisj.
+  Qed.
+
+  Lemma shr_locsE_subseteq l n m :
+    (n ≤ m)%nat → shr_locsE l n ⊆ shr_locsE l m.
+  Proof.
+    induction 1; first done.
+    rewrite ->IHle. rewrite -Nat.add_1_l [(_ + _)%nat]comm.  (* FIXME last rewrite is very slow. *)
+    rewrite shr_locsE_shift. set_solver+.
+  Qed.
 
   Class Copy (t : type) := {
     copy_persistent tid vl : PersistentP (t.(ty_own) tid vl);
     copy_shr_acc κ tid E F l q :
-      lftE ∪ F ⊆ E →
-      lft_ctx -∗ t.(ty_shr) κ tid F l -∗
+      lftE ∪ ↑shrN ⊆ E → shr_locsE l t.(ty_size) ⊆ F →
+      lft_ctx -∗ t.(ty_shr) κ tid l -∗
         q.[κ] ∗ na_own tid F ={E}=∗ ∃ q', ▷l ↦∗{q'}: t.(ty_own) tid ∗
           (▷l ↦∗{q'}: t.(ty_own) tid ={E}=∗ q.[κ] ∗ na_own tid F)
   }.
@@ -79,13 +124,13 @@ Section type.
        (* [st.(st_own) tid vl] needs to be outside of the fractured
           borrow, otherwise I do not know how to prove the shr part of
           [subtype_shr_mono]. *)
-       ty_shr := λ κ tid _ l,
+       ty_shr := λ κ tid l,
                  (∃ vl, (&frac{κ} λ q, l ↦∗{q} vl) ∗
                         ▷ st.(st_own) tid vl)%I
     |}.
   Next Obligation. intros. apply st_size_eq. Qed.
   Next Obligation.
-    intros st E N κ l tid ? ? ?. iIntros "#LFT Hmt Hκ".
+    iIntros (st E κ l tid ??) "#LFT Hmt Hκ".
     iMod (bor_exists with "LFT Hmt") as (vl) "Hmt". set_solver.
     iMod (bor_sep with "LFT Hmt") as "[Hmt Hown]". set_solver.
     iMod (bor_persistent with "LFT Hown") as "[Hown|#H†]". set_solver.
@@ -95,14 +140,14 @@ Section type.
     - iExFalso. iApply (lft_tok_dead with "Hκ"). done.
   Qed.
   Next Obligation.
-    intros st κ κ' tid E E' l ?. iIntros "#LFT #Hord H".
+    intros st κ κ' tid l. iIntros "#LFT #Hord H".
     iDestruct "H" as (vl) "[#Hf #Hown]".
     iExists vl. iFrame "Hown". by iApply (frac_bor_shorten with "Hord").
   Qed.
 
   Global Program Instance ty_of_st_copy st : Copy (ty_of_st st).
   Next Obligation.
-    intros st κ tid E F l q ?. iIntros "#LFT #Hshr[Hlft $]".
+    intros st κ tid E ? l q ??. iIntros "#LFT #Hshr[Hlft $]".
     iDestruct "Hshr" as (vl) "[Hf Hown]".
     iMod (frac_bor_acc with "LFT Hf Hlft") as (q') "[Hmt Hclose]"; first set_solver.
     iModIntro. iExists _. iDestruct "Hmt" as "[Hmt1 Hmt2]". iSplitL "Hmt1".
@@ -126,7 +171,7 @@ Section subtyping.
   Definition type_incl (ty1 ty2 : type) : iProp Σ :=
     (⌜ty1.(ty_size) = ty2.(ty_size)⌝ ∗
      (□ ∀ tid vl, ty1.(ty_own) tid vl -∗ ty2.(ty_own) tid vl) ∗
-     (□ ∀ κ tid F l, ty1.(ty_shr) κ tid F l -∗ ty2.(ty_shr) κ tid F l))%I.
+     (□ ∀ κ tid l, ty1.(ty_shr) κ tid l -∗ ty2.(ty_shr) κ tid l))%I.
 
   Global Instance type_incl_persistent ty1 ty2 : PersistentP (type_incl ty1 ty2) := _.
 (*  Typeclasses Opaque type_incl. *)
@@ -180,7 +225,7 @@ Section subtyping.
   Proof.
     intros Hst. iIntros. iSplit; first done. iSplit; iAlways.
     - iIntros. iApply (Hst with "* [] [] []"); done.
-    - iIntros (????) "H".
+    - iIntros (???) "H".
       iDestruct "H" as (vl) "[Hf Hown]". iExists vl. iFrame "Hf".
       by iApply (Hst with "* [] [] []").
   Qed.

@@ -11,15 +11,15 @@ Section sum.
   Program Definition emp : type :=
     {| ty_size := 1%nat;
        ty_own tid vl := False%I;
-       ty_shr κ tid N l := False%I |}.
+       ty_shr κ tid l := False%I |}.
   Next Obligation. iIntros (tid vl) "[]". Qed.
   Next Obligation.
-    iIntros (E N κ l tid ???) "#LFT Hown Htok".
+    iIntros (E κ l tid ??) "#LFT Hown Htok".
     iMod (bor_acc with "LFT Hown Htok") as "[>H _]"; first done.
     iDestruct "H" as (?) "[_ []]".
   Qed.
   Next Obligation.
-    iIntros (κ κ' tid E E' l ?) "#LFT #Hord []".
+    iIntros (κ κ' tid l) "#LFT #Hord []".
   Qed.
 
   Global Instance emp_empty : Empty type := emp.
@@ -27,7 +27,7 @@ Section sum.
   Global Instance emp_copy : Copy ∅.
   Proof.
     split; first by apply _.
-    iIntros (???????) "? []".
+    iIntros (????????) "? []".
   Qed.
 
   Definition list_max (l : list nat) := foldr max 0%nat l.
@@ -71,18 +71,18 @@ Section sum.
          (∃ (i : nat) vl' vl'', ⌜vl = #i :: vl' ++ vl''⌝ ∗
                                 ⌜length vl = S (list_max $ map ty_size $ tyl)⌝ ∗
                                 (nth i tyl ∅).(ty_own) tid vl')%I;
-       ty_shr κ tid N l :=
+       ty_shr κ tid l :=
          (∃ (i : nat),
              (&frac{κ} λ q, l ↦{q} #i ∗
                        shift_loc l (S $ (nth i tyl ∅).(ty_size)) ↦∗{q}: is_pad i tyl) ∗
-               (nth i tyl ∅).(ty_shr) κ tid N (shift_loc l 1))%I
+               (nth i tyl ∅).(ty_shr) κ tid (shift_loc l 1))%I
     |}.
   Next Obligation.
     iIntros (tyl tid vl) "Hown". iDestruct "Hown" as (i vl' vl'') "(%&%&_)".
     subst. done.
   Qed.
   Next Obligation.
-    intros tyl E N κ l tid. iIntros (???) "#LFT Hown Htok". rewrite split_sum_mt.
+    intros tyl E κ l tid. iIntros (??) "#LFT Hown Htok". rewrite split_sum_mt.
     iMod (bor_exists with "LFT Hown") as (i) "Hown". set_solver.
     iMod (bor_sep with "LFT Hown") as "[Hmt Hown]". solve_ndisj.
     (* FIXME: Why can't I directly frame Htok in the destruct after the following mod? *)
@@ -91,11 +91,11 @@ Section sum.
       by iFrame.
   Qed.
   Next Obligation.
-    iIntros (tyl κ κ' tid E E' l ?) "#LFT #Hord H".
+    iIntros (tyl κ κ' tid l) "#LFT #Hord H".
     iDestruct "H" as (i) "[Hown0 Hown]". iExists i.
     iSplitL "Hown0".
     - by iApply (frac_bor_shorten with "Hord").
-    - iApply ((nth i tyl ∅).(ty_shr_mono) with "LFT Hord"); last done. done.
+    - iApply ((nth i tyl ∅).(ty_shr_mono) with "LFT Hord"); done.
   Qed.
 
   Global Instance sum_mono E L :
@@ -119,7 +119,7 @@ Section sum.
       iExists i, vl', vl''. iSplit; first done.
       iSplit; first by rewrite -Hleq.
       iDestruct ("Hty" $! i) as "(_ & #Htyi & _)". by iApply "Htyi".
-    - iIntros (κ tid F l) "H". iDestruct "H" as (i) "(Hmt & Hshr)".
+    - iIntros (κ tid l) "H". iDestruct "H" as (i) "(Hmt & Hshr)".
       iExists i. iSplitR "Hshr".
       + rewrite /is_pad -Hleq. iDestruct ("Hty" $! i) as "(Hlen & _)".
         iDestruct "Hlen" as %<-. done.
@@ -142,10 +142,10 @@ Section sum.
   Proof.
     split; (iIntros; iSplit; first done; iSplit; iAlways).
     - iIntros (??) "[]".
-    - iIntros (κ tid F l) "[]".
+    - iIntros (κ tid l) "[]".
     - iIntros (??) "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)".
       rewrite nth_empty. by iDestruct "Hown" as "[]".
-    - iIntros (????) "H". iDestruct "H" as (i) "(_ & Hshr)".
+    - iIntros (???) "H". iDestruct "H" as (i) "(_ & Hshr)".
       rewrite nth_empty. by iDestruct "Hshr" as "[]".
   Qed.
 
@@ -156,18 +156,23 @@ Section sum.
       cut (∀ i vl', PersistentP (ty_own (nth i tyl ∅) tid vl')). by apply _.
       intros. apply @copy_persistent. edestruct nth_in_or_default as [| ->];
                                         [by eapply List.Forall_forall| apply _].
-    - intros κ tid E F l q ?.
+    - intros κ tid E F l q ? HF.
       iIntros "#LFT #H[[Htok1 Htok2] Htl]".
       setoid_rewrite split_sum_mt. iDestruct "H" as (i) "[Hshr0 Hshr]".
-      iMod (frac_bor_acc with "LFT Hshr0 Htok1") as (q'1) "[Hown Hclose]". set_solver.
-      iMod (@copy_shr_acc _ _ (nth i tyl ∅) with "LFT Hshr [Htok2 $Htl]")
+      iMod (frac_bor_acc with "LFT Hshr0 Htok1") as (q'1) "[>Hown Hclose]". set_solver.
+      iAssert ((∃ vl, is_pad i tyl vl)%I) with "[#]" as %[vl Hpad].
+      { iDestruct "Hown" as "[_ Hpad]". iDestruct "Hpad" as (vl) "[_ %]".
+        eauto. }
+      iMod (@copy_shr_acc _ _ (nth i tyl ∅) with "LFT Hshr [$Htok2 $Htl]")
         as (q'2) "[HownC Hclose']"; try done.
       { edestruct nth_in_or_default as [| ->]; last by apply _.
           by eapply List.Forall_forall. }
+      { rewrite <-HF. simpl. rewrite <-union_subseteq_r.
+        apply shr_locsE_subseteq. omega. }
       destruct (Qp_lower_bound q'1 q'2) as (q' & q'01 & q'02 & -> & ->).
       rewrite -(heap_mapsto_vec_prop_op _ q' q'02); last (by intros; apply ty_size_eq).
       rewrite (fractional (Φ := λ q, _ ↦{q} _ ∗ _ ↦∗{q}: _)%I).
-      iDestruct "HownC" as "[HownC1 HownC2]". iDestruct "Hown" as "[Hown1 >Hown2]".
+      iDestruct "HownC" as "[HownC1 HownC2]". iDestruct "Hown" as "[Hown1 Hown2]".
       iExists q'. iModIntro. iSplitL "Hown1 HownC1".
       + iNext. iExists i. iFrame.
       + iIntros "H". iDestruct "H" as (i') "[>Hown1 HownC1]".
@@ -183,37 +188,3 @@ End sum.
    as Π for products. We stick to the following form. *)
 Notation "Σ[ ty1 ; .. ; tyn ]" :=
   (sum (cons ty1 (..(cons tyn nil)..))) : lrust_type_scope.
-
-Section incl.
-  Context `{typeG Σ}.
-
-  (* TODO *)
-  (* Lemma ty_incl_sum ρ n tyl1 tyl2 (_ : LstTySize n tyl1) (_ : LstTySize n tyl2) : *)
-  (*   Duplicable ρ → Forall2 (ty_incl ρ) tyl1 tyl2 → *)
-  (*   ty_incl ρ (sum tyl1) (sum tyl2). *)
-  (* Proof. *)
-  (*   iIntros (DUP FA tid) "#LFT #Hρ". rewrite /sum /=. iSplitR "". *)
-  (*   - assert (Hincl : lft_ctx -∗ ρ tid ={⊤}=∗ *)
-  (*        (□ ∀ i vl, (nth i tyl1 ∅%T).(ty_own) tid vl *)
-  (*                 → (nth i tyl2 ∅%T).(ty_own) tid vl)). *)
-  (*     { clear -FA DUP. induction FA as [|ty1 ty2 tyl1 tyl2 Hincl _ IH]. *)
-  (*       - iIntros "_ _!>*!#". eauto. *)
-  (*       - iIntros "#LFT #Hρ". iMod (IH with "LFT Hρ") as "#IH". *)
-  (*         iMod (Hincl with "LFT Hρ") as "[#Hh _]". *)
-  (*         iIntros "!>*!#*Hown". destruct i as [|i]. by iApply "Hh". by iApply "IH". } *)
-  (*     iMod (Hincl with "LFT Hρ") as "#Hincl". iIntros "!>!#*H". *)
-  (*     iDestruct "H" as (i vl') "[% Hown]". subst. iExists _, _. iSplit. done. *)
-  (*       by iApply "Hincl". *)
-  (*   - assert (Hincl : lft_ctx -∗ ρ tid ={⊤}=∗ *)
-  (*        (□ ∀ i κ E l, (nth i tyl1 ∅%T).(ty_shr) κ tid E l *)
-  (*                    → (nth i tyl2 ∅%T).(ty_shr) κ tid E l)). *)
-  (*     { clear -FA DUP. induction FA as [|ty1 ty2 tyl1 tyl2 Hincl _ IH]. *)
-  (*       - iIntros "#LFT _!>*!#". eauto. *)
-  (*       - iIntros "#LFT #Hρ". *)
-  (*         iMod (IH with "LFT Hρ") as "#IH". iMod (Hincl with "LFT Hρ") as "[_ #Hh]". *)
-  (*         iIntros "!>*!#*Hown". destruct i as [|i]; last by iApply "IH". *)
-  (*         by iDestruct ("Hh" $! _ _ _ with "Hown") as "[$ _]". } *)
-  (*     iMod (Hincl with "LFT Hρ") as "#Hincl". iIntros "!>!#*H". iSplit; last done. *)
-  (*     iDestruct "H" as (i) "[??]". iExists _. iSplit. done. by iApply "Hincl". *)
-  (* Qed. *)
-End incl.

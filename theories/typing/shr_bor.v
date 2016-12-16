@@ -9,7 +9,7 @@ Section shr_bor.
 
   Program Definition shr_bor (κ : lft) (ty : type) : type :=
     {| st_own tid vl :=
-         (∃ (l:loc), ⌜vl = [ #l ]⌝ ∗ ty.(ty_shr) κ tid (↑lrustN) l)%I |}.
+         (∃ (l:loc), ⌜vl = [ #l ]⌝ ∗ ty.(ty_shr) κ tid l)%I |}.
   Next Obligation.
     iIntros (κ ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
   Qed.
@@ -20,7 +20,7 @@ Section shr_bor.
     intros κ1 κ2 Hκ ty1 ty2 Hty. apply subtype_simple_type.
     iIntros (??) "#LFT #HE #HL H". iDestruct (Hκ with "HE HL") as "#Hκ".
     iDestruct "H" as (l) "(% & H)". subst. iExists _. iSplit. done.
-    iApply (ty2.(ty_shr_mono) with "LFT Hκ"). reflexivity.
+    iApply (ty2.(ty_shr_mono) with "LFT Hκ"). 
     iDestruct (Hty with "* [] [] []") as "(_ & _ & #Hs1)"; [done..|clear Hty].
     by iApply "Hs1".
   Qed.
@@ -47,7 +47,7 @@ Section typing.
     iDestruct "Huniq" as (v) "[% Huniq]". 
     iDestruct "Huniq" as (l P) "[[% #HPiff] HP]".
     iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
-    iMod (ty.(ty_share) _ lrustN with "LFT H↦ Htok") as "[Hown Htok]"; [solve_ndisj|done|].
+    iMod (ty.(ty_share) with "LFT H↦ Htok") as "[Hown Htok]"; [solve_ndisj|].
     iMod ("Hclose" with "Htok") as "[$ $]". iExists _. iFrame "%".
     iIntros "!>/=". eauto.
   Qed.
@@ -80,7 +80,10 @@ Section typing.
     iMod (lft_incl_acc with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
     rewrite (union_difference_L (↑lrustN) ⊤); last done.
     setoid_rewrite ->na_own_union; try set_solver. iDestruct "Htl" as "[Htl ?]".
-    iMod (copy_shr_acc with "LFT Hshr [$Htok $Htl]") as (q'') "[H↦ Hclose']"; try set_solver.
+    (* FIXME We shouldn't have to add this manually to make the set_solver below work (instead, solve_ndisj below should do it). *)
+    assert (↑shrN ⊆ (↑lrustN : coPset)). { solve_ndisj. }
+    iMod (copy_shr_acc with "LFT Hshr [$Htok $Htl]") as (q'') "[H↦ Hclose']"; first set_solver.
+    { rewrite ->shr_locsE_shrN. solve_ndisj. }
     iDestruct "H↦" as (vl) "[>H↦ #Hown]".
     iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
       by rewrite ty.(ty_size_eq).
@@ -102,7 +105,10 @@ Section typing.
     iMod (frac_bor_acc with "LFT H↦b Htok1") as (q''') "[>H↦ Hclose']". done.
     iMod (lft_incl_acc with "H⊑ Htok2") as (q2) "[Htok2 Hclose'']". solve_ndisj.
     iApply (wp_fupd_step _ (⊤∖↑lrustN∖↑lftN) with "[Hown Htok2]"); try done.
-    - iApply ("Hown" with "* [%] Htok2"). set_solver.
+    - (* FIXME: mask reasoning at its worst. Really we'd want the mask in the line above to be
+         ⊤∖↑shrN∖↑lftN, but then the wp_read fails. *)
+      assert (↑shrN ⊆ (↑lrustN : coPset)). { solve_ndisj. }
+      iApply step_fupd_mask_mono; last iApply ("Hown" with "* [%] Htok2"); [|reflexivity|]. set_solver. set_solver.
     - wp_read. iIntros "!>[Hshr Htok2]{$H⊑}". iMod ("Hclose''" with "Htok2") as "$".
       iSplitL "Hshr"; first by iExists _; auto. iApply ("Hclose" with ">").
       iFrame. iApply "Hclose'". auto.
@@ -123,8 +129,11 @@ Section typing.
     { iApply (lft_incl_glb with "H⊑2 []"). iApply lft_incl_refl. }
     iMod (lft_incl_acc with "[] Htok2") as (q2) "[Htok2 Hclose'']". solve_ndisj.
     { iApply (lft_incl_trans with "[]"); done. }
-    iApply (wp_fupd_step _ (_∖_) with "[Hown Htok2]"); try done.
-    - iApply ("Hown" with "* [%] Htok2"). set_solver.
+    iApply (wp_fupd_step _ (⊤∖↑lrustN∖↑lftN) with "[Hown Htok2]"); try done.
+    - (* FIXME: mask reasoning at its worst. Really we'd want the mask in the line above to be
+         ⊤∖↑shrN∖↑lftN, but then the wp_read fails. *)
+      assert (↑shrN ⊆ (↑lrustN : coPset)). { solve_ndisj. }
+      iApply step_fupd_mask_mono; last iApply ("Hown" with "* [%] Htok2"); [|reflexivity|]. set_solver. set_solver.
     - wp_read. iIntros "!>[#Hshr Htok2]{$H⊑1}".
       iMod ("Hclose''" with "Htok2") as "$". iSplitR.
       * iExists _. iSplitR. done. by iApply (ty_shr_mono with "LFT H⊑3 Hshr").

@@ -7,15 +7,15 @@ Section product.
   Context `{typeG Σ}.
 
   Program Definition unit : type :=
-    {| ty_size := 0; ty_own tid vl := ⌜vl = []⌝%I; ty_shr κ tid E l := True%I |}.
+    {| ty_size := 0; ty_own tid vl := ⌜vl = []⌝%I; ty_shr κ tid l := True%I |}.
   Next Obligation. iIntros (tid vl) "%". by subst. Qed.
-  Next Obligation. by iIntros (????????) "_ _ $". Qed.
-  Next Obligation. by iIntros (???????) "_ _ $". Qed.
+  Next Obligation. by iIntros (??????) "_ _ $". Qed.
+  Next Obligation. by iIntros (????) "_ _ $". Qed.
 
   Global Instance unit_copy : Copy unit.
   Proof.
     split. by apply _.
-    iIntros (???????) "_ _ $". iExists 1%Qp. iSplitL; last by auto.
+    iIntros (????????) "_ _ $". iExists 1%Qp. iSplitL; last by auto.
     iExists []. iSplitL; last by auto. rewrite heap_mapsto_vec_nil. auto.
   Qed.
 
@@ -39,27 +39,23 @@ Section product.
     {| ty_size := ty1.(ty_size) + ty2.(ty_size);
        ty_own tid vl := (∃ vl1 vl2,
          ⌜vl = vl1 ++ vl2⌝ ∗ ty1.(ty_own) tid vl1 ∗ ty2.(ty_own) tid vl2)%I;
-       ty_shr κ tid E l :=
-         (∃ E1 E2, ⌜E1 ⊥ E2 ∧ E1 ⊆ E ∧ E2 ⊆ E⌝ ∗
-            ty1.(ty_shr) κ tid E1 l ∗
-            ty2.(ty_shr) κ tid E2 (shift_loc l ty1.(ty_size)))%I |}.
+       ty_shr κ tid l :=
+         (ty1.(ty_shr) κ tid l ∗
+          ty2.(ty_shr) κ tid (shift_loc l ty1.(ty_size)))%I |}.
   Next Obligation.
     iIntros (ty1 ty2 tid vl) "H". iDestruct "H" as (vl1 vl2) "(% & H1 & H2)".
     subst. rewrite app_length !ty_size_eq.
     iDestruct "H1" as %->. iDestruct "H2" as %->. done.
   Qed.
   Next Obligation.
-    intros ty1 ty2 E N κ l tid q ??. iIntros "#LFT /=H Htok". rewrite split_prod_mt.
+    intros ty1 ty2 E κ l tid q ?. iIntros "#LFT /=H Htok". rewrite split_prod_mt.
     iMod (bor_sep with "LFT H") as "[H1 H2]". set_solver.
-    iMod (ty1.(ty_share) _ (N .@ 1) with "LFT H1 Htok") as "[? Htok]". solve_ndisj. done.
-    iMod (ty2.(ty_share) _ (N .@ 2) with "LFT H2 Htok") as "[? Htok]". solve_ndisj. done.
-    iModIntro. iFrame "Htok". iExists (↑N .@ 1). iExists (↑N .@ 2). iFrame.
-    iPureIntro. split. solve_ndisj. split; apply nclose_subseteq.
+    iMod (ty1.(ty_share) with "LFT H1 Htok") as "[? Htok]". solve_ndisj.
+    iMod (ty2.(ty_share) with "LFT H2 Htok") as "[? Htok]". solve_ndisj.
+    iModIntro. iFrame "Htok". iFrame.
   Qed.
   Next Obligation.
-    intros ty1 ty2 κ κ' tid E E' l ?. iIntros "#LFT /= #H⊑ H".
-    iDestruct "H" as (N1 N2) "(% & H1 & H2)". iExists N1, N2.
-    iSplit. iPureIntro. set_solver.
+    intros ty1 ty2 κ κ' tid l. iIntros "#LFT /= #H⊑ [H1 H2]".
     iSplitL "H1"; by iApply (ty_shr_mono with "LFT H⊑").
   Qed.
 
@@ -74,8 +70,7 @@ Section product.
       iExists _, _. iSplit. done. iSplitL "Hown1".
       + by iApply "Ho1".
       + by iApply "Ho2".
-    - iIntros (????) "H". iDestruct "H" as (vl1 vl2) "(% & #Hshr1 & #Hshr2)".
-      iExists _, _. iSplit; first done. iSplit.
+    - iIntros (???) "#[Hshr1 Hshr2]". iSplit.
       + by iApply "Hs1".
       + rewrite -(_ : ty_size ty11 = ty_size ty12) //. by iApply "Hs2".
   Qed.
@@ -87,15 +82,17 @@ Section product.
     Copy (product2 ty1 ty2).
   Proof.
     split; first (intros; apply _).
-    intros κ tid E F l q ?. iIntros "#LFT H [[Htok1 Htok2] Htl]".
-    iDestruct "H" as (E1 E2) "(% & H1 & H2)".
-    assert (F = E1 ∪ E2 ∪ F∖(E1 ∪ E2)) as ->.
+    intros κ tid E F l q ? HF. iIntros "#LFT [H1 H2] [[Htok1 Htok2] Htl]".
+    simpl in HF. rewrite ->shr_locsE_shift in HF.
+    assert (shr_locsE l (ty_size ty1) ⊥ shr_locsE (shift_loc l (ty_size ty1)) (ty_size ty2)).
+    { apply shr_locsE_disj. }
+    assert (F = shr_locsE l (ty_size ty1) ∪ F∖(shr_locsE l (ty_size ty1))) as ->.
     { rewrite -union_difference_L; set_solver. }
-    repeat setoid_rewrite na_own_union; first last.
-    set_solver. set_solver. set_solver. set_solver.
-    iDestruct "Htl" as "[[Htl1 Htl2] $]".
-    iMod (@copy_shr_acc with "LFT H1 [$Htok1 $Htl1]") as (q1) "[H1 Hclose1]". set_solver.
-    iMod (@copy_shr_acc with "LFT H2 [$Htok2 $Htl2]") as (q2) "[H2 Hclose2]". set_solver.
+    setoid_rewrite na_own_union; first last.
+    set_solver. set_solver.
+    iDestruct "Htl" as "[Htl1 Htl2]".
+    iMod (@copy_shr_acc with "LFT H1 [$Htok1 $Htl1]") as (q1) "[H1 Hclose1]". set_solver. done.
+    iMod (@copy_shr_acc with "LFT H2 [$Htok2 $Htl2]") as (q2) "[H2 Hclose2]". set_solver. set_solver.
     destruct (Qp_lower_bound q1 q2) as (qq & q'1 & q'2 & -> & ->). iExists qq.
     iDestruct "H1" as (vl1) "[H↦1 H1]". iDestruct "H2" as (vl2) "[H↦2 H2]".
     rewrite !split_prod_mt.
@@ -140,44 +137,39 @@ Section typing.
   Global Instance prod2_assoc E L : Assoc (eqtype E L) product2.
   Proof.
     split; (iIntros; (iSplit; first by rewrite /= assoc); iSplit; iAlways;
-            last iIntros (??); iIntros (??) "H").
+            last iIntros (?); iIntros (??) "H").
     - iDestruct "H" as (vl1 vl') "(% & Ho1 & H)".
       iDestruct "H" as (vl2 vl3) "(% & Ho2 & Ho3)". subst.
       iExists _, _. iSplit. by rewrite assoc. iFrame. iExists _, _. by iFrame.
-    - iDestruct "H" as (E1 E2') "(% & Hs1 & H)".
-      iDestruct "H" as (E2 E3) "(% & Hs2 & Hs3)". rewrite shift_loc_assoc_nat.
-      iExists (E1 ∪ E2), E3. iSplit. by iPureIntro; set_solver. iFrame.
-      iExists E1, E2. iSplit. by iPureIntro; set_solver. by iFrame.
+    - iDestruct "H" as "(Hs1 & Hs2 & Hs3)". rewrite shift_loc_assoc_nat.
+      by iFrame.
     - iDestruct "H" as (vl1 vl') "(% & H & Ho3)".
       iDestruct "H" as (vl2 vl3) "(% & Ho1 & Ho2)". subst.
       iExists _, _. iSplit. by rewrite -assoc. iFrame. iExists _, _. by iFrame.
-    - iDestruct "H" as (E1' E3) "(% & H & Hs3)".
-      iDestruct "H" as (E1 E2) "(% & Hs1 & Hs2)". rewrite /= shift_loc_assoc_nat.
-      iExists E1, (E2 ∪ E3). iSplit. by iPureIntro; set_solver. iFrame.
-      iExists E2, E3. iSplit. by iPureIntro; set_solver. by iFrame.
+    - iDestruct "H" as "[[Hs1 Hs2] Hs3]". rewrite /= shift_loc_assoc_nat.
+      by iFrame.
   Qed.
 
   Global Instance prod2_unit_leftid E L : LeftId (eqtype E L) unit product2.
   Proof.
     intros ty. split; (iIntros; (iSplit; first done); iSplit; iAlways;
-                  last iIntros (??); iIntros (??) "H").
+                  last iIntros (?); iIntros (??) "H").
     - iDestruct "H" as (? ?) "(% & % & ?)". by subst.
-    - iDestruct "H" as (? ?) "(% & ? & ?)". rewrite shift_loc_0.
-      iApply (ty_shr_mono with "[] []"); [|done| | done].
-      set_solver. iApply lft_incl_refl.
+    - iDestruct "H" as "(? & ?)". rewrite shift_loc_0.
+      iApply (ty_shr_mono with "[] []"); [done| | done].
+      iApply lft_incl_refl.
     - iExists [], _. eauto.
-    - iExists ∅, _. rewrite shift_loc_0. iFrame. by iPureIntro; set_solver.
+    - simpl. rewrite shift_loc_0. by iFrame.
   Qed.
 
   Global Instance prod2_unit_rightid E L : RightId (eqtype E L) unit product2.
   Proof.
     intros ty. split; (iIntros; (iSplit; first by rewrite /= -plus_n_O); iSplit; iAlways;
-                  last iIntros (??); iIntros (??) "H").
+                  last iIntros (?); iIntros (??) "H").
     - iDestruct "H" as (? ?) "(% & ? & %)". subst. by rewrite app_nil_r.
-    - iDestruct "H" as (? ?) "(% & ? & _)".
-      iApply (ty_shr_mono with "[] []"); [|done| |done]. set_solver. iApply lft_incl_refl.
+    - iDestruct "H" as "(? & _)". done.
     - iExists _, []. rewrite app_nil_r. eauto.
-    - iExists _, ∅. iFrame. by iPureIntro; set_solver.
+    - simpl. iFrame.
   Qed.
 
   Lemma eqtype_prod_flatten E L tyl1 tyl2 tyl3 :

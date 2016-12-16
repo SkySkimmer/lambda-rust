@@ -14,16 +14,16 @@ Section uniq_bor.
           (wrt. subtyping) works without an update. *)
        ty_own tid vl :=
          (∃ (l:loc) P, (⌜vl = [ #l ]⌝ ∗ □ (P ↔ l ↦∗: ty.(ty_own) tid)) ∗ &{κ} P)%I;
-       ty_shr κ' tid E l :=
+       ty_shr κ' tid l :=
          (∃ l':loc, &frac{κ'}(λ q', l ↦{q'} #l') ∗
-            □ ∀ F q, ⌜E ∪ lftE ⊆ F⌝ -∗ q.[κ∪κ']
-                ={F, F∖E∖↑lftN}▷=∗ ty.(ty_shr) (κ∪κ') tid E l' ∗ q.[κ∪κ'])%I
+            □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ∪κ']
+                ={F, F∖↑shrN∖↑lftN}▷=∗ ty.(ty_shr) (κ∪κ') tid l' ∗ q.[κ∪κ'])%I
     |}.
   Next Obligation.
     iIntros (q ty tid vl) "H". iDestruct "H" as (l P) "[[% _] _]". by subst.
   Qed.
   Next Obligation.
-    move=> κ ty E N κ' l tid ???/=. iIntros "#LFT Hshr Htok".
+    move=> κ ty N κ' l tid ??/=. iIntros "#LFT Hshr Htok".
     iMod (bor_exists with "LFT Hshr") as (vl) "Hb". set_solver.
     iMod (bor_sep with "LFT Hb") as "[Hb1 Hb2]". set_solver.
     iMod (bor_exists with "LFT Hb2") as (l') "Hb2". set_solver.
@@ -34,21 +34,23 @@ Section uniq_bor.
     subst. rewrite heap_mapsto_vec_singleton.
     iMod (bor_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "$". set_solver.
     rewrite {1}bor_unfold_idx. iDestruct "Hb2" as (i) "[#Hpb Hpbown]".
-    iMod (inv_alloc N _ (idx_bor_own 1 i ∨ ty_shr ty (κ∪κ') tid (↑N) l')%I
+    iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty (κ∪κ') tid l')%I
           with "[Hpbown]") as "#Hinv"; first by eauto.
     iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
+    (* FIXME We shouldn't have to add this manually to make the set_solver below work (instead, solve_ndisj below should do it).  Also, this goal itself should be handled by solve_ndisj. *)
+    assert (↑shrN ⊥ ↑lftN). { eapply ndot_preserve_disjoint_l. solve_ndisj. }
     iDestruct "INV" as "[>Hbtok|#Hshr]".
     - iMod (bor_unnest _ _ _ P with "LFT [Hbtok]") as "Hb".
       { set_solver. } { iApply bor_unfold_idx. eauto. }
                       iModIntro. iNext. iMod "Hb".
       iMod (bor_iff with "LFT [] Hb") as "Hb". set_solver. by eauto.
-      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#Hshr $]". done. set_solver.
+      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#Hshr $]". set_solver.
       iMod ("Hclose" with "[]") as "_"; auto.
     - iMod ("Hclose" with "[]") as "_". by eauto.
       iApply step_fupd_intro. set_solver. auto.
   Qed.
   Next Obligation.
-    intros κ0 ty κ κ' tid E E' l ?. iIntros "#LFT #Hκ #H".
+    intros κ0 ty κ κ' tid l. iIntros "#LFT #Hκ #H".
     iDestruct "H" as (l') "[Hfb Hvs]". iAssert (κ0∪κ' ⊑ κ0∪κ)%I as "#Hκ0".
     { iApply (lft_incl_glb with "[] []").
       - iApply lft_le_incl. apply gmultiset_union_subseteq_l.
@@ -56,7 +58,7 @@ Section uniq_bor.
         iApply lft_le_incl. apply gmultiset_union_subseteq_r. }
     iExists l'. iSplit. by iApply (frac_bor_shorten with "[]").
     iIntros "!# * % Htok".
-    iApply (step_fupd_mask_mono F _ _ (F∖E∖ ↑lftN)); try  set_solver.
+    iApply (step_fupd_mask_mono F _ _ (F∖↑shrN∖↑lftN)); try set_solver.
     iMod (lft_incl_acc with "Hκ0 Htok") as (q') "[Htok Hclose]"; first set_solver.
     iMod ("Hvs" with "* [%] Htok") as "Hvs'". set_solver. iModIntro. iNext.
     iMod "Hvs'" as "[#Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
@@ -78,7 +80,7 @@ Section uniq_bor.
         by iApply "Ho1".
       + iDestruct "H" as (vl) "[??]". iApply "HPiff". iExists vl. iFrame.
         by iApply "Ho2".
-    - iIntros (κ ???) "H". iAssert (κ2 ∪ κ ⊑ κ1 ∪ κ)%I as "#Hincl'".
+    - iIntros (κ ??) "H". iAssert (κ2 ∪ κ ⊑ κ1 ∪ κ)%I as "#Hincl'".
       { iApply (lft_incl_glb with "[] []").
         - iApply (lft_incl_trans with "[] Hκ"). iApply lft_le_incl.
           apply gmultiset_union_subseteq_l.
