@@ -4,7 +4,7 @@ From iris.base_logic Require Import big_op.
 From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.lang Require Export new_delete.
 From lrust.typing Require Export type.
-From lrust.typing Require Import perm typing uninit uniq_bor type_context.
+From lrust.typing Require Import perm typing uniq_bor type_context.
 
 Section own.
   Context `{typeG Σ}.
@@ -132,46 +132,4 @@ Section own.
   Qed.
 
 
-  Lemma update_strong ty1 ty2 n:
-    ty1.(ty_size) = ty2.(ty_size) →
-    update ty1 (λ ν, ν ◁ own n ty2)%P (λ ν, ν ◁ own n ty1)%P.
-  Proof.
-    iIntros (Hsz ν tid Φ E ?) "_ H◁ HΦ". iApply (has_type_wp with "H◁").
-    iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & H↦ & >H†)".
-    iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
-    rewrite ty2.(ty_size_eq) -Hsz. iDestruct "Hown" as ">%". iApply "HΦ". iFrame "∗%".
-    iIntros (vl') "[H↦ Hown']!>". rewrite /has_type Hνv.
-    iExists _. iSplit. done. iFrame. iExists _. iFrame.
-  Qed.
-
-  Lemma consumes_copy_own ty n:
-    Copy ty → consumes ty (λ ν, ν ◁ own n ty)%P (λ ν, ν ◁ own n ty)%P.
-  Proof.
-    iIntros (? ν tid Φ E ?) "_ H◁ Htl HΦ". iApply (has_type_wp with "H◁").
-    iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & H↦ & >H†)".
-    iDestruct "Heq" as %[=->]. iDestruct "H↦" as (vl) "[>H↦ #Hown]".
-    iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
-      by rewrite ty.(ty_size_eq).
-    iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦!>".
-    rewrite /has_type Hνv. iExists _. iSplit. done. iFrame. iExists vl. eauto.
-  Qed.
-
-  Lemma consumes_move ty n:
-    consumes ty (λ ν, ν ◁ own n ty)%P (λ ν, ν ◁ own n (uninit ty.(ty_size)))%P.
-  Proof.
-    iIntros (ν tid Φ E ?) "_ H◁ Htl HΦ". iApply (has_type_wp with "H◁").
-    iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & H↦ & >H†)".
-    iDestruct "Heq" as %[=->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
-    iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">Hlen".
-      by rewrite ty.(ty_size_eq). iDestruct "Hlen" as %Hlen.
-    iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦!>".
-    rewrite /has_type Hνv. iExists _. iSplit. done. iSplitR "H†".
-    - rewrite -Hlen. iExists vl. iIntros "{$H↦}!>". clear.
-      iInduction vl as [|v vl] "IH". done.
-      iExists [v], vl. iSplit. done. by iSplit.
-    - rewrite uninit_sz; auto.
-  Qed.
 End own.

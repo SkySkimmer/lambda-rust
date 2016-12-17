@@ -139,41 +139,4 @@ Section typing.
       iExists _, _. erewrite <-uPred.iff_refl. eauto.
   Qed.
 
-  Lemma consumes_copy_uniq_bor `(!Copy ty) κ κ' q:
-    consumes ty (λ ν, ν ◁ &uniq{κ}ty ∗ κ' ⊑ κ ∗ q.[κ'])%P
-                (λ ν, ν ◁ &uniq{κ}ty ∗ κ' ⊑ κ ∗ q.[κ'])%P.
-  Proof.
-    iIntros (ν tid Φ E ?) "#LFT (H◁ & #H⊑ & Htok) Htl HΦ".
-    iApply (has_type_wp with "H◁"). iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l' P) "[[Heq #HPiff] HP]".
-    iDestruct "Heq" as %[=->].
-    iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
-    iMod (lft_incl_acc with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
-    iMod (bor_acc with "LFT H↦ Htok") as "[H↦ Hclose']". set_solver.
-    iDestruct "H↦" as (vl) "[>H↦ #Hown]".
-    iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
-      by rewrite ty.(ty_size_eq).
-    iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦".
-    iMod ("Hclose'" with "[H↦]") as "[H↦ Htok]". by iExists _; iFrame.
-    iMod ("Hclose" with "Htok") as "$". rewrite /has_type Hνv.
-    iExists _, _. erewrite <-uPred.iff_refl. auto.
-  Qed.
-
-  Lemma update_weak ty q κ κ':
-    update ty (λ ν, ν ◁ &uniq{κ} ty ∗ κ' ⊑ κ ∗ q.[κ'])%P
-              (λ ν, ν ◁ &uniq{κ} ty ∗ κ' ⊑ κ ∗ q.[κ'])%P.
-  Proof.
-    iIntros (ν tid Φ E ?) "#LFT (H◁ & #H⊑ & Htok) HΦ".
-    iApply (has_type_wp with "H◁"). iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l P) "[[Heq #HPiff] HP]".
-    iDestruct "Heq" as %[=->].
-    iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
-    iMod (lft_incl_acc with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
-    iMod (bor_acc with "LFT H↦ Htok") as "[H↦ Hclose']". set_solver.
-    iDestruct "H↦" as (vl) "[>H↦ Hown]". rewrite ty.(ty_size_eq).
-    iDestruct "Hown" as ">%". iApply "HΦ". iFrame "∗%#". iIntros (vl') "[H↦ Hown]".
-    iMod ("Hclose'" with "[H↦ Hown]") as "[Hbor Htok]". by iExists _; iFrame.
-    iMod ("Hclose" with "Htok") as "$". rewrite /has_type Hνv.
-    iExists _, _. erewrite <-uPred.iff_refl. auto.
-  Qed.
 End typing.
