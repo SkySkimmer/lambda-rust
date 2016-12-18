@@ -83,7 +83,7 @@ Section type_context.
     by iApply (Hincl with "LFT HE HL").
   Qed.
 
-  Lemma copy_tctx_incl E L p `(!Copy ty) :
+  Lemma copy_tctx_incl E L p `{!Copy ty} :
     tctx_incl E L [TCtx_hasty p ty] [TCtx_hasty p ty; TCtx_hasty p ty].
   Proof.
     iIntros (???) "_ $ $ *". rewrite /tctx_interp !big_sepL_cons big_sepL_nil.
