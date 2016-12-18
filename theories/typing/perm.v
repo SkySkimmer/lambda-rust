@@ -3,6 +3,8 @@ From lrust.typing Require Export type.
 From lrust.lang Require Export proofmode notation.
 From lrust.lifetime Require Import borrow frac_borrow.
 
+(* TODO: This is all still using the outdated type system. *)
+
 Section perm.
   Context `{typeG Σ}.
 
