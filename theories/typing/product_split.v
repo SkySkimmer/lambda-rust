@@ -213,39 +213,60 @@ Section product_split.
   Qed.
 
   (** Shared borrows *)
-  Lemma perm_split_shr_bor_prod2 ty1 ty2 κ ν :
-    ν ◁ &shr{κ} (product2 ty1 ty2) ⇒
-    ν ◁ &shr{κ} ty1 ∗ ν +ₗ #(ty1.(ty_size)) ◁ &shr{κ} ty2.
+  Lemma tctx_split_shr_bor_prod2 E L p κ ty1 ty2 :
+    tctx_incl E L [TCtx_hasty p $ shr_bor κ $ product2 ty1 ty2]
+                  [TCtx_hasty p $ shr_bor κ $ ty1;
+                   TCtx_hasty (p +ₗ #ty1.(ty_size)) $ shr_bor κ $ ty2].
   Proof.
-    rewrite /has_type /sep /product2 /=.
-    destruct (eval_expr ν) as [[[|l|]|]|];
-      iIntros (tid) "#LFT H"; try iDestruct "H" as "[]";
-        iDestruct "H" as (l0) "(EQ & [H1 H2])"; iDestruct "EQ" as %[=<-].
-    iSplitL "H1"; iExists _; (iSplitR; [done|]); iApply (ty_shr_mono with "LFT []");
-      try by iFrame. iApply lft_incl_refl. iApply lft_incl_refl.
+    iIntros (tid q1 q2) "#LFT $ $ H".
+    rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
+    iDestruct "H" as (v) "[Hp H]". iDestruct "Hp" as %Hp.
+    iDestruct "H" as (l) "[EQ [H1 H2]]". iDestruct "EQ" as %[=->].
+    iSplitL "H1"; iExists _; (iSplitR; first by rewrite /= Hp);
+      iExists _; iSplitR; done.
+  Qed.
+
+  Lemma tctx_merge_shr_bor_prod2 E L p κ ty1 ty2 :
+    tctx_incl E L [TCtx_hasty p $ shr_bor κ $ ty1;
+                   TCtx_hasty (p +ₗ #ty1.(ty_size)) $ shr_bor κ $ ty2]
+                  [TCtx_hasty p $ shr_bor κ $ product2 ty1 ty2].
+  Proof.
+    iIntros (tid q1 q2) "#LFT $ $ H".
+    rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
+    iDestruct "H" as "[H1 H2]". iDestruct "H1" as (v1) "(Hp1 & H1)".
+    iDestruct "Hp1" as %Hp1. iDestruct "H1" as (l) "[EQ Hown1]".
+    iDestruct "EQ" as %[=->]. iDestruct "H2" as (v2) "(Hp2 & H2)".
+    rewrite /= Hp1. iDestruct "Hp2" as %[=<-].
+    iDestruct "H2" as (l') "[EQ Hown2]". iDestruct "EQ" as %[=<-].
+    iExists #l. iSplitR; first done. iExists l. iSplitR; first done.
+    by iFrame.
   Qed.
 
 
-  Fixpoint combine_offs (tyl : list type) (accu : nat) :=
-    match tyl with
-    | [] => []
-    | ty :: q => (ty, accu) :: combine_offs q (accu + ty.(ty_size))
-    end.
-
-  Lemma perm_split_shr_bor_prod tyl κ ν :
-    ν ◁ &shr{κ} (Π tyl) ⇒
-      foldr (λ tyoffs acc,
-             (ν +ₗ #(tyoffs.2:nat))%E ◁ &shr{κ} (tyoffs.1) ∗ acc)%P
-            ⊤ (combine_offs tyl 0).
+  Lemma shr_bor_is_ptr κ ty tid (vl : list val) :
+    ty_own (shr_bor κ ty) tid vl -∗ ⌜∃ l : loc, vl = [(#l) : val]⌝.
   Proof.
-    transitivity (ν +ₗ #0%nat ◁ &shr{κ}Π tyl)%P.
-    { iIntros (tid) "#LFT H/=". rewrite /has_type /=.
-      destruct (eval_expr ν)=>//.
-      iDestruct "H" as (l) "[Heq H]". iDestruct "Heq" as %[=->].
-      rewrite shift_loc_0 /=. iExists _. by iFrame "∗%". }
-    generalize 0%nat. induction tyl as [|ty tyl IH]=>offs. by iIntros (tid) "_ H/=".
-    etransitivity. apply perm_split_shr_bor_prod2.
-    iIntros (tid) "#LFT /=[$ H]". iApply (IH with "LFT"). rewrite /has_type /=.
-    destruct (eval_expr ν) as [[[]|]|]=>//=. by rewrite shift_loc_assoc_nat.
+    iIntros "H". iDestruct "H" as (l) "[% _]". iExists l. done.
   Qed.
+
+  Lemma tctx_split_shr_bor_prod E L κ tyl p :
+    tctx_incl E L [TCtx_hasty p $ shr_bor κ $ product tyl]
+                  (hasty_ptr_offsets p (shr_bor κ) tyl 0).
+  Proof.
+    apply tctx_split_ptr_prod.
+    - intros. apply tctx_split_shr_bor_prod2.
+    - intros. apply shr_bor_is_ptr.
+  Qed.
+
+  Lemma tctx_merge_shr_bor_prod E L κ tyl :
+    tyl ≠ [] → 
+    ∀ p, tctx_incl E L (hasty_ptr_offsets p (shr_bor κ) tyl 0)
+                   [TCtx_hasty p $ shr_bor κ $ product tyl].
+  Proof.
+    intros. apply tctx_merge_ptr_prod; try done.
+    - apply _.
+    - intros. apply tctx_merge_shr_bor_prod2.
+    - intros. apply shr_bor_is_ptr.
+  Qed.
+  
 End product_split.
