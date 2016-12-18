@@ -44,12 +44,12 @@ Section perm.
 
   Global Instance top : Top (@perm Σ) :=
     λ _, True%I.
-
+(*
   Definition perm_incl (ρ1 ρ2 : perm) :=
     ∀ tid, lft_ctx -∗ ρ1 tid ={⊤}=∗ ρ2 tid.
 
   Global Instance perm_equiv : Equiv perm :=
-    λ ρ1 ρ2, perm_incl ρ1 ρ2 ∧ perm_incl ρ2 ρ1.
+    λ ρ1 ρ2, perm_incl ρ1 ρ2 ∧ perm_incl ρ2 ρ1. *)
 End perm.
 
 Delimit Scope perm_scope with P.
@@ -71,14 +71,14 @@ Notation "∃ x .. y , P" :=
   (exist (λ x, .. (exist (λ y, P)) ..)) : perm_scope.
 
 Infix "∗" := sep (at level 80, right associativity) : perm_scope.
-
+(*
 Infix "⇒" := perm_incl (at level 95, no associativity) : C_scope.
 Notation "(⇒)" := perm_incl (only parsing) : C_scope.
 
 Notation "ρ1 ⇔ ρ2" := (equiv (A:=perm) ρ1%P ρ2%P)
    (at level 95, no associativity) : C_scope.
 Notation "(⇔)" := (equiv (A:=perm)) (only parsing) : C_scope.
-
+*)
 Section has_type.
   Context `{typeG Σ}.
 
@@ -106,7 +106,7 @@ Section has_type.
       iApply ("IH" with "[] [HΦ]"). done. simpl. wp_op. inversion EQν. eauto.
   Qed.
 End has_type.
-
+(*
 Section perm_incl.
   Context `{typeG Σ}.
 
@@ -177,3 +177,4 @@ Section perm_incl.
   Lemma perm_lftincl_trans κ1 κ2 κ3 : κ1 ⊑ κ2 ∗ κ2 ⊑ κ3 ⇒ κ1 ⊑ κ3.
   Proof. iIntros (tid) "_ [#?#?]!>". iApply (lft_incl_trans with "[] []"); auto. Qed.
 End perm_incl.
+*)

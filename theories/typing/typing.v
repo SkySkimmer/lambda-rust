@@ -112,14 +112,14 @@ Section typing.
     iIntros "[H↦ H↦']". iMod "Hcons" as "[Hown' Hcons]".
     iMod ("Hcons" with "H↦'") as "[$$]". iApply "Hupd". by iFrame.
   Qed.
-
+(*
   Lemma typed_weaken ρ1 ρ2 e:
     typed_program ρ2 e → (ρ1 ⇒ ρ2) → typed_program ρ1 e.
   Proof.
     iIntros (Hρ2 Hρ12 tid) "!#(#HEAP & #LFT & Hρ1 & Htl)".
     iApply (Hρ2 with ">"). iFrame "∗#". iApply (Hρ12 with "LFT Hρ1").
   Qed.
-
+*)
   Lemma typed_program_exists {A} ρ θ e:
     (∀ x:A, typed_program (ρ ∗ θ x) e) →
     typed_program (ρ ∗ ∃ x, θ x) e.
