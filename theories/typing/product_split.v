@@ -86,10 +86,11 @@ Section product_split.
   (** Owned pointers *)
   Lemma tctx_split_own_prod2 E L p n ty1 ty2 :
     tctx_incl E L [TCtx_hasty p $ own n $ product2 ty1 ty2]
-                  [TCtx_hasty p $ own n $ ty1; TCtx_hasty (p +ₗ #ty1.(ty_size)) $ own n $ ty2].
+                  [TCtx_hasty p $ own n $ ty1;
+                   TCtx_hasty (p +ₗ #ty1.(ty_size)) $ own n $ ty2].
   Proof.
     iIntros (tid q1 q2) "#LFT $ $ H".
-    rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
+    rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
     iDestruct "H" as (v) "[Hp H]". iDestruct "Hp" as %Hp. iDestruct "H" as (l) "(EQ & H & >H†)".
     iDestruct "EQ" as %[=->]. iDestruct "H" as (vl) "[>H↦ H]".
     iDestruct "H" as (vl1 vl2) "(>% & H1 & H2)". subst.
@@ -105,11 +106,12 @@ Section product_split.
   Qed.
 
   Lemma tctx_merge_own_prod2 E L p n ty1 ty2 :
-    tctx_incl E L [TCtx_hasty p $ own n $ ty1; TCtx_hasty (p +ₗ #ty1.(ty_size)) $ own n $ ty2]
+    tctx_incl E L [TCtx_hasty p $ own n $ ty1;
+                   TCtx_hasty (p +ₗ #ty1.(ty_size)) $ own n $ ty2]
                   [TCtx_hasty p $ own n $ product2 ty1 ty2].
   Proof.
     iIntros (tid q1 q2) "#LFT $ $ H".
-    rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
+    rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
     iDestruct "H" as "[H1 H2]". iDestruct "H1" as (v1) "(Hp1 & H1)".
     iDestruct "Hp1" as %Hp1. iDestruct "H1" as (l) "(EQ & H↦1 & H†1)".
     iDestruct "EQ" as %[=->]. iDestruct "H2" as (v2) "(Hp2 & H2)".
@@ -150,41 +152,64 @@ Section product_split.
   Qed.
 
   (** Unique borrows *)
-  Lemma perm_split_uniq_bor_prod2 ty1 ty2 κ ν :
-    ν ◁ &uniq{κ} (product2 ty1 ty2) ⇒
-    ν ◁ &uniq{κ} ty1 ∗ ν +ₗ #(ty1.(ty_size)) ◁ &uniq{κ} ty2.
+  Lemma tctx_split_uniq_bor_prod2 E L p κ ty1 ty2 :
+    tctx_incl E L [TCtx_hasty p $ uniq_bor κ $ product2 ty1 ty2]
+                  [TCtx_hasty p $ uniq_bor κ $ ty1;
+                   TCtx_hasty (p +ₗ #ty1.(ty_size)) $ uniq_bor κ $ ty2].
   Proof.
-    rewrite /has_type /sep /product2 /=.
-    destruct (eval_expr ν) as [[[|l|]|]|];
-      iIntros (tid) "#LFT H"; try iDestruct "H" as "[]";
-        iDestruct "H" as (l0 P) "[[EQ #HPiff] HP]"; iDestruct "EQ" as %[=<-].
+    iIntros (tid q1 q2) "#LFT $ $ H".
+    rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
+    iDestruct "H" as (v) "[Hp H]". iDestruct "Hp" as %Hp.
+    iDestruct "H" as (l P) "[[EQ #HPiff] HP]". iDestruct "EQ" as %[=->]. 
     iMod (bor_iff with "LFT [] HP") as "Hown". set_solver. by eauto.
     rewrite /= split_prod_mt. iMod (bor_sep with "LFT Hown") as "[H1 H2]".
-    set_solver. iSplitL "H1"; iExists _, _; erewrite <-uPred.iff_refl; auto.
+    set_solver. iSplitL "H1"; iExists _; (iSplitR; first by rewrite Hp);
+                  iExists _, _; erewrite <-uPred.iff_refl; auto.
   Qed.
 
-  Fixpoint combine_offs (tyl : list type) (accu : nat) :=
-    match tyl with
-    | [] => []
-    | ty :: q => (ty, accu) :: combine_offs q (accu + ty.(ty_size))
-    end.
-
-  Lemma perm_split_uniq_bor_prod tyl κ ν :
-    ν ◁ &uniq{κ} (Π tyl) ⇒
-      foldr (λ tyoffs acc,
-             ν +ₗ #(tyoffs.2:nat) ◁ &uniq{κ} (tyoffs.1) ∗ acc)%P
-            ⊤ (combine_offs tyl 0).
+  Lemma tctx_merge_uniq_bor_prod2 E L p κ ty1 ty2 :
+    tctx_incl E L [TCtx_hasty p $ uniq_bor κ $ ty1;
+                   TCtx_hasty (p +ₗ #ty1.(ty_size)) $ uniq_bor κ $ ty2]
+                  [TCtx_hasty p $ uniq_bor κ $ product2 ty1 ty2].
   Proof.
-    transitivity (ν +ₗ #0%nat ◁ &uniq{κ}Π tyl)%P.
-    { iIntros (tid) "LFT H/=". rewrite /has_type /=. destruct (eval_expr ν)=>//.
-      iDestruct "H" as (l P) "[[Heq #HPiff] HP]". iDestruct "Heq" as %[=->].
-      iMod (bor_iff with "LFT [] HP") as "H". set_solver. by eauto.
-      iExists _, _; erewrite <-uPred.iff_refl, shift_loc_0; auto. }
-    generalize 0%nat. induction tyl as [|ty tyl IH]=>offs. by iIntros (tid) "_ H/=".
-    etransitivity. apply perm_split_uniq_bor_prod2.
-    iIntros (tid) "#LFT /=[$ H]". iApply (IH with "LFT").
-    rewrite /has_type /=. destruct (eval_expr ν) as [[[]|]|]=>//=.
-    by rewrite shift_loc_assoc_nat.
+    iIntros (tid q1 q2) "#LFT $ $ H".
+    rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
+    iDestruct "H" as "[H1 H2]". iDestruct "H1" as (v1) "(Hp1 & H1)".
+    iDestruct "Hp1" as %Hp1. iDestruct "H1" as (l P) "[[EQ #HPiff] HP]".
+    iDestruct "EQ" as %[=->].
+    iMod (bor_iff with "LFT [] HP") as "Hown1". set_solver. by eauto.
+    iDestruct "H2" as (v2) "(Hp2 & H2)". rewrite /= Hp1. iDestruct "Hp2" as %[=<-].
+    iDestruct "H2" as (l' Q) "[[EQ #HQiff] HQ]". iDestruct "EQ" as %[=<-].
+    iMod (bor_iff with "LFT [] HQ") as "Hown2". set_solver. by eauto.
+    iExists #l. iSplitR; first done. iExists l, _. iSplitR.
+    { iSplitR; first done. erewrite <-uPred.iff_refl; auto. }
+    rewrite split_prod_mt. iApply (bor_combine with "LFT Hown1 Hown2"). set_solver.
+  Qed.
+
+  Lemma uniq_bor_is_ptr κ ty tid (vl : list val) :
+    ty_own (uniq_bor κ ty) tid vl -∗ ⌜∃ l : loc, vl = [(#l) : val]⌝.
+  Proof.
+    iIntros "H". iDestruct "H" as (l P) "[[% _] _]". iExists l. done.
+  Qed.
+
+  Lemma tctx_split_uniq_bor_prod E L κ tyl p :
+    tctx_incl E L [TCtx_hasty p $ uniq_bor κ $ product tyl]
+                  (hasty_ptr_offsets p (uniq_bor κ) tyl 0).
+  Proof.
+    apply tctx_split_ptr_prod.
+    - intros. apply tctx_split_uniq_bor_prod2.
+    - intros. apply uniq_bor_is_ptr.
+  Qed.
+
+  Lemma tctx_merge_uniq_bor_prod E L κ tyl :
+    tyl ≠ [] → 
+    ∀ p, tctx_incl E L (hasty_ptr_offsets p (uniq_bor κ) tyl 0)
+                   [TCtx_hasty p $ uniq_bor κ $ product tyl].
+  Proof.
+    intros. apply tctx_merge_ptr_prod; try done.
+    - apply _.
+    - intros. apply tctx_merge_uniq_bor_prod2.
+    - intros. apply uniq_bor_is_ptr.
   Qed.
 
   (** Shared borrows *)
@@ -199,6 +224,13 @@ Section product_split.
     iSplitL "H1"; iExists _; (iSplitR; [done|]); iApply (ty_shr_mono with "LFT []");
       try by iFrame. iApply lft_incl_refl. iApply lft_incl_refl.
   Qed.
+
+
+  Fixpoint combine_offs (tyl : list type) (accu : nat) :=
+    match tyl with
+    | [] => []
+    | ty :: q => (ty, accu) :: combine_offs q (accu + ty.(ty_size))
+    end.
 
   Lemma perm_split_shr_bor_prod tyl κ ν :
     ν ◁ &shr{κ} (Π tyl) ⇒
