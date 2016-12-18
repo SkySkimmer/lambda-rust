@@ -15,7 +15,7 @@ Section shr_bor.
   Qed.
 
   Global Instance subtype_shr_bor_mono E L :
-    Proper (lctx_lft_incl E L --> subtype E L ==> subtype E L) shr_bor.
+    Proper (flip (lctx_lft_incl E L) ==> subtype E L ==> subtype E L) shr_bor.
   Proof.
     intros κ1 κ2 Hκ ty1 ty2 Hty. apply subtype_simple_type.
     iIntros (??) "#LFT #HE #HL H". iDestruct (Hκ with "HE HL") as "#Hκ".
@@ -25,7 +25,7 @@ Section shr_bor.
     by iApply "Hs1".
   Qed.
   Global Instance subtype_shr_bor_mono' E L :
-    Proper (lctx_lft_incl E L ==> subtype E L --> flip (subtype E L)) shr_bor.
+    Proper (lctx_lft_incl E L ==> flip (subtype E L) ==> flip (subtype E L)) shr_bor.
   Proof. intros ??????. by apply subtype_shr_bor_mono. Qed.
   Global Instance subtype_shr_bor_proper E L κ :
     Proper (eqtype E L ==> eqtype E L) (shr_bor κ).

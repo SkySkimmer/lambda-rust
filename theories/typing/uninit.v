@@ -17,10 +17,10 @@ Section uninit.
   Lemma uninit_sz n : ty_size (uninit n) = n.
   Proof. induction n. done. simpl. by f_equal. Qed.
 
-  Lemma eqtype_uninit_product E L ns :
+  Lemma uninit_product E L ns :
     eqtype E L (uninit (foldr plus 0%nat ns)) (Π(uninit <$> ns)).
   Proof.
     induction ns as [|n ns IH]. done. revert IH.
-    by rewrite /= /uninit replicate_plus eqtype_prod_nil_flatten -!eqtype_prod_app=>->.
+    by rewrite /= /uninit replicate_plus prod_flatten_l -!prod_app=>->.
   Qed.
 End uninit.

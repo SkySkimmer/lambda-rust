@@ -176,20 +176,21 @@ Section typing.
     - simpl. iFrame.
   Qed.
 
-  Lemma eqtype_prod_flatten E L tyl1 tyl2 tyl3 :
+  Lemma prod_flatten E L tyl1 tyl2 tyl3 :
     eqtype E L (Π(tyl1 ++ Π tyl2 :: tyl3)) (Π(tyl1 ++ tyl2 ++ tyl3)).
   Proof.
     unfold product. induction tyl1; simpl; last by f_equiv.
     induction tyl2. by rewrite left_id. by rewrite /= -assoc; f_equiv.
   Qed.
 
-  Lemma eqtype_prod_nil_flatten E L tyl1 tyl2 :
+  Lemma prod_flatten_l E L tyl1 tyl2 :
     eqtype E L (Π(Π tyl1 :: tyl2)) (Π(tyl1 ++ tyl2)).
-  Proof. apply (eqtype_prod_flatten _ _ []). Qed.
-  Lemma eqtype_prod_flatten_nil E L tyl1 tyl2 :
+  Proof. apply (prod_flatten _ _ []). Qed.
+  Lemma prod_flatten_r E L tyl1 tyl2 :
     eqtype E L (Π(tyl1 ++ [Π tyl2])) (Π(tyl1 ++ tyl2)).
-  Proof. by rewrite (eqtype_prod_flatten E L tyl1 tyl2 []) app_nil_r. Qed.
-  Lemma eqtype_prod_app E L tyl1 tyl2 :
+  Proof. by rewrite (prod_flatten E L tyl1 tyl2 []) app_nil_r. Qed.
+  Lemma prod_app E L tyl1 tyl2 :
     eqtype E L (Π[Π tyl1; Π tyl2]) (Π(tyl1 ++ tyl2)).
-  Proof. by rewrite -eqtype_prod_flatten_nil -eqtype_prod_nil_flatten. Qed.
+  Proof. by rewrite -prod_flatten_r -prod_flatten_l. Qed.
+
 End typing.
