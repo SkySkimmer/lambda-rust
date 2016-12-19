@@ -89,11 +89,32 @@ Section fn.
   Qed.
 
   (* TODO: Define some syntactic sugar for calling and letrec like we do on paper. *)
-  Lemma typed_call {A n} E L E' T (tys : A → vec type n) ty k p (ps : vec path n) x :
-    tctx_incl E L T (zip_with TCtx_hasty ps (tys x)) → elctx_sat E L (E' x) →
-    typed_body E L [CctxElt k L 1 (λ v, (TCtx_hasty (v!!!0) (ty x)) :: T)]
-               [TCtx_hasty p (fn E' tys ty)] (p (of_val k :: ps)).
+  Lemma typed_call {A n} E L E' T T' (tys : A → vec type n) ty k p (ps : vec path n) x :
+    tctx_incl E L T (zip_with TCtx_hasty ps (tys x) ++ T') → elctx_sat E L (E' x) →
+    typed_body E L [CctxElt k L 1 (λ v, (TCtx_hasty (v!!!0) (ty x)) :: T')]
+               (TCtx_hasty p (fn E' tys ty) :: T) (p (of_val k :: ps)).
   Proof.
+    (* FIXME: Why can't I merge these iIntros? *)
+    iIntros (HTsat HEsat). iIntros (tid qE) "#LFT HE HL HC".
+    rewrite tctx_interp_cons. iIntros "[Hf HT]".
+    wp_bind p. iApply (wp_hasty with "Hf"). iIntros (v) "[% Hf]".
+    iMod (HTsat with "LFT HE HL HT") as "(HE & HL & HT)". rewrite tctx_interp_app.
+    iDestruct "HT" as "[Hargs HT']". clear HTsat.
+    (* TODO: I have no idea how to reduce all the ps properly to their values. This induction is probably not right, but at least it checks the case of the empty list. *)
+    iInduction ps as [|p' n ps] "IH" forall (tys).
+    - iDestruct "Hf" as (f) "[EQ #Hf]". iDestruct "EQ" as %[=->].
+      iSpecialize ("Hf" $! x [#] k). simpl.
+      iMod (HEsat with "[%] HE HL") as (q') "[HE' Hclose]"; first done.
+      iApply ("Hf" with "LFT HE' [] [HC Hclose HT']").
+      + by rewrite /llctx_interp big_sepL_nil.
+      + iIntros "HE'". iApply fupd_cctx_interp. iMod ("Hclose" with "HE'") as "[HE HL]".
+        iSpecialize ("HC" with "HE").  iModIntro. iIntros (y) "IN".
+        iDestruct "IN" as %->%elem_of_list_singleton.
+        iIntros (args) "_ HT". iSpecialize ("HC" with "* []"); first by (iPureIntro; apply elem_of_list_singleton).
+        iApply ("HC" $! args with "HL"). rewrite tctx_interp_singleton tctx_interp_cons.
+        iFrame.
+      + done.
+    - (* The IH is not usable here. *)
   Abort.
 
   Lemma typed_fn {A n} E L T E' (tys : A → vec type n) ty fb kb (argsb : vec binder n) e `{!CopyC T} :
