@@ -40,4 +40,4 @@ theories/typing/bool.v
 theories/typing/int.v
 theories/typing/function.v
 theories/typing/programs.v
-theories/typing/mem_instructions.v
+theories/typing/mem.v
