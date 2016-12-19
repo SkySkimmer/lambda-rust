@@ -13,7 +13,12 @@ Section uniq_bor.
   Program Definition uniq_bor (κ:lft) (ty:type) :=
     {| ty_size := 1;
        (* We quantify over [P]s so that the Proper lemma
-          (wrt. subtyping) works without an update. *)
+          (wrt. subtyping) works without an update.
+
+          An obvious alternative definition would be to allow
+          an update in the ownership here, i.e. `|={lftE}=> &{κ} P`.
+          The trouble with this definition is that bor_unnest as proven is too
+          weak. The original unnesting with open borrows was strong enough. *)
        ty_own tid vl :=
          (∃ (l:loc) P, (⌜vl = [ #l ]⌝ ∗ □ (P ↔ l ↦∗: ty.(ty_own) tid)) ∗ &{κ} P)%I;
        ty_shr κ' tid l :=

@@ -57,37 +57,28 @@ Section type_context.
     tctx_interp tid [x] ≡ tctx_elt_interp tid x.
   Proof. rewrite tctx_interp_cons tctx_interp_nil right_id //. Qed.
 
-  (** Copy typing contexts *)
-  Class CopyC (T : tctx) :=
-    copyc_persistent tid : PersistentP (tctx_interp tid T).
-  Global Existing Instances copyc_persistent.
-
-  Global Instance tctx_nil_copy : CopyC [].
-  Proof. rewrite /CopyC. apply _. Qed.
-
-  Global Instance tctx_ty_copy T p ty :
-    CopyC T → Copy ty → CopyC (TCtx_hasty p ty :: T).
+  Global Instance tctx_persistent cps ctyl tid :
+    LstCopy ctyl → PersistentP (tctx_interp tid $ zip_with TCtx_hasty cps ctyl).
   Proof.
+    intros Hcopy. revert cps; induction Hcopy; intros cps;
+      first by (rewrite zip_with_nil_r tctx_interp_nil; apply _).
+    destruct cps; first by (rewrite tctx_interp_nil; apply _). simpl.
     (* TODO RJ: Should we have instances that PersistentP respects equiv? *)
-    intros ???. rewrite /PersistentP tctx_interp_cons.
+    rewrite /PersistentP tctx_interp_cons.
     apply uPred.sep_persistent; by apply _.
   Qed.
 
-  (** Send typing contexts *)
-  Class SendC (T : tctx) :=
-    sendc_change_tid tid1 tid2 : tctx_interp tid1 T -∗ tctx_interp tid2 T.
-
-  Global Instance tctx_nil_send : SendC [].
-  Proof. done. Qed.
-
-  Global Instance tctx_ty_send T p ty :
-    SendC T → Send ty → SendC (TCtx_hasty p ty :: T).
+  Lemma tctx_send cps ctyl tid1 tid2 {Hcopy : LstSend ctyl} :
+    tctx_interp tid1 $ zip_with TCtx_hasty cps ctyl -∗
+                tctx_interp tid2 $ zip_with TCtx_hasty cps ctyl.
   Proof.
-    iIntros (HT Hty ??). rewrite !tctx_interp_cons.
-    iIntros "[Hty HT]". iSplitR "HT".
+    revert cps; induction Hcopy; intros cps;
+      first by rewrite zip_with_nil_r !tctx_interp_nil.
+    destruct cps; first by rewrite !tctx_interp_nil. simpl.
+    rewrite !tctx_interp_cons. iIntros "[Hty HT]". iSplitR "HT".
     - iDestruct "Hty" as (?) "[% Hty]". iExists _. iSplit; first done.
-      by iApply Hty.
-    - by iApply HT.
+      by iApply send_change_tid.
+    - by iApply IHHcopy.
   Qed.
 
   (** Type context inclusion *)
@@ -151,10 +142,11 @@ Section type_context.
     by iApply (Hincl with "LFT HE HL").
   Qed.
 
-  Lemma copy_tctx_incl E L T `{!CopyC T} :
-    tctx_incl E L T (T ++ T).
-  Proof.
-    iIntros (???) "_ $ $ * #?". rewrite tctx_interp_app. by iSplitL.
+  Lemma copy_tctx_incl E L p `{!Copy ty} :
+    tctx_incl E L [TCtx_hasty p ty] [TCtx_hasty p ty; TCtx_hasty p ty].
+   Proof.
+    iIntros (???) "_ $ $ *". rewrite /tctx_interp !big_sepL_cons big_sepL_nil.
+    by iIntros "[#$ $]".
   Qed.
 
   Lemma subtype_tctx_incl E L p ty1 ty2 :

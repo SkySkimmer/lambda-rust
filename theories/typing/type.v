@@ -108,7 +108,7 @@ Section type.
   Global Instance lst_copy_cons ty tys :
     Copy ty → LstCopy tys → LstCopy (ty::tys) := List.Forall_cons _ _ _.
 
-  (** Send types *)
+  (** Send and Sync types *)
   Class Send (t : type) :=
     send_change_tid tid1 tid2 vl : t.(ty_own) tid1 vl -∗ t.(ty_own) tid2 vl.
 
@@ -116,6 +116,14 @@ Section type.
   Global Instance lst_send_nil : LstSend [] := List.Forall_nil _.
   Global Instance lst_send_cons ty tys :
     Send ty → LstSend tys → LstSend (ty::tys) := List.Forall_cons _ _ _.
+
+  Class Sync (t : type) :=
+    sync_change_tid κ tid1 tid2 l : t.(ty_shr) κ tid1 l -∗ t.(ty_shr) κ tid2 l.
+
+  Class LstSync (tys : list type) := lst_sync : Forall Sync tys.
+  Global Instance lst_sync_nil : LstSync [] := List.Forall_nil _.
+  Global Instance lst_sync_cons ty tys :
+    Sync ty → LstSync tys → LstSync (ty::tys) := List.Forall_cons _ _ _.
 
   (** Simple types *)
   (* We are repeating the typeclass parameter here just to make sure
