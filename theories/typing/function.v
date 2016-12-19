@@ -18,6 +18,9 @@ Section fn.
     iIntros (A n E tys ty tid vl) "H". iDestruct "H" as (f) "[% _]". by subst.
   Qed.
 
+  Global Instance fn_send {A n} E tys ty : Send (@fn A n E tys ty).
+  Proof. iIntros (tid1 tid2 vl). done. Qed.
+
   Lemma fn_subtype_ty A n E0 L0 E tys1 tys2 ty1 ty2 :
     (∀ x, Forall2 (subtype (E0 ++ E x) L0) (tys2 x : vec _ _) (tys1 x : vec _ _)) →
     (∀ x, subtype (E0 ++ E x) L0 (ty1 x) (ty2 x)) →

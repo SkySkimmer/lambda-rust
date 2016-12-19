@@ -178,6 +178,13 @@ Section type.
       iCombine "Hmt1" "Hmt2" as "Hmt". rewrite heap_mapsto_vec_op // Qp_div_2.
       iDestruct "Hmt" as "[>% Hmt]". subst. by iApply "Hclose".
   Qed.
+
+  Global Instance ty_of_st_sync st :
+    Send (ty_of_st st) → Sync (ty_of_st st).
+  Proof.
+    iIntros (Hsend κ tid1 tid2 l) "H". iDestruct "H" as (vl) "[Hm Hown]".
+    iExists vl. iFrame "Hm". iNext. by iApply Hsend.
+  Qed.
 End type.
 
 Coercion ty_of_st : simple_type >-> type.

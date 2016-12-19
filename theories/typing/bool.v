@@ -9,6 +9,9 @@ Section bool.
     {| st_own tid vl := (∃ z:bool, ⌜vl = [ #z ]⌝)%I |}.
   Next Obligation. iIntros (tid vl) "H". iDestruct "H" as (z) "%". by subst. Qed.
 
+  Global Instance bool_send : Send bool.
+  Proof. iIntros (tid1 tid2 vl). done. Qed.
+
   Lemma typed_bool (b : Datatypes.bool) E L :
     typed_instruction_ty E L [] #b bool.
   Proof.

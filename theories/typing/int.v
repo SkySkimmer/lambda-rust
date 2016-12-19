@@ -9,6 +9,9 @@ Section int.
     {| st_own tid vl := (∃ z:Z, ⌜vl = [ #z ]⌝)%I |}.
   Next Obligation. iIntros (tid vl) "H". iDestruct "H" as (z) "%". by subst. Qed.
 
+  Global Instance int_send : Send int.
+  Proof. iIntros (tid1 tid2 vl). done. Qed.
+
   Lemma typed_int (z : Z) E L :
     typed_instruction_ty E L [] #z int.
   Proof.
