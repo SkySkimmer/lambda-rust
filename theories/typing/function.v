@@ -114,14 +114,29 @@ Section fn.
         iApply ("HC" $! args with "HL"). rewrite tctx_interp_singleton tctx_interp_cons.
         iFrame.
       + done.
-    - (* The IH is not usable here. *)
+    - (* TODO: The IH is not usable here. What we really want is to do induction over "how many of the arguments still need to be evaluated", so the base case has all the ps evaluated and the inductive case evaluates one of them. *)
   Abort.
 
-  Lemma typed_fn {A n} E L T E' (tys : A → vec type n) ty fb kb (argsb : vec binder n) e `{!CopyC T} :
+  Lemma typed_fn {A n} E L T E' (tys : A → vec type n) ty fb kb
+        (argsb : vec binder n) ef e `{!CopyC T, !SendC T} :
+    ef = Rec fb (kb :: argsb) e → Closed (fb :b: kb :b: argsb +b+ []) e →
     (∀ x f k (args : vec val n), typed_body (E' x) [] [CctxElt k [] 1 (λ v, [TCtx_hasty (v!!!0) (ty x)])]
                  (TCtx_hasty f (fn E' tys ty) :: zip_with (TCtx_hasty ∘ of_val) args (tys x) ++ T)
-                 (subst fb f $ subst_vec (kb ::: argsb) (Vector.map of_val $ k ::: args) e)) →
-    typed_instruction_ty E L T (Rec fb (kb :: argsb) e) (fn E' tys ty).
+                 (subst' fb f $ subst_vec (kb ::: argsb) (Vector.map of_val $ k ::: args) e)) →
+    typed_instruction_ty E L T ef (fn E' tys ty).
   Proof.
-  Abort.
+    iIntros (-> Hc Hbody). iIntros (tid qE) "!# #LFT $ $ #HT". iApply wp_value.
+    { simpl. rewrite decide_left. done. }
+    rewrite tctx_interp_singleton. iLöb as "IH". iExists _. iSplit.
+    { simpl. rewrite decide_left. done. }
+    iExists _. iSplit; first done. iAlways. clear qE. 
+    iIntros (x args k). iIntros (tid' qE) "_ HE HL HC HT'". 
+    move:(Forall_of_val_is_val (k :: args))=>?.
+    evar (eb:expr). assert (subst_l (kb :: argsb) (of_val <$> k :: args) e = Some eb).
+    { subst eb. rewrite -!vec_to_list_cons -vec_to_list_map -subst_vec_eq. eauto. }
+    rewrite [elctx_interp]lock [llctx_interp]lock [tctx_interp]lock.
+    wp_rec. unlock. subst eb. iApply (Hbody with "* LFT HE HL HC").
+    rewrite tctx_interp_cons tctx_interp_app. iFrame "HT' IH".
+    iApply sendc_change_tid. done.
+  Qed.
 End fn.

@@ -502,6 +502,14 @@ Lemma stuck_not_head_step σ e' σ' ef :
   ¬head_step stuck_term σ e' σ' ef.
 Proof. inversion 1. Qed.
 
+Lemma Forall_of_val_is_val l :
+  Forall (λ ei : expr, is_Some (to_val ei)) (of_val <$> l).
+Proof.
+  induction l; constructor.
+  - rewrite to_of_val. eauto.
+  - apply IHl.
+Qed.
+
 (** Equality and other typeclass stuff *)
 Instance base_lit_dec_eq : EqDecision base_lit.
 Proof. solve_decision. Defined.
