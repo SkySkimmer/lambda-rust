@@ -1,6 +1,6 @@
 From iris.proofmode Require Import tactics.
 From lrust.typing Require Export type.
-From lrust.typing Require Import typing perm.
+From lrust.typing Require Import programs.
 
 Section bool.
   Context `{typeG Σ}.
@@ -9,16 +9,24 @@ Section bool.
     {| st_own tid vl := (∃ z:bool, ⌜vl = [ #z ]⌝)%I |}.
   Next Obligation. iIntros (tid vl) "H". iDestruct "H" as (z) "%". by subst. Qed.
 
-  Lemma typed_bool ρ (b:Datatypes.bool): typed_step_ty ρ #b bool.
-  Proof. iIntros (tid) "!#(_&_&_&$)". wp_value. by iExists _. Qed.
-
-  Lemma typed_if ρ e1 e2 ν:
-    typed_program ρ e1 → typed_program ρ e2 →
-    typed_program (ρ ∗ ν ◁ bool) (if: ν then e1 else e2).
+  Lemma typed_bool (b : Datatypes.bool) E L :
+    typed_instruction_ty E L [] #b bool.
   Proof.
-    iIntros (He1 He2 tid) "!#(#HEAP & #LFT & [Hρ H◁] & Htl)".
-    wp_bind ν. iApply (has_type_wp with "H◁"). iIntros (v) "% H◁!>".
-    rewrite has_type_value. iDestruct "H◁" as (b) "Heq". iDestruct "Heq" as %[= ->].
-    wp_if. destruct b; iNext. iApply He1; iFrame "∗#". iApply He2; iFrame "∗#".
+    iIntros (tid qE) "!# _ $ $ _". wp_value. rewrite tctx_interp_singleton.
+    iExists _. iSplitR; first done. iExists _. done.
+  Qed.
+
+  Lemma typed_if E L C T e1 e2 p:
+    typed_body E L C T e1 → typed_body E L C T e2 →
+    typed_body E L C (TCtx_hasty p bool :: T) (if: p then e1 else e2).
+  Proof.
+    (* FIXME why can't I merge these two iIntros? *)
+    iIntros (He1 He2). iIntros (tid qE) "#LFT HE HL HC".
+    rewrite tctx_interp_cons. iIntros "[Hp HT]".
+    wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "[% Hown]".
+    iDestruct "Hown" as (b) "Hv". iDestruct "Hv" as %[=->].
+    destruct b; wp_if.
+    - iApply (He1 with "LFT HE HL HC HT").
+    - iApply (He2 with "LFT HE HL HC HT").
   Qed.
 End bool.

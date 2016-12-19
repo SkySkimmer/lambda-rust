@@ -163,7 +163,8 @@ Section product_split.
     iDestruct "H" as (l P) "[[EQ #HPiff] HP]". iDestruct "EQ" as %[=->]. 
     iMod (bor_iff with "LFT [] HP") as "Hown". set_solver. by eauto.
     rewrite /= split_prod_mt. iMod (bor_sep with "LFT Hown") as "[H1 H2]".
-    set_solver. iSplitL "H1"; iExists _; (iSplitR; first by rewrite Hp);
+    set_solver. rewrite /tctx_elt_interp /=.
+    iSplitL "H1"; iExists _; (iSplitR; first by rewrite Hp);
                   iExists _, _; erewrite <-uPred.iff_refl; auto.
   Qed.
 

@@ -1,6 +1,6 @@
 From iris.proofmode Require Import tactics.
 From lrust.typing Require Export type.
-From lrust.typing Require Import typing bool perm.
+From lrust.typing Require Import bool programs.
 
 Section int.
   Context `{typeG Σ}.
@@ -9,46 +9,50 @@ Section int.
     {| st_own tid vl := (∃ z:Z, ⌜vl = [ #z ]⌝)%I |}.
   Next Obligation. iIntros (tid vl) "H". iDestruct "H" as (z) "%". by subst. Qed.
 
-  Lemma typed_int ρ (z:Datatypes.nat) :
-    typed_step_ty ρ #z int.
-  Proof. iIntros (tid) "!#(_&_&_&$)". wp_value. by iExists _. Qed.
-
-  Lemma typed_plus e1 e2 ρ1 ρ2:
-    typed_step_ty ρ1 e1 int → typed_step_ty ρ2 e2 int →
-    typed_step_ty (ρ1 ∗ ρ2) (e1 + e2) int.
+  Lemma typed_int (z : Z) E L :
+    typed_instruction_ty E L [] #z int.
   Proof.
-    unfold typed_step_ty, typed_step. setoid_rewrite has_type_value.
-    iIntros (He1 He2 tid) "!#(#HEAP&#ĽFT&[H1 H2]&?)".
-    wp_bind e1. iApply wp_wand_r. iSplitR "H2". iApply He1; iFrame "∗#".
-    iIntros (v1) "[Hv1?]". iDestruct "Hv1" as (z1) "Hz1". iDestruct "Hz1" as %[=->].
-    wp_bind e2. iApply wp_wand_r. iSplitL. iApply He2; iFrame "∗#".
-    iIntros (v2) "[Hv2$]". iDestruct "Hv2" as (z2) "Hz2". iDestruct "Hz2" as %[=->].
-    wp_op. by iExists _.
+    iIntros (tid qE) "!# _ $ $ _". wp_value. rewrite tctx_interp_singleton.
+    iExists _. iSplitR; first done. iExists _. done.
   Qed.
 
-  Lemma typed_minus e1 e2 ρ1 ρ2:
-    typed_step_ty ρ1 e1 int → typed_step_ty ρ2 e2 int →
-    typed_step_ty (ρ1 ∗ ρ2) (e1 - e2) int.
+  Lemma typed_plus E L p1 p2 :
+    typed_instruction_ty E L [TCtx_hasty p1 int; TCtx_hasty p2 int] (p1 + p2) int.
   Proof.
-    unfold typed_step_ty, typed_step. setoid_rewrite has_type_value.
-    iIntros (He1 He2 tid) "!#(#HEAP&#LFT&[H1 H2]&?)".
-    wp_bind e1. iApply wp_wand_r. iSplitR "H2". iApply He1; iFrame "∗#".
-    iIntros (v1) "[Hv1?]". iDestruct "Hv1" as (z1) "Hz1". iDestruct "Hz1" as %[=->].
-    wp_bind e2. iApply wp_wand_r. iSplitL. iApply He2; iFrame "∗#".
-    iIntros (v2) "[Hv2$]". iDestruct "Hv2" as (z2) "Hz2". iDestruct "Hz2" as %[=->].
-    wp_op. by iExists _.
+    iIntros (tid qE) "!# _ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
+    iIntros "[Hp1 Hp2]".
+    wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "[% Hown1]".
+    wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "[% Hown2]".
+    iDestruct "Hown1" as (z1) "EQ". iDestruct "EQ" as %[=->].
+    iDestruct "Hown2" as (z2) "EQ". iDestruct "EQ" as %[=->].
+    wp_op. rewrite tctx_interp_singleton. iExists _. iSplitR; first done.
+    iExists _. done.
   Qed.
 
-  Lemma typed_le e1 e2 ρ1 ρ2:
-    typed_step_ty ρ1 e1 int → typed_step_ty ρ2 e2 int →
-    typed_step_ty (ρ1 ∗ ρ2) (e1 ≤ e2) bool.
+  Lemma typed_minus E L p1 p2 :
+    typed_instruction_ty E L [TCtx_hasty p1 int; TCtx_hasty p2 int] (p1 - p2) int.
   Proof.
-    unfold typed_step_ty, typed_step. setoid_rewrite has_type_value.
-    iIntros (He1 He2 tid) "!#(#HEAP&#LFT&[H1 H2]&?)".
-    wp_bind e1. iApply wp_wand_r. iSplitR "H2". iApply He1; iFrame "∗#".
-    iIntros (v1) "[Hv1?]". iDestruct "Hv1" as (z1) "Hz1". iDestruct "Hz1" as %[=->].
-    wp_bind e2. iApply wp_wand_r. iSplitL. iApply He2; iFrame "∗#".
-    iIntros (v2) "[Hv2$]". iDestruct "Hv2" as (z2) "Hz2". iDestruct "Hz2" as %[=->].
-    wp_op; intros _; by iExists _.
+    iIntros (tid qE) "!# _ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
+    iIntros "[Hp1 Hp2]".
+    wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "[% Hown1]".
+    wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "[% Hown2]".
+    iDestruct "Hown1" as (z1) "EQ". iDestruct "EQ" as %[=->].
+    iDestruct "Hown2" as (z2) "EQ". iDestruct "EQ" as %[=->].
+    wp_op. rewrite tctx_interp_singleton. iExists _. iSplitR; first done.
+    iExists _. done.
   Qed.
+
+  Lemma typed_le E L p1 p2 :
+    typed_instruction_ty E L [TCtx_hasty p1 int; TCtx_hasty p2 int] (p1 ≤ p2) bool.
+  Proof.
+    iIntros (tid qE) "!# _ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
+    iIntros "[Hp1 Hp2]".
+    wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "[% Hown1]".
+    wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "[% Hown2]".
+    iDestruct "Hown1" as (z1) "EQ". iDestruct "EQ" as %[=->].
+    iDestruct "Hown2" as (z2) "EQ". iDestruct "EQ" as %[=->].
+    wp_op; intros _; rewrite tctx_interp_singleton; iExists _; (iSplitR; first done);
+      iExists _; done.
+  Qed.
+  
 End int.

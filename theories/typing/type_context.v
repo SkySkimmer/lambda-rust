@@ -10,8 +10,8 @@ Bind Scope expr_scope with path.
 Section type_context.
   Context `{typeG Σ}.
 
-  Fixpoint eval_path (ν : path) : option val :=
-    match ν with
+  Fixpoint eval_path (p : path) : option val :=
+    match p with
     | BinOp OffsetOp e (Lit (LitInt n)) =>
       match eval_path e with
       | Some (#(LitLoc l)) => Some (#(shift_loc l n))
@@ -33,6 +33,8 @@ Section type_context.
     | TCtx_blocked p κ ty => ∃ v, ⌜eval_path p = Some v⌝ ∗
                              ([†κ] ={⊤}=∗ ▷ ty.(ty_own) tid [v])
     end%I.
+  (* Block tctx_elt_interp from reducing with simpl when x is a constructor. *)
+  Global Arguments tctx_elt_interp : simpl never.
   Definition tctx_interp (tid : thread_id) (T : tctx) : iProp Σ :=
     ([∗ list] x ∈ T, tctx_elt_interp tid x)%I.
 
@@ -69,7 +71,35 @@ Section type_context.
     eval_path p1 = eval_path p2 →
     tctx_elt_interp tid (TCtx_hasty p1 ty) ≡
     tctx_elt_interp tid (TCtx_hasty p2 ty).
-  Proof. intros Hp. simpl. setoid_rewrite Hp. done. Qed.
+  Proof. intros Hp. rewrite /tctx_elt_interp /=. setoid_rewrite Hp. done. Qed.
+
+  Lemma wp_eval_path p v :
+    eval_path p = Some v → (WP p {{ v', ⌜v' = v⌝ }})%I.
+  Proof.
+    revert v; induction p; intros v; cbn -[to_val];
+      try (intros ?; by iApply wp_value); [].
+    destruct op; try discriminate; [].
+    destruct p2; try (intros ?; by iApply wp_value); [].
+    destruct l; try (intros ?; by iApply wp_value); [].
+    destruct (eval_path p1); try (intros ?; by iApply wp_value); [].
+    destruct v0; try discriminate; [].
+    destruct l; try discriminate; [].
+    intros [=<-]. iStartProof. wp_bind p1.
+    iApply (wp_wand with "[]").
+    { iApply IHp1. done. }
+    iIntros (v) "%". subst v. wp_op. done.
+  Qed.
+
+  Lemma wp_hasty tid p ty Φ :
+    tctx_elt_interp tid (TCtx_hasty p ty) -∗
+    (∀ v, ⌜eval_path p = Some v⌝ ∗ ty.(ty_own) tid [v] -∗ Φ v) -∗
+    WP p {{ Φ }}.
+  Proof.
+    iIntros "Hty HΦ". iDestruct "Hty" as (v) "[% Hown]".
+    iApply (wp_wand with "[]").
+    { iApply wp_eval_path. done. }
+    iIntros (v') "%". subst v'. iApply "HΦ". by auto.
+  Qed.
 
   Lemma contains_tctx_incl E L T1 T2 : T1 `contains` T2 → tctx_incl E L T2 T1.
   Proof.
