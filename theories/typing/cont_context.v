@@ -4,7 +4,7 @@ From lrust.lang Require Import notation.
 From lrust.lifetime Require Import definitions.
 From lrust.typing Require Import type lft_contexts type_context.
 
-Section cont_context.
+Section cont_context_def.
   Context `{typeG Σ}.
 
   Definition cont_postcondition : iProp Σ := False%I.
@@ -13,6 +13,11 @@ Section cont_context.
     CctxElt { cctxe_k : val; cctxe_L : llctx;
               cctxe_n : nat; cctxe_T : vec val cctxe_n → tctx }.
   Definition cctx := list cctx_elt.
+End cont_context_def.
+Add Printing Constructor cctx_elt.
+
+Section cont_context.
+  Context `{typeG Σ}.
 
   Definition cctx_elt_interp (tid : thread_id) (x : cctx_elt) : iProp Σ :=
     let 'CctxElt k L n T := x in
