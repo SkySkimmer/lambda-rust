@@ -3,7 +3,7 @@ From iris.base_logic Require Import big_op.
 From lrust.lifetime Require Import borrow reborrow frac_borrow.
 From lrust.lang Require Import heap.
 From lrust.typing Require Export type.
-From lrust.typing Require Import lft_contexts type_context shr_bor perm typing.
+From lrust.typing Require Import lft_contexts type_context shr_bor.
 
 Section uniq_bor.
   Context `{typeG Σ}.
@@ -103,6 +103,27 @@ Section uniq_bor.
   Global Instance subtype_uniq_proper E L κ :
     Proper (eqtype E L ==> eqtype E L) (uniq_bor κ).
   Proof. split; by apply subtype_uniq_mono. Qed.
+
+  Global Instance uniq_send κ ty :
+    Send ty → Send (uniq_bor κ ty).
+  Proof.
+    iIntros (Hsend tid1 tid2 vl) "H". iDestruct "H" as (l P) "[[% #HPiff] H]".
+    iExists _, _. iFrame "H". iSplit; first done. iAlways. iSplit.
+    - iIntros "HP". iApply (heap_mapsto_pred_wand with "[HP]").
+      { by iApply "HPiff". }
+      clear dependent vl. iIntros (vl) "?". by iApply Hsend.
+    - iIntros "HP". iApply "HPiff". iApply (heap_mapsto_pred_wand with "HP").
+      clear dependent vl. iIntros (vl) "?". by iApply Hsend.
+  Qed.
+
+  Global Instance uniq_sync κ ty :
+    Sync ty → Sync (uniq_bor κ ty).
+  Proof.
+    iIntros (Hsync κ' tid1 tid2 l) "H". iDestruct "H" as (l') "[Hm #Hshr]".
+    iExists l'. iFrame "Hm". iAlways. iIntros (F q) "% Htok".
+    iMod ("Hshr" with "* [] Htok") as "Hfin"; first done. iClear "Hshr".
+    iModIntro. iNext. iMod "Hfin" as "[Hshr $]". iApply Hsync. done.
+  Qed.
 End uniq_bor.
 
 Notation "&uniq{ κ } ty" := (uniq_bor κ ty)

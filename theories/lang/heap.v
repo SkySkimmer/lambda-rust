@@ -186,7 +186,7 @@ Section heap.
     - by iIntros "[% [$ Hl2]]"; subst.
   Qed.
 
-  Lemma heap_mapsto_vec_prop_op l q1 q2 n (Φ : list val → iProp Σ) :
+  Lemma heap_mapsto_pred_op l q1 q2 n (Φ : list val → iProp Σ) :
     (∀ vl, Φ vl -∗ ⌜length vl = n⌝) →
     l ↦∗{q1}: Φ ∗ l ↦∗{q2}: (λ vl, ⌜length vl = n⌝) ⊣⊢ l ↦∗{q1+q2}: Φ.
   Proof.
@@ -201,6 +201,13 @@ Section heap.
       iSplitL "Hmt1 Hown"; iExists _; by iFrame.
   Qed.
 
+  Lemma heap_mapsto_pred_wand l q Φ1 Φ2 :
+    l ↦∗{q}: Φ1 -∗ (∀ vl, Φ1 vl -∗ Φ2 vl) -∗ l ↦∗{q}: Φ2.
+  Proof.
+    iIntros "Hm Hwand". iDestruct "Hm" as (vl) "[Hm HΦ]". iExists vl.
+    iFrame "Hm". iApply "Hwand". done.
+  Qed.
+
   Lemma heap_mapsto_vec_combine l q vl :
     vl ≠ [] →
     l ↦∗{q} vl ⊣⊢ own heap_name (◯ [⋅ list] i ↦ v ∈ vl,
@@ -210,7 +217,7 @@ Section heap.
     by rewrite (big_opL_commute (Auth None)) big_opL_commute1 //.
   Qed.
 
-  Global Instance heap_mapsto_vec_pred_fractional l (P : list val → iProp Σ):
+  Global Instance heap_mapsto_pred_fractional l (P : list val → iProp Σ):
     (∀ vl, PersistentP (P vl)) → Fractional (λ q, l ↦∗{q}: P)%I.
   Proof.
     intros p q q'. iSplit.
@@ -233,7 +240,7 @@ Section heap.
         { rewrite -Heq /ll. done. }
         rewrite drop_ge; first by rewrite app_nil_r. by rewrite -Heq.
   Qed.
-  Global Instance heap_mapsto_vec_pred_as_fractional l q (P : list val → iProp Σ):
+  Global Instance heap_mapsto_pred_as_fractional l q (P : list val → iProp Σ):
     (∀ vl, PersistentP (P vl)) → AsFractional (l ↦∗{q}: P) (λ q, l ↦∗{q}: P)%I q.
   Proof. split. done. apply _. Qed.
 

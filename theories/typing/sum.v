@@ -170,7 +170,7 @@ Section sum.
       { rewrite <-HF. simpl. rewrite <-union_subseteq_r.
         apply shr_locsE_subseteq. omega. }
       destruct (Qp_lower_bound q'1 q'2) as (q' & q'01 & q'02 & -> & ->).
-      rewrite -(heap_mapsto_vec_prop_op _ q' q'02); last (by intros; apply ty_size_eq).
+      rewrite -(heap_mapsto_pred_op _ q' q'02); last (by intros; apply ty_size_eq).
       rewrite (fractional (Φ := λ q, _ ↦{q} _ ∗ _ ↦∗{q}: _)%I).
       iDestruct "HownC" as "[HownC1 HownC2]". iDestruct "Hown" as "[Hown1 Hown2]".
       iExists q'. iModIntro. iSplitL "Hown1 HownC1".

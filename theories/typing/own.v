@@ -4,7 +4,7 @@ From iris.base_logic Require Import big_op.
 From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.lang Require Export new_delete.
 From lrust.typing Require Export type.
-From lrust.typing Require Import perm typing uniq_bor type_context.
+From lrust.typing Require Import uniq_bor type_context.
 
 Section own.
   Context `{typeG Σ}.
@@ -115,6 +115,24 @@ Section own.
   Global Instance own_proper E L n :
     Proper (eqtype E L ==> eqtype E L) (own n).
   Proof. intros ?? Heq. split; f_equiv; apply Heq. Qed.
+
+  Global Instance own_send n ty :
+    Send ty → Send (own n ty).
+  Proof.
+    iIntros (Hsend tid1 tid2 vl) "H". iDestruct "H" as (l) "[% [Hm H†]]". subst vl.
+    iExists _. iSplit; first done. iFrame "H†". iNext.
+    iApply (heap_mapsto_pred_wand with "Hm"). iIntros (vl) "?". by iApply Hsend.
+  Qed.
+
+  Global Instance own_sync n ty :
+    Sync ty → Sync (own n ty).
+  Proof.
+    iIntros (Hsync κ tid1 tid2 l) "H". iDestruct "H" as (l') "[Hm #Hshr]".
+    iExists _. iFrame "Hm". iAlways. iIntros (F q) "% Htok".
+    iMod ("Hshr" with "* [] Htok") as "Hfin"; first done. iModIntro. iNext.
+    iClear "Hshr". (* FIXME: Using "{HShr} [HShr $]" for the intro pattern in the following line doesn't work. *)
+    iMod "Hfin" as "[Hshr $]". by iApply Hsync.
+  Qed.
 
   (** Typing *)
   Lemma tctx_borrow E L p n ty κ :

@@ -30,6 +30,13 @@ Section shr_bor.
   Global Instance subtype_shr_bor_proper E L κ :
     Proper (eqtype E L ==> eqtype E L) (shr_bor κ).
   Proof. intros ??[]. by split; apply subtype_shr_bor_mono. Qed.
+
+  Global Instance shr_send κ ty :
+    Sync ty → Send (shr_bor κ ty).
+  Proof.
+    iIntros (Hsync tid1 tid2 vl) "H". iDestruct "H" as (l) "[% Hshr]".
+    iExists _. iSplit; first done. by iApply Hsync.
+  Qed.
 End shr_bor.
 
 Notation "&shr{ κ } ty" := (shr_bor κ ty)
