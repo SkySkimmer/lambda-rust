@@ -11,7 +11,7 @@ Section fn.
           (tys : A → vec type n) (ty : A → type) : type :=
     {| st_own tid vl := (∃ f, ⌜vl = [f]⌝ ∗ □ ∀ (x : A) (args : vec val n) (k : val),
          typed_body (E x) []
-                    [CctxElt k [] 1 (λ v, [TCtx_hasty (v!!!0) (ty x)])]
+                    [CCtx_iscont k [] 1 (λ v, [TCtx_hasty (v!!!0) (ty x)])]
                     (zip_with (TCtx_hasty ∘ of_val) args (tys x))
                     (f (of_val <$> (k :: args : list val))))%I |}.
   Next Obligation.
@@ -31,7 +31,7 @@ Section fn.
     - iIntros "HE". unfold cctx_interp. iIntros (e) "He".
       iDestruct "He" as %->%elem_of_list_singleton. iIntros (ret) "HL HT".
       iSpecialize ("HC" with "HE"). unfold cctx_elt_interp.
-      iApply ("HC" $! (CctxElt _ _ _ _) with "[%] * HL >").
+      iApply ("HC" $! (CCtx_iscont _ _ _ _) with "[%] * HL >").
         by apply elem_of_list_singleton.
       rewrite /tctx_interp !big_sepL_singleton /=.
       iDestruct "HT" as (v) "[HP Hown]". iExists v. iFrame "HP".
@@ -90,7 +90,7 @@ Section fn.
   (* TODO: Define some syntactic sugar for calling and letrec like we do on paper. *)
   Lemma typed_call {A n} E L E' T T' (tys : A → vec type n) ty k p (ps : vec path n) x :
     tctx_incl E L T (zip_with TCtx_hasty ps (tys x) ++ T') → elctx_sat E L (E' x) →
-    typed_body E L [CctxElt k L 1 (λ v, (TCtx_hasty (v!!!0) (ty x)) :: T')]
+    typed_body E L [CCtx_iscont k L 1 (λ v, (TCtx_hasty (v!!!0) (ty x)) :: T')]
                (TCtx_hasty p (fn E' tys ty) :: T) (p (of_val k :: ps)).
   Proof.
     (* FIXME: Why can't I merge these iIntros? *)
@@ -119,7 +119,7 @@ Section fn.
   Lemma typed_fn {A n m} E L E' (tys : A → vec type n) ty fb kb (argsb : vec binder n) ef e
        (cps : vec path m) (ctyl : vec type m) `{!LstCopy ctyl, !LstSend ctyl} :
     ef = Rec fb (kb :: argsb) e → Closed (fb :b: kb :b: argsb +b+ []) e →
-    (∀ x f k (args : vec val n), typed_body (E' x) [] [CctxElt k [] 1 (λ v, [TCtx_hasty (v!!!0) (ty x)])]
+    (∀ x f k (args : vec val n), typed_body (E' x) [] [CCtx_iscont k [] 1 (λ v, [TCtx_hasty (v!!!0) (ty x)])]
                  (TCtx_hasty f (fn E' tys ty) ::
                   zip_with (TCtx_hasty ∘ of_val) args (tys x) ++
                   zip_with TCtx_hasty cps ctyl)
@@ -131,13 +131,12 @@ Section fn.
     rewrite tctx_interp_singleton. iLöb as "IH". iExists _. iSplit.
     { simpl. rewrite decide_left. done. }
     iExists _. iSplit; first done. iAlways. clear qE. 
-    iIntros (x args k). iIntros (tid' qE) "_ HE HL HC HT'". 
-    move:(Forall_of_val_is_val (k :: args))=>?.
-    evar (eb:expr). assert (subst_l (kb :: argsb) (of_val <$> k :: args) e = Some eb).
-    { subst eb. rewrite -!vec_to_list_cons -vec_to_list_map -subst_vec_eq. eauto. }
-    rewrite [elctx_interp]lock [llctx_interp]lock [tctx_interp]lock.
-    wp_rec. unlock. subst eb. iApply (Hbody with "* LFT HE HL HC").
+    iIntros (x args k). iIntros (tid' qE) "_ HE HL HC HT'".
+    iApply wp_rec; try done.
+    { apply Forall_of_val_is_val. }
+    { rewrite -!vec_to_list_cons -vec_to_list_map -subst_vec_eq. eauto. }
+    iApply (Hbody with "* LFT HE HL HC").
     rewrite tctx_interp_cons tctx_interp_app. iFrame "HT' IH".
-    iApply tctx_send. done.
+    iApply tctx_send. by iNext.
   Qed.
 End fn.

@@ -34,6 +34,12 @@ Lemma wp_let E x e1 e2 v Φ :
   ▷ WP subst' x e1 e2 @ E {{ Φ }} -∗ WP Let x e1 e2 @ E {{ Φ }}.
 Proof. eauto using wp_lam. Qed.
 
+Lemma wp_let' E x e1 e2 v Φ :
+  to_val e1 = Some v →
+  Closed (x :b: []) e2 →
+  ▷ WP subst' x (of_val v) e2 @ E {{ Φ }} -∗ WP Let x e1 e2 @ E {{ Φ }}.
+Proof. intros ?. rewrite (of_to_val e1) //. eauto using wp_let. Qed.
+
 Lemma wp_seq E e1 e2 v Φ :
   to_val e1 = Some v →
   Closed [] e2 →

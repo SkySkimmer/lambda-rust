@@ -41,3 +41,4 @@ theories/typing/int.v
 theories/typing/function.v
 theories/typing/programs.v
 theories/typing/mem.v
+theories/typing/cont.v

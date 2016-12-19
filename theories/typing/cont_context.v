@@ -10,7 +10,7 @@ Section cont_context_def.
   Definition cont_postcondition : iProp Σ := False%I.
 
   Record cctx_elt : Type :=
-    CctxElt { cctxe_k : val; cctxe_L : llctx;
+    CCtx_iscont { cctxe_k : val; cctxe_L : llctx;
               cctxe_n : nat; cctxe_T : vec val cctxe_n → tctx }.
   Definition cctx := list cctx_elt.
 End cont_context_def.
@@ -20,7 +20,7 @@ Section cont_context.
   Context `{typeG Σ}.
 
   Definition cctx_elt_interp (tid : thread_id) (x : cctx_elt) : iProp Σ :=
-    let 'CctxElt k L n T := x in
+    let 'CCtx_iscont k L n T := x in
     (∀ args, llctx_interp L 1 -∗ tctx_interp tid (T args) -∗
          WP k (of_val <$> (args : list _)) {{ _, cont_postcondition }})%I.
   Definition cctx_interp (tid : thread_id) (C : cctx) : iProp Σ :=
@@ -35,7 +35,7 @@ Section cont_context.
   Proof.
     rewrite /cctx_interp. iIntros "H". iIntros ([k L n T]) "%".
     iIntros (args) "HL HT". iMod "H".
-    by iApply ("H" $! (CctxElt k L n T) with "[%] * HL HT").
+    by iApply ("H" $! (CCtx_iscont k L n T) with "[%] * HL HT").
   Qed.
 
   Definition cctx_incl (E : elctx) (C1 C2 : cctx): Prop :=
@@ -58,14 +58,14 @@ Section cont_context.
 
   Lemma cctx_incl_cons E k L n T1 T2 C1 C2:
     cctx_incl E C1 C2 → (∀ args, tctx_incl E L (T2 args) (T1 args)) →
-    cctx_incl E (CctxElt k L n T1 :: C1) (CctxElt k L n T2 :: C2).
+    cctx_incl E (CCtx_iscont k L n T1 :: C1) (CCtx_iscont k L n T2 :: C2).
   Proof.
     iIntros (HC1C2 HT1T2 ??) "#LFT H HE". rewrite /cctx_interp.
     iIntros (x) "Hin". iDestruct "Hin" as %[->|Hin]%elem_of_cons.
     - iIntros (args) "HL HT".
       iMod (HT1T2 with "LFT HE HL HT") as "(HE & HL & HT)".
       iSpecialize ("H" with "HE").
-      iApply ("H" $! (CctxElt _ _ _ _) with "[%] * HL HT").
+      iApply ("H" $! (CCtx_iscont _ _ _ _) with "[%] * HL HT").
       constructor.
     - iApply (HC1C2 with "LFT [H] HE * [%]"); last done.
       iIntros "HE". iIntros (x') "%".
