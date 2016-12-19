@@ -18,6 +18,12 @@ Section product.
     iExists []. iSplitL; last by auto. rewrite heap_mapsto_vec_nil. auto.
   Qed.
 
+  Global Instance unit_send : Send unit.
+  Proof. iIntros (tid1 tid2 vl) "H". done. Qed.
+
+  Global Instance unit_sync : Sync unit.
+  Proof. iIntros (????) "_". done. Qed.
+
   Lemma split_prod_mt tid ty1 ty2 q l :
     (l ↦∗{q}: λ vl,
        ∃ vl1 vl2, ⌜vl = vl1 ++ vl2⌝ ∗ ty1.(ty_own) tid vl1 ∗ ty2.(ty_own) tid vl2)%I
@@ -77,7 +83,7 @@ Section product.
     Proper (eqtype E L ==> eqtype E L ==> eqtype E L) product2.
   Proof. by intros ??[]??[]; split; apply product2_mono. Qed.
 
-  Global Instance product2_copy `(!Copy ty1) `(!Copy ty2) :
+  Global Instance product2_copy `{!Copy ty1} `{!Copy ty2} :
     Copy (product2 ty1 ty2).
   Proof.
     split; first (intros; apply _).
@@ -115,6 +121,19 @@ Section product.
       iMod ("Hclose2" with "[H2 H↦2]") as "[$$]". by iExists _; iFrame. done.
   Qed.
 
+  Global Instance product2_send `{!Send ty1} `{!Send ty2} :
+    Send (product2 ty1 ty2).
+  Proof.
+    iIntros (tid1 tid2 vl) "H". iDestruct "H" as (vl1 vl2) "(% & Hown1 & Hown2)".
+    iExists _, _. iSplit; first done. iSplitL "Hown1"; by iApply @send_change_tid.
+  Qed.
+
+  Global Instance product2_sync `{!Sync ty1} `{!Sync ty2} :
+    Sync (product2 ty1 ty2).
+  Proof.
+    iIntros (κ tid1 ti2 l) "[#Hshr1 #Hshr2]". iSplit; by iApply @sync_change_tid.
+  Qed.
+
   Definition product := foldr product2 unit.
 
   Global Instance product_mono E L:
@@ -124,6 +143,10 @@ Section product.
     Proper (Forall2 (eqtype E L) ==> eqtype E L) product.
   Proof. intros ??. induction 1. done. by simpl; f_equiv. Qed.
   Global Instance product_copy tys : LstCopy tys → Copy (product tys).
+  Proof. induction 1; apply _. Qed.
+  Global Instance product_send tys : LstSend tys → Send (product tys).
+  Proof. induction 1; apply _. Qed.
+  Global Instance product_sync tys : LstSync tys → Sync (product tys).
   Proof. induction 1; apply _. Qed.
 
   Definition product_cons ty tyl :

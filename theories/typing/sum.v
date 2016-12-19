@@ -30,6 +30,12 @@ Section sum.
     iIntros (????????) "? []".
   Qed.
 
+  Global Instance emp_send : Send ∅.
+  Proof. iIntros (???) "[]". Qed.
+
+  Global Instance emp_sync : Sync ∅.
+  Proof. iIntros (????) "[]". Qed.
+
   Definition list_max (l : list nat) := foldr max 0%nat l.
 
   Definition is_pad i tyl (vl : list val) : iProp Σ :=
@@ -149,7 +155,7 @@ Section sum.
       rewrite nth_empty. by iDestruct "Hshr" as "[]".
   Qed.
 
-  Global Instance sum_copy tyl: LstCopy tyl → Copy (sum tyl).
+  Global Instance sum_copy tyl : LstCopy tyl → Copy (sum tyl).
   Proof.
     intros HFA. split.
     - intros tid vl.
@@ -181,6 +187,22 @@ Section sum.
         iDestruct "Heq" as %[= ->%Z_of_nat_inj].
         iMod ("Hclose'" with "[$HownC1 $HownC2]").
         iMod ("Hclose" with "[$Hown1 $Hown2]") as "$". by iFrame.
+  Qed.
+
+  Global Instance sum_send tyl : LstSend tyl → Send (sum tyl).
+  Proof.
+    iIntros (Hsend tid1 tid2 vl) "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)".
+    iExists _, _, _. iSplit; first done. iSplit; first done. iApply @send_change_tid; last done.
+    edestruct nth_in_or_default as [| ->]; last by apply _.
+          by eapply List.Forall_forall.
+  Qed.
+
+  Global Instance sum_sync tyl : LstSync tyl → Sync (sum tyl).
+  Proof.
+    iIntros (Hsync κ tid1 tid2 l) "H". iDestruct "H" as (i) "[Hframe Hown]".
+    iExists _. iFrame "Hframe". iApply @sync_change_tid; last done.
+    edestruct nth_in_or_default as [| ->]; last by apply _.
+          by eapply List.Forall_forall.
   Qed.
 End sum.
 
