@@ -163,14 +163,14 @@ Fixpoint subst_l (xl : list binder) (esl : list expr) (e : expr) : option expr :
   | _, _ => None
   end.
 
-Definition subst_l_vec {n} (xl : vec binder n) (el : vec expr n) : expr → expr :=
+Definition subst_vec {n} (xl : vec binder n) (el : vec expr n) : expr → expr :=
   Vector.rect2 (λ _ _ _, expr → expr) id
                (λ n _ _ rec x e, rec ∘ subst' x e) xl el.
 
-Lemma subst_l_vec_eq {n} (xl : vec binder n) (el : vec expr n) e :
-  Some $ subst_l_vec xl el e = subst_l xl el e.
+Lemma subst_vec_eq {n} (xl : vec binder n) (el : vec expr n) e :
+  Some $ subst_vec xl el e = subst_l xl el e.
 Proof.
-  revert n xl el e. eapply (vec_rect2 (λ n xl el, ∀ e, Some $ subst_l_vec xl el e = subst_l xl el e)); first done.
+  revert n xl el e. eapply (vec_rect2 (λ n xl el, ∀ e, Some $ subst_vec xl el e = subst_l xl el e)); first done.
   move=>n xl el IH x es e. simpl. apply IH.
 Qed.
 

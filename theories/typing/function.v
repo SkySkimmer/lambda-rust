@@ -14,7 +14,7 @@ Section fn.
          typed_body (E x) []
                     [CctxElt k [] 1 (λ v, [TCtx_hasty (v!!!0) (ty x)])]
                     (zip_with (TCtx_hasty ∘ of_val) args (tys x))
-                    (f (of_val <$> (args : list val))))%I |}.
+                    (f (of_val <$> (k :: args : list val))))%I |}.
   Next Obligation.
     iIntros (A n E tys ty tid vl) "H". iDestruct "H" as (f) "[% _]". by subst.
   Qed.
@@ -87,4 +87,20 @@ Section fn.
     { rewrite /elctx_interp big_sepL_cons. iFrame. iApply (Hκκ' with "HE0 HL0"). }
     rewrite /elctx_interp big_sepL_cons. iIntros "[_ HE]". by iApply "HC".
   Qed.
+
+  (* TODO: Define some syntactic sugar for calling and letrec like we do on paper. *)
+  Lemma typed_call {A n} E L E' T (tys : A → vec type n) ty k p (ps : vec path n) x :
+    tctx_incl E L T (zip_with TCtx_hasty ps (tys x)) → elctx_sat E L (E' x) →
+    typed_body E L [CctxElt k L 1 (λ v, (TCtx_hasty (v!!!0) (ty x)) :: T)]
+               [TCtx_hasty p (fn E' tys ty)] (p (of_val k :: ps)).
+  Proof.
+  Abort.
+
+  Lemma typed_fn {A n} E L T E' (tys : A → vec type n) ty fb kb (argsb : vec binder n) e `{!CopyC T} :
+    (∀ x f k (args : vec val n), typed_body (E' x) [] [CctxElt k [] 1 (λ v, [TCtx_hasty (v!!!0) (ty x)])]
+                 (TCtx_hasty f (fn E' tys ty) :: zip_with (TCtx_hasty ∘ of_val) args (tys x) ++ T)
+                 (subst fb f $ subst_vec (kb ::: argsb) (Vector.map of_val $ k ::: args) e)) →
+    typed_instruction_ty E L T (Rec fb (kb :: argsb) e) (fn E' tys ty).
+  Proof.
+  Abort.
 End fn.
