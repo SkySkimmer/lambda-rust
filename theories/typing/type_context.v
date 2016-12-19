@@ -46,12 +46,32 @@ Section type_context.
     tctx_interp tid (x :: T) ≡ (tctx_elt_interp tid x ∗ tctx_interp tid T)%I.
   Proof. rewrite /tctx_interp big_sepL_cons //. Qed.
 
+  Lemma tctx_interp_app tid T1 T2 :
+    tctx_interp tid (T1 ++ T2) ≡ (tctx_interp tid T1 ∗ tctx_interp tid T2)%I.
+  Proof. rewrite /tctx_interp big_sepL_app //. Qed.
+
   Definition tctx_interp_nil tid :
     tctx_interp tid [] = True%I := eq_refl _.
 
   Lemma tctx_interp_singleton tid x :
     tctx_interp tid [x] ≡ tctx_elt_interp tid x.
   Proof. rewrite tctx_interp_cons tctx_interp_nil right_id //. Qed.
+
+  Class CopyC (T : tctx) := {
+    copyc_persistent tid : PersistentP (tctx_interp tid T);
+  }.
+  Global Existing Instances copyc_persistent.
+
+  Global Instance tctx_nil_copy : CopyC [].
+  Proof. split. apply _. Qed.
+
+  Global Instance tctx_ty_copy T p ty :
+    CopyC T → Copy ty → CopyC (TCtx_hasty p ty :: T).
+  Proof.
+    (* TODO RJ: Should we have instances that PersistentP respects equiv? *)
+    intros ??. split=>?. rewrite /PersistentP tctx_interp_cons.
+    apply uPred.sep_persistent; by apply _.
+  Qed.
 
   Definition tctx_incl (E : elctx) (L : llctx) (T1 T2 : tctx): Prop :=
     ∀ tid q1 q2, lft_ctx -∗ elctx_interp E q1 -∗ llctx_interp L q2 -∗
@@ -113,11 +133,10 @@ Section type_context.
     by iApply (Hincl with "LFT HE HL").
   Qed.
 
-  Lemma copy_tctx_incl E L p `{!Copy ty} :
-    tctx_incl E L [TCtx_hasty p ty] [TCtx_hasty p ty; TCtx_hasty p ty].
+  Lemma copy_tctx_incl E L T `{!CopyC T} :
+    tctx_incl E L T (T ++ T).
   Proof.
-    iIntros (???) "_ $ $ *". rewrite /tctx_interp !big_sepL_cons big_sepL_nil.
-    by iIntros "[#$ $]".
+    iIntros (???) "_ $ $ * #?". rewrite tctx_interp_app. by iSplitL.
   Qed.
 
   Lemma subtype_tctx_incl E L p ty1 ty2 :
