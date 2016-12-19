@@ -92,6 +92,7 @@ Section type.
     rewrite shr_locsE_shift. set_solver+.
   Qed.
 
+  (** Copy types *)
   Class Copy (t : type) := {
     copy_persistent tid vl : PersistentP (t.(ty_own) tid vl);
     copy_shr_acc κ tid E F l q :
@@ -107,7 +108,17 @@ Section type.
   Global Instance lst_copy_cons ty tys :
     Copy ty → LstCopy tys → LstCopy (ty::tys) := List.Forall_cons _ _ _.
 
-  (* We are repeating the typeclass parameter here jsut to make sure
+  (** Send types *)
+  Class Send (t : type) :=
+    send_change_tid tid1 tid2 vl : t.(ty_own) tid1 vl -∗ t.(ty_own) tid2 vl.
+
+  Class LstSend (tys : list type) := lst_send : Forall Send tys.
+  Global Instance lst_send_nil : LstSend [] := List.Forall_nil _.
+  Global Instance lst_send_cons ty tys :
+    Send ty → LstSend tys → LstSend (ty::tys) := List.Forall_cons _ _ _.
+
+  (** Simple types *)
+  (* We are repeating the typeclass parameter here just to make sure
      that simple_type does depend on it. Otherwise, the coercion defined
      bellow will not be acceptable by Coq. *)
   Record simple_type `{typeG Σ} :=

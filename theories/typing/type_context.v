@@ -57,22 +57,40 @@ Section type_context.
     tctx_interp tid [x] ≡ tctx_elt_interp tid x.
   Proof. rewrite tctx_interp_cons tctx_interp_nil right_id //. Qed.
 
-  Class CopyC (T : tctx) := {
-    copyc_persistent tid : PersistentP (tctx_interp tid T);
-  }.
+  (** Copy typing contexts *)
+  Class CopyC (T : tctx) :=
+    copyc_persistent tid : PersistentP (tctx_interp tid T).
   Global Existing Instances copyc_persistent.
 
   Global Instance tctx_nil_copy : CopyC [].
-  Proof. split. apply _. Qed.
+  Proof. rewrite /CopyC. apply _. Qed.
 
   Global Instance tctx_ty_copy T p ty :
     CopyC T → Copy ty → CopyC (TCtx_hasty p ty :: T).
   Proof.
     (* TODO RJ: Should we have instances that PersistentP respects equiv? *)
-    intros ??. split=>?. rewrite /PersistentP tctx_interp_cons.
+    intros ???. rewrite /PersistentP tctx_interp_cons.
     apply uPred.sep_persistent; by apply _.
   Qed.
 
+  (** Send typing contexts *)
+  Class SendC (T : tctx) :=
+    sendc_change_tid tid1 tid2 : tctx_interp tid1 T -∗ tctx_interp tid2 T.
+
+  Global Instance tctx_nil_send : SendC [].
+  Proof. done. Qed.
+
+  Global Instance tctx_ty_send T p ty :
+    SendC T → Send ty → SendC (TCtx_hasty p ty :: T).
+  Proof.
+    iIntros (HT Hty ??). rewrite !tctx_interp_cons.
+    iIntros "[Hty HT]". iSplitR "HT".
+    - iDestruct "Hty" as (?) "[% Hty]". iExists _. iSplit; first done.
+      by iApply Hty.
+    - by iApply HT.
+  Qed.
+
+  (** Type context inclusion *)
   Definition tctx_incl (E : elctx) (L : llctx) (T1 T2 : tctx): Prop :=
     ∀ tid q1 q2, lft_ctx -∗ elctx_interp E q1 -∗ llctx_interp L q2 -∗
               tctx_interp tid T1 ={⊤}=∗ elctx_interp E q1 ∗ llctx_interp L q2 ∗
