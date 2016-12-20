@@ -44,7 +44,7 @@ Proof.
     rewrite big_sepL_cons. iFrame.
 Qed.
 
-Lemma wp_app {n} (Q : nat → val → iProp Σ) E f (el : vec expr n) Φ :
+Lemma wp_app_vec {n} (Q : nat → val → iProp Σ) E f (el : vec expr n) Φ :
   is_Some (to_val f) →
   ([∗ list] k ↦ e ∈ el, WP e @ E {{ Q k }}) -∗
     (∀ vl : vec val n, ([∗ list] k ↦ v ∈ vl, Q k v) -∗
@@ -52,6 +52,19 @@ Lemma wp_app {n} (Q : nat → val → iProp Σ) E f (el : vec expr n) Φ :
     WP App f el @ E {{ Φ }}.
 Proof.
   iIntros (Hf). iApply (wp_app_ind _ _ _ _ []). done.
+Qed.
+
+Lemma wp_app (Q : nat → val → iProp Σ) E f el Φ :
+  is_Some (to_val f) →
+  ([∗ list] k ↦ e ∈ el, WP e @ E {{ Q k }}) -∗
+    (∀ vl : list val, ⌜length vl = length el⌝ -∗ ([∗ list] k ↦ v ∈ vl, Q k v) -∗
+                    WP App f (of_val <$> (vl : list val)) @ E {{ Φ }}) -∗
+    WP App f el @ E {{ Φ }}.
+Proof.
+  iIntros (Hf) "Hel HΦ". rewrite -(vec_to_list_of_list el).
+  iApply (wp_app_vec with "* Hel"); first done.
+  iIntros (vl). iApply ("HΦ" $! (vec_to_list vl)).
+  rewrite vec_to_list_length vec_to_list_of_list. done.
 Qed.
 
 (** Proof rules for the sugar *)

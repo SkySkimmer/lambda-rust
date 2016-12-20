@@ -102,7 +102,7 @@ Section fn.
     wp_bind p. iApply (wp_hasty with "Hf"). iIntros (v) "[% Hf]".
     iMod (HTsat with "LFT HE HL HT") as "(HE & HL & HT)". rewrite tctx_interp_app.
     iDestruct "HT" as "[Hargs HT']". clear HTsat. rewrite -vec_to_list_cons.
-    iApply (wp_app (λ i v, match i with O => ⌜v = k⌝ ∗ _ | S i =>
+    iApply (wp_app_vec (λ i v, match i with O => ⌜v = k⌝ ∗ _ | S i =>
                            ∀ ty, ⌜(tys x : list type) !! i = Some ty⌝ →
                                  tctx_elt_interp tid (TCtx_hasty v ty) end)%I
             with "* [Hargs HC]"); first wp_done.
