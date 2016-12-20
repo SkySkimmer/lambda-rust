@@ -12,7 +12,7 @@ Section cont_typing.
     tctx_incl E L T (T' args) →
     typed_body E L [CCtx_iscont k L n T'] T (k (of_val <$> (args : list _))).
   Proof.
-    iIntros (Hincl). iIntros (tid qE) "#LFT HE HL HC HT".
+    iIntros (Hincl tid qE) "#LFT HE HL HC HT".
     iMod (Hincl with "LFT HE HL HT") as "(HE & HL & HT)".
     iSpecialize ("HC" with "HE * []"); first by (iPureIntro; apply elem_of_list_singleton).
     simpl. iApply ("HC" with "* HL HT").
@@ -25,8 +25,7 @@ Section cont_typing.
     (∀ k, typed_body E (L1 ++ L2) (CCtx_iscont k L1 n T' :: C) T (subst' kb k e2)) →
     typed_body E (L1 ++ L2) C T (let: kb := e1 in e2).
   Proof.
-    intros -> Hc1 Hc2 Hecont He2. iIntros (tid qE) "#LFT HE HL HC HT".
-    iApply wp_let'.
+    iIntros (-> Hc1 Hc2 Hecont He2 tid qE) "#LFT HE HL HC HT". iApply wp_let'.
     { simpl. rewrite decide_left. done. }
     iModIntro. iApply (He2 with "* LFT HE HL [HC] HT"). clear He2.
     iIntros "HE". iLöb as "IH". iIntros (x) "H".
