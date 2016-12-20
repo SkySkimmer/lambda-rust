@@ -1,5 +1,6 @@
 From lrust.lang Require Export lifting.
 From iris.proofmode Require Import tactics.
+From iris.base_logic Require Import big_op.
 Import uPred.
 
 (** Define some derived forms, and derived lemmas about them. *)
@@ -19,6 +20,32 @@ Section derived.
 Context `{ownPG lrust_lang Σ}.
 Implicit Types P Q : iProp Σ.
 Implicit Types Φ : val → iProp Σ.
+
+(** Proof rules for working on the n-ary argument list. *)
+Lemma wp_app (P : expr → iProp Σ) (Q : val → iProp Σ) E f el Φ :
+  is_Some (to_val f) →
+  ([∗ list] e ∈ el, P e) -∗ □ (∀ e, P e -∗ WP e @ E {{ Q }}) -∗
+    (∀ vl, ([∗ list] v ∈ vl, Q v) -∗ WP App f (of_val <$> vl) @ E {{ Φ }}) -∗
+    WP App f el @ E {{ Φ }}.
+Proof.
+  iIntros (Hf) "Hel #HPQ HΦ".
+  assert (el = ((of_val <$> ([] : list val)) ++ el)) as -> by reflexivity.
+  rewrite big_sepL_app. iDestruct "Hel" as "[Hvl Hel]".
+  iAssert ([∗ list] y ∈ [], Q y)%I with "[Hvl]" as "Hvl".
+  { by rewrite big_sepL_nil. }
+  (*assert (length ((of_val <$> ([] : list val)) ++ el) = length el) as Hlen by reflexivity.*)
+  remember [] as vl. clear Heqvl. (*remember (length el) as n. clear Heqn.*)
+  iInduction el as [|e el] "IH" forall (vl).
+  - rewrite app_nil_r. by iApply "HΦ".
+  - destruct Hf as [vf Hf]. set (K := AppRCtx vf vl el).
+    rewrite (_ : App f ((of_val <$> vl) ++ e :: el) = fill_item K e); last first.
+    { simpl. f_equal. by erewrite of_to_val. }
+    iApply wp_bindi. rewrite big_sepL_cons. iDestruct "Hel" as "[He Hel]".
+    iApply (wp_wand with "[He]"); first by iApply "HPQ". iIntros (v) "HQ".
+    simpl. erewrite of_to_val by done. iSpecialize ("IH" $! (vl ++ [v])).
+    rewrite [of_val <$> vl ++ [v]]map_app /= -app_assoc /=. iApply ("IH" with "Hel HΦ").
+    rewrite big_sepL_app big_sepL_singleton. iFrame.
+Qed.
 
 (** Proof rules for the sugar *)
 Lemma wp_lam E xl e e' el Φ :
