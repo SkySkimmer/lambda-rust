@@ -33,9 +33,7 @@ Proof.
   rewrite big_sepL_app. iDestruct "Hel" as "[Hvl Hel]".
   iAssert ([∗ list] y ∈ [], Q y)%I with "[Hvl]" as "Hvl".
   { by rewrite big_sepL_nil. }
-  (*assert (length ((of_val <$> ([] : list val)) ++ el) = length el) as Hlen by reflexivity.*)
-  remember [] as vl. clear Heqvl. (*remember (length el) as n. clear Heqn.*)
-  iInduction el as [|e el] "IH" forall (vl).
+  remember [] as vl. clear Heqvl. iInduction el as [|e el] "IH" forall (vl).
   - rewrite app_nil_r. by iApply "HΦ".
   - destruct Hf as [vf Hf]. set (K := AppRCtx vf vl el).
     rewrite (_ : App f ((of_val <$> vl) ++ e :: el) = fill_item K e); last first.
