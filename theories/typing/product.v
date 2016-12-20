@@ -13,9 +13,11 @@ Section product.
 
   Global Instance unit_copy : Copy unit.
   Proof.
-    split. by apply _.
-    iIntros (????????) "_ _ $". iExists 1%Qp. iSplitL; last by auto.
-    iExists []. iSplitL; last by auto. rewrite heap_mapsto_vec_nil. auto.
+    split. by apply _. iIntros (????????) "_ _ $ Htok".
+    iDestruct (na_own_acc with "Htok") as "[$ Htok]"; first set_solver+.
+    iExists 1%Qp. iModIntro. iSplitR.
+    { iExists []. iSplitL; last by auto. rewrite heap_mapsto_vec_nil. auto. }
+    iIntros "_ Htok2". iApply "Htok". done.
   Qed.
 
   Global Instance unit_send : Send unit.
@@ -87,17 +89,16 @@ Section product.
     Copy (product2 ty1 ty2).
   Proof.
     split; first (intros; apply _).
-    intros κ tid E F l q ? HF. iIntros "#LFT [H1 H2] [[Htok1 Htok2] Htl]".
-    simpl in HF. rewrite ->shr_locsE_shift in HF.
-    assert (shr_locsE l (ty_size ty1) ⊥ shr_locsE (shift_loc l (ty_size ty1)) (ty_size ty2)).
-    { apply shr_locsE_disj. }
-    assert (F = shr_locsE l (ty_size ty1) ∪ F∖(shr_locsE l (ty_size ty1))) as ->.
-    { rewrite -union_difference_L; set_solver. }
-    setoid_rewrite na_own_union; first last.
-    set_solver. set_solver.
-    iDestruct "Htl" as "[Htl1 Htl2]".
-    iMod (@copy_shr_acc with "LFT H1 [$Htok1 $Htl1]") as (q1) "[H1 Hclose1]". set_solver. done.
-    iMod (@copy_shr_acc with "LFT H2 [$Htok2 $Htl2]") as (q2) "[H2 Hclose2]". set_solver. set_solver.
+    intros κ tid E F l q ? HF. iIntros "#LFT [H1 H2] [Htok1 Htok2] Htl".
+    iMod (@copy_shr_acc with "LFT H1 Htok1 Htl") as (q1) "(H1 & Htl & Hclose1)"; first set_solver.
+    { rewrite <-HF. apply shr_locsE_subseteq. simpl. clear. omega. }
+    iMod (@copy_shr_acc with "LFT H2 Htok2 Htl") as (q2) "(H2 & Htl & Hclose2)"; first set_solver.
+    { move: HF. rewrite /= -plus_assoc shr_locsE_shift.
+      assert (shr_locsE l (ty_size ty1) ⊥ shr_locsE (shift_loc l (ty_size ty1)) (ty_size ty2 + 1))
+             by exact: shr_locsE_disj.
+      set_solver. }
+    iDestruct (na_own_acc with "Htl") as "[$ Htlclose]".
+    { generalize (shr_locsE_shift l ty1.(ty_size) ty2.(ty_size)). simpl. set_solver+. }
     destruct (Qp_lower_bound q1 q2) as (qq & q'1 & q'2 & -> & ->). iExists qq.
     iDestruct "H1" as (vl1) "[H↦1 H1]". iDestruct "H2" as (vl2) "[H↦2 H2]".
     rewrite !split_prod_mt.
@@ -108,7 +109,7 @@ Section product.
     iDestruct "H↦1" as "[H↦1 H↦1f]". iDestruct "H↦2" as "[H↦2 H↦2f]".
     iIntros "!>". iSplitL "H↦1 H1 H↦2 H2".
     - iNext. iSplitL "H↦1 H1". iExists vl1. by iFrame. iExists vl2. by iFrame.
-    - iIntros "[H1 H2]".
+    - iIntros "[H1 H2] Htl". iDestruct ("Htlclose" with "Htl") as "Htl".
       iDestruct "H1" as (vl1') "[H↦1 H1]". iDestruct "H2" as (vl2') "[H↦2 H2]".
       iAssert (▷ ⌜length vl1' = ty1.(ty_size)⌝)%I with "[#]" as ">%".
       { iNext. by iApply ty_size_eq. }
@@ -117,8 +118,8 @@ Section product.
       iCombine "H↦1" "H↦1f" as "H↦1". iCombine "H↦2" "H↦2f" as "H↦2".
       rewrite !heap_mapsto_vec_op; try by congruence.
       iDestruct "H↦1" as "[_ H↦1]". iDestruct "H↦2" as "[_ H↦2]".
-      iMod ("Hclose1" with "[H1 H↦1]") as "[$$]". by iExists _; iFrame.
-      iMod ("Hclose2" with "[H2 H↦2]") as "[$$]". by iExists _; iFrame. done.
+      iMod ("Hclose2" with "[H2 H↦2] Htl") as "[$ Htl]". by iExists _; iFrame.
+      iMod ("Hclose1" with "[H1 H↦1] Htl") as "[$$]". by iExists _; iFrame. done.
   Qed.
 
   Global Instance product2_send `{!Send ty1} `{!Send ty2} :

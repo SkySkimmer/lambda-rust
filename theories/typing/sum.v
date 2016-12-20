@@ -163,29 +163,36 @@ Section sum.
       intros. apply @copy_persistent. edestruct nth_in_or_default as [| ->];
                                         [by eapply List.Forall_forall| apply _].
     - intros κ tid E F l q ? HF.
-      iIntros "#LFT #H[[Htok1 Htok2] Htl]".
+      iIntros "#LFT #H [Htok1 Htok2] Htl".
       setoid_rewrite split_sum_mt. iDestruct "H" as (i) "[Hshr0 Hshr]".
       iMod (frac_bor_acc with "LFT Hshr0 Htok1") as (q'1) "[>Hown Hclose]". set_solver.
       iAssert ((∃ vl, is_pad i tyl vl)%I) with "[#]" as %[vl Hpad].
       { iDestruct "Hown" as "[_ Hpad]". iDestruct "Hpad" as (vl) "[_ %]".
         eauto. }
-      iMod (@copy_shr_acc _ _ (nth i tyl ∅) with "LFT Hshr [$Htok2 $Htl]")
-        as (q'2) "[HownC Hclose']"; try done.
+      iMod (@copy_shr_acc _ _ (nth i tyl ∅) with "LFT Hshr Htok2 Htl")
+        as (q'2) "(HownC & Htl & Hclose')"; try done.
       { edestruct nth_in_or_default as [| ->]; last by apply _.
           by eapply List.Forall_forall. }
       { rewrite <-HF. simpl. rewrite <-union_subseteq_r.
         apply shr_locsE_subseteq. omega. }
+      iDestruct (na_own_acc with "Htl") as "[$ Htlclose]".
+      { (* Really, we don't even have a lemma for anti-monotonicity of difference...? *)
+        cut (shr_locsE (shift_loc l 1) (ty_size (nth i tyl ∅)) ⊆
+                  shr_locsE (shift_loc l 1) (list_max (map ty_size tyl))).
+        - simpl. set_solver+.
+        - apply shr_locsE_subseteq. omega. }
       destruct (Qp_lower_bound q'1 q'2) as (q' & q'01 & q'02 & -> & ->).
       rewrite -(heap_mapsto_pred_op _ q' q'02); last (by intros; apply ty_size_eq).
       rewrite (fractional (Φ := λ q, _ ↦{q} _ ∗ _ ↦∗{q}: _)%I).
       iDestruct "HownC" as "[HownC1 HownC2]". iDestruct "Hown" as "[Hown1 Hown2]".
       iExists q'. iModIntro. iSplitL "Hown1 HownC1".
       + iNext. iExists i. iFrame.
-      + iIntros "H". iDestruct "H" as (i') "[>Hown1 HownC1]".
+      + iIntros "H Htl". iDestruct "H" as (i') "[>Hown1 HownC1]".
+        iDestruct ("Htlclose" with "Htl") as "Htl".
         iDestruct (heap_mapsto_agree with "[Hown1 Hown2]") as "#Heq".
         { iDestruct "Hown1" as "[$ _]". iDestruct "Hown2" as "[$ _]". }
         iDestruct "Heq" as %[= ->%Z_of_nat_inj].
-        iMod ("Hclose'" with "[$HownC1 $HownC2]").
+        iMod ("Hclose'" with "[$HownC1 $HownC2] Htl") as "[? $]".
         iMod ("Hclose" with "[$Hown1 $Hown2]") as "$". by iFrame.
   Qed.
 
