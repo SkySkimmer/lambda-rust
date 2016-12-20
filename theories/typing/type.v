@@ -98,36 +98,6 @@ Section type.
     rewrite shr_locsE_shift na_own_union //. apply shr_locsE_disj.
   Qed.
 
-  Lemma na_own_acc F2 F1 tid :
-    F2 ⊆ F1 →
-    na_own tid F1 -∗ na_own tid F2 ∗
-           (na_own tid F2 -∗ na_own tid F1).
-  Proof.
-    intros HF. assert (F1 = F2 ∪ (F1 ∖ F2)) as -> by exact: union_difference_L.
-    rewrite na_own_union; last by set_solver+.
-    iIntros "[$ $]". auto.
-  Qed.
-
-(*  Lemma shr_locsE_get_tok l n F tid :
-    shr_locsE l n ⊆ F →
-    na_own tid F -∗ na_own tid (shr_locsE l n) ∗ 
-         (na_own tid (shr_locsE l n) -∗ na_own tid F).
-  Proof.
-    intros HF.
-    assert (F = shr_locsE l n ∪ (F ∖ shr_locsE l n)) as -> by exact: union_difference_L.
-    rewrite na_own_union; last by set_solver+.
-    iIntros "[$ $]". by iIntros "?".
-  Qed.
-
-  Lemma shr_locsE_get_tokS l n F tid :
-    shr_locsE l (n + 1) ⊆ F →
-    na_own tid F -∗ na_own tid (shr_locsE l n) ∗ 
-         (na_own tid (shr_locsE l n) -∗ na_own tid F).
-  Proof.
-    intros HF. apply shr_locsE_get_tok. rewrite <-HF.
-    apply shr_locsE_subseteq. omega.
-  Qed.
-*)
   (** Copy types *)
   Class Copy (t : type) := {
     copy_persistent tid vl : PersistentP (t.(ty_own) tid vl);
