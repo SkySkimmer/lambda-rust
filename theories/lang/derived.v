@@ -22,27 +22,36 @@ Implicit Types P Q : iProp Σ.
 Implicit Types Φ : val → iProp Σ.
 
 (** Proof rules for working on the n-ary argument list. *)
-Lemma wp_app (P : expr → iProp Σ) (Q : val → iProp Σ) E f el Φ :
+Lemma wp_app_ind {n} (Q : nat → val → iProp Σ) E f (el : vec expr n) (vs : list val) Φ :
   is_Some (to_val f) →
-  ([∗ list] e ∈ el, P e) -∗ □ (∀ e, P e -∗ WP e @ E {{ Q }}) -∗
-    (∀ vl, ([∗ list] v ∈ vl, Q v) -∗ WP App f (of_val <$> vl) @ E {{ Φ }}) -∗
+   ([∗ list] k ↦ e ∈ el, WP e @ E {{ Q k }}) -∗
+   (∀ vl : vec val n, ([∗ list] k ↦ v ∈ vl, Q k v) -∗
+                    WP App f (map of_val (vs ++ vl)) @ E {{ Φ }}) -∗
+    WP App f (map of_val vs ++ el) @ E {{ Φ }}.
+Proof.
+  iIntros (Hf) "Hel HΦ". iInduction el as [|e n el] "IH" forall (vs Q).
+  - iSpecialize ("HΦ" $! [#]). rewrite !app_nil_r. iApply "HΦ".
+    by rewrite !big_sepL_nil.
+  - destruct Hf as [vf Hf]. set (K := AppRCtx vf vs el).
+    rewrite (_ : App f ((map of_val vs) ++ e ::: el) = fill_item K e); last first.
+    { simpl. f_equal. by erewrite of_to_val. }
+    iApply wp_bindi. rewrite vec_to_list_cons big_sepL_cons. iDestruct "Hel" as "[He Hel]".
+    iApply (wp_wand with "He"). iIntros (v) "HQ".
+    simpl. erewrite of_to_val by done. iSpecialize ("IH" $! (vs ++ [v])).
+    rewrite [map of_val (vs ++ [#v])]map_app /= -app_assoc /=.
+    iApply ("IH" with "Hel"). iIntros (vl) "Hvl".
+    iSpecialize ("HΦ" $! (v ::: vl)). rewrite -app_assoc /=. iApply "HΦ".
+    rewrite big_sepL_cons. iFrame.
+Qed.
+
+Lemma wp_app {n} (Q : nat → val → iProp Σ) E f (el : vec expr n) Φ :
+  is_Some (to_val f) →
+  ([∗ list] k ↦ e ∈ el, WP e @ E {{ Q k }}) -∗
+    (∀ vl : vec val n, ([∗ list] k ↦ v ∈ vl, Q k v) -∗
+                    WP App f (of_val <$> (vl : list val)) @ E {{ Φ }}) -∗
     WP App f el @ E {{ Φ }}.
 Proof.
-  iIntros (Hf) "Hel #HPQ HΦ".
-  assert (el = ((of_val <$> ([] : list val)) ++ el)) as -> by reflexivity.
-  rewrite big_sepL_app. iDestruct "Hel" as "[Hvl Hel]".
-  iAssert ([∗ list] y ∈ [], Q y)%I with "[Hvl]" as "Hvl".
-  { by rewrite big_sepL_nil. }
-  remember [] as vl. clear Heqvl. iInduction el as [|e el] "IH" forall (vl).
-  - rewrite app_nil_r. by iApply "HΦ".
-  - destruct Hf as [vf Hf]. set (K := AppRCtx vf vl el).
-    rewrite (_ : App f ((of_val <$> vl) ++ e :: el) = fill_item K e); last first.
-    { simpl. f_equal. by erewrite of_to_val. }
-    iApply wp_bindi. rewrite big_sepL_cons. iDestruct "Hel" as "[He Hel]".
-    iApply (wp_wand with "[He]"); first by iApply "HPQ". iIntros (v) "HQ".
-    simpl. erewrite of_to_val by done. iSpecialize ("IH" $! (vl ++ [v])).
-    rewrite [of_val <$> vl ++ [v]]map_app /= -app_assoc /=. iApply ("IH" with "Hel HΦ").
-    rewrite big_sepL_app big_sepL_singleton. iFrame.
+  iIntros (Hf). iApply (wp_app_ind _ _ _ _ []). done.
 Qed.
 
 (** Proof rules for the sugar *)

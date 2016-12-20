@@ -101,11 +101,27 @@ Section fn.
     rewrite tctx_interp_cons. iIntros "[Hf HT]".
     wp_bind p. iApply (wp_hasty with "Hf"). iIntros (v) "[% Hf]".
     iMod (HTsat with "LFT HE HL HT") as "(HE & HL & HT)". rewrite tctx_interp_app.
-    iDestruct "HT" as "[Hargs HT']". clear HTsat.
-    (* TODO: I have no idea how to reduce all the ps properly to their values. This induction is probably not right, but at least it checks the case of the empty list. *)
-    iInduction ps as [|p' n ps] "IH" forall (tys).
-    - iDestruct "Hf" as (f) "[EQ #Hf]". iDestruct "EQ" as %[=->].
-      iSpecialize ("Hf" $! x [#] k). simpl.
+    iDestruct "HT" as "[Hargs HT']". clear HTsat. rewrite -vec_to_list_cons.
+    iApply (wp_app (λ i v, match i with O => ⌜v = k⌝ ∗ _ | S i =>
+                           ∀ ty, ⌜(tys x : list type) !! i = Some ty⌝ →
+                                 tctx_elt_interp tid (TCtx_hasty v ty) end)%I
+            with "* [Hargs HC]"); first wp_done.
+    - rewrite big_sepL_cons. iSplitR "Hargs".
+      { iApply wp_value'. iSplit; first done. iApply "HC". }
+      clear dependent ty k p.
+      rewrite /tctx_interp. rewrite big_sepL_zip_with. iApply (big_sepL_mono with "Hargs").
+      simpl. iIntros (i p Hp) "HT". assert (Hlen := lookup_lt_Some _ _ _ Hp).
+      edestruct (lookup_lt_is_Some_2 (tys x)) as [ty Hty].
+      { move: Hlen. rewrite !vec_to_list_length. done. }
+      iSpecialize ("HT" with "* []"); first done.
+      iApply (wp_hasty with "HT"). iIntros (v') "[% Hown]". iIntros (ty') "#EQ".
+      rewrite Hty. iDestruct "EQ" as %[=<-]. iExists v'. iFrame "Hown".
+      iPureIntro. exact: eval_path_of_val.
+    - iIntros (vl'). assert (Hvl := Vector.eta vl'). remember (Vector.hd vl') as kv.
+      remember (Vector.tl vl') as vl. rewrite Hvl. simpl in *. clear dependent vl'.
+      rewrite big_sepL_cons. iIntros "[[% HC] Hvl]". subst kv.
+      iDestruct "Hf" as (f) "[EQ #Hf]". iDestruct "EQ" as %[=->].
+      iSpecialize ("Hf" $! x vl k). 
       iMod (HEsat with "[%] HE HL") as (q') "[HE' Hclose]"; first done.
       iApply ("Hf" with "LFT HE' [] [HC Hclose HT']").
       + by rewrite /llctx_interp big_sepL_nil.
@@ -115,9 +131,8 @@ Section fn.
         iIntros (args) "_ HT". iSpecialize ("HC" with "* []"); first by (iPureIntro; apply elem_of_list_singleton).
         iApply ("HC" $! args with "HL"). rewrite tctx_interp_singleton tctx_interp_cons.
         iFrame.
-      + done.
-    - (* TODO: The IH is not usable here. What we really want is to do induction over "how many of the arguments still need to be evaluated", so the base case has all the ps evaluated and the inductive case evaluates one of them. *)
-  Abort.
+      + rewrite /tctx_interp big_sepL_zip_with. done.
+  Qed.
 
   Lemma typed_fn {A n m} E L E' (tys : A → vec type n) ty fb kb (argsb : vec binder n) ef e
        (cps : vec path m) (ctyl : vec type m) `{!LstCopy ctyl, !LstSend ctyl} :

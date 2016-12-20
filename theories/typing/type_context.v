@@ -20,6 +20,10 @@ Section type_context.
     | e => to_val e
     end.
 
+  Lemma eval_path_of_val (v : val) :
+    eval_path v = Some v.
+  Proof. destruct v. done. simpl. rewrite (decide_left _). done. Qed.
+
   (* TODO: Consider mking this a pair of a path and the rest. We could
      then e.g. formulate tctx_elt_hasty_path more generally. *)
   Inductive tctx_elt : Type :=
@@ -35,6 +39,7 @@ Section type_context.
     end%I.
   (* Block tctx_elt_interp from reducing with simpl when x is a constructor. *)
   Global Arguments tctx_elt_interp : simpl never.
+
   Definition tctx_interp (tid : thread_id) (T : tctx) : iProp Σ :=
     ([∗ list] x ∈ T, tctx_elt_interp tid x)%I.
 
