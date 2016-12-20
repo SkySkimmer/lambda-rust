@@ -8,17 +8,15 @@ Section cont_typing.
   Context `{typeG Σ}.
 
   (** Jumping to and defining a continuation. *)
-  (* TODO: On paper, we allow passing paths as arguments to continuations.
-     That however would require the continuation precondition to be parameterized over paths
-     instead of values -- effectively showing that the sort "val" on paper is
-     really for paths, not just for values. *)
   Lemma typed_jump {n} E L k T' T (args : vec val n) :
     tctx_incl E L T (T' args) →
     typed_body E L [CCtx_iscont k L n T'] T (k (of_val <$> (args : list _))).
   Proof.
-    (* This proofs waits for the problem in typed_call to be figured out:
-       How to best do the induction for reducing the multi-application. *)
-  Abort.
+    iIntros (Hincl). iIntros (tid qE) "#LFT HE HL HC HT".
+    iMod (Hincl with "LFT HE HL HT") as "(HE & HL & HT)".
+    iSpecialize ("HC" with "HE * []"); first by (iPureIntro; apply elem_of_list_singleton).
+    simpl. iApply ("HC" with "* HL HT").
+  Qed.
 
   Lemma typed_cont {n} E L1 L2 C T T' kb (argsb : vec binder n) e1 econt e2 :
     e1 = Rec kb argsb econt → Closed (kb :b: argsb +b+ []) econt → Closed (kb :b: []) e2 →
