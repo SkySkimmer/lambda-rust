@@ -4,7 +4,7 @@ From lrust.lifetime Require Import borrow.
 From lrust.typing Require Export type.
 From lrust.typing Require Import programs.
 
-Section cont_typing.
+Section typing.
   Context `{typeG Σ}.
 
   (** Jumping to and defining a continuation. *)
@@ -38,4 +38,4 @@ Section cont_typing.
     by iApply "IH".
   Qed.
 
-End cont_typing.
+End typing.

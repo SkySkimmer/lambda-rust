@@ -4,7 +4,7 @@ From iris.base_logic Require Import big_op.
 From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.lang Require Export new_delete.
 From lrust.typing Require Export type.
-From lrust.typing Require Import uniq_bor type_context.
+From lrust.typing Require Import uninit type_context programs perm typing.
 
 Section own.
   Context `{typeG Σ}.
@@ -133,21 +133,88 @@ Section own.
     iClear "Hshr". (* FIXME: Using "{HShr} [HShr $]" for the intro pattern in the following line doesn't work. *)
     iMod "Hfin" as "[Hshr $]". by iApply Hsync.
   Qed.
+End own.
+
+Section typing.
+  Context `{typeG Σ}.
 
   (** Typing *)
-  Lemma tctx_borrow E L p n ty κ :
-    tctx_incl E L [TCtx_hasty p (own n ty)]
-                  [TCtx_hasty p (&uniq{κ}ty); TCtx_blocked p κ (own n ty)].
+  Lemma write_own E L ty ty' n :
+    ty.(ty_size) = ty'.(ty_size) → typed_writing E L (own n ty') ty (own n ty).
   Proof.
-    iIntros (tid ??) "#LFT $ $ H".
-    rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
-    iDestruct "H" as (v) "[% Hown]". iDestruct "Hown" as (l) "(EQ & Hmt & ?)".
-    iDestruct "EQ" as %[=->]. iMod (bor_create with "LFT Hmt") as "[Hbor Hext]". done.
-    iModIntro. iSplitL "Hbor".
-    - iExists _. iSplit. done. iExists _, _. erewrite <-uPred.iff_refl. eauto.
-    - iExists _. iSplit. done. iIntros "H†". iExists _. iFrame. iSplitR. by eauto.
-        by iMod ("Hext" with "H†") as "$".
+    iIntros (Hsz p tid Φ F ?) "_ Hp HΦ". iApply wp_fupd. iApply (wp_hasty with "Hp").
+    iIntros (v) "Hp Hown". iDestruct "Hp" as %Hp.
+    iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
+    iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
+    rewrite ty'.(ty_size_eq). (* This turns out to be the fastest way to apply a lemma below ▷ -- at least if we're fine throwing away the premise even though the result is persistent, which in this case, we are. *)
+    iDestruct "Hown" as ">%".
+    iApply ("HΦ" with "* [%] [] H↦"); [congruence|done|].
+    iIntros (vl') "H↦ Hown' !>". iExists _. iSplit; first done.
+    iExists _. iSplit; first done. rewrite Hsz. iFrame "H†".
+    iExists _. iFrame.
+  Qed.
+
+  (* Old Typing *)
+
+  Lemma consumes_copy_own ty n:
+    Copy ty → consumes ty (λ ν, ν ◁ own n ty)%P (λ ν, ν ◁ own n ty)%P.
+  Proof.
+    iIntros (? ν tid Φ E ?) "_ H◁ Htl HΦ". iApply (has_type_wp with "H◁").
+    iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
+    rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & H↦ & >H†)".
+    iDestruct "Heq" as %[=->]. iDestruct "H↦" as (vl) "[>H↦ #Hown]".
+    iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
+      by rewrite ty.(ty_size_eq).
+    iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦!>".
+    rewrite /has_type Hνv. iExists _. iSplit. done. iFrame. iExists vl. eauto.
   Qed.
 
 
-End own.
+  Lemma consumes_move ty n:
+    consumes ty (λ ν, ν ◁ own n ty)%P (λ ν, ν ◁ own n (uninit ty.(ty_size)))%P.
+  Proof.
+    iIntros (ν tid Φ E ?) "_ H◁ Htl HΦ". iApply (has_type_wp with "H◁").
+    iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
+    rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & H↦ & >H†)".
+    iDestruct "Heq" as %[=->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
+    iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">Hlen".
+      by rewrite ty.(ty_size_eq). iDestruct "Hlen" as %Hlen.
+    iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦!>".
+    rewrite /has_type Hνv. iExists _. iSplit. done. iSplitR "H†".
+    - rewrite -Hlen. iExists vl. iIntros "{$H↦}!>". clear.
+      iInduction vl as [|v vl] "IH". done.
+      iExists [v], vl. iSplit. done. by iSplit.
+    - rewrite uninit_sz; auto.
+  Qed.
+
+
+  Lemma typed_new ρ (n : nat):
+    0 ≤ n → typed_step_ty ρ (new [ #n]%E) (own n (uninit n)).
+  Proof.
+    iIntros (Hn tid) "!#(#HEAP&_&_&$)". iApply (wp_new with "HEAP"); try done.
+    iIntros "!>*(% & H† & H↦)". iExists _. iSplit. done. iNext.
+    rewrite Nat2Z.id. iSplitR "H†".
+    - iExists vl. iFrame.
+      match goal with H : Z.of_nat n = Z.of_nat (length vl) |- _ => rename H into Hlen end.
+      clear Hn. apply (inj Z.of_nat) in Hlen. subst.
+      iInduction vl as [|v vl] "IH". done.
+      iExists [v], vl. iSplit. done. by iSplit.
+    - by rewrite uninit_sz freeable_sz_full.
+  Qed.
+
+
+  Lemma typed_delete ty (ν : expr):
+    typed_step (ν ◁ own ty.(ty_size) ty) (delete [ #ty.(ty_size); ν])%E (λ _, top).
+  Proof.
+    iIntros (tid) "!#(#HEAP&_&H◁&$)". wp_bind ν.
+    iApply (has_type_wp with "[$H◁]"). iIntros (v) "_ H◁ !>".
+    rewrite has_type_value.
+    iDestruct "H◁" as (l) "(Hv & H↦∗: & >H†)". iDestruct "Hv" as %[=->].
+    iDestruct "H↦∗:" as (vl) "[>H↦ Hown]".
+    rewrite ty_size_eq. iDestruct "Hown" as ">Hown". iDestruct "Hown" as %<-.
+    iApply (wp_delete with "[-]"); try by auto.
+    rewrite freeable_sz_full. by iFrame.
+  Qed.
+
+
+End typing.

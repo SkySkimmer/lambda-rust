@@ -11,6 +11,10 @@ Section int.
 
   Global Instance int_send : Send int.
   Proof. iIntros (tid1 tid2 vl). done. Qed.
+End int.
+
+Section typing.
+  Context `{typeG Σ}.
 
   Lemma type_int (z : Z) E L :
     typed_instruction_ty E L [] #z int.
@@ -24,8 +28,8 @@ Section int.
   Proof.
     iIntros (tid qE) "!# _ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
-    wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "[% Hown1]".
-    wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "[% Hown2]".
+    wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "% Hown1".
+    wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "% Hown2".
     iDestruct "Hown1" as (z1) "EQ". iDestruct "EQ" as %[=->].
     iDestruct "Hown2" as (z2) "EQ". iDestruct "EQ" as %[=->].
     wp_op. rewrite tctx_interp_singleton. iExists _. iSplitR; first done.
@@ -37,8 +41,8 @@ Section int.
   Proof.
     iIntros (tid qE) "!# _ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
-    wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "[% Hown1]".
-    wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "[% Hown2]".
+    wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "% Hown1".
+    wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "% Hown2".
     iDestruct "Hown1" as (z1) "EQ". iDestruct "EQ" as %[=->].
     iDestruct "Hown2" as (z2) "EQ". iDestruct "EQ" as %[=->].
     wp_op. rewrite tctx_interp_singleton. iExists _. iSplitR; first done.
@@ -50,12 +54,12 @@ Section int.
   Proof.
     iIntros (tid qE) "!# _ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
-    wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "[% Hown1]".
-    wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "[% Hown2]".
+    wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "% Hown1".
+    wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "% Hown2".
     iDestruct "Hown1" as (z1) "EQ". iDestruct "EQ" as %[=->].
     iDestruct "Hown2" as (z2) "EQ". iDestruct "EQ" as %[=->].
     wp_op; intros _; rewrite tctx_interp_singleton; iExists _; (iSplitR; first done);
       iExists _; done.
   Qed.
   
-End int.
+End typing.

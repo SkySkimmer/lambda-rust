@@ -107,8 +107,8 @@ Section type_context.
     tctx_elt_interp tid (TCtx_hasty p2 ty).
   Proof. intros Hp. rewrite /tctx_elt_interp /=. setoid_rewrite Hp. done. Qed.
 
-  Lemma wp_eval_path p v :
-    eval_path p = Some v → (WP p {{ v', ⌜v' = v⌝ }})%I.
+  Lemma wp_eval_path E p v :
+    eval_path p = Some v → (WP p @ E {{ v', ⌜v' = v⌝ }})%I.
   Proof.
     revert v; induction p; intros v; cbn -[to_val];
       try (intros ?; by iApply wp_value); [].
@@ -124,15 +124,14 @@ Section type_context.
     iIntros (v) "%". subst v. wp_op. done.
   Qed.
 
-  Lemma wp_hasty tid p ty Φ :
+  Lemma wp_hasty E tid p ty Φ :
     tctx_elt_interp tid (TCtx_hasty p ty) -∗
-    (∀ v, ⌜eval_path p = Some v⌝ ∗ ty.(ty_own) tid [v] -∗ Φ v) -∗
-    WP p {{ Φ }}.
+    (∀ v, ⌜eval_path p = Some v⌝ -∗ ty.(ty_own) tid [v] -∗ Φ v) -∗
+    WP p @ E {{ Φ }}.
   Proof.
     iIntros "Hty HΦ". iDestruct "Hty" as (v) "[% Hown]".
-    iApply (wp_wand with "[]").
-    { iApply wp_eval_path. done. }
-    iIntros (v') "%". subst v'. iApply "HΦ". by auto.
+    iApply (wp_wand with "[]"). { iApply wp_eval_path. done. }
+    iIntros (v') "%". subst v'. iApply ("HΦ" with "* [] Hown"). by auto.
   Qed.
 
   Lemma contains_tctx_incl E L T1 T2 : T1 `contains` T2 → tctx_incl E L T2 T1.

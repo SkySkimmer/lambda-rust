@@ -63,4 +63,27 @@ Section typing.
       iExists _. auto.
   Qed.
 
+  (* Old typing *)
+  
+  Lemma consumes_copy_shr_bor ty κ κ' q:
+    Copy ty →
+    consumes ty (λ ν, ν ◁ &shr{κ}ty ∗ κ' ⊑ κ ∗ q.[κ'])%P
+                (λ ν, ν ◁ &shr{κ}ty ∗ κ' ⊑ κ ∗ q.[κ'])%P.
+  Proof.
+    iIntros (? ν tid Φ E ?) "#LFT (H◁ & #H⊑ & Htok) Htl HΦ".
+    iApply (has_type_wp with "H◁"). iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
+    rewrite has_type_value. iDestruct "H◁" as (l') "[Heq #Hshr]". iDestruct "Heq" as %[=->].
+    iMod (lft_incl_acc with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
+    iMod (copy_shr_acc with "LFT Hshr Htok Htl") as (q'') "(H↦ & Htl & Hclose')".
+    { assert (↑shrN ⊆ (↑lrustN : coPset)) by solve_ndisj. set_solver. } (* FIXME: some tactic should solve this in one go. *)
+    { done. }
+    iDestruct "H↦" as (vl) "[>H↦ #Hown]".
+    iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
+      by rewrite ty.(ty_size_eq).
+    iModIntro. iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦".
+    iMod ("Hclose'" with "[H↦] Htl") as "[Htok $]". iExists _; by iFrame.
+    iMod ("Hclose" with "Htok") as "$". rewrite /has_type Hνv. iExists _. eauto.
+  Qed.
+
+
 End typing.

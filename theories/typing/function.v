@@ -20,11 +20,15 @@ Section fn.
 
   Global Instance fn_send {A n} E tys ty : Send (@fn A n E tys ty).
   Proof. iIntros (tid1 tid2 vl). done. Qed.
+End fn.
 
-  Lemma fn_subtype_ty A n E0 L0 E tys1 tys2 ty1 ty2 :
-    (∀ x, Forall2 (subtype (E0 ++ E x) L0) (tys2 x : vec _ _) (tys1 x : vec _ _)) →
+Section typing.
+  Context `{typeG Σ}.
+
+  Lemma fn_subtype_ty {A n} E0 L0 E (tys1 : A → vec type n) tys2 ty1 ty2 :
+    (∀ x, Forall2 (subtype (E0 ++ E x) L0) (tys2 x : vec _ n) (tys1 x)) →
     (∀ x, subtype (E0 ++ E x) L0 (ty1 x) (ty2 x)) →
-    subtype E0 L0 (@fn A n E tys1 ty1) (@fn A n E tys2 ty2).
+    subtype E0 L0 (fn E tys1 ty1) (fn E tys2 ty2).
   Proof.
     intros Htys Hty. apply subtype_simple_type=>//= _ vl.
     iIntros "#LFT #HE0 #HL0 Hf". iDestruct "Hf" as (f) "[% #Hf]". subst.
@@ -65,9 +69,9 @@ Section fn.
     iExists f. iSplit. done. rewrite /typed_body. iIntros "!# *". iApply "Hf".
   Qed.
 
-  Lemma fn_subtype_elctx_sat {A n} E0 L0 E E' tys ty :
+  Lemma fn_subtype_elctx_sat {A n} E0 L0 E E' (tys : A → vec type n) ty :
     (∀ x, elctx_sat (E x) [] (E' x)) →
-    subtype E0 L0 (@fn A n E' tys ty) (fn E tys ty).
+    subtype E0 L0 (fn E' tys ty) (fn E tys ty).
   Proof.
     intros HEE'. apply subtype_simple_type=>//= _ vl.
     iIntros "#LFT _ _ Hf". iDestruct "Hf" as (f) "[% #Hf]". subst.
@@ -78,9 +82,9 @@ Section fn.
     by iMod ("Hclose" with "HE") as "[$ _]".
   Qed.
 
-  Lemma fn_subtype_lft_incl {A n} E0 L0 E κ κ' tys ty :
+  Lemma fn_subtype_lft_incl {A n} E0 L0 E κ κ' (tys : A → vec type n) ty :
     lctx_lft_incl E0 L0 κ κ' →
-    subtype E0 L0 (@fn A n (λ x, ELCtx_Incl κ κ' :: E x) tys ty) (fn E tys ty).
+    subtype E0 L0 (fn (λ x, ELCtx_Incl κ κ' :: E x) tys ty) (fn E tys ty).
   Proof.
     intros Hκκ'. apply subtype_simple_type=>//= _ vl.
     iIntros "#LFT #HE0 #HL0 Hf". iDestruct "Hf" as (f) "[% #Hf]". subst.
@@ -98,7 +102,7 @@ Section fn.
   Proof.
     iIntros (HTsat HEsat tid qE) "#LFT HE HL HC".
     rewrite tctx_interp_cons. iIntros "[Hf HT]".
-    wp_bind p. iApply (wp_hasty with "Hf"). iIntros (v) "[% Hf]".
+    wp_bind p. iApply (wp_hasty with "Hf"). iIntros (v) "% Hf".
     iMod (HTsat with "LFT HE HL HT") as "(HE & HL & HT)". rewrite tctx_interp_app.
     iDestruct "HT" as "[Hargs HT']". clear HTsat. rewrite -vec_to_list_cons.
     iApply (wp_app_vec (λ i v, match i with O => ⌜v = k⌝ ∗ _ | S i =>
@@ -113,7 +117,7 @@ Section fn.
       edestruct (lookup_lt_is_Some_2 (tys x)) as [ty Hty].
       { move: Hlen. rewrite !vec_to_list_length. done. }
       iSpecialize ("HT" with "* []"); first done.
-      iApply (wp_hasty with "HT"). iIntros (v') "[% Hown]". iIntros (ty') "#EQ".
+      iApply (wp_hasty with "HT"). iIntros (v') "% Hown". iIntros (ty') "#EQ".
       rewrite Hty. iDestruct "EQ" as %[=<-]. iExists v'. iFrame "Hown".
       iPureIntro. exact: eval_path_of_val.
     - iIntros (vl'). assert (Hvl := Vector.eta vl'). remember (Vector.hd vl') as kv.
@@ -156,4 +160,4 @@ Section fn.
     rewrite tctx_interp_cons tctx_interp_app. iFrame "HT' IH".
     iApply tctx_send. by iNext.
   Qed.
-End fn.
+End typing.

@@ -1,9 +1,9 @@
 From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
-From lrust.lifetime Require Import borrow reborrow frac_borrow.
+From lrust.lifetime Require Import borrow frac_borrow reborrow.
 From lrust.lang Require Import heap.
 From lrust.typing Require Export type.
-From lrust.typing Require Import lft_contexts type_context shr_bor.
+From lrust.typing Require Import lft_contexts type_context shr_bor perm typing.
 
 Section uniq_bor.
   Context `{typeG Σ}.
@@ -146,23 +146,47 @@ Section typing.
     iIntros "!>/=". eauto.
   Qed.
 
-  Lemma tctx_reborrow_uniq E L p ty κ κ' :
-    lctx_lft_incl E L κ' κ →
-    tctx_incl E L [TCtx_hasty p (&uniq{κ}ty)]
-                  [TCtx_hasty p (&uniq{κ'}ty); TCtx_blocked p κ (&uniq{κ}ty)].
+  (* Old typing *)
+  
+
+  Lemma consumes_copy_uniq_bor `(!Copy ty) κ κ' q:
+    consumes ty (λ ν, ν ◁ &uniq{κ}ty ∗ κ' ⊑ κ ∗ q.[κ'])%P
+                (λ ν, ν ◁ &uniq{κ}ty ∗ κ' ⊑ κ ∗ q.[κ'])%P.
   Proof.
-    iIntros (Hκκ' tid ??) "#LFT HE HL H".
-    iDestruct (elctx_interp_persist with "HE") as "#HE'".
-    iDestruct (llctx_interp_persist with "HL") as "#HL'". iFrame "HE HL".
-    iDestruct (Hκκ' with "HE' HL'") as "Hκκ'".
-    rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
-    iDestruct "H" as (v) "[% Hown]". iDestruct "Hown" as (l P) "[[EQ #Hiff] Hb]".
-    iDestruct "EQ" as %[=->]. iMod (bor_iff with "LFT [] Hb") as "Hb". done. by eauto.
-    iMod (rebor with "LFT Hκκ' Hb") as "[Hb Hext]". done. iModIntro. iSplitL "Hb".
-    - iExists _. iSplit. done. iExists _, _. erewrite <-uPred.iff_refl. eauto.
-    - iExists _. iSplit. done. iIntros "#H†".
-      iMod ("Hext" with ">[]") as "Hb". by iApply (lft_incl_dead with "Hκκ' H†").
-      iExists _, _. erewrite <-uPred.iff_refl. eauto.
+    iIntros (ν tid Φ E ?) "#LFT (H◁ & #H⊑ & Htok) Htl HΦ".
+    iApply (has_type_wp with "H◁"). iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
+    rewrite has_type_value. iDestruct "H◁" as (l' P) "[[Heq #HPiff] HP]".
+    iDestruct "Heq" as %[=->].
+    iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
+    iMod (lft_incl_acc with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
+    iMod (bor_acc with "LFT H↦ Htok") as "[H↦ Hclose']". set_solver.
+    iDestruct "H↦" as (vl) "[>H↦ #Hown]".
+    iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
+      by rewrite ty.(ty_size_eq).
+    iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦".
+    iMod ("Hclose'" with "[H↦]") as "[H↦ Htok]". by iExists _; iFrame.
+    iMod ("Hclose" with "Htok") as "$". rewrite /has_type Hνv.
+    iExists _, _. erewrite <-uPred.iff_refl. auto.
   Qed.
+
+
+  Lemma update_weak ty q κ κ':
+    update ty (λ ν, ν ◁ &uniq{κ} ty ∗ κ' ⊑ κ ∗ q.[κ'])%P
+              (λ ν, ν ◁ &uniq{κ} ty ∗ κ' ⊑ κ ∗ q.[κ'])%P.
+  Proof.
+    iIntros (ν tid Φ E ?) "#LFT (H◁ & #H⊑ & Htok) HΦ".
+    iApply (has_type_wp with "H◁"). iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
+    rewrite has_type_value. iDestruct "H◁" as (l P) "[[Heq #HPiff] HP]".
+    iDestruct "Heq" as %[=->].
+    iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
+    iMod (lft_incl_acc with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
+    iMod (bor_acc with "LFT H↦ Htok") as "[H↦ Hclose']". set_solver.
+    iDestruct "H↦" as (vl) "[>H↦ Hown]". rewrite ty.(ty_size_eq).
+    iDestruct "Hown" as ">%". iApply "HΦ". iFrame "∗%#". iIntros (vl') "[H↦ Hown]".
+    iMod ("Hclose'" with "[H↦ Hown]") as "[Hbor Htok]". by iExists _; iFrame.
+    iMod ("Hclose" with "Htok") as "$". rewrite /has_type Hνv.
+    iExists _, _. erewrite <-uPred.iff_refl. auto.
+  Qed.
+
 
 End typing.
