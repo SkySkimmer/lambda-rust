@@ -142,7 +142,7 @@ Section typing.
   Lemma write_own E L ty ty' n :
     ty.(ty_size) = ty'.(ty_size) → typed_writing E L (own n ty') ty (own n ty).
   Proof.
-    iIntros (Hsz p tid F ?) "_ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
+    iIntros (Hsz p tid F qE qL ?) "_ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
     rewrite ty'.(ty_size_eq). (* This turns out to be the fastest way to apply a lemma below ▷ -- at least if we're fine throwing away the premise even though the result is persistent, which in this case, we are. *)
     iDestruct "Hown" as ">%". iModIntro. iExists _, _. iFrame "H↦".

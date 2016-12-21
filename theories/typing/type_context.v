@@ -72,6 +72,14 @@ Section type_context.
     tctx_elt_interp tid (TCtx_hasty p2 ty).
   Proof. intros Hp. rewrite /tctx_elt_interp /=. setoid_rewrite Hp. done. Qed.
 
+  Lemma tctx_hasty_val' tid p (v : val) ty :
+    eval_path p = Some v →
+    tctx_elt_interp tid (TCtx_hasty p ty) ⊣⊢ ty.(ty_own) tid [v].
+  Proof.
+    intros ?. rewrite -tctx_hasty_val. apply tctx_elt_interp_hasty_path.
+    rewrite eval_path_of_val. done.
+  Qed.
+
   Lemma wp_hasty E tid p ty Φ :
     tctx_elt_interp tid (TCtx_hasty p ty) -∗
     (∀ v, ⌜eval_path p = Some v⌝ -∗ ty.(ty_own) tid [v] -∗ Φ v) -∗
