@@ -24,12 +24,29 @@ Section type_context.
     eval_path v = Some v.
   Proof. destruct v. done. simpl. rewrite (decide_left _). done. Qed.
 
+  Lemma wp_eval_path E p v :
+    eval_path p = Some v → (WP p @ E {{ v', ⌜v' = v⌝ }})%I.
+  Proof.
+    revert v; induction p; intros v; cbn -[to_val];
+      try (intros ?; by iApply wp_value); [].
+    destruct op; try discriminate; [].
+    destruct p2; try (intros ?; by iApply wp_value); [].
+    destruct l; try (intros ?; by iApply wp_value); [].
+    destruct (eval_path p1); try (intros ?; by iApply wp_value); [].
+    destruct v0; try discriminate; [].
+    destruct l; try discriminate; [].
+    intros [=<-]. iStartProof. wp_bind p1.
+    iApply (wp_wand with "[]").
+    { iApply IHp1. done. }
+    iIntros (v) "%". subst v. wp_op. done.
+  Qed.
+
+  (** Type context element *)
   (* TODO: Consider mking this a pair of a path and the rest. We could
      then e.g. formulate tctx_elt_hasty_path more generally. *)
   Inductive tctx_elt : Type :=
   | TCtx_hasty (p : path) (ty : type)
   | TCtx_blocked (p : path) (κ : lft) (ty : type).
-  Definition tctx := list tctx_elt.
 
   Definition tctx_elt_interp (tid : thread_id) (x : tctx_elt) : iProp Σ :=
     match x with
@@ -39,6 +56,34 @@ Section type_context.
     end%I.
   (* Block tctx_elt_interp from reducing with simpl when x is a constructor. *)
   Global Arguments tctx_elt_interp : simpl never.
+
+  Lemma tctx_hasty_val tid (v : val) ty :
+    tctx_elt_interp tid (TCtx_hasty v ty) ⊣⊢ ty.(ty_own) tid [v].
+  Proof.
+    rewrite /tctx_elt_interp eval_path_of_val. iSplit.
+    - iIntros "H". iDestruct "H" as (?) "[EQ ?]".
+      iDestruct "EQ" as %[=->]. done.
+    - iIntros "?". iExists _. auto.
+  Qed.
+
+  Lemma tctx_elt_interp_hasty_path p1 p2 ty tid :
+    eval_path p1 = eval_path p2 →
+    tctx_elt_interp tid (TCtx_hasty p1 ty) ≡
+    tctx_elt_interp tid (TCtx_hasty p2 ty).
+  Proof. intros Hp. rewrite /tctx_elt_interp /=. setoid_rewrite Hp. done. Qed.
+
+  Lemma wp_hasty E tid p ty Φ :
+    tctx_elt_interp tid (TCtx_hasty p ty) -∗
+    (∀ v, ⌜eval_path p = Some v⌝ -∗ ty.(ty_own) tid [v] -∗ Φ v) -∗
+    WP p @ E {{ Φ }}.
+  Proof.
+    iIntros "Hty HΦ". iDestruct "Hty" as (v) "[% Hown]".
+    iApply (wp_wand with "[]"). { iApply wp_eval_path. done. }
+    iIntros (v') "%". subst v'. iApply ("HΦ" with "* [] Hown"). by auto.
+  Qed.
+
+  (** Type context *)
+  Definition tctx := list tctx_elt.
 
   Definition tctx_interp (tid : thread_id) (T : tctx) : iProp Σ :=
     ([∗ list] x ∈ T, tctx_elt_interp tid x)%I.
@@ -99,39 +144,6 @@ Section type_context.
     - iIntros (??? H1 H2 ???) "#LFT HE HL H".
       iMod (H1 with "LFT HE HL H") as "(HE & HL & H)".
       by iMod (H2 with "LFT HE HL H") as "($ & $ & $)".
-  Qed.
-
-  Lemma tctx_elt_interp_hasty_path p1 p2 ty tid :
-    eval_path p1 = eval_path p2 →
-    tctx_elt_interp tid (TCtx_hasty p1 ty) ≡
-    tctx_elt_interp tid (TCtx_hasty p2 ty).
-  Proof. intros Hp. rewrite /tctx_elt_interp /=. setoid_rewrite Hp. done. Qed.
-
-  Lemma wp_eval_path E p v :
-    eval_path p = Some v → (WP p @ E {{ v', ⌜v' = v⌝ }})%I.
-  Proof.
-    revert v; induction p; intros v; cbn -[to_val];
-      try (intros ?; by iApply wp_value); [].
-    destruct op; try discriminate; [].
-    destruct p2; try (intros ?; by iApply wp_value); [].
-    destruct l; try (intros ?; by iApply wp_value); [].
-    destruct (eval_path p1); try (intros ?; by iApply wp_value); [].
-    destruct v0; try discriminate; [].
-    destruct l; try discriminate; [].
-    intros [=<-]. iStartProof. wp_bind p1.
-    iApply (wp_wand with "[]").
-    { iApply IHp1. done. }
-    iIntros (v) "%". subst v. wp_op. done.
-  Qed.
-
-  Lemma wp_hasty E tid p ty Φ :
-    tctx_elt_interp tid (TCtx_hasty p ty) -∗
-    (∀ v, ⌜eval_path p = Some v⌝ -∗ ty.(ty_own) tid [v] -∗ Φ v) -∗
-    WP p @ E {{ Φ }}.
-  Proof.
-    iIntros "Hty HΦ". iDestruct "Hty" as (v) "[% Hown]".
-    iApply (wp_wand with "[]"). { iApply wp_eval_path. done. }
-    iIntros (v') "%". subst v'. iApply ("HΦ" with "* [] Hown"). by auto.
   Qed.
 
   Lemma contains_tctx_incl E L T1 T2 : T1 `contains` T2 → tctx_incl E L T2 T1.

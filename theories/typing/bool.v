@@ -30,7 +30,7 @@ Section typing.
     (* FIXME why can't I merge these two iIntros? *)
     iIntros (He1 He2). iIntros (tid qE) "#LFT HE HL HC".
     rewrite tctx_interp_cons. iIntros "[Hp HT]".
-    wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "% Hown".
+    wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
     iDestruct "Hown" as (b) "Hv". iDestruct "Hv" as %[=->].
     destruct b; wp_if.
     - iApply (He1 with "LFT HE HL HC HT").

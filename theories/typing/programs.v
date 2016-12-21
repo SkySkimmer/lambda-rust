@@ -46,13 +46,10 @@ Section typing.
 
   (** Writing and Reading **)
   Definition typed_writing (E : elctx) (L : llctx) (ty1 ty ty2 : type) : Prop :=
-    ∀ p tid Φ E, lftE ∪ (↑lrustN) ⊆ E →
-      lft_ctx -∗ tctx_elt_interp tid (TCtx_hasty p ty1) -∗
-      (∀ (l:loc) vl,
-         ⌜length vl = ty.(ty_size)⌝ -∗ ⌜eval_path p = Some #l⌝ -∗ l ↦∗ vl -∗
-           (∀ vl', l ↦∗ vl' -∗ ▷ (ty.(ty_own) tid vl') ={E}=∗
-                           tctx_elt_interp tid (TCtx_hasty p ty2)) -∗ Φ #l) -∗
-      WP p @ E {{ Φ }}.
+    ∀ v tid E, lftE ∪ (↑lrustN) ⊆ E →
+      lft_ctx -∗ ty1.(ty_own) tid [v] ={E}=∗
+        ∃ l vl, ⌜length vl = ty.(ty_size)⌝ ∗ l ↦∗ vl ∗
+        ∀ vl', l ↦∗ vl' -∗ ▷ (ty.(ty_own) tid vl') ={E}=∗ ty2.(ty_own) tid [v].
 End typing.
 
 Notation typed_instruction_ty E L T1 e ty := (typed_instruction E L T1 e (λ v : val, [TCtx_hasty v ty])).

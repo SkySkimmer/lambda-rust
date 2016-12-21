@@ -142,20 +142,16 @@ Section typing.
   Lemma write_own E L ty ty' n :
     ty.(ty_size) = ty'.(ty_size) → typed_writing E L (own n ty') ty (own n ty).
   Proof.
-    iIntros (Hsz p tid Φ F ?) "_ Hp HΦ". iApply wp_fupd. iApply (wp_hasty with "Hp").
-    iIntros (v) "Hp Hown". iDestruct "Hp" as %Hp.
-    iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
+    iIntros (Hsz p tid F ?) "_ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
     rewrite ty'.(ty_size_eq). (* This turns out to be the fastest way to apply a lemma below ▷ -- at least if we're fine throwing away the premise even though the result is persistent, which in this case, we are. *)
-    iDestruct "Hown" as ">%".
-    iApply ("HΦ" with "* [%] [] H↦"); [congruence|done|].
-    iIntros (vl') "H↦ Hown' !>". iExists _. iSplit; first done.
+    iDestruct "Hown" as ">%". iModIntro. iExists _, _. iFrame "H↦".
+    iSplit; first by rewrite Hsz. iIntros (vl') "H↦ Hown' !>".
     iExists _. iSplit; first done. rewrite Hsz. iFrame "H†".
     iExists _. iFrame.
   Qed.
 
   (* Old Typing *)
-
   Lemma consumes_copy_own ty n:
     Copy ty → consumes ty (λ ν, ν ◁ own n ty)%P (λ ν, ν ◁ own n ty)%P.
   Proof.
