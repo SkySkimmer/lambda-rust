@@ -21,7 +21,7 @@ Section cont_context.
 
   Definition cctx_elt_interp (tid : thread_id) (x : cctx_elt) : iProp Σ :=
     let 'CCtx_iscont k L n T := x in
-    (∀ args, llctx_interp L 1 -∗ tctx_interp tid (T args) -∗
+    (∀ args, na_own tid ⊤ -∗ llctx_interp L 1 -∗ tctx_interp tid (T args) -∗
          WP k (of_val <$> (args : list _)) {{ _, cont_postcondition }})%I.
   Definition cctx_interp (tid : thread_id) (C : cctx) : iProp Σ :=
     (∀ (x : cctx_elt), ⌜x ∈ C⌝ -∗ cctx_elt_interp tid x)%I.
@@ -62,10 +62,10 @@ Section cont_context.
   Proof.
     iIntros (HC1C2 HT1T2 ??) "#LFT H HE". rewrite /cctx_interp.
     iIntros (x) "Hin". iDestruct "Hin" as %[->|Hin]%elem_of_cons.
-    - iIntros (args) "HL HT".
+    - iIntros (args) "Htl HL HT".
       iMod (HT1T2 with "LFT HE HL HT") as "(HE & HL & HT)".
       iSpecialize ("H" with "HE").
-      iApply ("H" $! (CCtx_iscont _ _ _ _) with "[%] * HL HT").
+      iApply ("H" $! (CCtx_iscont _ _ _ _) with "[%] * Htl HL HT").
       constructor.
     - iApply (HC1C2 with "LFT [H] HE * [%]"); last done.
       iIntros "HE". iIntros (x') "%".

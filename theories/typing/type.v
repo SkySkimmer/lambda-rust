@@ -103,11 +103,11 @@ Section type.
     copy_persistent tid vl : PersistentP (t.(ty_own) tid vl);
     copy_shr_acc κ tid E F l q :
       lftE ∪ ↑shrN ⊆ E → shr_locsE l (t.(ty_size) + 1) ⊆ F →
-      lft_ctx -∗ t.(ty_shr) κ tid l -∗
-        q.[κ] -∗ na_own tid F ={E}=∗ ∃ q', ▷(l ↦∗{q'}: t.(ty_own) tid) ∗
-                                     na_own tid (F ∖ shr_locsE l t.(ty_size)) ∗
-         (▷l ↦∗{q'}: t.(ty_own) tid -∗ na_own tid (F ∖ shr_locsE l t.(ty_size))
-                                                    ={E}=∗ q.[κ] ∗ na_own tid F)
+      lft_ctx -∗ t.(ty_shr) κ tid l -∗ na_own tid F -∗ q.[κ] ={E}=∗
+         ∃ q', na_own tid (F ∖ shr_locsE l t.(ty_size)) ∗
+           ▷(l ↦∗{q'}: t.(ty_own) tid) ∗
+        (na_own tid (F ∖ shr_locsE l t.(ty_size)) -∗ ▷l ↦∗{q'}: t.(ty_own) tid
+                                    ={E}=∗ na_own tid F ∗ q.[κ])
   }.
   Global Existing Instances copy_persistent.
 
@@ -174,13 +174,13 @@ Section type.
 
   Global Program Instance ty_of_st_copy st : Copy (ty_of_st st).
   Next Obligation.
-    intros st κ tid E ? l q ? HF. iIntros "#LFT #Hshr Hlft Htok".
+    intros st κ tid E ? l q ? HF. iIntros "#LFT #Hshr Htok Hlft".
     iDestruct (na_own_acc with "Htok") as "[$ Htok]"; first set_solver+.
     iDestruct "Hshr" as (vl) "[Hf Hown]".
     iMod (frac_bor_acc with "LFT Hf Hlft") as (q') "[Hmt Hclose]"; first set_solver.
     iModIntro. iExists _. iDestruct "Hmt" as "[Hmt1 Hmt2]". iSplitL "Hmt1".
     - iNext. iExists _. by iFrame.
-    - iIntros "Hmt1 Htok2". iDestruct "Hmt1" as (vl') "[Hmt1 #Hown']".
+    - iIntros "Htok2 Hmt1". iDestruct "Hmt1" as (vl') "[Hmt1 #Hown']".
       iDestruct ("Htok" with "Htok2") as "$".
       iAssert (▷ ⌜length vl = length vl'⌝)%I as ">%".
       { iNext. iDestruct (st_size_eq with "Hown") as %->.

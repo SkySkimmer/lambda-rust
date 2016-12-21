@@ -2,7 +2,7 @@ From iris.base_logic Require Import big_op.
 From iris.proofmode Require Import tactics.
 From lrust.lifetime Require Import frac_borrow.
 From lrust.typing Require Export type.
-From lrust.typing Require Import perm lft_contexts type_context typing.
+From lrust.typing Require Import lft_contexts type_context programs.
 
 Section shr_bor.
   Context `{typeG Σ}.
@@ -63,27 +63,20 @@ Section typing.
       iExists _. auto.
   Qed.
 
-  (* Old typing *)
-  
-  Lemma consumes_copy_shr_bor ty κ κ' q:
-    Copy ty →
-    consumes ty (λ ν, ν ◁ &shr{κ}ty ∗ κ' ⊑ κ ∗ q.[κ'])%P
-                (λ ν, ν ◁ &shr{κ}ty ∗ κ' ⊑ κ ∗ q.[κ'])%P.
+  Lemma read_shr E L κ ty :
+    Copy ty → lctx_lft_alive E L κ → typed_read E L (&shr{κ}ty) ty (&shr{κ}ty).
   Proof.
-    iIntros (? ν tid Φ E ?) "#LFT (H◁ & #H⊑ & Htok) Htl HΦ".
-    iApply (has_type_wp with "H◁"). iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l') "[Heq #Hshr]". iDestruct "Heq" as %[=->].
-    iMod (lft_incl_acc with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
-    iMod (copy_shr_acc with "LFT Hshr Htok Htl") as (q'') "(H↦ & Htl & Hclose')".
-    { assert (↑shrN ⊆ (↑lrustN : coPset)) by solve_ndisj. set_solver. } (* FIXME: some tactic should solve this in one go. *)
-    { done. }
-    iDestruct "H↦" as (vl) "[>H↦ #Hown]".
-    iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
-      by rewrite ty.(ty_size_eq).
-    iModIntro. iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦".
-    iMod ("Hclose'" with "[H↦] Htl") as "[Htok $]". iExists _; by iFrame.
-    iMod ("Hclose" with "Htok") as "$". rewrite /has_type Hνv. iExists _. eauto.
+    iIntros (Hcopy Halive v tid F qE qL ?) "#LFT Htl HE HL Hown".
+    iMod (Halive with "HE HL") as (q) "[Hκ Hclose]"; first set_solver.
+    iDestruct "Hown" as (l) "[EQ #Hshr]". iDestruct "EQ" as %[=->].
+     assert (↑shrN ⊆ (↑lrustN : coPset)) by solve_ndisj. (* set_solver needs some help. *)
+    iMod (copy_shr_acc with "LFT Hshr Htl Hκ") as (q') "(Htl & H↦ & Hcl)".
+    { set_solver. } { rewrite ->shr_locsE_shrN. set_solver. }
+    iDestruct "H↦" as (vl) "[>Hmt #Hown]". iModIntro. iExists _, _, _.
+    iSplit; first done. iFrame "∗#". iIntros "Hmt".
+    iMod ("Hcl" with "Htl [Hmt]") as "[$ Hκ]".
+    { iExists _. iFrame "∗#". }
+    iMod ("Hclose" with "Hκ") as "[$ $]". iExists _. auto.
   Qed.
-
 
 End typing.

@@ -153,7 +153,7 @@ Section typing.
   Lemma read_own_copy E L ty n :
     Copy ty → typed_read E L (own n ty) ty (own n ty).
   Proof.
-    iIntros (Hsz p tid F qE qL ?) "_ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
+    iIntros (Hsz p tid F qE qL ?) "_ $ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ #Hown]". iModIntro.
     iExists l, _, _. iSplit; first done. iFrame "∗#". iIntros "Hl !>".
     iExists _. iSplit; first done. iFrame "H†". iExists _. by iFrame.
@@ -162,7 +162,7 @@ Section typing.
   Lemma read_own_move E L ty n :
     typed_read E L (own n ty) ty (own n $ uninit ty.(ty_size)).
   Proof.
-    iIntros (p tid F qE qL ?) "_ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
+    iIntros (p tid F qE qL ?) "_ $ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
     iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
     { by iApply ty_size_eq. }

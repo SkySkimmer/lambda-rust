@@ -32,14 +32,14 @@ Section typing.
   Proof.
     intros Htys Hty. apply subtype_simple_type=>//= _ vl.
     iIntros "#LFT #HE0 #HL0 Hf". iDestruct "Hf" as (f) "[% #Hf]". subst.
-    iExists f. iSplit. done. rewrite /typed_body. iIntros "!# * #HEAP _ HE HL HC HT".
+    iExists f. iSplit. done. rewrite /typed_body. iIntros "!# * #HEAP _ Htl HE HL HC HT".
     iDestruct (elctx_interp_persist with "HE") as "#HE'".
-    iApply ("Hf" with "* HEAP LFT HE HL [HC] [HT]").
+    iApply ("Hf" with "* HEAP LFT Htl HE HL [HC] [HT]").
     - iIntros "HE". unfold cctx_interp. iIntros (e) "He".
-      iDestruct "He" as %->%elem_of_list_singleton. iIntros (ret) "HL HT".
+      iDestruct "He" as %->%elem_of_list_singleton. iIntros (ret) "Htl HL HT".
       iSpecialize ("HC" with "HE"). unfold cctx_elt_interp.
-      iApply ("HC" $! (CCtx_iscont _ _ _ _) with "[%] * HL >").
-        by apply elem_of_list_singleton.
+      iApply ("HC" $! (CCtx_iscont _ _ _ _) with "[%] * Htl HL >").
+      {  by apply elem_of_list_singleton. }
       rewrite /tctx_interp !big_sepL_singleton /=.
       iDestruct "HT" as (v) "[HP Hown]". iExists v. iFrame "HP".
       iDestruct (Hty x with "LFT [HE0 HE'] HL0") as "(_ & #Hty & _)".
@@ -75,9 +75,9 @@ Section typing.
   Proof.
     intros HEE'. apply subtype_simple_type=>//= _ vl.
     iIntros "#LFT _ _ Hf". iDestruct "Hf" as (f) "[% #Hf]". subst.
-    iExists f. iSplit. done. rewrite /typed_body. iIntros "!# * #HEAP _ HE #HL HC HT".
+    iExists f. iSplit. done. rewrite /typed_body. iIntros "!# * #HEAP _ Htl HE #HL HC HT".
     iMod (HEE' x with "[%] HE HL") as (qE') "[HE Hclose]". done.
-    iApply ("Hf" with "* HEAP LFT HE HL [Hclose HC] HT"). iIntros "HE".
+    iApply ("Hf" with "* HEAP LFT Htl HE HL [Hclose HC] HT"). iIntros "HE".
     iApply fupd_cctx_interp. iApply ("HC" with ">").
     by iMod ("Hclose" with "HE") as "[$ _]".
   Qed.
@@ -88,8 +88,8 @@ Section typing.
   Proof.
     intros Hκκ'. apply subtype_simple_type=>//= _ vl.
     iIntros "#LFT #HE0 #HL0 Hf". iDestruct "Hf" as (f) "[% #Hf]". subst.
-    iExists f. iSplit. done. rewrite /typed_body. iIntros "!# * #HEAP _ HE #HL HC HT".
-    iApply ("Hf" with "* HEAP LFT [HE] HL [HC] HT").
+    iExists f. iSplit. done. rewrite /typed_body. iIntros "!# * #HEAP _ Htl HE #HL HC HT".
+    iApply ("Hf" with "* HEAP LFT Htl [HE] HL [HC] HT").
     { rewrite /elctx_interp big_sepL_cons. iFrame. iApply (Hκκ' with "HE0 HL0"). }
     rewrite /elctx_interp big_sepL_cons. iIntros "[_ HE]". by iApply "HC".
   Qed.
@@ -100,7 +100,7 @@ Section typing.
     typed_body E L [CCtx_iscont k L 1 (λ v, (TCtx_hasty (v!!!0) (ty x)) :: T')]
                (TCtx_hasty p (fn E' tys ty) :: T) (p (of_val k :: ps)).
   Proof.
-    iIntros (HTsat HEsat tid qE) "#HEAP #LFT HE HL HC".
+    iIntros (HTsat HEsat tid qE) "#HEAP #LFT Htl HE HL HC".
     rewrite tctx_interp_cons. iIntros "[Hf HT]".
     wp_bind p. iApply (wp_hasty with "Hf"). iIntros (v) "% Hf".
     iMod (HTsat with "LFT HE HL HT") as "(HE & HL & HT)". rewrite tctx_interp_app.
@@ -126,13 +126,13 @@ Section typing.
       iDestruct "Hf" as (f) "[EQ #Hf]". iDestruct "EQ" as %[=->].
       iSpecialize ("Hf" $! x vl k). 
       iMod (HEsat with "[%] HE HL") as (q') "[HE' Hclose]"; first done.
-      iApply ("Hf" with "HEAP LFT HE' [] [HC Hclose HT']").
+      iApply ("Hf" with "HEAP LFT Htl HE' [] [HC Hclose HT']").
       + by rewrite /llctx_interp big_sepL_nil.
       + iIntros "HE'". iApply fupd_cctx_interp. iMod ("Hclose" with "HE'") as "[HE HL]".
         iSpecialize ("HC" with "HE").  iModIntro. iIntros (y) "IN".
         iDestruct "IN" as %->%elem_of_list_singleton.
-        iIntros (args) "_ HT". iSpecialize ("HC" with "* []"); first by (iPureIntro; apply elem_of_list_singleton).
-        iApply ("HC" $! args with "HL"). rewrite tctx_interp_singleton tctx_interp_cons.
+        iIntros (args) "Htl _ HT". iSpecialize ("HC" with "* []"); first by (iPureIntro; apply elem_of_list_singleton).
+        iApply ("HC" $! args with "Htl HL"). rewrite tctx_interp_singleton tctx_interp_cons.
         iFrame.
       + rewrite /tctx_interp big_sepL_zip_with. done.
   Qed.
@@ -147,16 +147,16 @@ Section typing.
                  (subst' fb f $ subst_vec (kb ::: argsb) (Vector.map of_val $ k ::: args) e)) →
     typed_instruction_ty E L (zip_with TCtx_hasty cps ctyl) ef (fn E' tys ty).
   Proof.
-    iIntros (-> Hc Hbody tid qE) "#HEAP #LFT $ $ #HT". iApply wp_value.
+    iIntros (-> Hc Hbody tid qE) "#HEAP #LFT $ $ $ #HT". iApply wp_value.
     { simpl. rewrite decide_left. done. }
     rewrite tctx_interp_singleton. iLöb as "IH". iExists _. iSplit.
     { simpl. rewrite decide_left. done. }
     iExists _. iSplit; first done. iAlways. clear qE. 
-    iIntros (x args k). iIntros (tid' qE) "_ _ HE HL HC HT'".
+    iIntros (x args k). iIntros (tid' qE) "_ _ Htl HE HL HC HT'".
     iApply wp_rec; try done.
     { apply Forall_of_val_is_val. }
     { rewrite -!vec_to_list_cons -vec_to_list_map -subst_vec_eq. eauto. }
-    iApply (Hbody with "* HEAP LFT HE HL HC").
+    iApply (Hbody with "* HEAP LFT Htl HE HL HC").
     rewrite tctx_interp_cons tctx_interp_app. iFrame "HT' IH".
     iApply tctx_send. by iNext.
   Qed.
