@@ -12,14 +12,14 @@ Section bool.
   Global Instance bool_send : Send bool.
   Proof. iIntros (tid1 tid2 vl). done. Qed.
 
-  Lemma typed_bool (b : Datatypes.bool) E L :
+  Lemma type_bool (b : Datatypes.bool) E L :
     typed_instruction_ty E L [] #b bool.
   Proof.
     iIntros (tid qE) "!# _ $ $ _". wp_value. rewrite tctx_interp_singleton.
     iExists _. iSplitR; first done. iExists _. done.
   Qed.
 
-  Lemma typed_if E L C T e1 e2 p:
+  Lemma type_if E L C T e1 e2 p:
     typed_body E L C T e1 → typed_body E L C T e2 →
     typed_body E L C (TCtx_hasty p bool :: T) (if: p then e1 else e2).
   Proof.

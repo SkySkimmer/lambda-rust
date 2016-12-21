@@ -8,7 +8,7 @@ Section cont_typing.
   Context `{typeG Σ}.
 
   (** Jumping to and defining a continuation. *)
-  Lemma typed_jump {n} E L k T' T (args : vec val n) :
+  Lemma type_jump {n} E L k T' T (args : vec val n) :
     tctx_incl E L T (T' args) →
     typed_body E L [CCtx_iscont k L n T'] T (k (of_val <$> (args : list _))).
   Proof.
@@ -18,7 +18,7 @@ Section cont_typing.
     simpl. iApply ("HC" with "* HL HT").
   Qed.
 
-  Lemma typed_cont {n} E L1 L2 C T T' kb (argsb : vec binder n) e1 econt e2 :
+  Lemma type_cont {n} E L1 L2 C T T' kb (argsb : vec binder n) e1 econt e2 :
     e1 = Rec kb argsb econt → Closed (kb :b: argsb +b+ []) econt → Closed (kb :b: []) e2 →
     (∀ k args, typed_body E L1 (CCtx_iscont k L1 n T' :: C) (T' args)
                           (subst' kb k $ subst_vec argsb (Vector.map of_val $ args) econt)) →

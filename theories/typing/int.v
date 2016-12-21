@@ -12,14 +12,14 @@ Section int.
   Global Instance int_send : Send int.
   Proof. iIntros (tid1 tid2 vl). done. Qed.
 
-  Lemma typed_int (z : Z) E L :
+  Lemma type_int (z : Z) E L :
     typed_instruction_ty E L [] #z int.
   Proof.
     iIntros (tid qE) "!# _ $ $ _". wp_value. rewrite tctx_interp_singleton.
     iExists _. iSplitR; first done. iExists _. done.
   Qed.
 
-  Lemma typed_plus E L p1 p2 :
+  Lemma type_plus E L p1 p2 :
     typed_instruction_ty E L [TCtx_hasty p1 int; TCtx_hasty p2 int] (p1 + p2) int.
   Proof.
     iIntros (tid qE) "!# _ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
@@ -32,7 +32,7 @@ Section int.
     iExists _. done.
   Qed.
 
-  Lemma typed_minus E L p1 p2 :
+  Lemma type_minus E L p1 p2 :
     typed_instruction_ty E L [TCtx_hasty p1 int; TCtx_hasty p2 int] (p1 - p2) int.
   Proof.
     iIntros (tid qE) "!# _ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
@@ -45,7 +45,7 @@ Section int.
     iExists _. done.
   Qed.
 
-  Lemma typed_le E L p1 p2 :
+  Lemma type_le E L p1 p2 :
     typed_instruction_ty E L [TCtx_hasty p1 int; TCtx_hasty p2 int] (p1 ≤ p2) bool.
   Proof.
     iIntros (tid qE) "!# _ $ $". rewrite tctx_interp_cons tctx_interp_singleton.

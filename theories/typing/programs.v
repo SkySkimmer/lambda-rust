@@ -46,3 +46,20 @@ Section typing.
 End typing.
 
 Notation typed_instruction_ty E L T1 e ty := (typed_instruction E L T1 e (λ v : val, [TCtx_hasty v ty])).
+
+Section typing_rules.
+  Context `{typeG Σ}.
+
+  Lemma type_let E L T1 T2 T C xb e e' :
+    Closed (xb :b: []) e' →
+    typed_instruction E L T1 e T2 →
+    (∀ v : val, typed_body E L C (T2 v ++ T) (subst' xb v e')) →
+    typed_body E L C (T1 ++ T) (let: xb := e in e').
+  Proof.
+    iIntros (Hc He He' tid qE) "#LFT HE HL HC HT". rewrite tctx_interp_app.
+    iDestruct "HT" as "[HT1 HT]". wp_bind e. iApply (wp_wand with "[HE HL HT1]").
+    { iApply (He with "LFT HE HL HT1"). }
+    iIntros (v) "/= (HE & HL & HT2)". iApply wp_let; first wp_done. iModIntro.
+    iApply (He' with "LFT HE HL HC [HT2 HT]"). rewrite tctx_interp_app. by iFrame.
+  Qed.
+End typing_rules.

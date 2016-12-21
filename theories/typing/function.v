@@ -91,7 +91,7 @@ Section fn.
   Qed.
 
   (* TODO: Define some syntactic sugar for calling and letrec like we do on paper. *)
-  Lemma typed_call {A n} E L E' T T' (tys : A → vec type n) ty k p (ps : vec path n) x :
+  Lemma type_call {A n} E L E' T T' (tys : A → vec type n) ty k p (ps : vec path n) x :
     tctx_incl E L T (zip_with TCtx_hasty ps (tys x) ++ T') → elctx_sat E L (E' x) →
     typed_body E L [CCtx_iscont k L 1 (λ v, (TCtx_hasty (v!!!0) (ty x)) :: T')]
                (TCtx_hasty p (fn E' tys ty) :: T) (p (of_val k :: ps)).
@@ -133,7 +133,7 @@ Section fn.
       + rewrite /tctx_interp big_sepL_zip_with. done.
   Qed.
 
-  Lemma typed_fn {A n m} E L E' (tys : A → vec type n) ty fb kb (argsb : vec binder n) ef e
+  Lemma type_fn {A n m} E L E' (tys : A → vec type n) ty fb kb (argsb : vec binder n) ef e
        (cps : vec path m) (ctyl : vec type m) `{!LstCopy ctyl, !LstSend ctyl} :
     ef = Rec fb (kb :: argsb) e → Closed (fb :b: kb :b: argsb +b+ []) e →
     (∀ x f k (args : vec val n), typed_body (E' x) [] [CCtx_iscont k [] 1 (λ v, [TCtx_hasty (v!!!0) (ty x)])]
