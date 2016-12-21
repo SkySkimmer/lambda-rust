@@ -159,39 +159,19 @@ Section typing.
     iExists _. iSplit; first done. iFrame "H†". iExists _. by iFrame.
   Qed.
 
-  (* Old Typing *)
-  Lemma consumes_copy_own ty n:
-    Copy ty → consumes ty (λ ν, ν ◁ own n ty)%P (λ ν, ν ◁ own n ty)%P.
+  Lemma read_own_move E L ty n :
+    typed_read E L (own n ty) ty (own n $ uninit ty.(ty_size)).
   Proof.
-    iIntros (? ν tid Φ E ?) "_ H◁ Htl HΦ". iApply (has_type_wp with "H◁").
-    iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & H↦ & >H†)".
-    iDestruct "Heq" as %[=->]. iDestruct "H↦" as (vl) "[>H↦ #Hown]".
+    iIntros (p tid F qE qL ?) "_ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
+    iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
     iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
-      by rewrite ty.(ty_size_eq).
-    iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦!>".
-    rewrite /has_type Hνv. iExists _. iSplit. done. iFrame. iExists vl. eauto.
+    { by iApply ty_size_eq. }
+    iModIntro. iExists l, vl, _. iSplit; first done. iFrame "∗#". iIntros "Hl !>".
+    iExists _. iSplit; first done. rewrite uninit_sz. iFrame "H†". iExists _.
+    iFrame. iApply uninit_own. auto.
   Qed.
 
-
-  Lemma consumes_move ty n:
-    consumes ty (λ ν, ν ◁ own n ty)%P (λ ν, ν ◁ own n (uninit ty.(ty_size)))%P.
-  Proof.
-    iIntros (ν tid Φ E ?) "_ H◁ Htl HΦ". iApply (has_type_wp with "H◁").
-    iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l) "(Heq & H↦ & >H†)".
-    iDestruct "Heq" as %[=->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
-    iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">Hlen".
-      by rewrite ty.(ty_size_eq). iDestruct "Hlen" as %Hlen.
-    iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦!>".
-    rewrite /has_type Hνv. iExists _. iSplit. done. iSplitR "H†".
-    - rewrite -Hlen. iExists vl. iIntros "{$H↦}!>". clear.
-      iInduction vl as [|v vl] "IH". done.
-      iExists [v], vl. iSplit. done. by iSplit.
-    - rewrite uninit_sz; auto.
-  Qed.
-
-
+  (* Old Typing *)
   Lemma typed_new ρ (n : nat):
     0 ≤ n → typed_step_ty ρ (new [ #n]%E) (own n (uninit n)).
   Proof.
