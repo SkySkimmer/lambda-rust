@@ -1,6 +1,6 @@
 From iris.base_logic Require Import big_op.
 From lrust.lang Require Export notation.
-From lrust.lang Require Import proofmode.
+From lrust.lang Require Import proofmode memcpy.
 From lrust.lifetime Require Import frac_borrow reborrow borrow creation.
 From lrust.typing Require Export type lft_contexts type_context cont_context.
 
@@ -119,6 +119,26 @@ Section typing_rules.
     iMod ("Hclose" with "Hl") as "($ & $ & Hown2)".
     rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
     by iFrame.
+  Qed.
+
+  Lemma type_memcpy E L ty1 ty1' ty2 ty2' ty n p1 p2 :
+    ty.(ty_size) = n → typed_write E L ty1 ty ty1' → typed_read E L ty2 ty ty2' →
+    typed_instruction E L [TCtx_hasty p1 ty1; TCtx_hasty p2 ty2] (p1 <-{n} !p2)
+                          (λ _, [TCtx_hasty p1 ty1'; TCtx_hasty p2 ty2']).
+  Proof.
+    iIntros (Hsz Hwrt Hread tid qE) "#HEAP #LFT Htl [HE1 HE2] [HL1 HL2]".
+    rewrite tctx_interp_cons tctx_interp_singleton. iIntros "[Hp1 Hp2]".
+    wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "% Hown1".
+    wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "% Hown2".
+    iMod (Hwrt with "* LFT HE1 HL1 Hown1") as (l1 vl1) "([% %] & Hl1 & Hcl1)"; first done.
+    iMod (Hread with "* LFT Htl HE2 HL2 Hown2") as (l2 vl2 q2) "(% & Hl2 & Hown2 & Hcl2)"; first done.
+    iAssert (▷⌜length vl2 = ty.(ty_size)⌝)%I with "[#]" as ">%".
+    { by iApply ty_size_eq. } subst v1 v2. iApply wp_fupd.
+    iApply (wp_memcpy with "[$HEAP $Hl1 $Hl2]"); first done; try congruence; [].
+    rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //.
+    iNext. iIntros "[Hl1 Hl2]". iMod ("Hcl1" with "[Hl1 Hown2]") as "($ & $ & $)".
+    { iExists _. iFrame. }
+    iMod ("Hcl2" with "Hl2") as "($ & $ & $ & $)". done.
   Qed.
 
 End typing_rules.
