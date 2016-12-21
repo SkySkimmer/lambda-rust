@@ -7,7 +7,7 @@ From lrust.typing Require Import type lft_contexts type_context.
 Section cont_context_def.
   Context `{typeG Σ}.
 
-  Definition cont_postcondition : iProp Σ := False%I.
+  Definition cont_postcondition : iProp Σ := True%I.
 
   Record cctx_elt : Type :=
     CCtx_iscont { cctxe_k : val; cctxe_L : llctx;
