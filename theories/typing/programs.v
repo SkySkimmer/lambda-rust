@@ -46,12 +46,23 @@ Section typing.
   Global Arguments typed_instruction _ _ _ _%E _.
 
   (** Writing and Reading **)
-  Definition typed_writing (E : elctx) (L : llctx) (ty1 ty ty2 : type) : Prop :=
+  Definition typed_write (E : elctx) (L : llctx) (ty1 ty ty2 : type) : Prop :=
     ∀ v tid F qE qL, lftE ∪ (↑lrustN) ⊆ F →
       lft_ctx -∗ elctx_interp E qE -∗ llctx_interp L qL -∗ ty1.(ty_own) tid [v] ={F}=∗
         ∃ (l : loc) vl, ⌜length vl = ty.(ty_size) ∧ v = #l⌝ ∗ l ↦∗ vl ∗
-        ∀ vl', l ↦∗ vl' -∗ (ty.(ty_own) tid vl') ={F}=∗
-                  elctx_interp E qE ∗ llctx_interp L qL ∗ ty2.(ty_own) tid [v].
+          (▷ l ↦∗: ty.(ty_own) tid ={F}=∗
+            elctx_interp E qE ∗ llctx_interp L qL ∗ ty2.(ty_own) tid [v]).
+
+  (* Technically speaking, we could remvoe the vl quantifiaction here and use
+     mapsto_pred instead (i.e., l ↦∗: ty.(ty_own) tid). However, that would
+     make work for some of the provers way harder, since they'd have to show
+     that nobody could possibly have changed the vl (because only half the
+     fraction was given). So we go with the definition that is easier to prove. *)
+  Definition typed_read (E : elctx) (L : llctx) (ty1 ty ty2 : type) : Prop :=
+    ∀ v tid F qE qL, lftE ∪ (↑lrustN) ⊆ F →
+      lft_ctx -∗ elctx_interp E qE -∗ llctx_interp L qL -∗ ty1.(ty_own) tid [v] ={F}=∗
+        ∃ (l : loc) vl q, ⌜v = #l⌝ ∗ l ↦∗{q} vl ∗ ▷ ty.(ty_own) tid vl ∗
+          (l ↦∗{q} vl ={F}=∗ elctx_interp E qE ∗ llctx_interp L qL ∗ ty2.(ty_own) tid [v]).
 End typing.
 
 Notation typed_instruction_ty E L T1 e ty := (typed_instruction E L T1 e (λ v : val, [TCtx_hasty v ty])).
@@ -73,7 +84,7 @@ Section typing_rules.
   Qed.
   
   Lemma type_assign E L ty1 ty ty1' p1 p2 :
-    typed_writing E L ty1 ty ty1' →
+    typed_write E L ty1 ty ty1' →
     typed_instruction E L [TCtx_hasty p1 ty1; TCtx_hasty p2 ty] (p1 <- p2)
                       (λ _, [TCtx_hasty p1 ty1']).
   Proof.
@@ -87,8 +98,26 @@ Section typing_rules.
     rewrite <-Hsz in *. destruct vl as [|v[|]]; try done.
     rewrite heap_mapsto_vec_singleton. wp_write.
     rewrite -heap_mapsto_vec_singleton.
-    iMod ("Hclose" with "* Hl Hown2") as "($ & $ & Hown)".
+    iMod ("Hclose" with "* [Hl Hown2]") as "($ & $ & Hown)".
+    { iExists _. iFrame. }
     rewrite tctx_interp_singleton tctx_hasty_val' //.
+  Qed.
+
+  Lemma type_deref E L ty1 ty ty1' p :
+    ty.(ty_size) = 1%nat → typed_read E L ty1 ty ty1' →
+    typed_instruction E L [TCtx_hasty p ty1] (!p)
+                      (λ v, [TCtx_hasty p ty1'; TCtx_hasty v ty]).
+  Proof.
+    iIntros (Hsz Hread tid qE) "#HEAP #LFT HE HL Hp". rewrite tctx_interp_singleton.
+    wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "% Hown".
+    iMod (Hread with "* LFT HE HL Hown") as (l vl q) "(% & Hl & Hown & Hclose)"; first done.
+    subst v. iAssert (▷⌜length vl = 1%nat⌝)%I with "[#]" as ">%".
+    { rewrite -Hsz. iApply ty_size_eq. done. }
+    destruct vl as [|v [|]]; try done.
+    rewrite heap_mapsto_vec_singleton. wp_read.
+    iMod ("Hclose" with "Hl") as "($ & $ & Hown2)".
+    rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
+    by iFrame.
   Qed.
 
 End typing_rules.

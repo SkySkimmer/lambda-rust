@@ -19,8 +19,8 @@ Section typing.
   Lemma type_bool (b : Datatypes.bool) E L :
     typed_instruction_ty E L [] #b bool.
   Proof.
-    iIntros (tid qE) "_ _ $ $ _". wp_value. rewrite tctx_interp_singleton.
-    iExists _. iSplitR; first done. iExists _. done.
+    iIntros (tid qE) "_ _ $ $ _". wp_value.
+    rewrite tctx_interp_singleton tctx_hasty_val. iExists _. done.
   Qed.
 
   Lemma type_if E L C T e1 e2 p:

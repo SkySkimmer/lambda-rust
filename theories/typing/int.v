@@ -19,8 +19,8 @@ Section typing.
   Lemma type_int (z : Z) E L :
     typed_instruction_ty E L [] #z int.
   Proof.
-    iIntros (tid qE) "_ _ $ $ _". wp_value. rewrite tctx_interp_singleton.
-    iExists _. iSplitR; first done. iExists _. done.
+    iIntros (tid qE) "_ _ $ $ _". wp_value.
+    rewrite tctx_interp_singleton tctx_hasty_val. iExists _. done.
   Qed.
 
   Lemma type_plus E L p1 p2 :
@@ -32,7 +32,7 @@ Section typing.
     wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "_ Hown2".
     iDestruct "Hown1" as (z1) "EQ". iDestruct "EQ" as %[=->].
     iDestruct "Hown2" as (z2) "EQ". iDestruct "EQ" as %[=->].
-    wp_op. rewrite tctx_interp_singleton. iExists _. iSplitR; first done.
+    wp_op. rewrite tctx_interp_singleton tctx_hasty_val' //.
     iExists _. done.
   Qed.
 
@@ -45,7 +45,7 @@ Section typing.
     wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "_ Hown2".
     iDestruct "Hown1" as (z1) "EQ". iDestruct "EQ" as %[=->].
     iDestruct "Hown2" as (z2) "EQ". iDestruct "EQ" as %[=->].
-    wp_op. rewrite tctx_interp_singleton. iExists _. iSplitR; first done.
+    wp_op. rewrite tctx_interp_singleton tctx_hasty_val' //.
     iExists _. done.
   Qed.
 
@@ -58,8 +58,8 @@ Section typing.
     wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "_ Hown2".
     iDestruct "Hown1" as (z1) "EQ". iDestruct "EQ" as %[=->].
     iDestruct "Hown2" as (z2) "EQ". iDestruct "EQ" as %[=->].
-    wp_op; intros _; rewrite tctx_interp_singleton; iExists _; (iSplitR; first done);
+    wp_op; intros _; rewrite tctx_interp_singleton tctx_hasty_val' //;
       iExists _; done.
   Qed.
-  
+
 End typing.

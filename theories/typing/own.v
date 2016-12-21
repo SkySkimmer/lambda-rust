@@ -140,15 +140,23 @@ Section typing.
 
   (** Typing *)
   Lemma write_own E L ty ty' n :
-    ty.(ty_size) = ty'.(ty_size) → typed_writing E L (own n ty') ty (own n ty).
+    ty.(ty_size) = ty'.(ty_size) → typed_write E L (own n ty') ty (own n ty).
   Proof.
     iIntros (Hsz p tid F qE qL ?) "_ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
     rewrite ty'.(ty_size_eq). (* This turns out to be the fastest way to apply a lemma below ▷ -- at least if we're fine throwing away the premise even though the result is persistent, which in this case, we are. *)
     iDestruct "Hown" as ">%". iModIntro. iExists _, _. iFrame "H↦".
-    iSplit; first by rewrite Hsz. iIntros (vl') "H↦ Hown' !>".
-    iExists _. iSplit; first done. rewrite Hsz. iFrame "H†".
-    iExists _. iFrame.
+    iSplit; first by rewrite Hsz. iIntros "Hown !>".
+    iExists _. iSplit; first done. rewrite Hsz. iFrame.
+  Qed.
+
+  Lemma read_own_copy E L ty n :
+    Copy ty → typed_read E L (own n ty) ty (own n ty).
+  Proof.
+    iIntros (Hsz p tid F qE qL ?) "_ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
+    iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ #Hown]". iModIntro.
+    iExists l, _, _. iSplit; first done. iFrame "∗#". iIntros "Hl !>".
+    iExists _. iSplit; first done. iFrame "H†". iExists _. by iFrame.
   Qed.
 
   (* Old Typing *)
