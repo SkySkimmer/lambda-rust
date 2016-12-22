@@ -193,35 +193,25 @@ Section type_context.
     iApply ("Ho" with "*"). done.
   Qed.
 
-  Definition unblock_tctx_elt κ x :=
-    match x with
-    | TCtx_blocked p κ' ty =>
-      if decide (κ = κ') then TCtx_hasty p ty else x
-    | _ => x
-    end.
+  Class UnblockTctx (κ : lft) (T1 T2 : tctx) : Prop :=
+    unblock_tctx : ∀ tid, [†κ] -∗ tctx_interp tid T1 ={⊤}=∗ tctx_interp tid T2.
 
-  Lemma unblock_tctx_elt_interp tid κ x :
-    [†κ] -∗ tctx_elt_interp tid x ={⊤}=∗
-        tctx_elt_interp tid (unblock_tctx_elt κ x).
+  Global Instance unblock_tctx_nil κ : UnblockTctx κ [] [].
+  Proof. by iIntros (tid) "_ $". Qed.
+
+  Global Instance unblock_tctx_cons_unblock T1 T2 p κ ty :
+    UnblockTctx κ T1 T2 →
+    UnblockTctx κ (TCtx_blocked p κ ty::T1) (TCtx_hasty p ty::T2).
   Proof.
-    iIntros "H† H". destruct x as [|? κ' ?]; simpl. by auto.
-    destruct (decide (κ = κ')) as [->|]; simpl; last by auto.
-    iDestruct "H" as (v) "[% H]". iExists v. iSplitR. by auto.
-    by iApply ("H" with "H†").
+    iIntros (H12 tid) "#H†". rewrite !tctx_interp_cons. iIntros "[H HT1]".
+    iMod (H12 with "H† HT1") as "$". iDestruct "H" as (v) "[% H]".
+    iExists (v). by iMod ("H" with "H†") as "$".
   Qed.
 
-  Definition unblock_tctx κ (T : tctx) : tctx :=
-    unblock_tctx_elt κ <$> T.
-
-  Lemma unblock_tctx_interp tid κ T :
-    [†κ] -∗ tctx_interp tid T ={⊤}=∗
-        tctx_interp tid (unblock_tctx κ T).
+  Global Instance unblock_tctx_cons κ T1 T2 x :
+    UnblockTctx κ T1 T2 → UnblockTctx κ (x::T1) (x::T2) | 100.
   Proof.
-    iIntros "#H† H". rewrite /tctx_interp big_sepL_fmap.
-    iApply (big_opL_forall (λ P Q, [†κ] -∗ P ={⊤}=∗ Q) with "H† H").
-    { by iIntros (?) "_ $". }
-    { iIntros (?? A ?? B) "#H† [H1 H2]". iSplitL "H1".
-        by iApply (A with "H†"). by iApply (B with "H†"). }
-    move=>/= _ ? _. by apply unblock_tctx_elt_interp.
+    iIntros (H12 tid) "#H†". rewrite !tctx_interp_cons. iIntros "[$ HT1]".
+    by iMod (H12 with "H† HT1") as "$".
   Qed.
 End type_context.

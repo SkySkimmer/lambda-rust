@@ -99,20 +99,18 @@ Section typing_rules.
 
   (* TODO: It should be possible to show this while taking only one step.
      Right now, we could take two. *)
-  Lemma typed_endlft E L C T κ κs e :
-    Closed [] e →
-    typed_body E L C (unblock_tctx κ T) e →
-    typed_body E ((κ, κs) :: L) C T (Endlft ;; e).
+  Lemma typed_endlft E L C T1 T2 κ κs e :
+    Closed [] e → UnblockTctx κ T1 T2 →
+    typed_body E L C T2 e → typed_body E ((κ, κs) :: L) C T1 (Endlft ;; e).
   Proof.
-    iIntros (Hc He tid qE) "#HEAP #LFT Htl HE". rewrite /llctx_interp big_sepL_cons.
+    iIntros (Hc Hub He tid qE) "#HEAP #LFT Htl HE". rewrite /llctx_interp big_sepL_cons.
     iIntros "[Hκ HL] HC HT". iDestruct "Hκ" as (Λ) "(% & Htok & #Hend)".
     iSpecialize ("Hend" with "Htok"). wp_bind Endlft.
     iApply (wp_fupd_step with "Hend"); try done. wp_seq.
     iIntros "!> #Hdead !>". wp_seq. iApply (He with "HEAP LFT Htl HE HL HC >").
-    iApply (unblock_tctx_interp with "[] HT").
-    simpl in *. subst κ. rewrite -lft_dead_or. auto.
+    iApply (Hub with "[] HT"). simpl in *. subst κ. rewrite -lft_dead_or. auto.
   Qed.
-  
+
   Lemma type_assign E L ty1 ty ty1' p1 p2 :
     typed_write E L ty1 ty ty1' →
     typed_instruction E L [TCtx_hasty p1 ty1; TCtx_hasty p2 ty] (p1 <- p2)
@@ -169,5 +167,4 @@ Section typing_rules.
     { iExists _. iFrame. }
     iMod ("Hcl2" with "Hl2") as "($ & $ & $ & $)". done.
   Qed.
-
 End typing_rules.
