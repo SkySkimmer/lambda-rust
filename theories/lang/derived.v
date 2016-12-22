@@ -22,47 +22,47 @@ Implicit Types P Q : iProp Σ.
 Implicit Types Φ : val → iProp Σ.
 
 (** Proof rules for working on the n-ary argument list. *)
-Lemma wp_app_ind (Q : nat → val → iProp Σ) E f el (vs : list val) Φ :
+Lemma wp_app_ind E f (el : list expr) (Ql : vec (val → iProp Σ) (length el)) vs Φ:
   is_Some (to_val f) →
-   ([∗ list] k ↦ e ∈ el, WP e @ E {{ Q k }}) -∗
-   (∀ vl : vec val (length el), ([∗ list] k ↦ v ∈ vl, Q k v) -∗
-                    WP App f (map of_val (vs ++ vl)) @ E {{ Φ }}) -∗
-    WP App f (map of_val vs ++ el) @ E {{ Φ }}.
+  ([∗ list] eQ ∈ zip el Ql, WP eQ.1 @ E {{ eQ.2 }}) -∗
+    (∀ vl : vec val (length el), ([∗ list] vQ ∈ zip vl Ql, vQ.2 $ vQ.1) -∗
+                    WP App f (of_val <$> vs ++ vl) @ E {{ Φ }}) -∗
+    WP App f ((of_val <$> vs) ++ el) @ E {{ Φ }}.
 Proof.
-  iIntros (Hf) "Hel HΦ". iInduction el as [|e el] "IH" forall (vs Q).
-  - iSpecialize ("HΦ" $! [#]). rewrite !app_nil_r. iApply "HΦ".
-    by rewrite !big_sepL_nil.
-  - destruct Hf as [vf Hf]. set (K := AppRCtx vf vs el).
-    rewrite (_ : App f ((map of_val vs) ++ e :: el) = fill_item K e); last first.
-    { simpl. f_equal. by erewrite of_to_val. }
-    iApply wp_bindi. rewrite big_sepL_cons. iDestruct "Hel" as "[He Hel]".
-    iApply (wp_wand with "He"). iIntros (v) "HQ".
-    simpl. erewrite of_to_val by done. iSpecialize ("IH" $! (vs ++ [v])).
-    rewrite [map of_val (vs ++ [#v])]map_app /= -app_assoc /=.
-    iApply ("IH" with "Hel"). iIntros (vl) "Hvl".
-    iSpecialize ("HΦ" $! (v ::: vl)). rewrite -app_assoc /=. iApply "HΦ".
-    rewrite big_sepL_cons. iFrame.
+  intros [vf Hf]. revert vs Ql. induction el as [|e el IH]=>/= vs Ql; inv_vec Ql.
+  - iIntros "_ H". iSpecialize ("H" $! [#]). rewrite !app_nil_r big_sepL_nil.
+      by iApply "H".
+  - intros Q Ql. rewrite /= big_sepL_cons /=. iIntros "[He Hl] HΦ".
+    assert (App f ((of_val <$> vs) ++ e :: el) = fill_item (AppRCtx vf vs el) e)
+      as -> by rewrite /= (of_to_val f) //.
+    iApply wp_bindi. iApply (wp_wand with "He"). iIntros (v) "HQ /=".
+    rewrite cons_middle (assoc app) -(fmap_app _ _ [v]) (of_to_val f) //.
+    iApply (IH _ _ with "Hl"). iIntros "* Hvl". rewrite -assoc.
+    iApply ("HΦ" $! (v:::vl)). rewrite /= big_sepL_cons. iFrame.
 Qed.
 
-Lemma wp_app_vec (Q : nat → val → iProp Σ) E f el Φ :
+Lemma wp_app_vec E f el (Ql : vec (val → iProp Σ) (length el)) Φ :
   is_Some (to_val f) →
-  ([∗ list] k ↦ e ∈ el, WP e @ E {{ Q k }}) -∗
-    (∀ vl : vec val (length el), ([∗ list] k ↦ v ∈ vl, Q k v) -∗
+  ([∗ list] eQ ∈ zip el Ql, WP eQ.1 @ E {{ eQ.2 }}) -∗
+    (∀ vl : vec val (length el), ([∗ list] vQ ∈ zip vl Ql, vQ.2 $ vQ.1) -∗
                     WP App f (of_val <$> (vl : list val)) @ E {{ Φ }}) -∗
     WP App f el @ E {{ Φ }}.
 Proof.
   iIntros (Hf). iApply (wp_app_ind _ _ _ _ []). done.
 Qed.
 
-Lemma wp_app (Q : nat → val → iProp Σ) E f el Φ :
-  is_Some (to_val f) →
-  ([∗ list] k ↦ e ∈ el, WP e @ E {{ Q k }}) -∗
-    (∀ vl : list val, ⌜length vl = length el⌝ -∗ ([∗ list] k ↦ v ∈ vl, Q k v) -∗
-                    WP App f (of_val <$> (vl : list val)) @ E {{ Φ }}) -∗
+Lemma wp_app (Ql : list (val → iProp Σ)) E f el Φ :
+  length Ql = length el → is_Some (to_val f) →
+  ([∗ list] eQ ∈ zip el Ql, WP eQ.1 @ E {{ eQ.2 }}) -∗
+    (∀ vl : list val, ⌜length vl = length el⌝ -∗
+            ([∗ list] k ↦ vQ ∈ zip vl Ql, vQ.2 $ vQ.1) -∗
+             WP App f (of_val <$> (vl : list val)) @ E {{ Φ }}) -∗
     WP App f el @ E {{ Φ }}.
 Proof.
-  iIntros (Hf) "Hel HΦ". iApply (wp_app_vec with "* Hel"); first done.
-  iIntros (vl). iApply ("HΦ" $! (vec_to_list vl)). by rewrite vec_to_list_length.
+  iIntros (Hlen Hf) "Hel HΦ". rewrite -(vec_to_list_of_list Ql).
+  generalize (list_to_vec Ql). rewrite Hlen. clear Hlen Ql=>Ql.
+  iApply (wp_app_vec with "Hel"); first done. iIntros (vl) "Hvl".
+  iApply ("HΦ" with "[%] Hvl"). by rewrite vec_to_list_length.
 Qed.
 
 (** Proof rules for the sugar *)

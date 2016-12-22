@@ -106,23 +106,17 @@ Section typing.
     wp_bind p. iApply (wp_hasty with "Hf"). iIntros (v) "% Hf".
     iMod (HTsat with "LFT HE HL HT") as "(HE & HL & HT)". rewrite tctx_interp_app.
     iDestruct "HT" as "[Hargs HT']". clear HTsat.
-    iApply (wp_app_vec (λ i v, match i with O => ⌜v = k⌝ ∗ _ | S i =>
-                           ∀ ty, ⌜(tys x : list type) !! i = Some ty⌝ →
-                               tctx_elt_interp tid (TCtx_hasty v ty) end)%I
-            with "* [Hargs HC]"); first wp_done.
-    - rewrite big_sepL_cons. iSplitR "Hargs".
-      { iApply wp_value'. iSplit; first done. iApply "HC". }
+    iApply (wp_app_vec _ _ (_::_) ((λ v, ⌜v = k⌝):::
+               vmap (λ ty (v : val), tctx_elt_interp tid (TCtx_hasty v ty)) (tys x))%I
+            with "* [Hargs]"); first wp_done.
+    - rewrite /= big_sepL_cons. iSplitR "Hargs"; first by iApply wp_value'.
       clear dependent ty k p.
-      rewrite /tctx_interp. rewrite big_sepL_zip_with. iApply (big_sepL_mono with "Hargs").
-      simpl. iIntros (i p Hp) "HT". assert (Hlen := lookup_lt_Some _ _ _ Hp).
-      edestruct (lookup_lt_is_Some_2 (tys x)) as [ty Hty].
-      { move: Hlen. rewrite !vec_to_list_length. done. }
-      iSpecialize ("HT" with "* []"); first done.
-      iApply (wp_hasty with "HT"). iIntros (v') "% Hown". iIntros (ty') "#EQ".
-      rewrite Hty. iDestruct "EQ" as %[=<-]. iExists v'. iFrame "Hown".
-      iPureIntro. exact: eval_path_of_val.
-    - simpl. iIntros (vl'). inv_vec vl'=>kv vl. rewrite big_sepL_cons.
-      iIntros "[[% HC] Hvl]". subst kv. iDestruct "Hf" as (f) "[EQ #Hf]".
+      rewrite /tctx_interp vec_to_list_map zip_with_fmap_r
+              (zip_with_zip (λ e ty, (e, _))) zip_with_zip !big_sepL_fmap.
+      iApply (big_sepL_mono' with "Hargs"). iIntros (i [p ty]) "HT/=".
+      iApply (wp_hasty with "HT"). setoid_rewrite tctx_hasty_val. iIntros (?) "? $".
+    - simpl. iIntros (vl'). inv_vec vl'=>kv vl. rewrite /= big_sepL_cons.
+      iIntros "/= [% Hvl]". subst kv. iDestruct "Hf" as (f) "[EQ #Hf]".
       iDestruct "EQ" as %[=->]. iSpecialize ("Hf" $! x vl k).
       iMod (HEsat with "[%] HE HL") as (q') "[HE' Hclose]"; first done.
       iApply ("Hf" with "HEAP LFT Htl HE' [] [HC Hclose HT']").
@@ -133,7 +127,9 @@ Section typing.
         iSpecialize ("HC" with "* []"); first by (iPureIntro; apply elem_of_list_singleton).
         iApply ("HC" $! args with "Htl HL"). rewrite tctx_interp_singleton tctx_interp_cons.
         iFrame.
-      + rewrite /tctx_interp big_sepL_zip_with. done.
+      + rewrite /tctx_interp vec_to_list_map zip_with_fmap_r
+                (zip_with_zip (λ v ty, (v, _))) zip_with_zip !big_sepL_fmap.
+        iApply (big_sepL_mono' with "Hvl"). by iIntros (i [v ty']).
   Qed.
 
   Lemma type_fn {A m} E L E' fb kb (argsb : list binder) e

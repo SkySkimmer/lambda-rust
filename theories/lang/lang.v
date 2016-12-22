@@ -123,7 +123,7 @@ Definition fill_item (Ki : ectx_item) (e : expr) : expr :=
   | BinOpLCtx op e2 => BinOp op e e2
   | BinOpRCtx op v1 => BinOp op (of_val v1) e
   | AppLCtx e2 => App e e2
-  | AppRCtx v vl el => App (of_val v) (map of_val vl ++ e :: el)
+  | AppRCtx v vl el => App (of_val v) ((of_val <$> vl) ++ e :: el)
   | ReadCtx o => Read o e
   | WriteLCtx o e2 => Write o e e2
   | WriteRCtx o v1 => Write o (of_val v1) e
@@ -587,6 +587,6 @@ Proof.
     + destruct K as [|Ki K].
       * simpl in *. subst. inversion Hstep.
       * destruct Ki; simpl in *; done.
-    + destruct (map of_val vl); last done. destruct (fill K e'); done.
+    + destruct (of_val <$> vl); last done. destruct (fill K e'); done.
   - by eapply stuck_not_head_step.
 Qed.
