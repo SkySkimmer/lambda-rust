@@ -115,28 +115,37 @@ Section type_context.
     tctx_interp tid [x] ≡ tctx_elt_interp tid x.
   Proof. rewrite tctx_interp_cons tctx_interp_nil right_id //. Qed.
 
-  Global Instance tctx_persistent cps ctyl tid :
-    LstCopy ctyl → PersistentP (tctx_interp tid $ zip_with TCtx_hasty cps ctyl).
+  (** Copy typing contexts *)
+  Class CopyC (T : tctx) :=
+    copyc_persistent tid : PersistentP (tctx_interp tid T).
+  Global Existing Instances copyc_persistent.
+
+  Global Instance tctx_nil_copy : CopyC [].
+  Proof. rewrite /CopyC. apply _. Qed.
+
+  Global Instance tctx_ty_copy T p ty :
+    CopyC T → Copy ty → CopyC (TCtx_hasty p ty :: T).
   Proof.
-    intros Hcopy. revert cps; induction Hcopy; intros cps;
-      first by (rewrite zip_with_nil_r tctx_interp_nil; apply _).
-    destruct cps; first by (rewrite tctx_interp_nil; apply _). simpl.
     (* TODO RJ: Should we have instances that PersistentP respects equiv? *)
-    rewrite /PersistentP tctx_interp_cons.
+    intros ???. rewrite /PersistentP tctx_interp_cons.
     apply uPred.sep_persistent; by apply _.
   Qed.
 
-  Lemma tctx_send cps ctyl tid1 tid2 {Hcopy : LstSend ctyl} :
-    tctx_interp tid1 $ zip_with TCtx_hasty cps ctyl -∗
-                tctx_interp tid2 $ zip_with TCtx_hasty cps ctyl.
+  (** Send typing contexts *)
+  Class SendC (T : tctx) :=
+    sendc_change_tid tid1 tid2 : tctx_interp tid1 T -∗ tctx_interp tid2 T.
+
+  Global Instance tctx_nil_send : SendC [].
+  Proof. done. Qed.
+
+  Global Instance tctx_ty_send T p ty :
+    SendC T → Send ty → SendC (TCtx_hasty p ty :: T).
   Proof.
-    revert cps; induction Hcopy; intros cps;
-      first by rewrite zip_with_nil_r !tctx_interp_nil.
-    destruct cps; first by rewrite !tctx_interp_nil. simpl.
-    rewrite !tctx_interp_cons. iIntros "[Hty HT]". iSplitR "HT".
+    iIntros (HT Hty ??). rewrite !tctx_interp_cons.
+    iIntros "[Hty HT]". iSplitR "HT".
     - iDestruct "Hty" as (?) "[% Hty]". iExists _. iSplit; first done.
-      by iApply send_change_tid.
-    - by iApply IHHcopy.
+      by iApply Hty.
+    - by iApply HT.
   Qed.
 
   (** Type context inclusion *)
