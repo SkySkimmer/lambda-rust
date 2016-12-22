@@ -182,24 +182,20 @@ Section typing.
     iExists _, _. erewrite <-uPred.iff_refl. auto.
   Qed.
 
-  (* Old typing *)
-  Lemma update_weak ty q κ κ':
-    update ty (λ ν, ν ◁ &uniq{κ} ty ∗ κ' ⊑ κ ∗ q.[κ'])%P
-              (λ ν, ν ◁ &uniq{κ} ty ∗ κ' ⊑ κ ∗ q.[κ'])%P.
+  Lemma write_uniq E L κ ty :
+    lctx_lft_alive E L κ → typed_write E L (&uniq{κ}ty) ty (&uniq{κ}ty).
   Proof.
-    iIntros (ν tid Φ E ?) "#LFT (H◁ & #H⊑ & Htok) HΦ".
-    iApply (has_type_wp with "H◁"). iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l P) "[[Heq #HPiff] HP]".
-    iDestruct "Heq" as %[=->].
-    iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
-    iMod (lft_incl_acc with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
+    iIntros (Halive p tid F qE qL ?) "#LFT HE HL Hown". 
+    iMod (Halive with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
+    iDestruct "Hown" as (l P) "[[EQ #HP] H↦]". iDestruct "EQ" as %[=->].
+    iMod (bor_iff with "LFT [] H↦") as "H↦". set_solver. by eauto.
     iMod (bor_acc with "LFT H↦ Htok") as "[H↦ Hclose']". set_solver.
     iDestruct "H↦" as (vl) "[>H↦ Hown]". rewrite ty.(ty_size_eq).
-    iDestruct "Hown" as ">%". iApply "HΦ". iFrame "∗%#". iIntros (vl') "[H↦ Hown]".
+    iDestruct "Hown" as ">%". iModIntro. iExists _, _. iSplit; first done.
+    iFrame. iIntros "Hown". iDestruct "Hown" as (vl') "[H↦ Hown]".
     iMod ("Hclose'" with "[H↦ Hown]") as "[Hbor Htok]". by iExists _; iFrame.
-    iMod ("Hclose" with "Htok") as "$". rewrite /has_type Hνv.
+    iMod ("Hclose" with "Htok") as "($ & $ & $)".
     iExists _, _. erewrite <-uPred.iff_refl. auto.
   Qed.
-
 
 End typing.

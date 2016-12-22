@@ -19,24 +19,4 @@ Section typing.
   Definition typed_step_ty (ρ : perm) e ty :=
     typed_step ρ e (λ ν, ν ◁ ty)%P.
 
-  Definition typed_program (ρ : perm) e :=
-    ∀ tid, {{ heap_ctx ∗ lft_ctx ∗ ρ tid ∗ na_own tid ⊤ }} e {{ _, False }}.
-
-  Definition consumes (ty : type) (ρ1 ρ2 : expr → perm) : Prop :=
-    ∀ ν tid Φ E, lftE ∪ ↑lrustN ⊆ E →
-      lft_ctx -∗ ρ1 ν tid -∗ na_own tid ⊤ -∗
-      (∀ (l:loc) vl q,
-        (⌜length vl = ty.(ty_size)⌝ ∗ ⌜eval_expr ν = Some #l⌝ ∗ l ↦∗{q} vl ∗
-         |={E}▷=> (ty.(ty_own) tid vl ∗ (l ↦∗{q} vl ={E}=∗ ρ2 ν tid ∗ na_own tid ⊤)))
-       -∗ Φ #l)
-      -∗ WP ν @ E {{ Φ }}.
-
-  Definition update (ty : type) (ρ1 ρ2 : expr → perm) : Prop :=
-    ∀ ν tid Φ E, lftE ∪ (↑lrustN) ⊆ E →
-      lft_ctx -∗ ρ1 ν tid -∗
-      (∀ (l:loc) vl,
-         (⌜length vl = ty.(ty_size)⌝ ∗ ⌜eval_expr ν = Some #l⌝ ∗ l ↦∗ vl ∗
-           ∀ vl', l ↦∗ vl' ∗ ▷ (ty.(ty_own) tid vl') ={E}=∗ ρ2 ν tid) -∗ Φ #l) -∗
-      WP ν @ E {{ Φ }}.
-
 End typing.
