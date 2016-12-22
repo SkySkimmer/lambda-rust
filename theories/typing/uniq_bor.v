@@ -3,7 +3,7 @@ From iris.base_logic Require Import big_op.
 From lrust.lifetime Require Import borrow frac_borrow reborrow.
 From lrust.lang Require Import heap.
 From lrust.typing Require Export type.
-From lrust.typing Require Import lft_contexts type_context shr_bor perm typing.
+From lrust.typing Require Import lft_contexts type_context shr_bor perm typing programs.
 
 Section uniq_bor.
   Context `{typeG Σ}.
@@ -165,30 +165,24 @@ Section typing.
       iExists _, _. erewrite <-uPred.iff_refl. eauto.
   Qed.
 
-  (* Old typing *)
-  
-
-  Lemma consumes_copy_uniq_bor `(!Copy ty) κ κ' q:
-    consumes ty (λ ν, ν ◁ &uniq{κ}ty ∗ κ' ⊑ κ ∗ q.[κ'])%P
-                (λ ν, ν ◁ &uniq{κ}ty ∗ κ' ⊑ κ ∗ q.[κ'])%P.
+  Lemma read_uniq E L κ ty :
+    Copy ty → lctx_lft_alive E L κ → typed_read E L (&uniq{κ}ty) ty (&uniq{κ}ty).
   Proof.
-    iIntros (ν tid Φ E ?) "#LFT (H◁ & #H⊑ & Htok) Htl HΦ".
-    iApply (has_type_wp with "H◁"). iIntros (v) "Hνv H◁". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l' P) "[[Heq #HPiff] HP]".
-    iDestruct "Heq" as %[=->].
-    iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
-    iMod (lft_incl_acc with "H⊑ Htok") as (q') "[Htok Hclose]". set_solver.
-    iMod (bor_acc with "LFT H↦ Htok") as "[H↦ Hclose']". set_solver.
+    iIntros (Hcopy Halive v tid F qE qL ?) "#LFT Htl HE HL Hown".
+    iMod (Halive with "HE HL") as (q) "[Hκ Hclose]"; first set_solver.
+    iDestruct "Hown" as (l P) "[[EQ #HP] H↦]". iDestruct "EQ" as %[=->].
+    iMod (bor_iff with "LFT [] H↦") as "H↦". set_solver. by eauto.
+    iMod (bor_acc with "LFT H↦ Hκ") as "[H↦ Hclose']"; first set_solver.
     iDestruct "H↦" as (vl) "[>H↦ #Hown]".
     iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
-      by rewrite ty.(ty_size_eq).
-    iApply "HΦ". iFrame "∗#%". iIntros "!>!>!>H↦".
+     { by iApply ty.(ty_size_eq). }
+    iIntros "!>". iExists _, _, _. iSplit; first done. iFrame "∗#". iIntros "H↦".
     iMod ("Hclose'" with "[H↦]") as "[H↦ Htok]". by iExists _; iFrame.
-    iMod ("Hclose" with "Htok") as "$". rewrite /has_type Hνv.
+    iMod ("Hclose" with "Htok") as "($ & $ & $)".
     iExists _, _. erewrite <-uPred.iff_refl. auto.
   Qed.
 
-
+  (* Old typing *)
   Lemma update_weak ty q κ κ':
     update ty (λ ν, ν ◁ &uniq{κ} ty ∗ κ' ⊑ κ ∗ q.[κ'])%P
               (λ ν, ν ◁ &uniq{κ} ty ∗ κ' ⊑ κ ∗ q.[κ'])%P.
