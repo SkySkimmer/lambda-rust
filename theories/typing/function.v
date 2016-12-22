@@ -136,18 +136,16 @@ Section typing.
       + rewrite /tctx_interp big_sepL_zip_with. done.
   Qed.
 
-  Lemma type_fn {A m} E L E' fb kb (argsb : list binder) e
+  Lemma type_fn {A} E L E' fb kb (argsb : list binder) e
         (tys : A → vec type (length argsb)) ty
-        (cps : vec path m) (ctyl : vec type m) `{!LstCopy ctyl, !LstSend ctyl} :
+        T `{!CopyC T, !SendC T} :
     Closed (fb :b: kb :b: argsb +b+ []) e →
     (∀ x f k (args : vec val _),
         typed_body (E' x) [] [CCtx_iscont k [] 1 (λ v, [TCtx_hasty (v!!!0) (ty x)])]
                    (TCtx_hasty f (fn E' tys ty) ::
-                      zip_with (TCtx_hasty ∘ of_val) args (tys x) ++
-                      zip_with TCtx_hasty cps ctyl)
+                      zip_with (TCtx_hasty ∘ of_val) args (tys x) ++ T)
                    (subst' fb f $ subst_v (kb :: argsb) (vmap of_val $ k ::: args) e)) →
-    typed_instruction_ty E L (zip_with TCtx_hasty cps ctyl)
-                         (Rec fb (kb :: argsb) e) (fn E' tys ty).
+    typed_instruction_ty E L T (Rec fb (kb :: argsb) e) (fn E' tys ty).
   Proof.
     iIntros (Hc Hbody tid qE) "#HEAP #LFT $ $ $ #HT". iApply wp_value.
     { simpl. rewrite decide_left. done. }
@@ -159,6 +157,6 @@ Section typing.
     { by rewrite -vec_to_list_cons -vec_to_list_map -subst_v_eq. }
     iApply (Hbody with "* HEAP LFT Htl HE HL HC").
     rewrite tctx_interp_cons tctx_interp_app. iFrame "HT' IH".
-    iApply tctx_send. by iNext.
+    iApply sendc_change_tid. by iNext.
   Qed.
 End typing.
