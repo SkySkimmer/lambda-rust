@@ -4,7 +4,7 @@ From iris.base_logic Require Import big_op.
 From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.lang Require Export new_delete.
 From lrust.typing Require Export type.
-From lrust.typing Require Import uninit type_context programs perm typing.
+From lrust.typing Require Import uninit type_context programs.
 
 Section own.
   Context `{typeG Σ}.
@@ -171,34 +171,32 @@ Section typing.
     iFrame. iApply uninit_own. auto.
   Qed.
 
-  (* Old Typing *)
-  Lemma typed_new ρ (n : nat):
-    0 ≤ n → typed_step_ty ρ (new [ #n]%E) (own n (uninit n)).
+  Lemma type_new E L (n : nat) :
+    typed_instruction_ty E L [] (new [ #n ]%E) (own n (uninit n)).
   Proof.
-    iIntros (Hn tid) "!#(#HEAP&_&_&$)". iApply (wp_new with "HEAP"); try done.
-    iIntros "!>*(% & H† & H↦)". iExists _. iSplit. done. iNext.
-    rewrite Nat2Z.id. iSplitR "H†".
+    iIntros (tid eq) "#HEAP #LFT $ $ $ _".
+    iApply (wp_new with "HEAP"); try done; first omega. iModIntro.
+    iIntros (l vl) "(% & H† & Hlft)". rewrite tctx_interp_singleton tctx_hasty_val.
+    iExists _. iSplit; first done. iNext. rewrite Nat2Z.id. iSplitR "H†".
     - iExists vl. iFrame.
       match goal with H : Z.of_nat n = Z.of_nat (length vl) |- _ => rename H into Hlen end.
-      clear Hn. apply (inj Z.of_nat) in Hlen. subst.
+      apply (inj Z.of_nat) in Hlen. subst.
       iInduction vl as [|v vl] "IH". done.
       iExists [v], vl. iSplit. done. by iSplit.
     - by rewrite uninit_sz freeable_sz_full.
   Qed.
 
-
-  Lemma typed_delete ty (ν : expr):
-    typed_step (ν ◁ own ty.(ty_size) ty) (delete [ #ty.(ty_size); ν])%E (λ _, top).
+  Lemma type_delete E L n ty p :
+    n = ty.(ty_size) →
+    typed_instruction E L [TCtx_hasty p (own n ty)] (delete [ #n; p])%E (λ _, []).
   Proof.
-    iIntros (tid) "!#(#HEAP&_&H◁&$)". wp_bind ν.
-    iApply (has_type_wp with "[$H◁]"). iIntros (v) "_ H◁ !>".
-    rewrite has_type_value.
-    iDestruct "H◁" as (l) "(Hv & H↦∗: & >H†)". iDestruct "Hv" as %[=->].
-    iDestruct "H↦∗:" as (vl) "[>H↦ Hown]".
+    iIntros (-> tid eq) "#HEAP #LFT $ $ $ Hp". rewrite tctx_interp_singleton.
+    wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
+    iDestruct "Hown" as (l) "(Hv & H↦∗: & >H†)". iDestruct "Hv" as %[=->].
+    iDestruct "H↦∗:" as (vl) "[>H↦ Hown]". rewrite tctx_interp_nil.
     rewrite ty_size_eq. iDestruct "Hown" as ">Hown". iDestruct "Hown" as %<-.
-    iApply (wp_delete with "[-]"); try by auto.
+    iApply (wp_delete with "[-]"); try (by auto); [].
     rewrite freeable_sz_full. by iFrame.
   Qed.
-
 
 End typing.

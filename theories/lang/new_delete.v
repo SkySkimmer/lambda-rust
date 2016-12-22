@@ -6,13 +6,13 @@ Definition new : val :=
   λ: ["n"],
     if: "n" ≤ #0 then #((42%positive, 1337):loc)
     else Alloc "n".
-Opaque new.
+Global Opaque new.
 
 Definition delete : val :=
   λ: ["n"; "loc"],
     if: "n" ≤ #0 then #()
     else Free "n" "loc".
-Opaque delete.
+Global Opaque delete.
 
 Section specs.
   Context `{heapG Σ}.
