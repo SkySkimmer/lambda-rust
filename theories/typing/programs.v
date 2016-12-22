@@ -83,6 +83,35 @@ Section typing_rules.
     iIntros (v) "/= (Htl & HE & HL & HT2)". iApply wp_let; first wp_done. iModIntro.
     iApply (He' with "HEAP LFT Htl HE HL HC [HT2 HT]"). rewrite tctx_interp_app. by iFrame.
   Qed.
+
+  Lemma typed_newlft E L C T κs e :
+    Closed [] e →
+    (∀ κ, typed_body E ((κ, κs) :: L) C T e) →
+    typed_body E L C T (Newlft ;; e).
+  Proof.
+    iIntros (Hc He tid qE) "#HEAP #LFT Htl HE HL HC HT".
+    iMod (lft_create with "LFT") as (Λ) "[Htk #Hinh]"; first done.
+    set (κ' := foldr (∪) static κs). wp_seq.
+    iApply (He (κ' ∪ Λ) with "HEAP LFT Htl HE [HL Htk] HC HT").
+    rewrite /llctx_interp big_sepL_cons. iFrame "HL".
+    iExists Λ. iSplit; first done. iFrame. done.
+  Qed.
+
+  (* TODO: It should be possible to show this while taking only one step.
+     Right now, we could take two. *)
+  Lemma typed_endlft E L C T κ κs e :
+    Closed [] e →
+    typed_body E L C (unblock_tctx κ T) e →
+    typed_body E ((κ, κs) :: L) C T (Endlft ;; e).
+  Proof.
+    iIntros (Hc He tid qE) "#HEAP #LFT Htl HE". rewrite /llctx_interp big_sepL_cons.
+    iIntros "[Hκ HL] HC HT". iDestruct "Hκ" as (Λ) "(% & Htok & #Hend)".
+    iSpecialize ("Hend" with "Htok"). wp_bind Endlft.
+    iApply (wp_fupd_step with "Hend"); try done. wp_seq.
+    iIntros "!> #Hdead !>". wp_seq. iApply (He with "HEAP LFT Htl HE HL HC >").
+    iApply (unblock_tctx_interp with "[] HT").
+    simpl in *. subst κ. rewrite -lft_dead_or. auto.
+  Qed.
   
   Lemma type_assign E L ty1 ty ty1' p1 p2 :
     typed_write E L ty1 ty ty1' →

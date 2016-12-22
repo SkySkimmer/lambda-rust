@@ -59,7 +59,7 @@ Section typing.
     iDestruct "EQ" as %[=->]. simpl. iModIntro. iSplit.
     - iExists _. iSplit. done. iExists _. iSplit. done.
       by iApply (ty_shr_mono with "LFT Hκκ' Hshr").
-    - iExists _. iSplit. done. iIntros "_". iIntros "!> !>".
+    - iExists _. iSplit. done. iIntros "_". iIntros "!>".
       iExists _. auto.
   Qed.
 

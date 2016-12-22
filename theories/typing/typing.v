@@ -22,23 +22,6 @@ Section typing.
   Definition typed_program (ρ : perm) e :=
     ∀ tid, {{ heap_ctx ∗ lft_ctx ∗ ρ tid ∗ na_own tid ⊤ }} e {{ _, False }}.
 
-  Lemma typed_newlft ρ:
-    typed_step ρ Newlft (λ _, ∃ α, 1.[α] ∗ α ∋ top)%P.
-  Proof.
-    iIntros (tid) "!#(_&#LFT&_&$)". wp_value.
-    iMod (lft_create with "LFT") as (α) "[?#?]". done.
-    iExists α. iFrame. iIntros "!>_!>". done.
-  Qed.
-
-  Lemma typed_endlft κ ρ:
-    typed_step (κ ∋ ρ ∗ 1.[κ] ∗ †κ) Endlft (λ _, ρ)%P.
-  Proof.
-    rewrite /killable /extract. iIntros (tid) "!#(_&_&(Hextr&Htok&Hend)&$)".
-    iDestruct ("Hend" with "Htok") as "Hend".
-    iApply (wp_fupd_step with "Hend"); try done. wp_seq.
-    iIntros "!>H†". by iApply fupd_mask_mono; last iApply "Hextr".
-  Qed.
-
   Definition consumes (ty : type) (ρ1 ρ2 : expr → perm) : Prop :=
     ∀ ν tid Φ E, lftE ∪ ↑lrustN ⊆ E →
       lft_ctx -∗ ρ1 ν tid -∗ na_own tid ⊤ -∗

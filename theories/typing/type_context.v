@@ -52,7 +52,7 @@ Section type_context.
     match x with
     | TCtx_hasty p ty => ∃ v, ⌜eval_path p = Some v⌝ ∗ ty.(ty_own) tid [v]
     | TCtx_blocked p κ ty => ∃ v, ⌜eval_path p = Some v⌝ ∗
-                             ([†κ] ={⊤}=∗ ▷ ty.(ty_own) tid [v])
+                             ([†κ] ={⊤}=∗ ty.(ty_own) tid [v])
     end%I.
   (* Block tctx_elt_interp from reducing with simpl when x is a constructor. *)
   Global Arguments tctx_elt_interp : simpl never.
@@ -184,16 +184,16 @@ Section type_context.
     iApply ("Ho" with "*"). done.
   Qed.
 
-  Definition deguard_tctx_elt κ x :=
+  Definition unblock_tctx_elt κ x :=
     match x with
     | TCtx_blocked p κ' ty =>
       if decide (κ = κ') then TCtx_hasty p ty else x
     | _ => x
     end.
 
-  Lemma deguard_tctx_elt_interp tid κ x :
+  Lemma unblock_tctx_elt_interp tid κ x :
     [†κ] -∗ tctx_elt_interp tid x ={⊤}=∗
-        ▷ tctx_elt_interp tid (deguard_tctx_elt κ x).
+        tctx_elt_interp tid (unblock_tctx_elt κ x).
   Proof.
     iIntros "H† H". destruct x as [|? κ' ?]; simpl. by auto.
     destruct (decide (κ = κ')) as [->|]; simpl; last by auto.
@@ -201,18 +201,18 @@ Section type_context.
     by iApply ("H" with "H†").
   Qed.
 
-  Definition deguard_tctx κ (T : tctx) : tctx :=
-    deguard_tctx_elt κ <$> T.
+  Definition unblock_tctx κ (T : tctx) : tctx :=
+    unblock_tctx_elt κ <$> T.
 
-  Lemma deguard_tctx_interp tid κ T :
+  Lemma unblock_tctx_interp tid κ T :
     [†κ] -∗ tctx_interp tid T ={⊤}=∗
-        ▷ tctx_interp tid (deguard_tctx κ T).
+        tctx_interp tid (unblock_tctx κ T).
   Proof.
     iIntros "#H† H". rewrite /tctx_interp big_sepL_fmap.
-    iApply (big_opL_forall (λ P Q, [†κ] -∗ P ={⊤}=∗ ▷ Q) with "H† H").
+    iApply (big_opL_forall (λ P Q, [†κ] -∗ P ={⊤}=∗ Q) with "H† H").
     { by iIntros (?) "_ $". }
     { iIntros (?? A ?? B) "#H† [H1 H2]". iSplitL "H1".
         by iApply (A with "H†"). by iApply (B with "H†"). }
-    move=>/= _ ? _. by apply deguard_tctx_elt_interp.
+    move=>/= _ ? _. by apply unblock_tctx_elt_interp.
   Qed.
 End type_context.

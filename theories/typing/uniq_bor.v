@@ -132,7 +132,7 @@ Notation "&uniq{ κ } ty" := (uniq_bor κ ty)
 Section typing.
   Context `{typeG Σ}.
 
-  Lemma tctx_incl_share E L p κ ty :
+  Lemma tctx_share E L p κ ty :
     lctx_lft_alive E L κ → tctx_incl E L [TCtx_hasty p (&uniq{κ}ty)] [TCtx_hasty p (&shr{κ}ty)].
   Proof.
     iIntros (Hκ ???) "#LFT HE HL Huniq".
@@ -144,6 +144,25 @@ Section typing.
     iMod (ty.(ty_share) with "LFT H↦ Htok") as "[Hown Htok]"; [solve_ndisj|].
     iMod ("Hclose" with "Htok") as "[$ $]". iExists _. iFrame "%".
     iIntros "!>/=". eauto.
+  Qed.
+  
+  Lemma tctx_reborrow_uniq E L p ty κ κ' :
+    lctx_lft_incl E L κ' κ →
+    tctx_incl E L [TCtx_hasty p (&uniq{κ}ty)]
+                  [TCtx_hasty p (&uniq{κ'}ty); TCtx_blocked p κ (&uniq{κ}ty)].
+  Proof.
+    iIntros (Hκκ' tid ??) "#LFT HE HL H".
+    iDestruct (elctx_interp_persist with "HE") as "#HE'".
+    iDestruct (llctx_interp_persist with "HL") as "#HL'". iFrame "HE HL".
+    iDestruct (Hκκ' with "HE' HL'") as "Hκκ'".
+    rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
+    iDestruct "H" as (v) "[% Hown]". iDestruct "Hown" as (l P) "[[EQ #Hiff] Hb]".
+    iDestruct "EQ" as %[=->]. iMod (bor_iff with "LFT [] Hb") as "Hb". done. by eauto.
+    iMod (rebor with "LFT Hκκ' Hb") as "[Hb Hext]". done. iModIntro. iSplitL "Hb".
+    - iExists _. iSplit. done. iExists _, _. erewrite <-uPred.iff_refl. eauto.
+    - iExists _. iSplit. done. iIntros "#H†".
+      iMod ("Hext" with ">[]") as "Hb". by iApply (lft_incl_dead with "Hκκ' H†").
+      iExists _, _. erewrite <-uPred.iff_refl. eauto.
   Qed.
 
   (* Old typing *)

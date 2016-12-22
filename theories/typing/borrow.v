@@ -25,26 +25,6 @@ Section borrow.
     - iExists _. iSplit. done. iIntros "H†". iExists _. iFrame. iSplitR. by eauto.
         by iMod ("Hext" with "H†") as "$".
   Qed.
-  
-  Lemma tctx_reborrow_uniq E L p ty κ κ' :
-    lctx_lft_incl E L κ' κ →
-    tctx_incl E L [TCtx_hasty p (&uniq{κ}ty)]
-                  [TCtx_hasty p (&uniq{κ'}ty); TCtx_blocked p κ (&uniq{κ}ty)].
-  Proof.
-    iIntros (Hκκ' tid ??) "#LFT HE HL H".
-    iDestruct (elctx_interp_persist with "HE") as "#HE'".
-    iDestruct (llctx_interp_persist with "HL") as "#HL'". iFrame "HE HL".
-    iDestruct (Hκκ' with "HE' HL'") as "Hκκ'".
-    rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
-    iDestruct "H" as (v) "[% Hown]". iDestruct "Hown" as (l P) "[[EQ #Hiff] Hb]".
-    iDestruct "EQ" as %[=->]. iMod (bor_iff with "LFT [] Hb") as "Hb". done. by eauto.
-    iMod (rebor with "LFT Hκκ' Hb") as "[Hb Hext]". done. iModIntro. iSplitL "Hb".
-    - iExists _. iSplit. done. iExists _, _. erewrite <-uPred.iff_refl. eauto.
-    - iExists _. iSplit. done. iIntros "#H†".
-      iMod ("Hext" with ">[]") as "Hb". by iApply (lft_incl_dead with "Hκκ' H†").
-      iExists _, _. erewrite <-uPred.iff_refl. eauto.
-  Qed.
-
 
   Lemma typed_deref_uniq_bor_own ty ν κ κ' q q':
     typed_step (ν ◁ &uniq{κ} own q' ty ∗ κ' ⊑ κ ∗ q.[κ'])
