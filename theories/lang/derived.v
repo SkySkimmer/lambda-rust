@@ -22,20 +22,20 @@ Implicit Types P Q : iProp Σ.
 Implicit Types Φ : val → iProp Σ.
 
 (** Proof rules for working on the n-ary argument list. *)
-Lemma wp_app_ind {n} (Q : nat → val → iProp Σ) E f (el : vec expr n) (vs : list val) Φ :
+Lemma wp_app_ind (Q : nat → val → iProp Σ) E f el (vs : list val) Φ :
   is_Some (to_val f) →
    ([∗ list] k ↦ e ∈ el, WP e @ E {{ Q k }}) -∗
-   (∀ vl : vec val n, ([∗ list] k ↦ v ∈ vl, Q k v) -∗
+   (∀ vl : vec val (length el), ([∗ list] k ↦ v ∈ vl, Q k v) -∗
                     WP App f (map of_val (vs ++ vl)) @ E {{ Φ }}) -∗
     WP App f (map of_val vs ++ el) @ E {{ Φ }}.
 Proof.
-  iIntros (Hf) "Hel HΦ". iInduction el as [|e n el] "IH" forall (vs Q).
+  iIntros (Hf) "Hel HΦ". iInduction el as [|e el] "IH" forall (vs Q).
   - iSpecialize ("HΦ" $! [#]). rewrite !app_nil_r. iApply "HΦ".
     by rewrite !big_sepL_nil.
   - destruct Hf as [vf Hf]. set (K := AppRCtx vf vs el).
-    rewrite (_ : App f ((map of_val vs) ++ e ::: el) = fill_item K e); last first.
+    rewrite (_ : App f ((map of_val vs) ++ e :: el) = fill_item K e); last first.
     { simpl. f_equal. by erewrite of_to_val. }
-    iApply wp_bindi. rewrite vec_to_list_cons big_sepL_cons. iDestruct "Hel" as "[He Hel]".
+    iApply wp_bindi. rewrite big_sepL_cons. iDestruct "Hel" as "[He Hel]".
     iApply (wp_wand with "He"). iIntros (v) "HQ".
     simpl. erewrite of_to_val by done. iSpecialize ("IH" $! (vs ++ [v])).
     rewrite [map of_val (vs ++ [#v])]map_app /= -app_assoc /=.
@@ -44,10 +44,10 @@ Proof.
     rewrite big_sepL_cons. iFrame.
 Qed.
 
-Lemma wp_app_vec {n} (Q : nat → val → iProp Σ) E f (el : vec expr n) Φ :
+Lemma wp_app_vec (Q : nat → val → iProp Σ) E f el Φ :
   is_Some (to_val f) →
   ([∗ list] k ↦ e ∈ el, WP e @ E {{ Q k }}) -∗
-    (∀ vl : vec val n, ([∗ list] k ↦ v ∈ vl, Q k v) -∗
+    (∀ vl : vec val (length el), ([∗ list] k ↦ v ∈ vl, Q k v) -∗
                     WP App f (of_val <$> (vl : list val)) @ E {{ Φ }}) -∗
     WP App f el @ E {{ Φ }}.
 Proof.
@@ -61,10 +61,8 @@ Lemma wp_app (Q : nat → val → iProp Σ) E f el Φ :
                     WP App f (of_val <$> (vl : list val)) @ E {{ Φ }}) -∗
     WP App f el @ E {{ Φ }}.
 Proof.
-  iIntros (Hf) "Hel HΦ". rewrite -(vec_to_list_of_list el).
-  iApply (wp_app_vec with "* Hel"); first done.
-  iIntros (vl). iApply ("HΦ" $! (vec_to_list vl)).
-  rewrite vec_to_list_length vec_to_list_of_list. done.
+  iIntros (Hf) "Hel HΦ". iApply (wp_app_vec with "* Hel"); first done.
+  iIntros (vl). iApply ("HΦ" $! (vec_to_list vl)). by rewrite vec_to_list_length.
 Qed.
 
 (** Proof rules for the sugar *)

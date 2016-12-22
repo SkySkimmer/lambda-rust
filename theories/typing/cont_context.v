@@ -11,7 +11,7 @@ Section cont_context_def.
 
   Record cctx_elt : Type :=
     CCtx_iscont { cctxe_k : val; cctxe_L : llctx;
-              cctxe_n : nat; cctxe_T : vec val cctxe_n → tctx }.
+                  cctxe_n : nat; cctxe_T : vec val cctxe_n → tctx }.
   Definition cctx := list cctx_elt.
 End cont_context_def.
 Add Printing Constructor cctx_elt.
