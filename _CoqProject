@@ -24,8 +24,6 @@ theories/lang/races.v
 theories/lang/tactics.v
 theories/lang/wp_tactics.v
 theories/typing/type.v
-theories/typing/perm.v
-theories/typing/typing.v
 theories/typing/lft_contexts.v
 theories/typing/type_context.v
 theories/typing/cont_context.v
