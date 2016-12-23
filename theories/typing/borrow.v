@@ -68,19 +68,18 @@ Section borrow.
       rewrite tctx_interp_singleton tctx_hasty_val' //. iExists _. auto.
   Qed.
 
-
-  (* Old Typing *)
-  Lemma typed_deref_uniq_bor_bor ty ν κ κ' κ'' q:
-    typed_step (ν ◁ &uniq{κ'} &uniq{κ''} ty ∗ κ ⊑ κ' ∗ q.[κ] ∗ κ' ⊑ κ'')
-               (!ν)
-               (λ v, v ◁ &uniq{κ'} ty ∗ κ ⊑ κ' ∗ q.[κ])%P.
+  Lemma type_deref_uniq_uniq E L κ κ' p ty :
+    lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
+    typed_instruction_ty E L [TCtx_hasty p (&uniq{κ} &uniq{κ'} ty)] (!p)
+                             (&uniq{κ} ty).
   Proof.
-    iIntros (tid) "!#(#HEAP & #LFT & (H◁ & #H⊑1 & Htok & #H⊑2) & $)". wp_bind ν.
-    iApply (has_type_wp with "H◁"). iIntros (v) "Hνv H◁!>". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l P) "[[Heq #HPiff] HP]".
-    iDestruct "Heq" as %[=->].
+    iIntros (Hκ Hincl tid eq) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
+    iPoseProof (Hincl with "[#] [#]") as "Hincl".
+    { by iApply elctx_interp_persist. } { by iApply llctx_interp_persist. }
+    iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
+    wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
+    iDestruct "Hown" as (l P) "[[Heq #HPiff] HP]". iDestruct "Heq" as %[=->].
     iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
-    iMod (lft_incl_acc with "H⊑1 Htok") as (q'') "[Htok Hclose]". done.
     iMod (bor_exists with "LFT H↦") as (vl) "Hbor". done.
     iMod (bor_sep with "LFT Hbor") as "[H↦ Hbor]". done.
     iMod (bor_exists with "LFT Hbor") as (l') "Hbor". done.
@@ -91,34 +90,38 @@ Section borrow.
     rewrite heap_mapsto_vec_singleton.
     iApply (wp_fupd_step  _ (⊤∖↑lftN) with "[Hbor]"); try done.
       by iApply (bor_unnest with "LFT Hbor").
-    wp_read. iIntros "!> Hbor". iFrame "#". iSplitL "Hbor".
-    - iExists _, _. iSplitR. by auto.
-      iApply (bor_shorten with "[] Hbor").
-      iApply (lft_incl_glb with "H⊑2"). iApply lft_incl_refl.
-    - iApply ("Hclose" with ">"). by iMod ("Hclose'" with "[$H↦]") as "[_ $]".
+    wp_read. iIntros "!> Hbor". iFrame "#".
+    iMod ("Hclose'" with "[H↦]") as "[H↦ Htok]"; first by auto.
+    iMod ("Hclose" with "Htok") as "($ & $)".
+    rewrite tctx_interp_singleton tctx_hasty_val' //.
+    iExists _, _. iSplitR; first by auto.
+    iApply (bor_shorten with "[] Hbor").
+    iApply (lft_incl_glb with "Hincl"). iApply lft_incl_refl.
   Qed.
 
-  Lemma typed_deref_shr_bor_bor ty ν κ κ' κ'' q:
-    typed_step (ν ◁ &shr{κ'} &uniq{κ''} ty ∗ κ ⊑ κ' ∗ q.[κ] ∗ κ' ⊑ κ'')
-               (!ν)
-               (λ v, v ◁ &shr{κ'} ty ∗ κ ⊑ κ' ∗ q.[κ])%P.
+  Lemma type_deref_shr_uniq E L κ κ' p ty :
+    lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
+    typed_instruction_ty E L [TCtx_hasty p (&shr{κ} &uniq{κ'} ty)] (!p)
+                             (&shr{κ} ty).
   Proof.
-    iIntros (tid) "!#(#HEAP & #LFT & (H◁ & #H⊑1 & [Htok1 Htok2] & #H⊑2) & $)". wp_bind ν.
-    iApply (has_type_wp with "H◁"). iIntros (v) "Hνv H◁!>". iDestruct "Hνv" as %Hνv.
-    rewrite has_type_value. iDestruct "H◁" as (l) "[Heq Hshr]".
+    iIntros (Hκ Hincl tid eq) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
+    iPoseProof (Hincl with "[#] [#]") as "Hincl".
+    { by iApply elctx_interp_persist. } { by iApply llctx_interp_persist. }
+    iMod (Hκ with "HE HL") as (q) "[[Htok1 Htok2] Hclose]"; first set_solver.
+    wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
+    iDestruct "Hown" as (l) "[Heq Hshr]".
     iDestruct "Heq" as %[=->]. iDestruct "Hshr" as (l') "[H↦ Hown]".
-    iMod (lft_incl_acc with "H⊑1 Htok1") as (q') "[Htok1 Hclose]". done.
     iMod (frac_bor_acc with "LFT H↦ Htok1") as (q'') "[>H↦ Hclose']". done.
-    iAssert (κ' ⊑ κ'' ∪ κ')%I as "#H⊑3".
-    { iApply (lft_incl_glb with "H⊑2 []"). iApply lft_incl_refl. }
-    iMod (lft_incl_acc with "[] Htok2") as (q2) "[Htok2 Hclose'']". solve_ndisj.
-    { iApply (lft_incl_trans with "[]"); done. }
+    iAssert (κ ⊑ κ' ∪ κ)%I as "#Hincl'".
+    { iApply (lft_incl_glb with "Hincl []"). iApply lft_incl_refl. }
+    iMod (lft_incl_acc with "Hincl' Htok2") as (q2) "[Htok2 Hclose'']". solve_ndisj.
     iApply (wp_fupd_step _ (_∖_) with "[Hown Htok2]"); try done.
     - iApply ("Hown" with "* [%] Htok2"). set_solver+.
-    - wp_read. iIntros "!>[#Hshr Htok2]{$H⊑1}".
-      iMod ("Hclose''" with "Htok2") as "$". iSplitR.
-      * iExists _. iSplitR. done. by iApply (ty_shr_mono with "LFT H⊑3 Hshr").
-      * iApply ("Hclose" with ">"). iApply ("Hclose'" with "[$H↦]").
+    - wp_read. iIntros "!>[#Hshr Htok2]". iMod ("Hclose''" with "Htok2") as "Htok2".
+      iMod ("Hclose'" with "[H↦]") as "Htok1"; first by auto.
+      iMod ("Hclose" with "[Htok1 Htok2]") as "($ & $)"; first by iFrame.
+      rewrite tctx_interp_singleton tctx_hasty_val' //.
+      iExists _. iSplitR. done. by iApply (ty_shr_mono with "LFT Hincl' Hshr").
   Qed.
 
 End borrow.
