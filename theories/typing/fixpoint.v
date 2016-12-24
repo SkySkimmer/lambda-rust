@@ -65,3 +65,42 @@ Section fixpoint.
     split; iIntros "_ _ _"; (iSplit; first done); iSplit; iIntros "!#*$".
   Qed.
 End fixpoint.
+
+(* TODO : is there a way to declare this as a [Proper] instance ? *)
+Lemma fixpoint_mono `{typeG Σ} T1 `{Contractive T1} T2 `{Contractive T2} E L :
+  (∀ ty1 ty2, subtype E L ty1 ty2 → subtype E L (T1 ty1) (T2 ty2)) →
+  subtype E L (fixpoint T1) (fixpoint T2).
+Proof.
+  intros H12. apply fixpoint_ind.
+  - intros ?? [[EQsz EQown] EQshr] ?. etrans; last done. iIntros "_ _ _".
+    unfold type_incl. simpl in *. iSplit; [|iSplit].
+    + by iPureIntro; eapply symmetry, EQsz.
+    + iIntros "!# *". specialize (EQown tid vl). simpl in EQown. rewrite EQown. auto.
+    + iIntros "!# *". rewrite (EQshr κ tid l). auto.
+  - by eexists _.
+  - intros. rewrite (fixpoint_unfold_eqtype T2). by apply H12.
+  - intros c Hc.
+    assert (Hsz : lft_ctx -∗ lft_contexts.elctx_interp_0 E -∗
+              ⌜lft_contexts.llctx_interp_0 L⌝ -∗
+              ⌜(compl c).(ty_size) = (fixpoint T2).(ty_size)⌝).
+    { iIntros "LFT HE HL". iDestruct (Hc 0%nat with "LFT HE HL") as "[$ _]". }
+    assert (Hown : lft_ctx -∗ lft_contexts.elctx_interp_0 E -∗
+              ⌜lft_contexts.llctx_interp_0 L⌝ -∗
+              □ (∀ tid vl, (compl c).(ty_own) tid vl -∗ (fixpoint T2).(ty_own) tid vl)).
+    { apply uPred.entails_equiv_and, equiv_dist=>n.
+      destruct (conv_compl (S n) c) as [[_ Heq] _]. setoid_rewrite (λ tid vl, Heq tid vl).
+      apply equiv_dist, uPred.entails_equiv_and. iIntros "LFT HE HL".
+      iDestruct (Hc (S n) with "LFT HE HL") as "[_ [$ _]]". }
+    assert (Hshr : lft_ctx -∗ lft_contexts.elctx_interp_0 E -∗
+              ⌜lft_contexts.llctx_interp_0 L⌝ -∗
+              □ (∀ κ tid l,
+                 (compl c).(ty_shr) κ tid l -∗ (fixpoint T2).(ty_shr) κ tid l)).
+    { apply uPred.entails_equiv_and, equiv_dist=>n.
+      destruct (conv_compl n c) as [_ Heq]. setoid_rewrite (λ κ tid l, Heq κ tid l).
+      apply equiv_dist, uPred.entails_equiv_and. iIntros "LFT HE HL".
+      iDestruct (Hc n with "LFT HE HL") as "[_ [_ $]]". }
+    iIntros "LFT HE HL". iSplit; [|iSplit].
+    + iApply (Hsz with "LFT HE HL").
+    + iApply (Hown with "LFT HE HL").
+    + iApply (Hshr with "LFT HE HL").
+Qed.

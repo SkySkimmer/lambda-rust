@@ -386,6 +386,10 @@ Section subtyping.
   Definition eqtype (ty1 ty2 : type) : Prop :=
     subtype ty1 ty2 ∧ subtype ty2 ty1.
 
+  Global Instance subtype_proper :
+    Proper (eqtype ==> eqtype ==> iff) subtype.
+  Proof. intros ??[] ??[]. split; intros; by etrans; [|etrans]. Qed.
+
   Global Instance subtype_equivalence : Equivalence eqtype.
   Proof.
     split.

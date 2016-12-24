@@ -205,8 +205,8 @@ Section typing.
 
   Global Instance prod2_unit_rightid E L : RightId (eqtype E L) unit product2.
   Proof.
-    intros ty. split; (iIntros; (iSplit; first by rewrite /= -plus_n_O); iSplit; iAlways;
-                  last iIntros (?); iIntros (??) "H").
+    intros ty. split; (iIntros; (iSplit; first by rewrite /= -plus_n_O); iSplit;
+                  iAlways; last iIntros (?); iIntros (??) "H").
     - iDestruct "H" as (? ?) "(% & ? & %)". subst. by rewrite app_nil_r.
     - iDestruct "H" as "(? & _)". done.
     - iExists _, []. rewrite app_nil_r. eauto.
