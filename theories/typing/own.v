@@ -116,6 +116,17 @@ Section own.
     Proper (eqtype E L ==> eqtype E L) (own n).
   Proof. intros ?? Heq. split; f_equiv; apply Heq. Qed.
 
+  Global Instance own_contractive n : Contractive (own n).
+  Proof.
+    intros m ?? EQ. split; [split|]; simpl.
+    - done.
+    - destruct m=>// tid vl /=. repeat (apply EQ || f_contractive || f_equiv).
+    - intros κ tid l. repeat (apply EQ || f_contractive || f_equiv).
+  Qed.
+
+  Global Instance own_ne n m : Proper (dist m ==> dist m) (own n).
+  Proof. apply contractive_ne, _. Qed.
+
   Global Instance own_send n ty :
     Send ty → Send (own n ty).
   Proof.
@@ -198,5 +209,4 @@ Section typing.
     iApply (wp_delete with "[-]"); try (by auto); [].
     rewrite freeable_sz_full. by iFrame.
   Qed.
-
 End typing.

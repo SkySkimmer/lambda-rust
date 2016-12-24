@@ -20,7 +20,7 @@ Section uniq_bor.
           The trouble with this definition is that bor_unnest as proven is too
           weak. The original unnesting with open borrows was strong enough. *)
        ty_own tid vl :=
-         (∃ (l:loc) P, (⌜vl = [ #l ]⌝ ∗ □ (P ↔ l ↦∗: ty.(ty_own) tid)) ∗ &{κ} P)%I;
+         (∃ (l:loc) P, (⌜vl = [ #l ]⌝ ∗ ▷ □ (P ↔ l ↦∗: ty.(ty_own) tid)) ∗ &{κ} P)%I;
        ty_shr κ' tid l :=
          (∃ l':loc, &frac{κ'}(λ q', l ↦{q'} #l') ∗
             □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ∪κ']
@@ -81,7 +81,7 @@ Section uniq_bor.
     iSplit; iAlways.
     - iIntros (??) "H". iDestruct "H" as (l P) "[[% #HPiff] Hown]". subst.
       iExists _, _. iSplitR; last by iApply (bor_shorten with "Hκ"). iSplit. done.
-      iIntros "!#". iSplit; iIntros "H".
+      iNext. iIntros "!#". iSplit; iIntros "H".
       + iDestruct ("HPiff" with "H") as (vl) "[??]". iExists vl. iFrame.
         by iApply "Ho1".
       + iDestruct "H" as (vl) "[??]". iApply "HPiff". iExists vl. iFrame.
@@ -104,11 +104,21 @@ Section uniq_bor.
     Proper (eqtype E L ==> eqtype E L) (uniq_bor κ).
   Proof. split; by apply subtype_uniq_mono. Qed.
 
+  Global Instance uniq_contractive κ : Contractive (uniq_bor κ).
+  Proof.
+    intros n ?? EQ. split; [split|]; simpl.
+    - done.
+    - destruct n=>// tid vl /=. repeat (apply EQ || f_contractive || f_equiv).
+    - intros κ' tid l. repeat (apply EQ || f_contractive || f_equiv).
+  Qed.
+  Global Instance uniq_ne κ n : Proper (dist n ==> dist n) (uniq_bor κ).
+  Proof. apply contractive_ne, _. Qed.
+
   Global Instance uniq_send κ ty :
     Send ty → Send (uniq_bor κ ty).
   Proof.
     iIntros (Hsend tid1 tid2 vl) "H". iDestruct "H" as (l P) "[[% #HPiff] H]".
-    iExists _, _. iFrame "H". iSplit; first done. iAlways. iSplit.
+    iExists _, _. iFrame "H". iSplit; first done. iNext. iAlways. iSplit.
     - iIntros "HP". iApply (heap_mapsto_pred_wand with "[HP]").
       { by iApply "HPiff". }
       clear dependent vl. iIntros (vl) "?". by iApply Hsend.
@@ -138,14 +148,14 @@ Section typing.
     iIntros (Hκ ???) "#LFT HE HL Huniq".
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; [try done..|].
     rewrite /tctx_interp !big_sepL_singleton /=.
-    iDestruct "Huniq" as (v) "[% Huniq]". 
+    iDestruct "Huniq" as (v) "[% Huniq]".
     iDestruct "Huniq" as (l P) "[[% #HPiff] HP]".
     iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
     iMod (ty.(ty_share) with "LFT H↦ Htok") as "[Hown Htok]"; [solve_ndisj|].
     iMod ("Hclose" with "Htok") as "[$ $]". iExists _. iFrame "%".
     iIntros "!>/=". eauto.
   Qed.
-  
+
   Lemma tctx_reborrow_uniq E L p ty κ κ' :
     lctx_lft_incl E L κ' κ →
     tctx_incl E L [TCtx_hasty p (&uniq{κ}ty)]
@@ -185,7 +195,7 @@ Section typing.
   Lemma write_uniq E L κ ty :
     lctx_lft_alive E L κ → typed_write E L (&uniq{κ}ty) ty (&uniq{κ}ty).
   Proof.
-    iIntros (Halive p tid F qE qL ?) "#LFT HE HL Hown". 
+    iIntros (Halive p tid F qE qL ?) "#LFT HE HL Hown".
     iMod (Halive with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
     iDestruct "Hown" as (l P) "[[EQ #HP] H↦]". iDestruct "EQ" as %[=->].
     iMod (bor_iff with "LFT [] H↦") as "H↦". set_solver. by eauto.
@@ -197,5 +207,4 @@ Section typing.
     iMod ("Hclose" with "Htok") as "($ & $ & $)".
     iExists _, _. erewrite <-uPred.iff_refl. auto.
   Qed.
-
 End typing.

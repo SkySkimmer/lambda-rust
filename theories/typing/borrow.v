@@ -44,7 +44,7 @@ Section borrow.
       iMod (bor_sep _ _ _ (l' ↦∗: ty_own ty tid) with "LFT Hbor") as "[_ Hbor]". done.
       iMod ("Hclose" with "Htok") as "($ & $)".
       rewrite tctx_interp_singleton tctx_hasty_val' //. iExists _, _.
-      iFrame. iSplitR. done. by rewrite -uPred.iff_refl.
+      iFrame. iSplitR. done. rewrite -uPred.iff_refl. auto.
     - iFrame "H↦ H† Hown".
     - iIntros "!>(?&?&?)!>". iNext. iExists _.
       rewrite -heap_mapsto_vec_singleton. iFrame. iExists _. by iFrame.
@@ -123,5 +123,4 @@ Section borrow.
       rewrite tctx_interp_singleton tctx_hasty_val' //.
       iExists _. iSplitR. done. by iApply (ty_shr_mono with "LFT Hincl' Hshr").
   Qed.
-
 End borrow.

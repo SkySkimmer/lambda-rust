@@ -35,7 +35,7 @@ Section type.
          invariants, which does not need the mask.  Moreover, it is
          more consistent with thread-local tokens, which we do not
          give any.
- 
+
          The lifetime token is needed (a) to make the definition of simple types
          nicer (they would otherwise require a "∨ □|=>[†κ]"), and (b) so that
          we can have emp == sum [].
@@ -62,7 +62,7 @@ Section type.
     - rewrite -Nat.add_1_l Nat2Z.inj_add /= IHn shift_loc_assoc.
       set_solver+.
   Qed.
-  
+
   Lemma shr_locsE_disj l n m :
     shr_locsE l n ⊥ shr_locsE (shift_loc l n) m.
   Proof.
@@ -201,6 +201,146 @@ Coercion ty_of_st : simple_type >-> type.
 
 Delimit Scope lrust_type_scope with T.
 Bind Scope lrust_type_scope with type.
+
+(* OFE and COFE structures on types and simple types. *)
+Section ofe.
+  Context `{typeG Σ}.
+
+  Section def.
+    Definition tuple_of_type (ty : type) : prodC (prodC _ _) _ :=
+      (ty.(ty_size),
+       Next (ty.(ty_own) : _ -c> _ -c> _),
+       ty.(ty_shr) :  _ -c> _ -c> _ -c> _).
+
+    Instance type_equiv : Equiv type := λ ty1 ty2,
+       tuple_of_type ty1 ≡ tuple_of_type ty2.
+    Instance type_dist : Dist type := λ n ty1 ty2,
+       tuple_of_type ty1 ≡{n}≡ tuple_of_type ty2.
+
+    Definition type_ofe_mixin : OfeMixin type.
+    Proof.
+      split; [|split|]; unfold equiv, dist, type_equiv, type_dist.
+      - intros. apply equiv_dist.
+      - by intros ?.
+      - by intros ???.
+      - by intros ???->.
+      - by intros ????; apply dist_S.
+    Qed.
+
+    Canonical Structure typeC : ofeT := OfeT type type_ofe_mixin.
+
+    Instance st_equiv : Equiv simple_type := λ st1 st2,
+      @Next (_ -c> _ -c> _) st1.(st_own) ≡ Next st2.(st_own).
+    Instance st_dist : Dist simple_type := λ n st1 st2,
+      @Next (_ -c> _ -c> _) st1.(st_own) ≡{n}≡ Next st2.(st_own).
+
+    Definition st_ofe_mixin : OfeMixin simple_type.
+    Proof.
+      split; [|split|]; unfold equiv, dist, st_equiv, st_dist.
+      - intros. apply equiv_dist.
+      - by intros ?.
+      - by intros ???.
+      - by intros ???->.
+      - by intros ????; apply dist_S.
+    Qed.
+
+    Canonical Structure simple_typeC : ofeT := OfeT simple_type st_ofe_mixin.
+  End def.
+
+  Global Instance ty_size_proper_d n:
+    Proper (dist n ==> eq) ty_size.
+  Proof. intros ?? EQ. apply EQ. Qed.
+  Global Instance ty_size_proper_e :
+    Proper ((≡) ==> eq) ty_size.
+  Proof. intros ?? EQ. apply EQ. Qed.
+  Global Instance ty_own_ne n:
+    Proper (dist (S n) ==> eq ==> eq ==> dist n) ty_own.
+  Proof. intros ?? EQ ??-> ??->. apply EQ. Qed.
+  Global Instance ty_own_proper_e:
+    Proper ((≡) ==> eq ==> eq ==> (≡)) ty_own.
+  Proof. intros ?? EQ ??-> ??->. apply EQ. Qed.
+  Global Instance ty_shr_ne n:
+    Proper (dist n ==> eq ==> eq ==> eq ==> dist n) ty_shr.
+  Proof. intros ?? EQ ??-> ??-> ??->. apply EQ. Qed.
+  Global Instance ty_shr_proper_e :
+    Proper ((≡) ==> eq ==> eq ==> eq ==> (≡)) ty_shr.
+  Proof. intros ?? EQ ??-> ??-> ??->. apply EQ. Qed.
+  Global Instance st_own_ne n:
+    Proper (dist (S n) ==> eq ==> eq ==> dist n) st_own.
+  Proof. intros ?? EQ ??-> ??->. apply EQ. Qed.
+  Global Instance st_own_proper_e :
+    Proper ((≡) ==> eq ==> eq ==> (≡)) st_own.
+  Proof. intros ?? EQ ??-> ??->. apply EQ. Qed.
+
+  Global Program Instance type_cofe : Cofe typeC :=
+    {| compl c :=
+         let '(ty_size, Next ty_own, ty_shr) :=
+             compl {| chain_car := tuple_of_type ∘ c |}
+         in
+         {| ty_size := ty_size; ty_own := ty_own; ty_shr := ty_shr |}
+    |}.
+  Next Obligation. intros [c Hc]. apply Hc. Qed.
+  Next Obligation.
+    simpl. intros c _ _ shr [=_ _ ->] κ tid l.
+    apply uPred.equiv_entails, equiv_dist=>n.
+    by rewrite (λ c, conv_compl (A:=_ -c> _ -c> _ -c> _) n c κ tid l) /=
+               uPred.always_always.
+  Qed.
+  Next Obligation.
+    simpl. intros c sz own _ [=-> -> _] tid vl.
+    apply uPred.entails_equiv_and, equiv_dist=>n.
+    rewrite (λ c, conv_compl (A:=_ -c> _ -c> _) n c tid vl) /= conv_compl /=.
+    apply equiv_dist, uPred.entails_equiv_and, ty_size_eq.
+  Qed.
+  Next Obligation.
+    simpl. intros c _ own shr [=_ -> ->] E κ l tid q ?.
+    apply uPred.entails_equiv_and, equiv_dist=>n.
+    rewrite (λ c, conv_compl (A:=_ -c> _ -c> _ -c> _) n c κ tid l) /=.
+    setoid_rewrite (λ c vl, conv_compl (A:=_ -c> _ -c> _) n c tid vl). simpl.
+    etrans. { by apply equiv_dist, uPred.entails_equiv_and, (c n).(ty_share). }
+    simpl. destruct n; repeat (simpl; (f_contractive || f_equiv)).
+    rewrite (c.(chain_cauchy) (S n) (S (S n))) //. lia.
+  Qed.
+  Next Obligation.
+    simpl. intros c _ _ shr [=_ _ ->] κ κ' tid l.
+    apply uPred.entails_equiv_and, equiv_dist=>n.
+    rewrite !(λ c, conv_compl (A:=_ -c> _ -c> _ -c> _) n c _ tid l) /=.
+    apply equiv_dist, uPred.entails_equiv_and. apply ty_shr_mono.
+  Qed.
+  Next Obligation.
+    intros n c. split; [split|]; simpl; try by rewrite conv_compl.
+    f_contractive. destruct n; first done. rewrite /= conv_compl //.
+  Qed.
+
+  Global Program Instance simple_type_cofe : Cofe simple_typeC :=
+    {| compl c :=
+         let 'Next st_own := compl
+                {| chain_car := Next ∘ (st_own : _ -> _ -c> _ -c> _) ∘ c |} in
+         {| st_own := st_own |}
+    |}.
+  Next Obligation. intros [c Hc]. apply Hc. Qed.
+  Next Obligation.
+    simpl. intros c own [=->] tid vl.
+    apply uPred.entails_equiv_and, equiv_dist=>n.
+    rewrite (λ c, conv_compl (A:=_ -c> _ -c> _) n c tid vl) /=.
+    apply equiv_dist, uPred.entails_equiv_and, st_size_eq.
+  Qed.
+  Next Obligation.
+    simpl. intros c own [=->] tid vl.
+    apply uPred.equiv_entails, equiv_dist=>n.
+    by rewrite (λ c, conv_compl (A:=_ -c> _ -c> _) n c tid vl) /=
+               uPred.always_always.
+  Qed.
+  Next Obligation.
+    intros n c. apply Next_contractive. destruct n=>//=. rewrite conv_compl //.
+  Qed.
+
+  Global Instance ty_of_st_ne n : Proper (dist n ==> dist n) ty_of_st.
+  Proof.
+    intros [][]EQ. split;[split|]=>//= κ tid l.
+    repeat (f_contractive || f_equiv). apply EQ.
+  Qed.
+End ofe.
 
 Section subtyping.
   Context `{typeG Σ}.

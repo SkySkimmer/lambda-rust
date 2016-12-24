@@ -4,6 +4,9 @@ From lrust.lifetime Require Import borrow.
 From lrust.typing Require Export type.
 From lrust.typing Require Import programs.
 
+(* TODO : prove contractiveness.
+   Prerequisite : cofe structure on lists and vectors. *)
+
 Section fn.
   Context `{typeG Σ}.
 

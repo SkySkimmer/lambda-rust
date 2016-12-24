@@ -281,16 +281,22 @@ Proof. apply (ne_proper_2 _). Qed.
 
 Global Instance idx_bor_ne κ i n : Proper (dist n ==> dist n) (idx_bor κ i).
 Proof. solve_proper. Qed.
+Global Instance idx_bor_contractive κ i : Contractive (idx_bor κ i).
+Proof. solve_contractive. Qed.
 Global Instance idx_bor_proper κ i : Proper ((≡) ==> (≡)) (idx_bor κ i).
 Proof. apply (ne_proper _). Qed.
 
 Global Instance raw_bor_ne i n : Proper (dist n ==> dist n) (raw_bor i).
 Proof. solve_proper. Qed.
+Global Instance raw_bor_contractive i : Contractive (raw_bor i).
+Proof. solve_contractive. Qed.
 Global Instance raw_bor_proper i : Proper ((≡) ==> (≡)) (raw_bor i).
 Proof. apply (ne_proper _). Qed.
 
 Global Instance bor_ne κ n : Proper (dist n ==> dist n) (bor κ).
 Proof. solve_proper. Qed.
+Global Instance bor_contractive κ : Contractive (bor κ).
+Proof. solve_contractive. Qed.
 Global Instance bor_proper κ : Proper ((≡) ==> (≡)) (bor κ).
 Proof. apply (ne_proper _). Qed.
 

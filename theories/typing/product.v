@@ -2,6 +2,9 @@ From iris.proofmode Require Import tactics.
 From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.typing Require Export type.
 
+(* TODO : prove contractiveness.
+   Prerequisite : cofe structure on lists and vectors. *)
+
 Section product.
   Context `{typeG Σ}.
 
@@ -64,6 +67,16 @@ Section product.
   Next Obligation.
     intros ty1 ty2 κ κ' tid l. iIntros "#LFT /= #H⊑ [H1 H2]".
     iSplitL "H1"; by iApply (ty_shr_mono with "LFT H⊑").
+  Qed.
+
+  Global Instance product2_ne n:
+    Proper (dist n ==> dist n ==> dist n) product2.
+  Proof.
+    intros ?? EQ1 ?? EQ2. split; [split|]; simpl.
+    - by rewrite EQ1 EQ2.
+    - f_contractive. destruct n=>// tid vl.
+        by setoid_rewrite EQ1; setoid_rewrite EQ2.
+    - intros ???. by rewrite EQ1 EQ2.
   Qed.
 
   Global Instance product2_mono E L:
@@ -216,5 +229,4 @@ Section typing.
   Lemma prod_app E L tyl1 tyl2 :
     eqtype E L (Π[Π tyl1; Π tyl2]) (Π(tyl1 ++ tyl2)).
   Proof. by rewrite -prod_flatten_r -prod_flatten_l. Qed.
-
 End typing.

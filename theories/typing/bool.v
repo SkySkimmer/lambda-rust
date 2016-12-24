@@ -27,8 +27,7 @@ Section typing.
     typed_body E L C T e1 → typed_body E L C T e2 →
     typed_body E L C (TCtx_hasty p bool :: T) (if: p then e1 else e2).
   Proof.
-    (* FIXME why can't I merge these two iIntros? *)
-    iIntros (He1 He2). iIntros (tid qE) "#HEAP #LFT Htl HE HL HC".
+    iIntros (He1 He2 tid qE) "#HEAP #LFT Htl HE HL HC".
     rewrite tctx_interp_cons. iIntros "[Hp HT]".
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
     iDestruct "Hown" as (b) "Hv". iDestruct "Hv" as %[=->].

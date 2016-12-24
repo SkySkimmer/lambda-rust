@@ -11,7 +11,7 @@ Section uninit.
 
   Global Instance uninit_1_send : Send uninit_1.
   Proof. iIntros (tid1 tid2 vl) "H". done. Qed.
-    
+
   Definition uninit (n : nat) : type :=
     Π (replicate n uninit_1).
 
@@ -44,5 +44,5 @@ Section uninit.
       + iIntros (Heq). destruct n; first done. simpl.
         iExists [v], vl. iSplit; first done. iSplit; first done.
         iApply "IH". by inversion Heq.
-  Qed. 
+  Qed.
 End uninit.

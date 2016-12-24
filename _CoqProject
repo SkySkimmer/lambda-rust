@@ -40,3 +40,4 @@ theories/typing/function.v
 theories/typing/programs.v
 theories/typing/borrow.v
 theories/typing/cont.v
+theories/typing/fixpoint.v

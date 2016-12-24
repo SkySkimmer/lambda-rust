@@ -8,8 +8,7 @@ Section shr_bor.
   Context `{typeG Σ}.
 
   Program Definition shr_bor (κ : lft) (ty : type) : type :=
-    {| st_own tid vl :=
-         (∃ (l:loc), ⌜vl = [ #l ]⌝ ∗ ty.(ty_shr) κ tid l)%I |}.
+    {| st_own tid vl := (∃ (l:loc), ⌜vl = [ #l ]⌝ ∗ ty.(ty_shr) κ tid l)%I |}.
   Next Obligation.
     iIntros (κ ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
   Qed.
@@ -20,7 +19,7 @@ Section shr_bor.
     intros κ1 κ2 Hκ ty1 ty2 Hty. apply subtype_simple_type.
     iIntros (??) "#LFT #HE #HL H". iDestruct (Hκ with "HE HL") as "#Hκ".
     iDestruct "H" as (l) "(% & H)". subst. iExists _. iSplit. done.
-    iApply (ty2.(ty_shr_mono) with "LFT Hκ"). 
+    iApply (ty2.(ty_shr_mono) with "LFT Hκ").
     iDestruct (Hty with "* [] [] []") as "(_ & _ & #Hs1)"; [done..|clear Hty].
     by iApply "Hs1".
   Qed.
@@ -30,6 +29,15 @@ Section shr_bor.
   Global Instance subtype_shr_bor_proper E L κ :
     Proper (eqtype E L ==> eqtype E L) (shr_bor κ).
   Proof. intros ??[]. by split; apply subtype_shr_bor_mono. Qed.
+
+  Global Instance shr_contractive κ : Contractive (shr_bor κ).
+  Proof.
+    intros n ?? EQ. apply ty_of_st_ne. apply Next_contractive.
+    destruct n=>// tid vl /=. apply uPred.exist_ne.
+    repeat (apply EQ || f_contractive || f_equiv).
+  Qed.
+  Global Instance shr_ne κ n : Proper (dist n ==> dist n) (shr_bor κ).
+  Proof. apply contractive_ne, _. Qed.
 
   Global Instance shr_send κ ty :
     Sync ty → Send (shr_bor κ ty).

@@ -3,6 +3,9 @@ From iris.base_logic Require Import fractional.
 From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.typing Require Export type.
 
+(* TODO : prove contractiveness.
+   Prerequisite : cofe structure on lists and vectors. *)
+
 Section sum.
   Context `{typeG Σ}.
 
