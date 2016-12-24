@@ -159,18 +159,17 @@ Definition subst' (mx : binder) (es : expr) : expr → expr :=
 Fixpoint subst_l (xl : list binder) (esl : list expr) (e : expr) : option expr :=
   match xl, esl with
   | [], [] => Some e
-  | x::xl, es::esl => subst_l xl esl (subst' x es e)
+  | x::xl, es::esl => subst' x es <$> subst_l xl esl e
   | _, _ => None
   end.
 
-Definition subst_v (xl : list binder) (esl : vec expr (length xl))
+Definition subst_v (xl : list binder) (vsl : vec val (length xl))
                    (e : expr) : expr :=
-  from_option id (Var "" (* Dummy *)) (subst_l xl esl e).
-Lemma subst_v_eq (xl : list binder) (esl : vec expr (length xl)) e :
-  Some $ subst_v xl esl e = subst_l xl esl e.
+  Vector.fold_right2 (λ b, subst' b ∘ of_val) e _ (list_to_vec xl) vsl.
+Lemma subst_v_eq (xl : list binder) (vsl : vec val (length xl)) e :
+  Some $ subst_v xl vsl e = subst_l xl (of_val <$> vec_to_list vsl) e.
 Proof.
-  unfold subst_v. destruct subst_l eqn:EQ; first done. exfalso. revert esl e EQ.
-  induction xl=>/= esl; inv_vec esl; first done. simpl. eauto.
+  revert vsl. induction xl=>/= vsl; inv_vec vsl=>//=v vsl. by rewrite -IHxl.
 Qed.
 
 (** The stepping relation *)
@@ -230,8 +229,8 @@ Inductive head_step : expr → state → expr → state → list expr → Prop :
 | BetaS f xl e e' el σ:
     Forall (λ ei, is_Some (to_val ei)) el →
     Closed (f :b: xl +b+ []) e →
-    subst_l xl el e = Some e' →
-    head_step (App (Rec f xl e) el) σ (subst' f (Rec f xl e) e') σ []
+    subst_l (f::xl) (Rec f xl e :: el) e = Some e' →
+    head_step (App (Rec f xl e) el) σ e' σ []
 | ReadScS l n v σ:
     σ !! l = Some (RSt n, v) →
     head_step (Read ScOrd (Lit $ LitLoc l)) σ (of_val v) σ []

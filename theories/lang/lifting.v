@@ -146,9 +146,8 @@ Lemma wp_rec E e f xl erec erec' el Φ :
   e = Rec f xl erec → (* to avoids recursive calls being unfolded *)
   Forall (λ ei, is_Some (to_val ei)) el →
   Closed (f :b: xl +b+ []) erec →
-  subst_l xl el erec = Some erec' →
-  ▷ WP subst' f e erec' @ E {{ Φ }} -∗
-  WP App e el @ E {{ Φ }}.
+  subst_l (f::xl) (e::el) erec = Some erec' →
+  ▷ WP erec' @ E {{ Φ }} -∗ WP App e el @ E {{ Φ }}.
 Proof.
   iIntros (-> ???) "?". iApply ownP_lift_pure_det_head_step; subst; eauto.
   by intros; inv_head_step; eauto. iNext. rewrite big_sepL_nil. by iFrame.

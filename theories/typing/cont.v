@@ -22,7 +22,7 @@ Section typing.
   Lemma type_cont E L1 L2 C T argsb econt e2 T' kb :
     Closed (kb :b: argsb +b+ []) econt → Closed (kb :b: []) e2 →
     (∀ k args, typed_body E L1 (CCtx_iscont k L1 _ T' :: C) (T' args)
-                          (subst' kb k $ subst_v argsb (vmap of_val args) econt)) →
+                          (subst_v (kb::argsb) (k:::args) econt)) →
     (∀ k, typed_body E L2 (CCtx_iscont k L1 _ T' :: C) T (subst' kb k e2)) →
     typed_body E L2 C T (let: kb := Rec kb argsb econt in e2).
   Proof.
@@ -33,7 +33,7 @@ Section typing.
     iDestruct "H" as %[->|?]%elem_of_cons; last by iApply ("HC" with "HE *").
     iIntros (args) "Htl HL HT". iApply wp_rec; try done.
     { rewrite Forall_fmap Forall_forall=>? _. rewrite /= to_of_val. eauto. }
-    { by rewrite -vec_to_list_map -subst_v_eq. }
+    { by rewrite -(subst_v_eq (_ :: _) (RecV _ _ _ ::: _)). }
     (* FIXME: iNext here unfolds things in the context. *)
     iNext. iApply (Hecont with "* HEAP LFT Htl HE HL [HC] HT").
     by iApply "IH".
