@@ -71,7 +71,10 @@ Lemma wp_lam E xl e e' el Φ :
   Closed (xl +b+ []) e →
   subst_l xl el e = Some e' →
   ▷ WP e' @ E {{ Φ }} -∗ WP App (Lam xl e) el @ E {{ Φ }}.
-Proof. iIntros (???) "?". by iApply (wp_rec _ _ BAnon). Qed.
+Proof.
+  iIntros (???) "?". iApply (wp_rec _ _ BAnon)=>//.
+    by rewrite /= option_fmap_id.
+Qed.
 
 Lemma wp_let E x e1 e2 v Φ :
   to_val e1 = Some v →
