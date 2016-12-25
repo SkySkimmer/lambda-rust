@@ -12,7 +12,7 @@ Section product_split.
   Fixpoint hasty_ptr_offsets (p : path) (ptr: type → type) tyl (off : nat) : tctx :=
     match tyl with
     | [] => []
-    | ty :: tyl => TCtx_hasty (p +ₗ #off) (ptr ty) :: hasty_ptr_offsets p ptr tyl (off + ty.(ty_size))
+    | ty :: tyl => (p +ₗ #off ◁ ptr ty) :: hasty_ptr_offsets p ptr tyl (off + ty.(ty_size))
     end.
 
   Lemma hasty_ptr_offsets_offset (l : loc) p (off1 off2 : nat) ptr tyl tid :
@@ -31,12 +31,10 @@ Section product_split.
 
   Lemma tctx_split_ptr_prod E L ptr tyl :
     (∀ p ty1 ty2,
-        tctx_incl E L [TCtx_hasty p $ ptr $ product2 ty1 ty2]
-                      [TCtx_hasty p $ ptr $ ty1;
-                       TCtx_hasty (p +ₗ #ty1.(ty_size)) $ ptr $ ty2]) →
+        tctx_incl E L [p ◁ ptr $ product2 ty1 ty2]
+                      [p ◁ ptr ty1; p +ₗ #ty1.(ty_size) ◁ ptr ty2]) →
     (∀ tid ty vl, (ptr ty).(ty_own) tid vl -∗ ⌜∃ l : loc, vl = [(#l) : val]⌝) →
-    ∀ p, tctx_incl E L [TCtx_hasty p $ ptr $ product tyl]
-                  (hasty_ptr_offsets p ptr tyl 0).
+    ∀ p, tctx_incl E L [p ◁ ptr $ product tyl] (hasty_ptr_offsets p ptr tyl 0).
   Proof.
     iIntros (Hsplit Hloc p tid q1 q2) "#LFT HE HL H". iInduction tyl as [|ty tyl IH] "IH" forall (p).
     { iFrame "HE HL". rewrite tctx_interp_nil. done. }
@@ -44,7 +42,7 @@ Section product_split.
     cbn -[tctx_elt_interp]. rewrite tctx_interp_cons tctx_interp_singleton tctx_interp_cons.
     iDestruct "H" as "[Hty Htyl]". iDestruct "Hty" as (v) "[Hp Hty]". iDestruct "Hp" as %Hp. 
     iDestruct (Hloc with "Hty") as %[l [=->]].
-    iAssert (tctx_elt_interp tid (TCtx_hasty (p +ₗ #0) (ptr ty))) with "[Hty]" as "$".
+    iAssert (tctx_elt_interp tid (p +ₗ #0 ◁ ptr ty)) with "[Hty]" as "$".
     { iExists #l. iSplit; last done. simpl; by rewrite Hp shift_loc_0. }
     iMod ("IH" with "* HE HL [Htyl]") as "($ & $ & Htyl)".
     { rewrite tctx_interp_singleton //. }
@@ -52,14 +50,12 @@ Section product_split.
   Qed.
 
   Lemma tctx_merge_ptr_prod E L ptr tyl :
-    (Proper (eqtype E L ==> eqtype E L ) ptr) → tyl ≠ [] → 
+    (Proper (eqtype E L ==> eqtype E L ) ptr) → tyl ≠ [] →
     (∀ p ty1 ty2,
-        tctx_incl E L [TCtx_hasty p $ ptr $ ty1;
-                       TCtx_hasty (p +ₗ #ty1.(ty_size)) $ ptr $ ty2]
-                      [TCtx_hasty p $ ptr $ product2 ty1 ty2]) →
+        tctx_incl E L [p ◁ ptr ty1; p +ₗ #ty1.(ty_size) ◁ ptr ty2]
+                      [p ◁ ptr $ product2 ty1 ty2]) →
     (∀ tid ty vl, (ptr ty).(ty_own) tid vl -∗ ⌜∃ l : loc, vl = [(#l) : val]⌝) →
-    ∀ p, tctx_incl E L (hasty_ptr_offsets p ptr tyl 0)
-                   [TCtx_hasty p $ ptr $ product tyl].
+    ∀ p, tctx_incl E L (hasty_ptr_offsets p ptr tyl 0) [p ◁ ptr $ product tyl].
   Proof.
     iIntros (Hptr Htyl Hmerge Hloc p tid q1 q2) "#LFT HE HL H". iInduction tyl as [|ty tyl IH] "IH" forall (p Htyl); first done.
     rewrite product_cons. rewrite /= tctx_interp_singleton tctx_interp_cons.
@@ -85,9 +81,8 @@ Section product_split.
 
   (** Owned pointers *)
   Lemma tctx_split_own_prod2 E L p n ty1 ty2 :
-    tctx_incl E L [TCtx_hasty p $ own n $ product2 ty1 ty2]
-                  [TCtx_hasty p $ own n $ ty1;
-                   TCtx_hasty (p +ₗ #ty1.(ty_size)) $ own n $ ty2].
+    tctx_incl E L [p ◁ own n $ product2 ty1 ty2]
+                  [p ◁ own n ty1; p +ₗ #ty1.(ty_size) ◁ own n ty2].
   Proof.
     iIntros (tid q1 q2) "#LFT $ $ H".
     rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
@@ -106,9 +101,8 @@ Section product_split.
   Qed.
 
   Lemma tctx_merge_own_prod2 E L p n ty1 ty2 :
-    tctx_incl E L [TCtx_hasty p $ own n $ ty1;
-                   TCtx_hasty (p +ₗ #ty1.(ty_size)) $ own n $ ty2]
-                  [TCtx_hasty p $ own n $ product2 ty1 ty2].
+    tctx_incl E L [p ◁ own n ty1; p +ₗ #ty1.(ty_size) ◁ own n ty2]
+                  [p ◁ own n $ product2 ty1 ty2].
   Proof.
     iIntros (tid q1 q2) "#LFT $ $ H".
     rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
@@ -132,7 +126,7 @@ Section product_split.
   Qed.
 
   Lemma tctx_split_own_prod E L n tyl p :
-    tctx_incl E L [TCtx_hasty p $ own n $ product tyl]
+    tctx_incl E L [p ◁ own n $ product tyl]
                   (hasty_ptr_offsets p (own n) tyl 0).
   Proof.
     apply tctx_split_ptr_prod.
@@ -141,9 +135,9 @@ Section product_split.
   Qed.
 
   Lemma tctx_merge_own_prod E L n tyl :
-    tyl ≠ [] → 
+    tyl ≠ [] →
     ∀ p, tctx_incl E L (hasty_ptr_offsets p (own n) tyl 0)
-                   [TCtx_hasty p $ own n $ product tyl].
+                   [p ◁ own n $ product tyl].
   Proof.
     intros. apply tctx_merge_ptr_prod; try done.
     - apply _.
@@ -153,9 +147,8 @@ Section product_split.
 
   (** Unique borrows *)
   Lemma tctx_split_uniq_bor_prod2 E L p κ ty1 ty2 :
-    tctx_incl E L [TCtx_hasty p $ uniq_bor κ $ product2 ty1 ty2]
-                  [TCtx_hasty p $ uniq_bor κ $ ty1;
-                   TCtx_hasty (p +ₗ #ty1.(ty_size)) $ uniq_bor κ $ ty2].
+    tctx_incl E L [p ◁ uniq_bor κ $ product2 ty1 ty2]
+                  [p ◁ uniq_bor κ ty1; p +ₗ #ty1.(ty_size) ◁ uniq_bor κ ty2].
   Proof.
     iIntros (tid q1 q2) "#LFT $ $ H".
     rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
@@ -169,9 +162,8 @@ Section product_split.
   Qed.
 
   Lemma tctx_merge_uniq_bor_prod2 E L p κ ty1 ty2 :
-    tctx_incl E L [TCtx_hasty p $ uniq_bor κ $ ty1;
-                   TCtx_hasty (p +ₗ #ty1.(ty_size)) $ uniq_bor κ $ ty2]
-                  [TCtx_hasty p $ uniq_bor κ $ product2 ty1 ty2].
+    tctx_incl E L [p ◁ uniq_bor κ ty1; p +ₗ #ty1.(ty_size) ◁ uniq_bor κ ty2]
+                  [p ◁ uniq_bor κ $ product2 ty1 ty2].
   Proof.
     iIntros (tid q1 q2) "#LFT $ $ H".
     rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
@@ -194,7 +186,7 @@ Section product_split.
   Qed.
 
   Lemma tctx_split_uniq_bor_prod E L κ tyl p :
-    tctx_incl E L [TCtx_hasty p $ uniq_bor κ $ product tyl]
+    tctx_incl E L [p ◁ uniq_bor κ $ product tyl]
                   (hasty_ptr_offsets p (uniq_bor κ) tyl 0).
   Proof.
     apply tctx_split_ptr_prod.
@@ -203,9 +195,9 @@ Section product_split.
   Qed.
 
   Lemma tctx_merge_uniq_bor_prod E L κ tyl :
-    tyl ≠ [] → 
+    tyl ≠ [] →
     ∀ p, tctx_incl E L (hasty_ptr_offsets p (uniq_bor κ) tyl 0)
-                   [TCtx_hasty p $ uniq_bor κ $ product tyl].
+                   [p ◁ uniq_bor κ $ product tyl].
   Proof.
     intros. apply tctx_merge_ptr_prod; try done.
     - apply _.
@@ -215,9 +207,8 @@ Section product_split.
 
   (** Shared borrows *)
   Lemma tctx_split_shr_bor_prod2 E L p κ ty1 ty2 :
-    tctx_incl E L [TCtx_hasty p $ shr_bor κ $ product2 ty1 ty2]
-                  [TCtx_hasty p $ shr_bor κ $ ty1;
-                   TCtx_hasty (p +ₗ #ty1.(ty_size)) $ shr_bor κ $ ty2].
+    tctx_incl E L [p ◁ shr_bor κ $ product2 ty1 ty2]
+                  [p ◁ shr_bor κ ty1; p +ₗ #ty1.(ty_size) ◁ shr_bor κ ty2].
   Proof.
     iIntros (tid q1 q2) "#LFT $ $ H".
     rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
@@ -228,9 +219,8 @@ Section product_split.
   Qed.
 
   Lemma tctx_merge_shr_bor_prod2 E L p κ ty1 ty2 :
-    tctx_incl E L [TCtx_hasty p $ shr_bor κ $ ty1;
-                   TCtx_hasty (p +ₗ #ty1.(ty_size)) $ shr_bor κ $ ty2]
-                  [TCtx_hasty p $ shr_bor κ $ product2 ty1 ty2].
+    tctx_incl E L [p ◁ shr_bor κ ty1; p +ₗ #ty1.(ty_size) ◁ shr_bor κ ty2]
+                  [p ◁ shr_bor κ $ product2 ty1 ty2].
   Proof.
     iIntros (tid q1 q2) "#LFT $ $ H".
     rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
@@ -251,7 +241,7 @@ Section product_split.
   Qed.
 
   Lemma tctx_split_shr_bor_prod E L κ tyl p :
-    tctx_incl E L [TCtx_hasty p $ shr_bor κ $ product tyl]
+    tctx_incl E L [p ◁ shr_bor κ $ product tyl]
                   (hasty_ptr_offsets p (shr_bor κ) tyl 0).
   Proof.
     apply tctx_split_ptr_prod.
@@ -260,14 +250,13 @@ Section product_split.
   Qed.
 
   Lemma tctx_merge_shr_bor_prod E L κ tyl :
-    tyl ≠ [] → 
+    tyl ≠ [] →
     ∀ p, tctx_incl E L (hasty_ptr_offsets p (shr_bor κ) tyl 0)
-                   [TCtx_hasty p $ shr_bor κ $ product tyl].
+                   [p ◁ shr_bor κ $ product tyl].
   Proof.
     intros. apply tctx_merge_ptr_prod; try done.
     - apply _.
     - intros. apply tctx_merge_shr_bor_prod2.
     - intros. apply shr_bor_is_ptr.
   Qed.
-  
 End product_split.

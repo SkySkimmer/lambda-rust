@@ -18,9 +18,8 @@ Notation "# l" := (Lit l%Z%V) (at level 8, format "# l") : expr_scope.
 
 (** Syntax inspired by Coq/Ocaml. Constructions with higher precedence come
     first. *)
-Notation "'case:' e0 'of' [ e1 , .. , en ]" :=
-  (Case e0%E (cons e1%E .. (cons en%E nil) ..))
-  (e0, e1, en at level 200) : expr_scope.
+Notation "'case:' e0 'of' el" := (Case e0%E el%E)
+  (at level 102, e0, el at level 200) : expr_scope.
 Notation "'if:' e1 'then' e2 'else' e3" := (If e1%E e2%E e3%E)
   (at level 200, e1, e2, e3 at level 200) : expr_scope.
 Notation "()" := LitUnit : val_scope.

@@ -24,7 +24,7 @@ Section typing.
   Qed.
 
   Lemma type_plus E L p1 p2 :
-    typed_instruction_ty E L [TCtx_hasty p1 int; TCtx_hasty p2 int] (p1 + p2) int.
+    typed_instruction_ty E L [p1 ◁ int; p2 ◁ int] (p1 + p2) int.
   Proof.
     iIntros (tid qE) "_ _ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
@@ -37,7 +37,7 @@ Section typing.
   Qed.
 
   Lemma type_minus E L p1 p2 :
-    typed_instruction_ty E L [TCtx_hasty p1 int; TCtx_hasty p2 int] (p1 - p2) int.
+    typed_instruction_ty E L [p1 ◁ int; p2 ◁ int] (p1 - p2) int.
   Proof.
     iIntros (tid qE) "_ _ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
@@ -50,7 +50,7 @@ Section typing.
   Qed.
 
   Lemma type_le E L p1 p2 :
-    typed_instruction_ty E L [TCtx_hasty p1 int; TCtx_hasty p2 int] (p1 ≤ p2) bool.
+    typed_instruction_ty E L [p1 ◁ int; p2 ◁ int] (p1 ≤ p2) bool.
   Proof.
     iIntros (tid qE) "_ _ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".

@@ -7,6 +7,27 @@ From lrust.typing Require Import type lft_contexts.
 Definition path := expr.
 Bind Scope expr_scope with path.
 
+(* TODO: Consider making this a pair of a path and the rest. We could
+   then e.g. formulate tctx_elt_hasty_path more generally. *)
+Inductive tctx_elt `{typeG Σ} : Type :=
+| TCtx_hasty (p : path) (ty : type)
+| TCtx_blocked (p : path) (κ : lft) (ty : type).
+
+Definition tctx `{typeG Σ} := list tctx_elt.
+
+Delimit Scope lrust_tctx_scope with TC.
+Bind Scope lrust_tctx_scope with tctx tctx_elt.
+
+Infix "◁" := TCtx_hasty (at level 70) : lrust_tctx_scope.
+Notation "p ◁{ κ } ty" := (TCtx_blocked p κ ty)
+   (at level 70, format "p  ◁{ κ }  ty") : lrust_tctx_scope.
+Notation "a :: b" := (@cons tctx_elt a%TC b%TC)
+  (at level 60, right associativity) : lrust_tctx_scope.
+Notation "[ x1 ; x2 ; .. ; xn ]" :=
+  (@cons tctx_elt x1%TC (@cons tctx_elt x2%TC
+        (..(@cons tctx_elt xn%TC (@nil tctx_elt))..))) : lrust_tctx_scope.
+Notation "[ x ]" := (@cons tctx_elt x%TC (@nil tctx_elt)) : lrust_tctx_scope.
+
 Section type_context.
   Context `{typeG Σ}.
 
@@ -42,23 +63,18 @@ Section type_context.
   Qed.
 
   (** Type context element *)
-  (* TODO: Consider mking this a pair of a path and the rest. We could
-     then e.g. formulate tctx_elt_hasty_path more generally. *)
-  Inductive tctx_elt : Type :=
-  | TCtx_hasty (p : path) (ty : type)
-  | TCtx_blocked (p : path) (κ : lft) (ty : type).
-
   Definition tctx_elt_interp (tid : thread_id) (x : tctx_elt) : iProp Σ :=
     match x with
-    | TCtx_hasty p ty => ∃ v, ⌜eval_path p = Some v⌝ ∗ ty.(ty_own) tid [v]
-    | TCtx_blocked p κ ty => ∃ v, ⌜eval_path p = Some v⌝ ∗
+    | (p ◁ ty)%TC => ∃ v, ⌜eval_path p = Some v⌝ ∗ ty.(ty_own) tid [v]
+    | (p ◁{κ} ty)%TC => ∃ v, ⌜eval_path p = Some v⌝ ∗
                              ([†κ] ={⊤}=∗ ty.(ty_own) tid [v])
     end%I.
+
   (* Block tctx_elt_interp from reducing with simpl when x is a constructor. *)
   Global Arguments tctx_elt_interp : simpl never.
 
   Lemma tctx_hasty_val tid (v : val) ty :
-    tctx_elt_interp tid (TCtx_hasty v ty) ⊣⊢ ty.(ty_own) tid [v].
+    tctx_elt_interp tid (v ◁ ty) ⊣⊢ ty.(ty_own) tid [v].
   Proof.
     rewrite /tctx_elt_interp eval_path_of_val. iSplit.
     - iIntros "H". iDestruct "H" as (?) "[EQ ?]".
@@ -68,20 +84,19 @@ Section type_context.
 
   Lemma tctx_elt_interp_hasty_path p1 p2 ty tid :
     eval_path p1 = eval_path p2 →
-    tctx_elt_interp tid (TCtx_hasty p1 ty) ≡
-    tctx_elt_interp tid (TCtx_hasty p2 ty).
+    tctx_elt_interp tid (p1 ◁ ty) ≡ tctx_elt_interp tid (p2 ◁ ty).
   Proof. intros Hp. rewrite /tctx_elt_interp /=. setoid_rewrite Hp. done. Qed.
 
   Lemma tctx_hasty_val' tid p (v : val) ty :
     eval_path p = Some v →
-    tctx_elt_interp tid (TCtx_hasty p ty) ⊣⊢ ty.(ty_own) tid [v].
+    tctx_elt_interp tid (p ◁ ty) ⊣⊢ ty.(ty_own) tid [v].
   Proof.
     intros ?. rewrite -tctx_hasty_val. apply tctx_elt_interp_hasty_path.
     rewrite eval_path_of_val. done.
   Qed.
 
   Lemma wp_hasty E tid p ty Φ :
-    tctx_elt_interp tid (TCtx_hasty p ty) -∗
+    tctx_elt_interp tid (p ◁ ty) -∗
     (∀ v, ⌜eval_path p = Some v⌝ -∗ ty.(ty_own) tid [v] -∗ Φ v) -∗
     WP p @ E {{ Φ }}.
   Proof.
@@ -91,8 +106,6 @@ Section type_context.
   Qed.
 
   (** Type context *)
-  Definition tctx := list tctx_elt.
-
   Definition tctx_interp (tid : thread_id) (T : tctx) : iProp Σ :=
     ([∗ list] x ∈ T, tctx_elt_interp tid x)%I.
 
@@ -124,7 +137,7 @@ Section type_context.
   Proof. rewrite /CopyC. apply _. Qed.
 
   Global Instance tctx_ty_copy T p ty :
-    CopyC T → Copy ty → CopyC (TCtx_hasty p ty :: T).
+    CopyC T → Copy ty → CopyC ((p ◁ ty) :: T).
   Proof.
     (* TODO RJ: Should we have instances that PersistentP respects equiv? *)
     intros ???. rewrite /PersistentP tctx_interp_cons.
@@ -139,7 +152,7 @@ Section type_context.
   Proof. done. Qed.
 
   Global Instance tctx_ty_send T p ty :
-    SendC T → Send ty → SendC (TCtx_hasty p ty :: T).
+    SendC T → Send ty → SendC ((p ◁ ty) :: T).
   Proof.
     iIntros (HT Hty ??). rewrite !tctx_interp_cons.
     iIntros "[Hty HT]". iSplitR "HT".
@@ -176,14 +189,14 @@ Section type_context.
   Qed.
 
   Lemma copy_tctx_incl E L p `{!Copy ty} :
-    tctx_incl E L [TCtx_hasty p ty] [TCtx_hasty p ty; TCtx_hasty p ty].
+    tctx_incl E L [p ◁ ty] [p ◁ ty; p ◁ ty].
    Proof.
     iIntros (???) "_ $ $ *". rewrite /tctx_interp !big_sepL_cons big_sepL_nil.
     by iIntros "[#$ $]".
   Qed.
 
   Lemma subtype_tctx_incl E L p ty1 ty2 :
-    subtype E L ty1 ty2 → tctx_incl E L [TCtx_hasty p ty1] [TCtx_hasty p ty2].
+    subtype E L ty1 ty2 → tctx_incl E L [p ◁ ty1] [p ◁ ty2].
   Proof.
     iIntros (Hst ???) "#LFT HE HL H". rewrite /tctx_interp !big_sepL_singleton /=.
     iDestruct (elctx_interp_persist with "HE") as "#HE'".
@@ -201,7 +214,7 @@ Section type_context.
 
   Global Instance unblock_tctx_cons_unblock T1 T2 p κ ty :
     UnblockTctx κ T1 T2 →
-    UnblockTctx κ (TCtx_blocked p κ ty::T1) (TCtx_hasty p ty::T2).
+    UnblockTctx κ ((p ◁{κ} ty)::T1) ((p ◁ ty)::T2).
   Proof.
     iIntros (H12 tid) "#H†". rewrite !tctx_interp_cons. iIntros "[H HT1]".
     iMod (H12 with "H† HT1") as "$". iDestruct "H" as (v) "[% H]".

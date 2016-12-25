@@ -16,7 +16,7 @@ Section fn.
          ⌜vl = [@RecV fb (kb::xb) e H]⌝ ∗ ⌜length xb = n⌝ ∗
          □ ▷ ∀ (x : A) (k : val) (xl : vec val (length xb)),
             typed_body (E x) []
-                       [CCtx_iscont k [] 1 (λ v, [TCtx_hasty (v!!!0) (ty x)])]
+                       [k◁cont([], λ v : vec _ 1, [v!!!0 ◁ ty x])]
                        (zip_with (TCtx_hasty ∘ of_val) xl (tys x))
                        (subst_v (fb::kb::xb) (RecV fb (kb::xb) e:::k:::xl) e))%I |}.
   Next Obligation.
@@ -44,7 +44,7 @@ Section typing.
     - iIntros "HE". unfold cctx_interp. iIntros (elt) "Helt".
       iDestruct "Helt" as %->%elem_of_list_singleton. iIntros (ret) "Htl HL HT".
       iSpecialize ("HC" with "HE"). unfold cctx_elt_interp.
-      iApply ("HC" $! (CCtx_iscont _ _ _ _) with "[%] * Htl HL >").
+      iApply ("HC" $! (_ ◁cont(_, _)%CC) with "[%] * Htl HL >").
       {  by apply elem_of_list_singleton. }
       rewrite /tctx_interp !big_sepL_singleton /=.
       iDestruct "HT" as (v) "[HP Hown]". iExists v. iFrame "HP".
@@ -92,7 +92,7 @@ Section typing.
 
   Lemma fn_subtype_lft_incl {A n} E0 L0 E κ κ' (tys : A → vec type n) ty :
     lctx_lft_incl E0 L0 κ κ' →
-    subtype E0 L0 (fn (λ x, ELCtx_Incl κ κ' :: E x) tys ty) (fn E tys ty).
+    subtype E0 L0 (fn (λ x, (κ ⊑ κ') :: E x)%EL tys ty) (fn E tys ty).
   Proof.
     intros Hκκ'. apply subtype_simple_type=>//= _ vl.
     iIntros "#LFT #HE0 #HL0 Hf". iDestruct "Hf" as (fb kb xb e ?) "[% [% #Hf]]". subst.
@@ -107,8 +107,8 @@ Section typing.
   Lemma type_call {A} E L E' T T' p (ps : list path)
                         (tys : A → vec type (length ps)) ty k x :
     tctx_incl E L T (zip_with TCtx_hasty ps (tys x) ++ T') → elctx_sat E L (E' x) →
-    typed_body E L [CCtx_iscont k L 1 (λ v, (TCtx_hasty (v!!!0) (ty x)) :: T')]
-               (TCtx_hasty p (fn E' tys ty) :: T) (p (of_val k :: ps)).
+    typed_body E L [k ◁cont(L, λ v : vec _ 1, (v!!!0 ◁ ty x) :: T')]
+               ((p ◁ fn E' tys ty) :: T) (p (of_val k :: ps)).
   Proof.
     iIntros (HTsat HEsat tid qE) "#HEAP #LFT Htl HE HL HC".
     rewrite tctx_interp_cons. iIntros "[Hf HT]".
@@ -116,7 +116,7 @@ Section typing.
     iMod (HTsat with "LFT HE HL HT") as "(HE & HL & HT)". rewrite tctx_interp_app.
     iDestruct "HT" as "[Hargs HT']". clear HTsat.
     iApply (wp_app_vec _ _ (_::_) ((λ v, ⌜v = k⌝):::
-               vmap (λ ty (v : val), tctx_elt_interp tid (TCtx_hasty v ty)) (tys x))%I
+               vmap (λ ty (v : val), tctx_elt_interp tid (v ◁ ty)) (tys x))%I
             with "* [Hargs]"); first wp_done.
     - rewrite /= big_sepL_cons. iSplitR "Hargs"; first by iApply wp_value'.
       clear dependent ty k p.
@@ -151,8 +151,8 @@ Section typing.
         T `{!CopyC T, !SendC T} :
     Closed (fb :b: kb :b: argsb +b+ []) e →
     (∀ x (f : val) k (args : vec val _),
-        typed_body (E' x) [] [CCtx_iscont k [] 1 (λ v, [TCtx_hasty (v!!!0) (ty x)])]
-                   (TCtx_hasty f (fn E' tys ty) ::
+        typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ ty x])]
+                   ((f ◁ fn E' tys ty) ::
                       zip_with (TCtx_hasty ∘ of_val) args (tys x) ++ T)
                    (subst_v (fb :: kb :: argsb) (f ::: k ::: args) e)) →
     typed_instruction_ty E L T (Rec fb (kb :: argsb) e) (fn E' tys ty).

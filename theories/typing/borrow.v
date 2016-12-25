@@ -2,7 +2,7 @@ From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
 From lrust.lifetime Require Import reborrow frac_borrow.
 From lrust.lang Require Import heap.
-From lrust.typing Require Export uniq_bor shr_bor own.
+From lrust.typing Require Export uniq_bor shr_bor own sum.
 From lrust.typing Require Import lft_contexts type_context programs.
 
 (** The rules for borrowing and derferencing borrowed non-Copy pointers are in
@@ -13,8 +13,7 @@ Section borrow.
   Context `{typeG Σ}.
 
   Lemma tctx_borrow E L p n ty κ :
-    tctx_incl E L [TCtx_hasty p (own n ty)]
-                  [TCtx_hasty p (&uniq{κ}ty); TCtx_blocked p κ (own n ty)].
+    tctx_incl E L [p ◁ own n ty] [p ◁ &uniq{κ}ty; p ◁{κ} own n ty].
   Proof.
     iIntros (tid ??) "#LFT $ $ H".
     rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
@@ -28,8 +27,7 @@ Section borrow.
 
   Lemma type_deref_uniq_own E L κ p n ty :
     lctx_lft_alive E L κ →
-    typed_instruction_ty E L [TCtx_hasty p (&uniq{κ} own n ty)] (!p)
-                             (&uniq{κ} ty).
+    typed_instruction_ty E L [p ◁ &uniq{κ} own n ty] (!p) (&uniq{κ} ty).
   Proof.
     iIntros (Hκ tid eq) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
@@ -52,8 +50,7 @@ Section borrow.
 
   Lemma type_deref_shr_own E L κ p n ty :
     lctx_lft_alive E L κ →
-    typed_instruction_ty E L [TCtx_hasty p (&shr{κ} own n ty)] (!p)
-                             (&shr{κ} ty).
+    typed_instruction_ty E L [p ◁ &shr{κ} own n ty] (!p) (&shr{κ} ty).
   Proof.
     iIntros (Hκ tid eq) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
     iMod (Hκ with "HE HL") as (q) "[[Htok1 Htok2] Hclose]"; first set_solver.
@@ -70,8 +67,7 @@ Section borrow.
 
   Lemma type_deref_uniq_uniq E L κ κ' p ty :
     lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
-    typed_instruction_ty E L [TCtx_hasty p (&uniq{κ} &uniq{κ'} ty)] (!p)
-                             (&uniq{κ} ty).
+    typed_instruction_ty E L [p ◁ &uniq{κ} &uniq{κ'} ty] (!p) (&uniq{κ} ty).
   Proof.
     iIntros (Hκ Hincl tid eq) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
     iPoseProof (Hincl with "[#] [#]") as "Hincl".
@@ -101,8 +97,7 @@ Section borrow.
 
   Lemma type_deref_shr_uniq E L κ κ' p ty :
     lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
-    typed_instruction_ty E L [TCtx_hasty p (&shr{κ} &uniq{κ'} ty)] (!p)
-                             (&shr{κ} ty).
+    typed_instruction_ty E L [p ◁ &shr{κ} &uniq{κ'} ty] (!p) (&shr{κ} ty).
   Proof.
     iIntros (Hκ Hincl tid eq) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
     iPoseProof (Hincl with "[#] [#]") as "Hincl".

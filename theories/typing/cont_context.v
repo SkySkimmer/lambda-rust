@@ -16,11 +16,23 @@ Section cont_context_def.
 End cont_context_def.
 Add Printing Constructor cctx_elt.
 
+Delimit Scope lrust_cctx_scope with CC.
+Bind Scope lrust_cctx_scope with cctx cctx_elt.
+
+Notation "k ◁cont( L , T )" := (CCtx_iscont k L _ T%TC)
+  (at level 70, format "k  ◁cont( L ,  T )") : lrust_cctx_scope.
+Notation "a :: b" := (@cons cctx_elt a%CC b%CC)
+  (at level 60, right associativity) : lrust_cctx_scope.
+Notation "[ x1 ; x2 ; .. ; xn ]" :=
+  (@cons cctx_elt x1%CC (@cons cctx_elt x2%CC
+        (..(@cons cctx_elt xn%CC (@nil cctx_elt))..))) : lrust_cctx_scope.
+Notation "[ x ]" := (@cons cctx_elt x%CC (@nil cctx_elt)) : lrust_cctx_scope.
+
 Section cont_context.
   Context `{typeG Σ}.
 
   Definition cctx_elt_interp (tid : thread_id) (x : cctx_elt) : iProp Σ :=
-    let 'CCtx_iscont k L n T := x in
+    let '(k ◁cont(L, T))%CC := x in
     (∀ args, na_own tid ⊤ -∗ llctx_interp L 1 -∗ tctx_interp tid (T args) -∗
          WP k (of_val <$> (args : list _)) {{ _, cont_postcondition }})%I.
   Definition cctx_interp (tid : thread_id) (C : cctx) : iProp Σ :=
@@ -35,7 +47,7 @@ Section cont_context.
   Proof.
     rewrite /cctx_interp. iIntros "H". iIntros ([k L n T]) "%".
     iIntros (args) "HL HT". iMod "H".
-    by iApply ("H" $! (CCtx_iscont k L n T) with "[%] * HL HT").
+    by iApply ("H" $! (k ◁cont(L, T)%CC) with "[%] * HL HT").
   Qed.
 
   Definition cctx_incl (E : elctx) (C1 C2 : cctx): Prop :=
@@ -56,16 +68,16 @@ Section cont_context.
     iApply ("H" with "HE * [%]"). by apply HC1C2.
   Qed.
 
-  Lemma cctx_incl_cons E k L n T1 T2 C1 C2:
+  Lemma cctx_incl_cons E k L n (T1 T2 : vec val n → _) C1 C2:
     cctx_incl E C1 C2 → (∀ args, tctx_incl E L (T2 args) (T1 args)) →
-    cctx_incl E (CCtx_iscont k L n T1 :: C1) (CCtx_iscont k L n T2 :: C2).
+    cctx_incl E (k ◁cont(L, T1) :: C1) (k ◁cont(L, T2) :: C2).
   Proof.
     iIntros (HC1C2 HT1T2 ??) "#LFT H HE". rewrite /cctx_interp.
     iIntros (x) "Hin". iDestruct "Hin" as %[->|Hin]%elem_of_cons.
     - iIntros (args) "Htl HL HT".
       iMod (HT1T2 with "LFT HE HL HT") as "(HE & HL & HT)".
       iSpecialize ("H" with "HE").
-      iApply ("H" $! (CCtx_iscont _ _ _ _) with "[%] * Htl HL HT").
+      iApply ("H" $! (_ ◁cont(_, _))%CC with "[%] * Htl HL HT").
       constructor.
     - iApply (HC1C2 with "LFT [H] HE * [%]"); last done.
       iIntros "HE". iIntros (x') "%".

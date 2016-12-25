@@ -25,7 +25,7 @@ Section typing.
 
   Lemma type_if E L C T e1 e2 p:
     typed_body E L C T e1 → typed_body E L C T e2 →
-    typed_body E L C (TCtx_hasty p bool :: T) (if: p then e1 else e2).
+    typed_body E L C ((p ◁ bool) :: T) (if: p then e1 else e2).
   Proof.
     iIntros (He1 He2 tid qE) "#HEAP #LFT Htl HE HL HC".
     rewrite tctx_interp_cons. iIntros "[Hp HT]".

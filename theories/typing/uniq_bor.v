@@ -143,7 +143,7 @@ Section typing.
   Context `{typeG Σ}.
 
   Lemma tctx_share E L p κ ty :
-    lctx_lft_alive E L κ → tctx_incl E L [TCtx_hasty p (&uniq{κ}ty)] [TCtx_hasty p (&shr{κ}ty)].
+    lctx_lft_alive E L κ → tctx_incl E L [p ◁ &uniq{κ}ty] [p ◁ &shr{κ}ty].
   Proof.
     iIntros (Hκ ???) "#LFT HE HL Huniq".
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; [try done..|].
@@ -158,8 +158,7 @@ Section typing.
 
   Lemma tctx_reborrow_uniq E L p ty κ κ' :
     lctx_lft_incl E L κ' κ →
-    tctx_incl E L [TCtx_hasty p (&uniq{κ}ty)]
-                  [TCtx_hasty p (&uniq{κ'}ty); TCtx_blocked p κ (&uniq{κ}ty)].
+    tctx_incl E L [p ◁ &uniq{κ}ty] [p ◁ &uniq{κ'}ty; p ◁{κ} &uniq{κ}ty].
   Proof.
     iIntros (Hκκ' tid ??) "#LFT HE HL H".
     iDestruct (elctx_interp_persist with "HE") as "#HE'".

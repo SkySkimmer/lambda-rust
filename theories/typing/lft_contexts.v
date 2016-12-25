@@ -3,31 +3,58 @@ From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import fractional.
 From lrust.lifetime Require Export derived.
 
+Inductive elctx_elt : Type :=
+| ELCtx_Alive (κ : lft)
+| ELCtx_Incl (κ κ' : lft).
+Definition elctx := list elctx_elt.
+
+Delimit Scope lrust_elctx_scope with EL.
+Bind Scope lrust_elctx_scope with elctx elctx_elt.
+
+Notation "☀ κ" := (ELCtx_Alive κ) (at level 70) : lrust_elctx_scope.
+Infix "⊑" := ELCtx_Incl (at level 70) : lrust_elctx_scope.
+
+Notation "a :: b" := (@cons elctx_elt a%EL b%EL)
+  (at level 60, right associativity) : lrust_elctx_scope.
+Notation "[ x1 ; x2 ; .. ; xn ]" :=
+  (@cons elctx_elt x1%EL (@cons elctx_elt x2%EL
+        (..(@cons elctx_elt xn%EL (@nil elctx_elt))..))) : lrust_elctx_scope.
+Notation "[ x ]" := (@cons elctx_elt x%EL (@nil elctx_elt)) : lrust_elctx_scope.
+
+Definition llctx_elt : Type := lft * list lft.
+Definition llctx := list llctx_elt.
+
+Delimit Scope lrust_llctx_scope with LL.
+Bind Scope lrust_llctx_scope with llctx llctx_elt.
+
+Notation "κ ⊐ κl" := (@pair lft (list lft) κ κl) (at level 70) : lrust_llctx_scope.
+
+Notation "a :: b" := (@cons llctx_elt a%LL b%LL)
+  (at level 60, right associativity) : lrust_llctx_scope.
+Notation "[ x1 ; x2 ; .. ; xn ]" :=
+  (@cons llctx_elt x1%LL (@cons llctx_elt x2%LL
+        (..(@cons llctx_elt xn%LL (@nil llctx_elt))..))) : lrust_llctx_scope.
+Notation "[ x ]" := (@cons llctx_elt x%LL (@nil llctx_elt)) : lrust_llctx_scope.
+
 Section lft_contexts.
   Context `{invG Σ, lftG Σ}.
   Implicit Type (κ : lft).
 
   (* External lifetime contexts. *)
-
-  Inductive elctx_elt : Type :=
-  | ELCtx_Alive κ
-  | ELCtx_Incl κ κ'.
-  Definition elctx := list elctx_elt.
-
   Definition elctx_elt_interp (x : elctx_elt) (q : Qp) : iProp Σ :=
     match x with
-    | ELCtx_Alive κ => q.[κ]
-    | ELCtx_Incl κ κ' => κ ⊑ κ'
-    end%I.
+    | ☀ κ => q.[κ]%I
+    | κ ⊑ κ' => (κ ⊑ κ')%I
+    end%EL.
   Global Instance elctx_elt_interp_fractional x:
     Fractional (elctx_elt_interp x).
   Proof. destruct x; unfold elctx_elt_interp; apply _. Qed.
   Typeclasses Opaque elctx_elt_interp.
   Definition elctx_elt_interp_0 (x : elctx_elt) : iProp Σ :=
     match x with
-    | ELCtx_Alive κ => True
-    | ELCtx_Incl κ κ' => κ ⊑ κ'
-    end%I.
+    | ☀ κ => True%I
+    | κ ⊑ κ' => (κ ⊑ κ')%I
+    end%EL.
   Global Instance elctx_elt_interp_0_persistent x:
     PersistentP (elctx_elt_interp_0 x).
   Proof. destruct x; apply _. Qed.
@@ -68,9 +95,6 @@ Section lft_contexts.
   Qed.
 
   (* Local lifetime contexts. *)
-
-  Definition llctx_elt : Type := lft * list lft.
-  Definition llctx := list llctx_elt.
 
   Definition llctx_elt_interp (x : llctx_elt) (q : Qp) : iProp Σ :=
     let κ' := foldr (∪) static (x.2) in
@@ -141,7 +165,7 @@ Section lft_contexts.
   Lemma lctx_lft_incl_static κ : lctx_lft_incl κ static.
   Proof. iIntros "_ _". iApply lft_incl_static. Qed.
 
-  Lemma lctx_lft_incl_local κ κ' κs : (κ, κs) ∈ L → κ' ∈ κs → lctx_lft_incl κ κ'.
+  Lemma lctx_lft_incl_local κ κ' κs : (κ ⊐ κs)%LL ∈ L → κ' ∈ κs → lctx_lft_incl κ κ'.
   Proof.
     iIntros (? Hκ'κs) "_ H". iDestruct "H" as %HL.
     edestruct HL as [κ0 EQ]. done. simpl in EQ; subst.
@@ -151,7 +175,7 @@ Section lft_contexts.
     - etrans. done. apply gmultiset_union_subseteq_r.
   Qed.
 
-  Lemma lctx_lft_incl_external κ κ' : ELCtx_Incl κ κ' ∈ E → lctx_lft_incl κ κ'.
+  Lemma lctx_lft_incl_external κ κ' : (κ ⊑ κ')%EL ∈ E → lctx_lft_incl κ κ'.
   Proof.
     iIntros (?) "H _".
     rewrite /elctx_interp_0 /elctx_elt_interp_0 big_sepL_elem_of //. done.
@@ -169,7 +193,7 @@ Section lft_contexts.
   Qed.
 
   Lemma lctx_lft_alive_local κ κs:
-    (κ, κs) ∈ L → Forall lctx_lft_alive κs → lctx_lft_alive κ.
+    (κ ⊐ κs)%LL ∈ L → Forall lctx_lft_alive κs → lctx_lft_alive κ.
   Proof.
     iIntros ([i HL]%elem_of_list_lookup_1 Hκs F qE qL ?) "HE HL".
     iDestruct "HL" as "[HL1 HL2]". rewrite {2}/llctx_interp /llctx_elt_interp.
@@ -196,7 +220,7 @@ Section lft_contexts.
     rewrite /llctx_interp /llctx_elt_interp. iApply "Hclose". iExists κ0. iFrame. auto.
   Qed.
 
-  Lemma lctx_lft_alive_external κ: ELCtx_Alive κ ∈ E → lctx_lft_alive κ.
+  Lemma lctx_lft_alive_external κ: (☀κ)%EL ∈ E → lctx_lft_alive κ.
   Proof.
     iIntros ([i HE]%elem_of_list_lookup_1 F qE qL ?) "HE $ !>".
     rewrite /elctx_interp /elctx_elt_interp.
@@ -229,7 +253,7 @@ Section lft_contexts.
   Qed.
 
   Lemma elctx_sat_alive E' κ :
-    lctx_lft_alive κ → elctx_sat E' → elctx_sat (ELCtx_Alive κ :: E').
+    lctx_lft_alive κ → elctx_sat E' → elctx_sat ((☀κ) :: E').
   Proof.
     iIntros (Hκ HE' qE qL F) "% [HE1 HE2] [HL1 HL2]".
     iMod (Hκ with "HE1 HL1") as (q) "[Htok Hclose]". done.
@@ -243,7 +267,7 @@ Section lft_contexts.
   Qed.
 
   Lemma elctx_sat_incl E' κ κ' :
-    lctx_lft_incl κ κ' → elctx_sat E' → elctx_sat (ELCtx_Incl κ κ' :: E').
+    lctx_lft_incl κ κ' → elctx_sat E' → elctx_sat ((κ ⊑ κ') :: E').
   Proof.
     iIntros (Hκκ' HE' qE qL F) "% HE HL".
     iAssert (κ ⊑ κ')%I with "[#]" as "#Hincl". iApply (Hκκ' with "[HE] [HL]").

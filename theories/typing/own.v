@@ -199,7 +199,7 @@ Section typing.
 
   Lemma type_delete E L n ty p :
     n = ty.(ty_size) →
-    typed_instruction E L [TCtx_hasty p (own n ty)] (delete [ #n; p])%E (λ _, []).
+    typed_instruction E L [p ◁ own n ty] (delete [ #n; p])%E (λ _, []).
   Proof.
     iIntros (-> tid eq) "#HEAP #LFT $ $ $ Hp". rewrite tctx_interp_singleton.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
