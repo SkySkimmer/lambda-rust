@@ -123,11 +123,11 @@ Section sum.
         by iApply (Hty2 with "* [] []"). }
     clear -Hleq. iSplit; last iSplit.
     - simpl. by rewrite Hleq.
-    - iNext. iAlways. iIntros (tid vl) "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)".
+    - iAlways. iIntros (tid vl) "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)".
       iExists i, vl', vl''. iSplit; first done.
       iSplit; first by rewrite -Hleq.
       iDestruct ("Hty" $! i) as "(_ & #Htyi & _)". by iApply "Htyi".
-    - iIntros (κ tid l) "H". iDestruct "H" as (i) "(Hmt & Hshr)".
+    - iAlways. iIntros (κ tid l) "H". iDestruct "H" as (i) "(Hmt & Hshr)".
       iExists i. iSplitR "Hshr".
       + rewrite /is_pad -Hleq. iDestruct ("Hty" $! i) as "(Hlen & _)".
         iDestruct "Hlen" as %<-. done.
