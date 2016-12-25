@@ -42,13 +42,12 @@ Section sum.
   Definition list_max (l : list nat) := foldr max 0%nat l.
 
   Definition is_pad i tyl (vl : list val) : iProp Σ :=
-    ⌜((nth i tyl ∅).(ty_size) + length vl)%nat =
-                                         (list_max $ map ty_size $ tyl)⌝%I.
+    ⌜((nth i tyl ∅).(ty_size) + length vl)%nat = (list_max $ map ty_size tyl)⌝%I.
 
   Lemma split_sum_mt l tid q tyl :
     (l ↦∗{q}: λ vl,
          ∃ (i : nat) vl' vl'', ⌜vl = #i :: vl' ++ vl''⌝ ∗
-                               ⌜length vl = S (list_max $ map ty_size $ tyl)⌝ ∗
+                               ⌜length vl = S (list_max $ map ty_size tyl)⌝ ∗
                                ty_own (nth i tyl ∅) tid vl')%I
     ⊣⊢ ∃ (i : nat), (l ↦{q} #i ∗
                        shift_loc l (S $ (nth i tyl ∅).(ty_size)) ↦∗{q}: is_pad i tyl) ∗
@@ -75,10 +74,10 @@ Section sum.
   Qed.
 
   Program Definition sum (tyl : list type) :=
-    {| ty_size := S (list_max $ map ty_size $ tyl);
+    {| ty_size := S (list_max $ map ty_size tyl);
        ty_own tid vl :=
          (∃ (i : nat) vl' vl'', ⌜vl = #i :: vl' ++ vl''⌝ ∗
-                                ⌜length vl = S (list_max $ map ty_size $ tyl)⌝ ∗
+                                ⌜length vl = S (list_max $ map ty_size tyl)⌝ ∗
                                 (nth i tyl ∅).(ty_own) tid vl')%I;
        ty_shr κ tid l :=
          (∃ (i : nat),
@@ -122,9 +121,9 @@ Section sum.
         edestruct @Forall2_lookup_l as (ty2 & Hl2 & Hty2); [done..|].
         rewrite (nth_lookup_Some tyl2 _ _ ty2) //.
         by iApply (Hty2 with "* [] []"). }
-    clear -Hleq. iSplit; last (iSplit; iAlways).
-    - simpl. by rewrite Hleq. 
-    - iIntros (tid vl) "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)".
+    clear -Hleq. iSplit; last iSplit.
+    - simpl. by rewrite Hleq.
+    - iNext. iAlways. iIntros (tid vl) "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)".
       iExists i, vl', vl''. iSplit; first done.
       iSplit; first by rewrite -Hleq.
       iDestruct ("Hty" $! i) as "(_ & #Htyi & _)". by iApply "Htyi".

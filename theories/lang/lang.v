@@ -295,7 +295,7 @@ Inductive head_step : expr → state → expr → state → list expr → Prop :
               []
 | CaseS i el e σ :
     0 ≤ i →
-    nth_error el (Z.to_nat i) = Some e →
+    el !! (Z.to_nat i) = Some e →
     head_step (Case (Lit $ LitInt i) el) σ e σ []
 | ForkS e σ:
     head_step (Fork e) σ (Lit LitUnit) σ [e].

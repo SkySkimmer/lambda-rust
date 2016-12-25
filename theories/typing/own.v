@@ -16,6 +16,7 @@ Section own.
     | sz, n => †{mk_Qp (sz / n) _}l…sz
     end%I.
   Next Obligation. intros _ _ _ sz0 ? n ?. by apply Qcmult_pos_pos. Qed.
+  Arguments freeable_sz : simpl never.
   Global Instance freable_sz_timeless n sz l : TimelessP (freeable_sz n sz l).
   Proof. destruct sz, n; apply _. Qed.
 

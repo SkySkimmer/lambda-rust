@@ -178,7 +178,7 @@ Qed.
 
 Lemma wp_case E i e el Φ :
   0 ≤ i →
-  nth_error el (Z.to_nat i) = Some e →
+  el !! (Z.to_nat i) = Some e →
   ▷ WP e @ E {{ Φ }} -∗ WP Case (Lit $ LitInt i) el @ E {{ Φ }}.
 Proof.
   iIntros (??) "?". iApply ownP_lift_pure_det_head_step; eauto.
