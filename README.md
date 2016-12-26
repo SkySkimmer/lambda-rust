@@ -6,7 +6,7 @@ This is the Coq formalization of lambda-Rust.
 
 This version is known to compile with:
 
- - Coq 8.5pl3
+ - Coq 8.6
  - Ssreflect 1.6.1
  - A development version of [Iris](https://gitlab.mpi-sws.org/FP/iris-coq/)
 
