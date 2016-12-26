@@ -95,7 +95,7 @@ Section typing_rules.
 
   Lemma typed_newlft E L C T κs e :
     Closed [] e →
-    (∀ κ, typed_body E ((κ ⊐ κs) :: L) C T e) →
+    (∀ κ, typed_body E ((κ ⊑ κs) :: L) C T e) →
     typed_body E L C T (Newlft ;; e).
   Proof.
     iIntros (Hc He tid qE) "#HEAP #LFT Htl HE HL HC HT".
@@ -110,7 +110,7 @@ Section typing_rules.
      Right now, we could take two. *)
   Lemma typed_endlft E L C T1 T2 κ κs e :
     Closed [] e → UnblockTctx κ T1 T2 →
-    typed_body E L C T2 e → typed_body E ((κ ⊐ κs) :: L) C T1 (Endlft ;; e).
+    typed_body E L C T2 e → typed_body E ((κ ⊑ κs) :: L) C T1 (Endlft ;; e).
   Proof.
     iIntros (Hc Hub He tid qE) "#HEAP #LFT Htl HE". rewrite /llctx_interp big_sepL_cons.
     iIntros "[Hκ HL] HC HT". iDestruct "Hκ" as (Λ) "(% & Htok & #Hend)".

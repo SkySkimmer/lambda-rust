@@ -27,7 +27,7 @@ Definition llctx := list llctx_elt.
 Delimit Scope lrust_llctx_scope with LL.
 Bind Scope lrust_llctx_scope with llctx llctx_elt.
 
-Notation "κ ⊐ κl" := (@pair lft (list lft) κ κl) (at level 70) : lrust_llctx_scope.
+Notation "κ ⊑ κl" := (@pair lft (list lft) κ κl) (at level 70) : lrust_llctx_scope.
 
 Notation "a :: b" := (@cons llctx_elt a%LL b%LL)
   (at level 60, right associativity) : lrust_llctx_scope.
@@ -165,7 +165,7 @@ Section lft_contexts.
   Lemma lctx_lft_incl_static κ : lctx_lft_incl κ static.
   Proof. iIntros "_ _". iApply lft_incl_static. Qed.
 
-  Lemma lctx_lft_incl_local κ κ' κs : (κ ⊐ κs)%LL ∈ L → κ' ∈ κs → lctx_lft_incl κ κ'.
+  Lemma lctx_lft_incl_local κ κ' κs : (κ ⊑ κs)%LL ∈ L → κ' ∈ κs → lctx_lft_incl κ κ'.
   Proof.
     iIntros (? Hκ'κs) "_ H". iDestruct "H" as %HL.
     edestruct HL as [κ0 EQ]. done. simpl in EQ; subst.
@@ -193,7 +193,7 @@ Section lft_contexts.
   Qed.
 
   Lemma lctx_lft_alive_local κ κs:
-    (κ ⊐ κs)%LL ∈ L → Forall lctx_lft_alive κs → lctx_lft_alive κ.
+    (κ ⊑ κs)%LL ∈ L → Forall lctx_lft_alive κs → lctx_lft_alive κ.
   Proof.
     iIntros ([i HL]%elem_of_list_lookup_1 Hκs F qE qL ?) "HE HL".
     iDestruct "HL" as "[HL1 HL2]". rewrite {2}/llctx_interp /llctx_elt_interp.
