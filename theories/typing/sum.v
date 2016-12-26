@@ -1,10 +1,8 @@
 From iris.proofmode Require Import tactics.
+From iris.algebra Require Import list.
 From iris.base_logic Require Import fractional.
 From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.typing Require Export type.
-
-(* TODO : prove contractiveness.
-   Prerequisite : cofe structure on lists and vectors. *)
 
 Section sum.
   Context `{typeG Σ}.
@@ -106,6 +104,23 @@ Section sum.
     - iApply ((nth i tyl ∅).(ty_shr_mono) with "LFT Hord"); done.
   Qed.
 
+  Global Instance sum_ne n: Proper (dist n ==> dist n) sum.
+  Proof.
+    intros x y EQ.
+    assert (EQmax : list_max (map ty_size x) = list_max (map ty_size y)).
+    { induction EQ as [|???? EQ _ IH]=>//=.
+      rewrite IH. f_equiv. apply EQ. }
+    assert (EQnth :∀ i, nth i x ∅ ≡{n}≡ nth i y ∅).
+    { clear EQmax. induction EQ as [|???? EQ _ IH]=>-[|i] //=. }
+    split; [split|]; simpl.
+    - by rewrite EQmax.
+    - f_contractive=>tid vl. rewrite EQmax. by setoid_rewrite EQnth.
+    - intros κ tid l. unfold is_pad. rewrite EQmax.
+      assert (EQsz : ∀ i, (nth i x ∅).(ty_size) = (nth i y ∅).(ty_size))
+        by (intros; apply EQnth).
+      repeat (rewrite EQsz || f_equiv). apply EQnth.
+  Qed.
+
   Global Instance sum_mono E L :
     Proper (Forall2 (subtype E L) ==> subtype E L) sum.
   Proof.
@@ -117,7 +132,7 @@ Section sum.
     iAssert (∀ i, type_incl (nth i tyl1 ∅) (nth i tyl2 ∅))%I with "[#]" as "#Hty".
       { iIntros (i). edestruct (nth_lookup_or_length tyl1 i) as [Hl1|Hl]; last first.
         { rewrite nth_overflow // nth_overflow; first by iApply type_incl_refl.
-          by erewrite <-Forall2_length. } 
+          by erewrite <-Forall2_length. }
         edestruct @Forall2_lookup_l as (ty2 & Hl2 & Hty2); [done..|].
         rewrite (nth_lookup_Some tyl2 _ _ ty2) //.
         by iApply (Hty2 with "* [] []"). }

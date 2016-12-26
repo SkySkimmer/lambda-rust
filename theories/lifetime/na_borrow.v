@@ -13,12 +13,15 @@ Section na_bor.
   Context `{invG Σ, lftG Σ, na_invG Σ}
           (tid : na_inv_pool_name) (N : namespace) (P : iProp Σ).
 
-  Global Instance na_bor_persistent κ : PersistentP (&na{κ,tid,N} P) := _.
-  Global Instance na_bor_proper κ :
+  Global Instance na_bor_ne κ tid N n :
+    Proper (dist n ==> dist n) (na_bor κ tid N).
+  Proof. solve_proper. Qed.
+  Global Instance na_bor_contractive κ tid N : Contractive (na_bor κ tid N).
+  Proof. solve_contractive. Qed.
+  Global Instance na_bor_proper κ tid N :
     Proper ((⊣⊢) ==> (⊣⊢)) (na_bor κ tid N).
-  Proof.
-    intros P1 P2 EQ. apply uPred.exist_proper. intros i. by rewrite EQ.
-  Qed.
+  Proof. solve_proper. Qed.
+  Global Instance na_bor_persistent κ : PersistentP (&na{κ,tid,N} P) := _.
 
   Lemma bor_na κ E : ↑lftN ⊆ E → &{κ}P ={E}=∗ &na{κ,tid,N}P.
   Proof.

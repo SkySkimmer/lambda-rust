@@ -28,13 +28,11 @@ Section fixpoint.
       + intros κ tid E F l q ? ?.
         apply uPred.entails_equiv_and, equiv_dist=>n. etrans.
         { apply equiv_dist, uPred.entails_equiv_and, (copy_shr_acc κ tid E F)=>//.
-          by rewrite -conv_compl. }
-        do 2 f_equiv; first by rewrite conv_compl. do 8 (f_contractive || f_equiv).
-        * by rewrite -conv_compl.
-        * destruct n. done. by setoid_rewrite conv_compl.
-        * by rewrite -conv_compl.
-        * f_equiv. f_contractive. unfold dist_later. destruct n=>//.
-          by setoid_rewrite conv_compl.
+            by rewrite -conv_compl. }
+        symmetry.               (* FIXME : this is too slow *)
+        do 2 f_equiv; first by rewrite conv_compl. set (cn:=c n).
+        repeat (apply (conv_compl n c) || f_contractive || f_equiv);
+          by rewrite conv_compl.
   Qed.
 
   Global Instance fixpoint_send :

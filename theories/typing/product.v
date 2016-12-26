@@ -1,9 +1,7 @@
 From iris.proofmode Require Import tactics.
+From iris.algebra Require Import list.
 From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.typing Require Export type.
-
-(* TODO : prove contractiveness.
-   Prerequisite : cofe structure on lists and vectors. *)
 
 Section product.
   Context `{typeG Σ}.
@@ -74,8 +72,7 @@ Section product.
   Proof.
     intros ?? EQ1 ?? EQ2. split; [split|]; simpl.
     - by rewrite EQ1 EQ2.
-    - f_contractive. destruct n=>// tid vl.
-        by setoid_rewrite EQ1; setoid_rewrite EQ2.
+    - f_contractive=>tid vl. by setoid_rewrite EQ1; setoid_rewrite EQ2.
     - intros ???. by rewrite EQ1 EQ2.
   Qed.
 
@@ -150,12 +147,14 @@ Section product.
 
   Definition product := foldr product2 unit.
 
+  Global Instance product_ne n: Proper (dist n ==> dist n) product.
+  Proof. intros ??. induction 1=>//=. by f_equiv. Qed.
   Global Instance product_mono E L:
     Proper (Forall2 (subtype E L) ==> subtype E L) product.
-  Proof. intros ??. induction 1. done. by simpl; f_equiv. Qed.
+  Proof. intros ??. induction 1=>//=. by f_equiv. Qed.
   Global Instance product_proper E L:
     Proper (Forall2 (eqtype E L) ==> eqtype E L) product.
-  Proof. intros ??. induction 1. done. by simpl; f_equiv. Qed.
+  Proof. intros ??. induction 1=>//=. by f_equiv. Qed.
   Global Instance product_copy tys : LstCopy tys → Copy (product tys).
   Proof. induction 1; apply _. Qed.
   Global Instance product_send tys : LstSend tys → Send (product tys).

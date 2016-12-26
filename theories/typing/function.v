@@ -1,16 +1,14 @@
 From iris.base_logic Require Import big_op.
 From iris.proofmode Require Import tactics.
+From iris.algebra Require Import vector.
 From lrust.lifetime Require Import borrow.
 From lrust.typing Require Export type.
 From lrust.typing Require Import programs.
 
-(* TODO : prove contractiveness.
-   Prerequisite : cofe structure on lists and vectors. *)
-
 Section fn.
-  Context `{typeG Σ}.
+  Context `{typeG Σ} {A : Type} {n : nat}.
 
-  Program Definition fn {A n} (E : A → elctx)
+  Program Definition fn (E : A → elctx)
           (tys : A → vec type n) (ty : A → type) : type :=
     {| st_own tid vl := (∃ fb kb xb e H,
          ⌜vl = [@RecV fb (kb::xb) e H]⌝ ∗ ⌜length xb = n⌝ ∗
@@ -20,11 +18,47 @@ Section fn.
                        (zip_with (TCtx_hasty ∘ of_val) xl (tys x))
                        (subst_v (fb::kb::xb) (RecV fb (kb::xb) e:::k:::xl) e))%I |}.
   Next Obligation.
-    iIntros (A n E tys ty tid vl) "H". iDestruct "H" as (fb kb xb e ?) "[% _]". by subst.
+    iIntros (E tys ty tid vl) "H". iDestruct "H" as (fb kb xb e ?) "[% _]". by subst.
   Qed.
 
-  Global Instance fn_send {A n} E tys ty : Send (@fn A n E tys ty).
+  Global Instance fn_send E tys ty : Send (fn E tys ty).
   Proof. iIntros (tid1 tid2 vl). done. Qed.
+
+  Global Instance fn_contractive n' E :
+    Proper (pointwise_relation A (dist_later n') ==>
+            pointwise_relation A (dist_later n') ==> dist n') (fn E).
+  Proof.
+    intros ?? Htys ?? Hty. unfold fn. f_equiv. rewrite st_dist_unfold /=.
+    f_contractive=>tid vl. unfold typed_body.
+    do 13 f_equiv. f_contractive. do 17 f_equiv.
+    - rewrite !cctx_interp_singleton /=. do 5 f_equiv.
+      rewrite !tctx_interp_singleton /tctx_elt_interp. do 3 f_equiv. apply Hty.
+    - rewrite /tctx_interp !big_sepL_zip_with /=. do 3 f_equiv.
+      assert (Hprop : ∀ n tid p i, Proper (dist (S n) ==> dist n)
+        (λ (l : list _), ∀ ty, ⌜l !! i = Some ty⌝ → tctx_elt_interp tid (p ◁ ty))%I);
+        last by apply Hprop, Htys.
+      clear. intros n tid p i x y. rewrite list_dist_lookup=>Hxy.
+      specialize (Hxy i). destruct (x !! i) as [tyx|], (y !! i) as [tyy|];
+        inversion_clear Hxy; last done.
+      transitivity (tctx_elt_interp tid (p ◁ tyx));
+        last transitivity (tctx_elt_interp tid (p ◁ tyy)); last 2 first.
+      + unfold tctx_elt_interp. do 3 f_equiv. by apply ty_own_ne.
+      + apply equiv_dist. iSplit.
+        * iIntros "H * #EQ". by iDestruct "EQ" as %[=->].
+        * iIntros "H". by iApply "H".
+      + apply equiv_dist. iSplit.
+        * iIntros "H". by iApply "H".
+        * iIntros "H * #EQ". by iDestruct "EQ" as %[=->].
+  Qed.
+
+  Global Instance fn_ne n' E :
+    Proper (pointwise_relation A (dist n') ==>
+            pointwise_relation A (dist n') ==> dist n') (fn E).
+  Proof.
+    intros ?? H1 ?? H2.
+    apply fn_contractive=>u; destruct n'; try done; apply dist_S.
+    by apply (H1 u). by apply (H2 u).
+  Qed.
 End fn.
 
 Section typing.

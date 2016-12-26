@@ -11,8 +11,11 @@ Notation "&shr{ κ } P" := (shr_bor κ P)
 Section shared_bors.
   Context `{invG Σ, lftG Σ} (P : iProp Σ).
 
-  Global Instance shr_bor_proper :
-    Proper ((⊣⊢) ==> (⊣⊢)) (shr_bor κ).
+  Global Instance shr_bor_ne κ n : Proper (dist n ==> dist n) (shr_bor κ).
+  Proof. solve_proper. Qed.
+  Global Instance shr_bor_contractive κ : Contractive (shr_bor κ).
+  Proof. solve_contractive. Qed.
+  Global Instance shr_bor_proper : Proper ((⊣⊢) ==> (⊣⊢)) (shr_bor κ).
   Proof. solve_proper. Qed.
   Global Instance shr_bor_persistent : PersistentP (&shr{κ} P) := _.
 

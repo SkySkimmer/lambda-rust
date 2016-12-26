@@ -42,6 +42,30 @@ Section cont_context.
     Proper ((≡ₚ) ==> (⊣⊢)) (cctx_interp tid).
   Proof. solve_proper. Qed.
 
+  Lemma cctx_interp_cons tid x T :
+    cctx_interp tid (x :: T) ≡ (cctx_elt_interp tid x ∧ cctx_interp tid T)%I.
+  Proof.
+    iSplit.
+    - iIntros "H". iSplit; [|iIntros (??)]; iApply "H"; rewrite elem_of_cons; auto.
+    - iIntros "H". iIntros (? Hin). revert Hin. rewrite elem_of_cons=>-[->|?].
+      + by iDestruct "H" as "[H _]".
+      + iDestruct "H" as "[_ H]". by iApply "H".
+  Qed.
+
+  Lemma cctx_interp_nil tid : cctx_interp tid [] ≡ True%I.
+  Proof. iSplit; first by auto. iIntros "_". iIntros (? Hin). inversion Hin. Qed.
+
+  Lemma cctx_interp_app tid T1 T2 :
+    cctx_interp tid (T1 ++ T2) ≡ (cctx_interp tid T1 ∧ cctx_interp tid T2)%I.
+  Proof.
+    induction T1 as [|?? IH]; first by rewrite /= cctx_interp_nil left_id.
+    by rewrite /= !cctx_interp_cons IH assoc.
+  Qed.
+
+  Lemma cctx_interp_singleton tid x :
+    cctx_interp tid [x] ≡ cctx_elt_interp tid x.
+  Proof. rewrite cctx_interp_cons cctx_interp_nil right_id //. Qed.
+
   Lemma fupd_cctx_interp tid C :
     (|={⊤}=> cctx_interp tid C) -∗ cctx_interp tid C.
   Proof.

@@ -16,10 +16,16 @@ Section frac_bor.
   Context `{invG Σ, lftG Σ, frac_borG Σ}.
   Implicit Types E : coPset.
 
-  Global Instance frac_bor_proper :
+  Global Instance frac_bor_contractive κ n :
+    Proper (pointwise_relation _ (dist_later n) ==> dist n) (frac_bor κ).
+  Proof. solve_contractive. Qed.
+  Global Instance frac_bor_ne κ n :
+    Proper (pointwise_relation _ (dist n) ==> dist n) (frac_bor κ).
+  Proof. solve_proper. Qed.
+  Global Instance frac_bor_proper κ :
     Proper (pointwise_relation _ (⊣⊢) ==> (⊣⊢)) (frac_bor κ).
   Proof. solve_proper. Qed.
-  Global Instance frac_bor_persistent : PersistentP (&frac{κ}Φ) := _.
+  Global Instance frac_bor_persistent κ : PersistentP (&frac{κ}Φ) := _.
 
   Lemma bor_fracture φ E κ :
     ↑lftN ⊆ E → lft_ctx -∗ &{κ}(φ 1%Qp) ={E}=∗ &frac{κ}φ.

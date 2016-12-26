@@ -230,9 +230,9 @@ Section ofe.
     Canonical Structure typeC : ofeT := OfeT type type_ofe_mixin.
 
     Instance st_equiv : Equiv simple_type := λ st1 st2,
-      @Next (_ -c> _ -c> _) st1.(st_own) ≡ Next st2.(st_own).
+      @Next (_ -c> _ -c> _) st1.(st_own) ≡ @Next (_ -c> _ -c> _) st2.(st_own).
     Instance st_dist : Dist simple_type := λ n st1 st2,
-      @Next (_ -c> _ -c> _) st1.(st_own) ≡{n}≡ Next st2.(st_own).
+      @Next (_ -c> _ -c> _) st1.(st_own) ≡{n}≡ @Next (_ -c> _ -c> _) st2.(st_own).
 
     Definition st_ofe_mixin : OfeMixin simple_type.
     Proof.
@@ -246,6 +246,11 @@ Section ofe.
 
     Canonical Structure simple_typeC : ofeT := OfeT simple_type st_ofe_mixin.
   End def.
+
+  Lemma st_dist_unfold n (x y : simple_type) :
+    x ≡{n}≡ y ↔
+      @Next (_ -c> _ -c> _) x.(st_own) ≡{n}≡ @Next (_ -c> _ -c> _) y.(st_own).
+  Proof. done. Qed.
 
   Global Instance ty_size_proper_d n:
     Proper (dist n ==> eq) ty_size.
@@ -309,30 +314,7 @@ Section ofe.
   Qed.
   Next Obligation.
     intros n c. split; [split|]; simpl; try by rewrite conv_compl.
-    f_contractive. destruct n; first done. rewrite /= conv_compl //.
-  Qed.
-
-  Global Program Instance simple_type_cofe : Cofe simple_typeC :=
-    {| compl c :=
-         let 'Next st_own := compl
-                {| chain_car := Next ∘ (st_own : _ -> _ -c> _ -c> _) ∘ c |} in
-         {| st_own := st_own |}
-    |}.
-  Next Obligation. intros [c Hc]. apply Hc. Qed.
-  Next Obligation.
-    simpl. intros c own [=->] tid vl.
-    apply uPred.entails_equiv_and, equiv_dist=>n.
-    rewrite (λ c, conv_compl (A:=_ -c> _ -c> _) n c tid vl) /=.
-    apply equiv_dist, uPred.entails_equiv_and, st_size_eq.
-  Qed.
-  Next Obligation.
-    simpl. intros c own [=->] tid vl.
-    apply uPred.equiv_entails, equiv_dist=>n.
-    by rewrite (λ c, conv_compl (A:=_ -c> _ -c> _) n c tid vl) /=
-               uPred.always_always.
-  Qed.
-  Next Obligation.
-    intros n c. apply Next_contractive. destruct n=>//=. rewrite conv_compl //.
+    set (c n). f_contractive. rewrite conv_compl //.
   Qed.
 
   Global Instance ty_of_st_ne n : Proper (dist n ==> dist n) ty_of_st.

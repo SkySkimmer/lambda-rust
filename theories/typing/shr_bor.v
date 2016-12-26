@@ -32,9 +32,8 @@ Section shr_bor.
 
   Global Instance shr_contractive κ : Contractive (shr_bor κ).
   Proof.
-    intros n ?? EQ. apply ty_of_st_ne. apply Next_contractive.
-    destruct n=>// tid vl /=. apply uPred.exist_ne.
-    repeat (apply EQ || f_contractive || f_equiv).
+    intros n ?? EQ. unfold shr_bor. f_equiv. rewrite st_dist_unfold.
+    f_contractive=> /= tid vl. repeat f_equiv. apply EQ.
   Qed.
   Global Instance shr_ne κ n : Proper (dist n ==> dist n) (shr_bor κ).
   Proof. apply contractive_ne, _. Qed.
@@ -85,5 +84,4 @@ Section typing.
     { iExists _. iFrame "∗#". }
     iMod ("Hclose" with "Hκ") as "[$ $]". iExists _. auto.
   Qed.
-
 End typing.
