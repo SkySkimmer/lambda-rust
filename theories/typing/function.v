@@ -56,8 +56,8 @@ Section fn.
             pointwise_relation A (dist n') ==> dist n') (fn E).
   Proof.
     intros ?? H1 ?? H2.
-    apply fn_contractive=>u; destruct n'; try done; apply dist_S.
-    by apply (H1 u). by apply (H2 u).
+    apply fn_contractive=>u; (destruct n'; [done|apply dist_S]);
+      [apply (H1 u)|apply (H2 u)].
   Qed.
 End fn.
 
