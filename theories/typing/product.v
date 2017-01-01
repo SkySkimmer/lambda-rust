@@ -91,9 +91,17 @@ Section product.
       + by iApply "Hs1".
       + rewrite -(_ : ty_size ty11 = ty_size ty12) //. by iApply "Hs2".
   Qed.
+  Lemma product2_mono' E L ty11 ty12 ty21 ty22 :
+    subtype E L ty11 ty12 → subtype E L ty21 ty22 →
+    subtype E L (product2 ty11 ty21) (product2 ty12 ty22).
+  Proof. by intros; apply product2_mono. Qed.
   Global Instance product2_proper E L:
     Proper (eqtype E L ==> eqtype E L ==> eqtype E L) product2.
   Proof. by intros ??[]??[]; split; apply product2_mono. Qed.
+  Lemma product2_proper' E L ty11 ty12 ty21 ty22 :
+    eqtype E L ty11 ty12 → eqtype E L ty21 ty22 →
+    eqtype E L (product2 ty11 ty21) (product2 ty12 ty22).
+  Proof. by intros; apply product2_proper. Qed.
 
   Global Instance product2_copy `{!Copy ty1} `{!Copy ty2} :
     Copy (product2 ty1 ty2).
@@ -152,9 +160,15 @@ Section product.
   Global Instance product_mono E L:
     Proper (Forall2 (subtype E L) ==> subtype E L) product.
   Proof. intros ??. induction 1=>//=. by f_equiv. Qed.
+  Lemma product_mono' E L tyl1 tyl2 :
+    Forall2 (subtype E L) tyl1 tyl2 → subtype E L (product tyl1) (product tyl2).
+  Proof. apply product_mono. Qed.
   Global Instance product_proper E L:
     Proper (Forall2 (eqtype E L) ==> eqtype E L) product.
   Proof. intros ??. induction 1=>//=. by f_equiv. Qed.
+  Lemma product_proper' E L tyl1 tyl2 :
+    Forall2 (eqtype E L) tyl1 tyl2 → eqtype E L (product tyl1) (product tyl2).
+  Proof. apply product_proper. Qed.
   Global Instance product_copy tys : LstCopy tys → Copy (product tys).
   Proof. induction 1; apply _. Qed.
   Global Instance product_send tys : LstSend tys → Send (product tys).
@@ -229,3 +243,8 @@ Section typing.
     eqtype E L (Π[Π tyl1; Π tyl2]) (Π(tyl1 ++ tyl2)).
   Proof. by rewrite -prod_flatten_r -prod_flatten_l. Qed.
 End typing.
+
+
+Hint Resolve product_mono' product_proper' : lrust_type_scope.
+Hint Constructors Forall2 : lrust_type_scope.
+Hint Resolve product2_mono' product2_proper' | 100 : lrust_type_scope.

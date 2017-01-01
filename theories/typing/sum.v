@@ -148,13 +148,18 @@ Section sum.
         iDestruct "Hlen" as %<-. done.
       + iDestruct ("Hty" $! i) as "(_ & _ & #Htyi)". by iApply "Htyi".
   Qed.
-
+  Lemma sum_mono' E L tyl1 tyl2 :
+    Forall2 (subtype E L) tyl1 tyl2 → subtype E L (sum tyl1) (sum tyl2).
+  Proof. apply sum_mono. Qed.
   Global Instance sum_proper E L :
     Proper (Forall2 (eqtype E L) ==> eqtype E L) sum.
   Proof.
     intros tyl1 tyl2 Heq; split; eapply sum_mono; [|rewrite -Forall2_flip];
       (eapply Forall2_impl; [done|by intros ?? []]).
   Qed.
+  Lemma sum_proper' E L tyl1 tyl2 :
+    Forall2 (eqtype E L) tyl1 tyl2 → eqtype E L (sum tyl1) (sum tyl2).
+  Proof. apply sum_proper. Qed.
 
   Lemma nth_empty {A : Type} i (d : A) :
     nth i [] d = d.
@@ -234,3 +239,6 @@ End sum.
    as Π for products. We stick to the following form. *)
 Notation "Σ[ ty1 ; .. ; tyn ]" :=
   (sum (cons ty1 (..(cons tyn nil)..))) : lrust_type_scope.
+
+Hint Resolve sum_mono' sum_proper' : lrust_type_scope.
+Hint Constructors Forall2 : lrust_type_scope.

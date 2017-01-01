@@ -332,7 +332,7 @@ Section subtyping.
      (□ ∀ κ tid l, ty1.(ty_shr) κ tid l -∗ ty2.(ty_shr) κ tid l))%I.
 
   Global Instance type_incl_persistent ty1 ty2 : PersistentP (type_incl ty1 ty2) := _.
-(*  Typeclasses Opaque type_incl. *)
+  (*  Typeclasses Opaque type_incl. *)
 
   Lemma type_incl_refl ty : type_incl ty ty.
   Proof. iSplit; first done. iSplit; iAlways; iIntros; done. Qed.
@@ -354,28 +354,64 @@ Section subtyping.
     lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
             type_incl ty1 ty2.
 
+  Lemma subtype_refl ty : subtype ty ty.
+  Proof. iIntros. iApply type_incl_refl. Qed.
+
+  Lemma equiv_subtype ty1 ty2 : ty1 ≡ ty2 → subtype ty1 ty2.
+  Proof. unfold subtype, type_incl=>EQ. setoid_rewrite EQ. apply subtype_refl. Qed.
+
   Global Instance subtype_preorder : PreOrder subtype.
   Proof.
-    split.
-    - intros ty. iIntros. iApply type_incl_refl.
-    - intros ty1 ty2 ty3 H12 H23. iIntros.
-      iApply (type_incl_trans with "[] []").
-      + iApply (H12 with "[] []"); done.
-      + iApply (H23 with "[] []"); done.
+    split; first by intros ?; apply subtype_refl.
+    intros ty1 ty2 ty3 H12 H23. iIntros.
+    iApply (type_incl_trans with "[] []").
+    - iApply (H12 with "[] []"); done.
+    - iApply (H23 with "[] []"); done.
   Qed.
 
   (* TODO: The prelude should have a symmetric closure. *)
   Definition eqtype (ty1 ty2 : type) : Prop :=
     subtype ty1 ty2 ∧ subtype ty2 ty1.
 
+  Lemma eqtype_unfold ty1 ty2 :
+    eqtype ty1 ty2 ↔
+    (lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
+      (⌜ty1.(ty_size) = ty2.(ty_size)⌝ ∗
+      (□ ∀ tid vl, ty1.(ty_own) tid vl ↔ ty2.(ty_own) tid vl) ∗
+      (□ ∀ κ tid l, ty1.(ty_shr) κ tid l ↔ ty2.(ty_shr) κ tid l))%I).
+  Proof.
+    split.
+    - iIntros ([EQ1 EQ2]) "#LFT #HE #HL".
+      iDestruct (EQ1 with "LFT HE HL") as "[#Hsz [#H1own #H1shr]]".
+      iDestruct (EQ2 with "LFT HE HL") as "[_ [#H2own #H2shr]]".
+      iSplit; last iSplit.
+      + done.
+      + by iIntros "!#*"; iSplit; iIntros "H"; [iApply "H1own"|iApply "H2own"].
+      + by iIntros "!#*"; iSplit; iIntros "H"; [iApply "H1shr"|iApply "H2shr"].
+    - intros EQ. split; iIntros "#LFT #HE #HL"; (iSplit; last iSplit);
+      iDestruct (EQ with "LFT HE HL") as "[% [#Hown #Hshr]]".
+      + done.
+      + iIntros "!#* H". by iApply "Hown".
+      + iIntros "!#* H". by iApply "Hshr".
+      + done.
+      + iIntros "!#* H". by iApply "Hown".
+      + iIntros "!#* H". by iApply "Hshr".
+  Qed.
+
+  Lemma eqtype_refl ty : eqtype ty ty.
+  Proof. by split. Qed.
+
+  Lemma equiv_eqtype ty1 ty2 : ty1 ≡ ty2 → eqtype ty1 ty2.
+  Proof. by split; apply equiv_subtype. Qed.
+
   Global Instance subtype_proper :
     Proper (eqtype ==> eqtype ==> iff) subtype.
   Proof. intros ??[] ??[]. split; intros; by etrans; [|etrans]. Qed.
 
-  Global Instance subtype_equivalence : Equivalence eqtype.
+  Global Instance eqtype_equivalence : Equivalence eqtype.
   Proof.
     split.
-    - split; done.
+    - by split.
     - intros ?? Heq; split; apply Heq.
     - intros ??? H1 H2. split; etrans; (apply H1 || apply H2).
   Qed.
@@ -392,3 +428,7 @@ Section subtyping.
       by iApply (Hst with "* [] [] []").
   Qed.
 End subtyping.
+
+Hint Resolve subtype_refl eqtype_refl : lrust_typing.
+
+Ltac solve_typing := by eauto 100 with lrust_typing.

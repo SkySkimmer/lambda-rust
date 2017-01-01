@@ -27,12 +27,21 @@ Section uninit.
   Lemma uninit_sz n : ty_size (uninit n) = n.
   Proof. induction n. done. simpl. by f_equal. Qed.
 
-  Lemma uninit_product E L ns :
+  Lemma uninit_product_eqtype E L ns :
     eqtype E L (uninit (foldr plus 0%nat ns)) (Π(uninit <$> ns)).
   Proof.
     induction ns as [|n ns IH]. done. revert IH.
     by rewrite /= /uninit replicate_plus prod_flatten_l -!prod_app=>->.
   Qed.
+  Lemma uninit_product_eqtype' E L ns :
+    eqtype E L (Π(uninit <$> ns)) (uninit (foldr plus 0%nat ns)).
+  Proof. symmetry; apply uninit_product_eqtype. Qed.
+  Lemma uninit_product_subtype E L ns :
+    subtype E L (uninit (foldr plus 0%nat ns)) (Π(uninit <$> ns)).
+  Proof. apply uninit_product_eqtype'. Qed.
+  Lemma uninit_product_subtype' E L ns :
+    subtype E L (Π(uninit <$> ns)) (uninit (foldr plus 0%nat ns)).
+  Proof. apply uninit_product_eqtype. Qed.
 
   Lemma uninit_own n tid vl :
     (uninit n).(ty_own) tid vl ⊣⊢ ⌜length vl = n⌝.
@@ -46,3 +55,6 @@ Section uninit.
         iApply "IH". by inversion Heq.
   Qed.
 End uninit.
+
+Hint Resolve uninit_product_eqtype uninit_product_eqtype'
+     uninit_product_subtype uninit_product_subtype' : lrust_typing.

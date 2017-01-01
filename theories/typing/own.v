@@ -112,10 +112,15 @@ Section own.
       iMod ("Hvs" with "* [%] Htok") as "Hvs'". done. iModIntro. iNext.
       iMod "Hvs'" as "[Hshr $]". iApply ("Hs" with "Hshr").
   Qed.
-
+  Lemma own_mono' E L n ty1 ty2 :
+    subtype E L ty1 ty2 → subtype E L (own n ty1) (own n ty2).
+  Proof. apply own_mono. Qed.
   Global Instance own_proper E L n :
     Proper (eqtype E L ==> eqtype E L) (own n).
   Proof. intros ?? Heq. split; f_equiv; apply Heq. Qed.
+  Lemma own_proper' E L n ty1 ty2 :
+    eqtype E L ty1 ty2 → eqtype E L (own n ty1) (own n ty2).
+  Proof. apply own_proper. Qed.
 
   Global Instance own_contractive n : Contractive (own n).
   Proof.
@@ -124,7 +129,6 @@ Section own.
     - destruct m=>// tid vl /=. repeat (apply EQ || f_contractive || f_equiv).
     - intros κ tid l. repeat (apply EQ || f_contractive || f_equiv).
   Qed.
-
   Global Instance own_ne n m : Proper (dist m ==> dist m) (own n).
   Proof. apply contractive_ne, _. Qed.
 
@@ -211,3 +215,5 @@ Section typing.
     rewrite freeable_sz_full. by iFrame.
   Qed.
 End typing.
+
+Hint Resolve own_mono' own_proper' : lrust_typing.

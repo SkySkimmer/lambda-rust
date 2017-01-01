@@ -13,7 +13,7 @@ Section shr_bor.
     iIntros (κ ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
   Qed.
 
-  Global Instance subtype_shr_bor_mono E L :
+  Global Instance shr_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> subtype E L ==> subtype E L) shr_bor.
   Proof.
     intros κ1 κ2 Hκ ty1 ty2 Hty. apply subtype_simple_type.
@@ -23,12 +23,12 @@ Section shr_bor.
     iDestruct (Hty with "* [] [] []") as "(_ & _ & #Hs1)"; [done..|clear Hty].
     by iApply "Hs1".
   Qed.
-  Global Instance subtype_shr_bor_mono' E L :
+  Global Instance shr_mono_flip E L :
     Proper (lctx_lft_incl E L ==> flip (subtype E L) ==> flip (subtype E L)) shr_bor.
-  Proof. intros ??????. by apply subtype_shr_bor_mono. Qed.
-  Global Instance subtype_shr_bor_proper E L κ :
+  Proof. intros ??????. by apply shr_mono. Qed.
+  Global Instance shr_proper E L κ :
     Proper (eqtype E L ==> eqtype E L) (shr_bor κ).
-  Proof. intros ??[]. by split; apply subtype_shr_bor_mono. Qed.
+  Proof. intros ??[]. by split; apply shr_mono. Qed.
 
   Global Instance shr_contractive κ : Contractive (shr_bor κ).
   Proof.
@@ -51,6 +51,14 @@ Notation "&shr{ κ } ty" := (shr_bor κ ty)
 
 Section typing.
   Context `{typeG Σ}.
+
+  Lemma shr_mono' E L κ1 κ2 ty1 ty2 :
+    lctx_lft_incl E L κ2 κ1 → subtype E L ty1 ty2 →
+    subtype E L (&shr{κ1} ty1) (&shr{κ2} ty2).
+  Proof. by intros; apply shr_mono. Qed.
+  Lemma shr_proper' E L κ ty1 ty2 :
+    eqtype E L ty1 ty2 → eqtype E L (&shr{κ} ty1) (&shr{κ} ty2).
+  Proof. by intros; apply shr_proper. Qed.
 
   Lemma tctx_reborrow_shr E L p ty κ κ' :
     lctx_lft_incl E L κ' κ →
@@ -85,3 +93,5 @@ Section typing.
     iMod ("Hclose" with "Hκ") as "[$ $]". iExists _. auto.
   Qed.
 End typing.
+
+Hint Resolve shr_mono' shr_proper' : lrust_typing.

@@ -64,30 +64,33 @@ End fn.
 Section typing.
   Context `{typeG Σ}.
 
-  Lemma fn_subtype_ty {A n} E0 L0 E (tys1 : A → vec type n) tys2 ty1 ty2 :
-    (∀ x, Forall2 (subtype (E0 ++ E x) L0) (tys2 x : vec _ n) (tys1 x)) →
-    (∀ x, subtype (E0 ++ E x) L0 (ty1 x) (ty2 x)) →
-    subtype E0 L0 (fn E tys1 ty1) (fn E tys2 ty2).
+  Lemma fn_subtype_full {A n} E0 L0 E E' (tys tys' : A → vec type n) ty ty' :
+    (∀ x, elctx_incl E0 L0 (E x) (E' x)) →
+    (∀ x, Forall2 (subtype (E0 ++ E x) L0) (tys' x) (tys x)) →
+    (∀ x, subtype (E0 ++ E x) L0 (ty x) (ty' x)) →
+    subtype E0 L0 (fn E' tys ty) (fn E tys' ty').
   Proof.
-    intros Htys Hty. apply subtype_simple_type=>//= _ vl.
+    intros HE Htys Hty. apply subtype_simple_type=>//= _ vl.
     iIntros "#LFT #HE0 #HL0 Hf". iDestruct "Hf" as (fb kb xb e ?) "[% [% #Hf]]". subst.
     iExists fb, kb, xb, e, _. iSplit. done. iSplit. done. iAlways. iNext.
     rewrite /typed_body. iIntros "* #HEAP _ Htl HE HL HC HT".
-    iDestruct (elctx_interp_persist with "HE") as "#HE'".
-    iApply ("Hf" with "* HEAP LFT Htl HE HL [HC] [HT]").
-    - iIntros "HE". unfold cctx_interp. iIntros (elt) "Helt".
+    iDestruct (elctx_interp_persist with "HE") as "#HEp".
+    iMod (HE with "HE0 HL0 * HE") as (qE') "[HE' Hclose]". done.
+    iApply ("Hf" with "* HEAP LFT Htl HE' HL [HC Hclose] [HT]").
+    - iIntros "HE'". unfold cctx_interp. iIntros (elt) "Helt".
       iDestruct "Helt" as %->%elem_of_list_singleton. iIntros (ret) "Htl HL HT".
+      iMod ("Hclose" with "HE'") as "HE".
       iSpecialize ("HC" with "HE"). unfold cctx_elt_interp.
       iApply ("HC" $! (_ ◁cont(_, _)%CC) with "[%] * Htl HL >").
-      {  by apply elem_of_list_singleton. }
+      { by apply elem_of_list_singleton. }
       rewrite /tctx_interp !big_sepL_singleton /=.
       iDestruct "HT" as (v) "[HP Hown]". iExists v. iFrame "HP".
-      iDestruct (Hty x with "LFT [HE0 HE'] HL0") as "(_ & #Hty & _)".
+      iDestruct (Hty x with "LFT [HE0 HEp] HL0") as "(_ & #Hty & _)".
       { rewrite /elctx_interp_0 big_sepL_app. by iSplit. }
       by iApply "Hty".
     - rewrite /tctx_interp
-         -(fst_zip (tys1 x) (tys2 x)) ?vec_to_list_length //
-         -{1}(snd_zip (tys1 x) (tys2 x)) ?vec_to_list_length //
+         -(fst_zip (tys x) (tys' x)) ?vec_to_list_length //
+         -{1}(snd_zip (tys x) (tys' x)) ?vec_to_list_length //
          !zip_with_fmap_r !(zip_with_zip (λ _ _, (_ ∘ _) _ _)) !big_sepL_fmap.
       iApply big_sepL_impl. iSplit; last done. iIntros "{HT}!#".
       iIntros (i [p [ty1' ty2']]) "#Hzip H /=".
@@ -101,6 +104,31 @@ Section typing.
       + by iApply "Ho".
   Qed.
 
+  Lemma fn_subtype_ty {A n} E0 L0 E (tys1 tys2 : A → vec type n) ty1 ty2 :
+    (∀ x, Forall2 (subtype (E0 ++ E x) L0) (tys2 x) (tys1 x)) →
+    (∀ x, subtype (E0 ++ E x) L0 (ty1 x) (ty2 x)) →
+    subtype E0 L0 (fn E tys1 ty1) (fn E tys2 ty2).
+  Proof.
+    intros. apply fn_subtype_full; try done. intros. apply elctx_incl_refl.
+  Qed.
+
+  Lemma fn_subtype_elctx_sat {A n} E0 L0 E E' (tys : A → vec type n) ty :
+    (∀ x, elctx_sat (E x) [] (E' x)) →
+    subtype E0 L0 (fn E' tys ty) (fn E tys ty).
+  Proof.
+    intros. apply fn_subtype_full; try done. by intros; apply elctx_sat_incl.
+  Qed.
+
+  Lemma fn_subtype_lft_incl {A n} E0 L0 E κ κ' (tys : A → vec type n) ty :
+    lctx_lft_incl E0 L0 κ κ' →
+    subtype E0 L0 (fn (λ x, (κ ⊑ κ') :: E x)%EL tys ty) (fn E tys ty).
+  Proof.
+    intros Hκκ'. apply fn_subtype_full; try done. intros.
+    apply elctx_incl_lft_incl; last by apply elctx_incl_refl.
+    iIntros "#HE #HL". iApply (Hκκ' with "[HE] HL").
+    rewrite /elctx_interp_0 big_sepL_app. iDestruct "HE" as "[_ $]".
+  Qed.
+
   Lemma fn_subtype_specialize {A B n} (σ : A → B) E0 L0 E tys ty :
     subtype E0 L0 (fn (n:=n) E tys ty) (fn (E ∘ σ) (tys ∘ σ) (ty ∘ σ)).
   Proof.
@@ -108,33 +136,6 @@ Section typing.
     iIntros "#LFT _ _ Hf". iDestruct "Hf" as (fb kb xb e ?) "[% [% #Hf]]". subst.
     iExists fb, kb, xb, e, _. iSplit. done. iSplit. done.
     rewrite /typed_body. iAlways. iNext. iIntros "*". iApply "Hf".
-  Qed.
-
-  Lemma fn_subtype_elctx_sat {A n} E0 L0 E E' (tys : A → vec type n) ty :
-    (∀ x, elctx_sat (E x) [] (E' x)) →
-    subtype E0 L0 (fn E' tys ty) (fn E tys ty).
-  Proof.
-    intros HEE'. apply subtype_simple_type=>//= _ vl.
-    iIntros "#LFT _ _ Hf". iDestruct "Hf" as (fb kb xb e ?) "[% [% #Hf]]". subst.
-    iExists fb, kb, xb, e, _. iSplit. done. iSplit. done. rewrite /typed_body.
-    iAlways. iNext. iIntros "* #HEAP _ Htl HE #HL HC HT".
-    iMod (HEE' x with "[%] HE HL") as (qE') "[HE Hclose]". done.
-    iApply ("Hf" with "* HEAP LFT Htl HE HL [Hclose HC] HT"). iIntros "HE".
-    iApply fupd_cctx_interp. iApply ("HC" with ">").
-    by iMod ("Hclose" with "HE") as "[$ _]".
-  Qed.
-
-  Lemma fn_subtype_lft_incl {A n} E0 L0 E κ κ' (tys : A → vec type n) ty :
-    lctx_lft_incl E0 L0 κ κ' →
-    subtype E0 L0 (fn (λ x, (κ ⊑ κ') :: E x)%EL tys ty) (fn E tys ty).
-  Proof.
-    intros Hκκ'. apply subtype_simple_type=>//= _ vl.
-    iIntros "#LFT #HE0 #HL0 Hf". iDestruct "Hf" as (fb kb xb e ?) "[% [% #Hf]]". subst.
-    iExists fb, kb, xb, e, _. iSplit. done. iSplit. done. rewrite /typed_body.
-    iAlways. iNext. iIntros "* #HEAP _ Htl HE #HL HC HT".
-    iApply ("Hf" with "* HEAP LFT Htl [HE] HL [HC] HT").
-    { rewrite /elctx_interp big_sepL_cons. iFrame. iApply (Hκκ' with "HE0 HL0"). }
-    rewrite /elctx_interp big_sepL_cons. iIntros "[_ HE]". by iApply "HC".
   Qed.
 
   (* TODO: Define some syntactic sugar for calling and letrec like we do on paper. *)
@@ -166,7 +167,7 @@ Section typing.
       { rewrite -fmap_cons Forall_fmap Forall_forall=>? _. rewrite /= to_of_val. eauto. }
       { rewrite -fmap_cons -(subst_v_eq (fb::kb::xb) (_:::k:::vl)) //. }
       iNext. iSpecialize ("Hf" $! x k vl).
-      iMod (HEsat with "[%] HE HL") as (q') "[HE' Hclose]"; first done.
+      iMod (HEsat with "HE HL") as (q') "[HE' Hclose]"; first done.
       iApply ("Hf" with "HEAP LFT Htl HE' [] [HC Hclose HT']").
       + by rewrite /llctx_interp big_sepL_nil.
       + iIntros "HE'". iApply fupd_cctx_interp. iMod ("Hclose" with "HE'") as "[HE HL]".
@@ -202,3 +203,6 @@ Section typing.
     by iApply sendc_change_tid.
   Qed.
 End typing.
+
+Hint Resolve fn_subtype_full : lrust_typing.
+Hint Constructors Forall2 : lrust_typing.
