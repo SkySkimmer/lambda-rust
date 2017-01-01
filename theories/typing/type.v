@@ -88,7 +88,7 @@ Section type.
     (n ≤ m)%nat → shr_locsE l n ⊆ shr_locsE l m.
   Proof.
     induction 1; first done.
-    rewrite ->IHle. rewrite -Nat.add_1_l [(_ + _)%nat]comm.  (* FIXME last rewrite is very slow. *)
+    rewrite ->IHle. rewrite -Nat.add_1_l [(_ + _)%nat]comm_L.
     rewrite shr_locsE_shift. set_solver+.
   Qed.
 
