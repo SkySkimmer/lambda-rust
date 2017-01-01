@@ -34,7 +34,6 @@ Section typing.
     iIntros (args) "Htl HL HT". iApply wp_rec; try done.
     { rewrite Forall_fmap Forall_forall=>? _. rewrite /= to_of_val. eauto. }
     { by rewrite -(subst_v_eq (_ :: _) (RecV _ _ _ ::: _)). }
-    (* FIXME: iNext here unfolds things in the context. *)
     iNext. iApply (Hecont with "* HEAP LFT Htl HE HL [HC] HT").
     by iApply "IH".
   Qed.
