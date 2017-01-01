@@ -54,8 +54,7 @@ Section sum.
     iSplit; iIntros "H".
     - iDestruct "H" as (vl) "[Hmt Hown]". iDestruct "Hown" as (i vl' vl'') "(% & % & Hown)".
       subst. iExists i. iDestruct (heap_mapsto_vec_cons with "Hmt") as "[$ Hmt]".
-      (* TODO: I should not have to say '[#]' here, similar to iDestruct ... as %.... *)
-      iAssert (⌜length vl' = (nth i tyl ∅).(ty_size)⌝%I) with "[#]" as %Hvl'.
+      iAssert (⌜length vl' = (nth i tyl ∅).(ty_size)⌝%I) as %Hvl'.
       { iApply ty_size_eq. done. }
       iDestruct (heap_mapsto_vec_app with "Hmt") as "[Hmt Htail]". iSplitL "Htail".
       + iExists vl''. rewrite (shift_loc_assoc_nat _ 1) Hvl'. iFrame. iPureIntro.
@@ -63,8 +62,7 @@ Section sum.
       + iExists vl'. by iFrame.
     - iDestruct "H" as (i) "[[Hmt1 Htail] Hown]".
       iDestruct "Hown" as (vl') "[Hmt2 Hown]". iDestruct "Htail" as (vl'') "[Hmt3 %]".
-      (* TODO: I should not have to say '[#]' here, similar to iDestruct ... as %.... *)
-      iAssert (⌜length vl' = (nth i tyl ∅).(ty_size)⌝%I) with "[#]" as %Hvl'.
+      iAssert (⌜length vl' = (nth i tyl ∅).(ty_size)⌝%I) as %Hvl'.
       { iApply ty_size_eq. done. } iExists (#i::vl'++vl'').
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_app (shift_loc_assoc_nat _ 1) Hvl'.
       iFrame. iExists i, vl', vl''. iSplit; first done. iFrame. iPureIntro.
@@ -91,9 +89,8 @@ Section sum.
     intros tyl E κ l tid. iIntros (??) "#LFT Hown Htok". rewrite split_sum_mt.
     iMod (bor_exists with "LFT Hown") as (i) "Hown". set_solver.
     iMod (bor_sep with "LFT Hown") as "[Hmt Hown]". solve_ndisj.
-    (* FIXME: Why can't I directly frame Htok in the destruct after the following mod? *)
-    iMod ((nth i tyl ∅).(ty_share) with "LFT Hown Htok") as "[#Hshr Htok]"; try done.
-    iFrame "Htok". iMod (bor_fracture with "LFT [Hmt]") as "H'";[set_solver| |]; last eauto.
+    iMod ((nth i tyl ∅).(ty_share) with "LFT Hown Htok") as "[#Hshr $]"; try done.
+    iMod (bor_fracture with "LFT [Hmt]") as "H'";[set_solver| |]; last eauto.
       by iFrame.
   Qed.
   Next Obligation.
