@@ -154,18 +154,21 @@ Section lft_contexts.
   Definition lctx_lft_incl κ κ' : Prop :=
     elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗ κ ⊑ κ'.
 
+  Lemma lctx_lft_incl_relf κ : lctx_lft_incl κ κ.
+  Proof. iIntros "_ _". iApply lft_incl_refl. Qed.
+
   Global Instance lctx_lft_incl_preorder : PreOrder lctx_lft_incl.
   Proof.
-    split.
-    - iIntros (?) "_ _". iApply lft_incl_refl.
-    - iIntros (??? H1 H2) "#HE #HL". iApply (lft_incl_trans with "[#] [#]").
-      iApply (H1 with "HE HL"). iApply (H2 with "HE HL").
+    split; first by intros ?; apply lctx_lft_incl_relf.
+    iIntros (??? H1 H2) "#HE #HL". iApply (lft_incl_trans with "[#] [#]").
+    iApply (H1 with "HE HL"). iApply (H2 with "HE HL").
   Qed.
 
   Lemma lctx_lft_incl_static κ : lctx_lft_incl κ static.
   Proof. iIntros "_ _". iApply lft_incl_static. Qed.
 
-  Lemma lctx_lft_incl_local κ κ' κs : (κ ⊑ κs)%LL ∈ L → κ' ∈ κs → lctx_lft_incl κ κ'.
+  Lemma lctx_lft_incl_local κ κ' κs :
+    (κ ⊑ κs)%LL ∈ L → κ' ∈ κs → lctx_lft_incl κ κ'.
   Proof.
     iIntros (? Hκ'κs) "_ H". iDestruct "H" as %HL.
     edestruct HL as [κ0 EQ]. done. simpl in EQ; subst.
@@ -175,11 +178,19 @@ Section lft_contexts.
     - etrans. done. apply gmultiset_union_subseteq_r.
   Qed.
 
+  Lemma lctx_lft_incl_local' κ κ' κ'' κs :
+    (κ ⊑ κs)%LL ∈ L → κ' ∈ κs → lctx_lft_incl κ' κ'' → lctx_lft_incl κ κ''.
+  Proof. intros. etrans; last done. by eapply lctx_lft_incl_local. Qed.
+
   Lemma lctx_lft_incl_external κ κ' : (κ ⊑ κ')%EL ∈ E → lctx_lft_incl κ κ'.
   Proof.
     iIntros (?) "H _".
     rewrite /elctx_interp_0 /elctx_elt_interp_0 big_sepL_elem_of //. done.
   Qed.
+
+  Lemma lctx_lft_incl_external' κ κ' κ'' :
+    (κ ⊑ κ')%EL ∈ E → lctx_lft_incl κ' κ'' → lctx_lft_incl κ κ''.
+  Proof. intros. etrans; last done. by eapply lctx_lft_incl_external. Qed.
 
   (* Lifetime aliveness *)
 
@@ -240,24 +251,31 @@ Section lft_contexts.
     by iApply "Hclose'".
   Qed.
 
+  Lemma lctx_lft_alive_external' κ κ':
+    (☀κ)%EL ∈ E → (κ ⊑ κ')%EL ∈ E → lctx_lft_alive κ'.
+  Proof.
+    intros. eapply lctx_lft_alive_incl, lctx_lft_incl_external; last done.
+    by apply lctx_lft_alive_external.
+  Qed.
+
   (* External lifetime context satisfiability *)
 
   Definition elctx_sat E' : Prop :=
-    ∀ qE qL F, ⌜↑lftN ⊆ F⌝ -∗ elctx_interp E qE -∗ llctx_interp L qL ={F}=∗
+    ∀ qE qL F, ↑lftN ⊆ F → elctx_interp E qE -∗ llctx_interp L qL ={F}=∗
       ∃ qE', elctx_interp E' qE' ∗
        (elctx_interp E' qE' ={F}=∗ elctx_interp E qE ∗ llctx_interp L qL).
 
   Lemma elctx_sat_nil : elctx_sat [].
   Proof.
-    iIntros (qE qL F) "%$$". iExists 1%Qp. rewrite /elctx_interp big_sepL_nil. auto.
+    iIntros (qE qL F ?) "$$". iExists 1%Qp. rewrite /elctx_interp big_sepL_nil. auto.
   Qed.
 
   Lemma elctx_sat_alive E' κ :
     lctx_lft_alive κ → elctx_sat E' → elctx_sat ((☀κ) :: E').
   Proof.
-    iIntros (Hκ HE' qE qL F) "% [HE1 HE2] [HL1 HL2]".
+    iIntros (Hκ HE' qE qL F ?) "[HE1 HE2] [HL1 HL2]".
     iMod (Hκ with "HE1 HL1") as (q) "[Htok Hclose]". done.
-    iMod (HE' with "[%] HE2 HL2") as (q') "[HE' Hclose']". done.
+    iMod (HE' with "HE2 HL2") as (q') "[HE' Hclose']". done.
     destruct (Qp_lower_bound q q') as (q0 & q2 & q'2 & -> & ->). iExists q0.
     rewrite {5 6}/elctx_interp big_sepL_cons /=.
     iDestruct "Htok" as "[$ Htok]". iDestruct "HE'" as "[Hf HE']".
@@ -266,14 +284,84 @@ Section lft_contexts.
     iApply "Hclose'". iFrame. by rewrite /elctx_interp.
   Qed.
 
-  Lemma elctx_sat_incl E' κ κ' :
+  Lemma elctx_sat_lft_incl E' κ κ' :
     lctx_lft_incl κ κ' → elctx_sat E' → elctx_sat ((κ ⊑ κ') :: E').
   Proof.
-    iIntros (Hκκ' HE' qE qL F) "% HE HL".
+    iIntros (Hκκ' HE' qE qL F ?) "HE HL".
     iAssert (κ ⊑ κ')%I with "[#]" as "#Hincl". iApply (Hκκ' with "[HE] [HL]").
       by iApply elctx_interp_persist. by iApply llctx_interp_persist.
-    iMod (HE' with "[%] HE HL") as (q) "[HE' Hclose']". done.
+    iMod (HE' with "HE HL") as (q) "[HE' Hclose']". done.
     iExists q. rewrite {1 2 4 5}/elctx_interp big_sepL_cons /=.
     iIntros "{$Hincl $HE'}!>[_ ?]". by iApply "Hclose'".
   Qed.
 End lft_contexts.
+
+
+Section elctx_incl.
+  (* External lifetime context inclusion, in a persistent context.
+     (Used for function types subtyping). *)
+
+  Context `{invG Σ, lftG Σ} (E : elctx) (L : llctx).
+
+  Definition elctx_incl E1 E2 : Prop :=
+    ∀ F, ↑lftN ⊆ F → elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
+    ∀ qE1, elctx_interp E1 qE1 ={F}=∗ ∃ qE2, elctx_interp E2 qE2 ∗
+       (elctx_interp E2 qE2 ={F}=∗ elctx_interp E1 qE1).
+
+  Lemma elctx_incl_refl E' : elctx_incl E' E'.
+  Proof. iIntros (??) "_ _ * ?". iExists _. iFrame. eauto. Qed.
+
+  Lemma elctx_incl_nil E' : elctx_incl E' [].
+  Proof.
+    iIntros (??) "_ _ * $". iExists 1%Qp.
+    rewrite /elctx_interp big_sepL_nil. auto.
+  Qed.
+
+  Lemma elctx_incl_lft_alive E1 E2 κ :
+    lctx_lft_alive E1 [] κ → elctx_incl E1 E2 → elctx_incl E1 ((☀κ) :: E2).
+  Proof.
+    iIntros (Hκ HE2 ??) "#HE #HL * [HE11 HE12]".
+    iMod (Hκ _ _ 1%Qp with "HE11 []") as (qE21) "[Hκ Hclose]". done.
+    { by rewrite /llctx_interp big_sepL_nil. }
+    iMod (HE2 with "HE HL * HE12") as (qE22) "[HE2 Hclose']". done.
+    destruct (Qp_lower_bound qE21 qE22) as (qE2 & ? & ? & -> & ->).
+    iExists qE2. rewrite /elctx_interp big_sepL_cons /=.
+    iDestruct "HE2" as "[$ HE2]". iDestruct "Hκ" as "[$ Hκ]". iIntros "!> [Hκ' HE2']".
+    iMod ("Hclose" with "[$Hκ $Hκ']") as "[$ _]".
+    iApply "Hclose'". by iFrame.
+  Qed.
+
+  Lemma elctx_incl_lft_incl E1 E2 κ κ' :
+    lctx_lft_incl (E1 ++ E) L κ κ' → elctx_incl E1 E2 →
+    elctx_incl E1 ((κ ⊑ κ') :: E2).
+  Proof.
+    iIntros (Hκκ' HE2 ??) "#HE #HL * HE1".
+    iDestruct (elctx_interp_persist with "HE1") as "#HE1'".
+    iDestruct (Hκκ' with "[HE HE1'] HL") as "#Hκκ'".
+    { rewrite /elctx_interp_0 big_sepL_app. auto. }
+    iMod (HE2 with "HE HL * HE1") as (qE2) "[HE2 Hclose']". done.
+    iExists qE2. rewrite /elctx_interp big_sepL_cons /=. iFrame "∗#".
+    iIntros "!> [_ HE2']". by iApply "Hclose'".
+  Qed.
+
+  Lemma elctx_sat_incl E1 E2 :
+    elctx_sat E1 [] E2 → elctx_incl E1 E2.
+  Proof.
+    iIntros (H12 ??) "#HE #HL * HE1".
+    iMod (H12 _ 1%Qp with "HE1 []") as (qE2) "[HE2 Hclose]". done.
+    { by rewrite /llctx_interp big_sepL_nil. }
+    iExists qE2. iFrame. iIntros "!> HE2".
+    by iMod ("Hclose" with "HE2") as "[$ _]".
+  Qed.
+End elctx_incl.
+
+Hint Constructors Forall elem_of_list : lrust_typing.
+Hint Resolve
+     lctx_lft_incl_relf lctx_lft_incl_static lctx_lft_incl_local'
+     lctx_lft_incl_external'
+     lctx_lft_alive_static lctx_lft_alive_local lctx_lft_alive_external
+     elctx_sat_nil elctx_sat_alive elctx_sat_lft_incl
+     elctx_incl_refl elctx_incl_nil elctx_incl_lft_alive elctx_incl_lft_incl
+  : lrust_typing.
+
+Hint Resolve lctx_lft_alive_external' | 100 : lrust_typing.

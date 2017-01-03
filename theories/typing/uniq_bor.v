@@ -71,7 +71,7 @@ Section uniq_bor.
     by iApply (ty_shr_mono with "LFT Hκ0").
   Qed.
 
-  Global Instance subtype_uniq_mono E L :
+  Global Instance uniq_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> eqtype E L ==> subtype E L) uniq_bor.
   Proof.
     intros κ1 κ2 Hκ ty1 ty2 [Hty1 Hty2]. iIntros. iSplit; first done.
@@ -97,12 +97,12 @@ Section uniq_bor.
       iMod "Hupd'" as "[H Htok]". iMod ("Hclose" with "Htok") as "$".
       iApply (ty_shr_mono with "[] Hincl'"); [done..|]. by iApply "Hs1".
   Qed.
-  Global Instance subtype_uniq_mono' E L :
+  Global Instance uniq_mono_flip E L :
     Proper (lctx_lft_incl E L ==> eqtype E L ==> flip (subtype E L)) uniq_bor.
-  Proof. intros ??????. apply subtype_uniq_mono. done. by symmetry. Qed.
-  Global Instance subtype_uniq_proper E L κ :
+  Proof. intros ??????. apply uniq_mono. done. by symmetry. Qed.
+  Global Instance uniq_proper E L κ :
     Proper (eqtype E L ==> eqtype E L) (uniq_bor κ).
-  Proof. split; by apply subtype_uniq_mono. Qed.
+  Proof. split; by apply uniq_mono. Qed.
 
   Global Instance uniq_contractive κ : Contractive (uniq_bor κ).
   Proof.
@@ -141,6 +141,14 @@ Notation "&uniq{ κ } ty" := (uniq_bor κ ty)
 
 Section typing.
   Context `{typeG Σ}.
+
+  Lemma uniq_mono' E L κ1 κ2 ty1 ty2 :
+    lctx_lft_incl E L κ2 κ1 → eqtype E L ty1 ty2 →
+    subtype E L (&uniq{κ1} ty1) (&uniq{κ2} ty2).
+  Proof. by intros; apply uniq_mono. Qed.
+  Lemma uniq_proper' E L κ ty1 ty2 :
+    eqtype E L ty1 ty2 → eqtype E L (&uniq{κ} ty1) (&uniq{κ} ty2).
+  Proof. by intros; apply uniq_proper. Qed.
 
   Lemma tctx_share E L p κ ty :
     lctx_lft_alive E L κ → tctx_incl E L [p ◁ &uniq{κ}ty] [p ◁ &shr{κ}ty].
@@ -207,3 +215,5 @@ Section typing.
     iExists _, _. erewrite <-uPred.iff_refl. auto.
   Qed.
 End typing.
+
+Hint Resolve uniq_mono' uniq_proper' : lrust_typing.
