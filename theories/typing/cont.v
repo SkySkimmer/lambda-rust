@@ -19,7 +19,7 @@ Section typing.
     rewrite -{3}(vec_to_list_of_list args). iApply ("HC" with "* Htl HL HT").
   Qed.
 
-  Lemma type_cont E L1 L2 C T argsb econt e2 T' kb :
+  Lemma type_cont L1 {argsb} T' E L2 C T  econt e2 kb :
     Closed (kb :b: argsb +b+ []) econt → Closed (kb :b: []) e2 →
     (∀ k args, typed_body E L1 (k ◁cont(L1, T') :: C) (T' args)
                           (subst_v (kb::argsb) (k:::args) econt)) →

@@ -17,21 +17,21 @@ Section typing.
                WP e {{ _, cont_postcondition }})%I.
   Global Arguments typed_body _%EL _%LL _%CC _%TC _%E.
 
-  Instance typed_body_llctx_permut E :
+  Global Instance typed_body_llctx_permut E :
     Proper ((≡ₚ) ==> eq ==> eq ==> eq ==> (⊢)) (typed_body E).
   Proof.
     intros L1 L2 HL C ? <- T ? <- e ? <-. rewrite /typed_body.
     by setoid_rewrite HL.
   Qed.
 
-  Instance typed_body_elctx_permut :
+  Global Instance typed_body_elctx_permut :
     Proper ((≡ₚ) ==> eq ==> eq ==> eq ==> eq ==> (⊢)) typed_body.
   Proof.
     intros E1 E2 HE L ? <- C ? <- T ? <- e ? <-. rewrite /typed_body.
     by setoid_rewrite HE.
   Qed.
 
-  Instance typed_body_mono E L:
+  Global Instance typed_body_mono E L:
     Proper (flip (cctx_incl E) ==> flip (tctx_incl E L) ==> eq ==> (⊢))
            (typed_body E L).
   Proof.
@@ -41,6 +41,11 @@ Section typing.
     iApply ("H" with "HEAP LFT Htl HE HL [HC] HT").
     iIntros "HE". by iApply (HC with "LFT HC").
   Qed.
+
+  Global Instance typed_body_mono_flip E L:
+    Proper (cctx_incl E ==> tctx_incl E L ==> eq ==> flip (⊢))
+           (typed_body E L).
+  Proof. intros ?????????. by eapply typed_body_mono. Qed.
 
   (** Instruction *)
   Definition typed_instruction (E : elctx) (L : llctx)
@@ -79,7 +84,7 @@ Notation typed_instruction_ty E L T1 e ty :=
 Section typing_rules.
   Context `{typeG Σ}.
 
-  Lemma type_let E L T1 T2 T C xb e e' :
+  Lemma type_let E L T1 T2 (T : tctx) C xb e e' :
     Closed (xb :b: []) e' →
     typed_instruction E L T1 e T2 →
     (∀ v : val, typed_body E L C (T2 v ++ T) (subst' xb v e')) →
@@ -91,6 +96,17 @@ Section typing_rules.
     iIntros (v) "/= (Htl & HE & HL & HT2)". iApply wp_let; first wp_done.
     iModIntro. iApply (He' with "HEAP LFT Htl HE HL HC [HT2 HT]").
     rewrite tctx_interp_app. by iFrame.
+  Qed.
+
+  Lemma type_let' E L T T' T1 T2 C xb e e' :
+    Closed (xb :b: []) e' →
+    typed_instruction E L T1 e T2 →
+    tctx_extract_ctx E L T1 T T' →
+    (∀ v : val, typed_body E L C (T2 v ++ T') (subst' xb v e')) →
+    typed_body E L C T (let: xb := e in e').
+  Proof.
+    intros ?? HT ?. unfold tctx_extract_ctx in HT. rewrite ->HT.
+    by eapply type_let.
   Qed.
 
   Lemma typed_newlft E L C T κs e :
@@ -120,7 +136,7 @@ Section typing_rules.
     iApply (Hub with "[] HT"). simpl in *. subst κ. rewrite -lft_dead_or. auto.
   Qed.
 
-  Lemma type_assign E L ty1 ty ty1' p1 p2 :
+  Lemma type_assign {E L} ty ty1 ty1' p1 p2 :
     typed_write E L ty1 ty ty1' →
     typed_instruction E L [p1 ◁ ty1; p2 ◁ ty] (p1 <- p2) (λ _, [p1 ◁ ty1']%TC).
   Proof.
@@ -139,7 +155,7 @@ Section typing_rules.
     rewrite tctx_interp_singleton tctx_hasty_val' //.
   Qed.
 
-  Lemma type_deref E L ty1 ty ty1' p :
+  Lemma type_deref {E L} ty ty1 ty1' p :
     ty.(ty_size) = 1%nat → typed_read E L ty1 ty ty1' →
     typed_instruction E L [p ◁ ty1] (!p) (λ v, [p ◁ ty1'; v ◁ ty]%TC).
   Proof.
@@ -157,7 +173,7 @@ Section typing_rules.
     by iFrame.
   Qed.
 
-  Lemma type_memcpy_iris E qE L qL tid ty1 ty1' ty2 ty2' ty n p1 p2 :
+  Lemma type_memcpy_iris E qE L qL tid ty ty1 ty1' ty2 ty2' n p1 p2 :
     ty.(ty_size) = n → typed_write E L ty1 ty ty1' → typed_read E L ty2 ty ty2' →
     {{{ heap_ctx ∗ lft_ctx ∗ na_own tid ⊤ ∗ elctx_interp E qE ∗ llctx_interp L qL ∗
         tctx_elt_interp tid (p1 ◁ ty1) ∗ tctx_elt_interp tid (p2 ◁ ty2) }}}
@@ -181,7 +197,7 @@ Section typing_rules.
     iMod ("Hcl2" with "Hl2") as "($ & $ & $ & $)". done.
   Qed.
 
-  Lemma type_memcpy E L ty1 ty1' ty2 ty2' ty n p1 p2 :
+  Lemma type_memcpy {E L} ty ty1 ty1' ty2 ty2' n p1 p2 :
     ty.(ty_size) = n → typed_write E L ty1 ty ty1' → typed_read E L ty2 ty ty2' →
     typed_instruction E L [p1 ◁ ty1; p2 ◁ ty2] (p1 <-{n} !p2)
                       (λ _, [p1 ◁ ty1'; p2 ◁ ty2']%TC).

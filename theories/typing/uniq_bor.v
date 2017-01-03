@@ -166,7 +166,7 @@ Section typing.
 
   Lemma tctx_reborrow_uniq E L p ty κ κ' :
     lctx_lft_incl E L κ' κ →
-    tctx_incl E L [p ◁ &uniq{κ}ty] [p ◁ &uniq{κ'}ty; p ◁{κ} &uniq{κ}ty].
+    tctx_incl E L [p ◁ &uniq{κ}ty] [p ◁ &uniq{κ'}ty; p ◁{κ'} &uniq{κ}ty].
   Proof.
     iIntros (Hκκ' tid ??) "#LFT HE HL H".
     iDestruct (elctx_interp_persist with "HE") as "#HE'".
@@ -177,9 +177,39 @@ Section typing.
     iDestruct "EQ" as %[=->]. iMod (bor_iff with "LFT [] Hb") as "Hb". done. by eauto.
     iMod (rebor with "LFT Hκκ' Hb") as "[Hb Hext]". done. iModIntro. iSplitL "Hb".
     - iExists _. iSplit. done. iExists _, _. erewrite <-uPred.iff_refl. eauto.
-    - iExists _. iSplit. done. iIntros "#H†".
-      iMod ("Hext" with ">[]") as "Hb". by iApply (lft_incl_dead with "Hκκ' H†").
+    - iExists _. iSplit. done. iIntros "#H†". iMod ("Hext" with "H†") as "Hb".
       iExists _, _. erewrite <-uPred.iff_refl. eauto.
+  Qed.
+
+  (* When sharing during extraction, we do the (arbitrary) choice of
+     sharing at the lifetime requested (κ). In some cases, we could
+     actually desire a longer lifetime and then use subtyping, because
+     then we get, in the environment, a shared borrow at this longer
+     lifetime.
+
+     In the case the user wants to do the sharing at a longer
+     lifetime, she has to manually perform the extraction herself at
+     the desired lifetime. *)
+  Lemma tctx_extract_hasty_share E L p ty ty' κ κ' T :
+    lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' → subtype E L ty' ty →
+    tctx_extract_hasty E L p (&shr{κ}ty) ((p ◁ &uniq{κ'}ty')::T)
+                       ((p ◁ &shr{κ}ty')::(p ◁{κ} &uniq{κ'}ty')::T).
+  Proof.
+    intros. apply (tctx_incl_frame_r E L _ [_] [_;_;_]). etrans.
+    { by apply tctx_reborrow_uniq. }
+    apply (tctx_incl_frame_r E L _ [_] [_;_]). etrans.
+    by apply tctx_share. etrans. by apply copy_tctx_incl, _.
+    by apply (tctx_incl_frame_r E L _ [_] [_]), subtype_tctx_incl, shr_mono'.
+  Qed.
+
+  Lemma tctx_extract_hasty_reborrow E L p ty ty' κ κ' T :
+    lctx_lft_incl E L κ' κ → eqtype E L ty ty' →
+    tctx_extract_hasty E L p (&uniq{κ'}ty) ((p ◁ &uniq{κ}ty')::T)
+                       ((p ◁{κ'} &uniq{κ}ty')::T).
+  Proof.
+    intros. apply (tctx_incl_frame_r E L _ [_] [_;_]). etrans.
+    by apply tctx_reborrow_uniq.
+    by apply (tctx_incl_frame_r E L _ [_] [_]), subtype_tctx_incl, uniq_mono'.
   Qed.
 
   Lemma read_uniq E L κ ty :
@@ -216,4 +246,5 @@ Section typing.
   Qed.
 End typing.
 
-Hint Resolve uniq_mono' uniq_proper' : lrust_typing.
+Hint Resolve uniq_mono' uniq_proper' tctx_extract_hasty_share
+             tctx_extract_hasty_reborrow : lrust_typing.

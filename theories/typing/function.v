@@ -139,17 +139,16 @@ Section typing.
   Qed.
 
   (* TODO: Define some syntactic sugar for calling and letrec like we do on paper. *)
-  Lemma type_call {A} E L E' T T' p (ps : list path)
+  Lemma type_call {A} E L E' T p (ps : list path)
                         (tys : A → vec type (length ps)) ty k x :
-    tctx_incl E L T (zip_with TCtx_hasty ps (tys x) ++ T') → elctx_sat E L (E' x) →
-    typed_body E L [k ◁cont(L, λ v : vec _ 1, (v!!!0 ◁ ty x) :: T')]
-               ((p ◁ fn E' tys ty) :: T) (p (of_val k :: ps)).
+    elctx_sat E L (E' x) →
+    typed_body E L [k ◁cont(L, λ v : vec _ 1, (v!!!0 ◁ ty x) :: T)]
+               ((p ◁ fn E' tys ty) :: zip_with TCtx_hasty ps (tys x) ++ T)
+               (p (of_val k :: ps)).
   Proof.
-    iIntros (HTsat HEsat tid qE) "#HEAP #LFT Htl HE HL HC".
-    rewrite tctx_interp_cons. iIntros "[Hf HT]".
+    iIntros (HE tid qE) "#HEAP #LFT Htl HE HL HC".
+    rewrite tctx_interp_cons tctx_interp_app. iIntros "(Hf & Hargs & HT)".
     wp_bind p. iApply (wp_hasty with "Hf"). iIntros (v) "% Hf".
-    iMod (HTsat with "LFT HE HL HT") as "(HE & HL & HT)". rewrite tctx_interp_app.
-    iDestruct "HT" as "[Hargs HT']". clear HTsat.
     iApply (wp_app_vec _ _ (_::_) ((λ v, ⌜v = k⌝):::
                vmap (λ ty (v : val), tctx_elt_interp tid (v ◁ ty)) (tys x))%I
             with "* [Hargs]"); first wp_done.
@@ -167,18 +166,35 @@ Section typing.
       { rewrite -fmap_cons Forall_fmap Forall_forall=>? _. rewrite /= to_of_val. eauto. }
       { rewrite -fmap_cons -(subst_v_eq (fb::kb::xb) (_:::k:::vl)) //. }
       iNext. iSpecialize ("Hf" $! x k vl).
-      iMod (HEsat with "HE HL") as (q') "[HE' Hclose]"; first done.
-      iApply ("Hf" with "HEAP LFT Htl HE' [] [HC Hclose HT']").
+      iMod (HE with "HE HL") as (q') "[HE' Hclose]"; first done.
+      iApply ("Hf" with "HEAP LFT Htl HE' [] [HC Hclose HT]").
       + by rewrite /llctx_interp big_sepL_nil.
       + iIntros "HE'". iApply fupd_cctx_interp. iMod ("Hclose" with "HE'") as "[HE HL]".
         iSpecialize ("HC" with "HE"). iModIntro. iIntros (y) "IN".
-        iDestruct "IN" as %->%elem_of_list_singleton. iIntros (args) "Htl _ HT".
+        iDestruct "IN" as %->%elem_of_list_singleton. iIntros (args) "Htl _ Hret".
         iSpecialize ("HC" with "* []"); first by (iPureIntro; apply elem_of_list_singleton).
         iApply ("HC" $! args with "Htl HL").
         rewrite tctx_interp_singleton tctx_interp_cons. iFrame.
       + rewrite /tctx_interp vec_to_list_map zip_with_fmap_r
                 (zip_with_zip (λ v ty, (v, _))) zip_with_zip !big_sepL_fmap.
         iApply (big_sepL_mono' with "Hvl"). by iIntros (i [v ty']).
+  Qed.
+
+  Lemma type_call' {A} x E L E' C T T' T'' p (ps : list path)
+                        (tys : A → vec type (length ps)) ty k :
+    (p ◁ fn E' tys ty)%TC ∈ T →
+    elctx_sat E L (E' x) →
+    tctx_extract_ctx E L (zip_with TCtx_hasty ps (tys x)) T T' →
+    (k ◁cont(L, T''))%CC ∈ C →
+    (∀ ret : val, tctx_incl E L ((ret ◁ ty x)::T') (T'' [# ret])) →
+    typed_body E L C T (p (of_val k :: ps)).
+  Proof.
+    intros Hfn HE HTT' HC HT'T''.
+    rewrite -typed_body_mono /flip; last done; first by eapply type_call.
+    - etrans. eapply (incl_cctx_incl _ [_]); first by intros ? ->%elem_of_list_singleton.
+      apply cctx_incl_cons; first done. intros args. inv_vec args=>ret q. inv_vec q. done.
+    - etrans; last by apply (tctx_incl_frame_l _ _ [_]).
+      apply copy_elem_of_tctx_incl; last done. apply _.
   Qed.
 
   Lemma type_fn {A} E L E' fb kb (argsb : list binder) e
@@ -205,4 +221,4 @@ Section typing.
 End typing.
 
 Hint Resolve fn_subtype_full : lrust_typing.
-Hint Constructors Forall2 : lrust_typing.
+Hint Constructors Forall2 elem_of_list: lrust_typing.

@@ -30,6 +30,7 @@ Notation "[ x ]" := (@cons tctx_elt x%TC (@nil tctx_elt)) : lrust_tctx_scope.
 
 Section type_context.
   Context `{typeG Σ}.
+  Implicit Types T : tctx.
 
   Fixpoint eval_path (p : path) : option val :=
     match p with
@@ -181,18 +182,36 @@ Section type_context.
     rewrite /tctx_incl. iIntros (Hc ???) "_ $ $ H". by iApply big_sepL_contains.
   Qed.
 
-  Lemma tctx_incl_frame E L T T1 T2 :
-    tctx_incl E L T2 T1 → tctx_incl E L (T++T2) (T++T1).
+  Lemma tctx_incl_frame E L T11 T12 T21 T22 :
+    tctx_incl E L T11 T12 → tctx_incl E L T21 T22 →
+    tctx_incl E L (T11++T21) (T12++T22).
   Proof.
-    intros Hincl ???. rewrite /tctx_interp !big_sepL_app. iIntros "#LFT HE HL [$ ?]".
-    by iApply (Hincl with "LFT HE HL").
+    intros Hincl1 Hincl2 ???. rewrite /tctx_interp !big_sepL_app.
+    iIntros "#LFT HE HL [H1 H2]".
+    iMod (Hincl1 with "LFT HE HL H1") as "(HE & HL & $)".
+    iApply (Hincl2 with "LFT HE HL H2").
   Qed.
+  Lemma tctx_incl_frame_l E L T T1 T2 :
+    tctx_incl E L T1 T2 → tctx_incl E L (T++T1) (T++T2).
+  Proof. by apply tctx_incl_frame. Qed.
+  Lemma tctx_incl_frame_r E L T T1 T2 :
+    tctx_incl E L T1 T2 → tctx_incl E L (T1++T) (T2++T).
+  Proof. by intros; apply tctx_incl_frame. Qed.
 
   Lemma copy_tctx_incl E L p `{!Copy ty} :
     tctx_incl E L [p ◁ ty] [p ◁ ty; p ◁ ty].
-   Proof.
+  Proof.
     iIntros (???) "_ $ $ *". rewrite /tctx_interp !big_sepL_cons big_sepL_nil.
     by iIntros "[#$ $]".
+  Qed.
+
+  Lemma copy_elem_of_tctx_incl E L T p `{!Copy ty} :
+    (p ◁ ty)%TC ∈ T → tctx_incl E L T ((p ◁ ty) :: T).
+  Proof.
+    remember (p ◁ ty)%TC. induction 1 as [|???? IH]; subst.
+    - apply (tctx_incl_frame_r E L _ [_] [_;_]), copy_tctx_incl, _.
+    - etrans. by apply (tctx_incl_frame_l E L [_]), IH, reflexivity.
+      apply contains_tctx_incl, contains_swap.
   Qed.
 
   Lemma subtype_tctx_incl E L p ty1 ty2 :
@@ -205,6 +224,79 @@ Section type_context.
     iDestruct (Hst with "* [] [] []") as "(_ & #Ho & _)"; [done..|].
     iApply ("Ho" with "*"). done.
   Qed.
+
+  (* Extracting from a type context. *)
+
+  Definition tctx_extract_hasty E L p ty T T' : Prop :=
+    tctx_incl E L T ((p ◁ ty)::T').
+  Lemma tctx_extract_hasty_cons E L p ty T T' x :
+    tctx_extract_hasty E L p ty T T' →
+    tctx_extract_hasty E L p ty (x::T) (x::T').
+  Proof.
+    move=> /(tctx_incl_frame_l E L [x]) /= Hincl. rewrite /tctx_extract_hasty.
+    etrans; first done. apply contains_tctx_incl, contains_swap.
+  Qed.
+  Lemma tctx_extract_hasty_here_copy E L p ty ty' T `{!Copy ty} :
+    subtype E L ty ty' →
+    tctx_extract_hasty E L p ty' ((p ◁ ty)::T) ((p ◁ ty)::T).
+  Proof.
+    intros. apply (tctx_incl_frame_r E L _ [_] [_;_]).
+    etrans; first by apply copy_tctx_incl, _.
+    by apply (tctx_incl_frame_r E L _ [_] [_]), subtype_tctx_incl.
+  Qed.
+  Lemma tctx_extract_hasty_here E L p ty ty' T :
+    subtype E L ty ty' → tctx_extract_hasty E L p ty' ((p ◁ ty)::T) T.
+  Proof.
+    intros. apply (tctx_incl_frame_r E L _ [_] [_]).
+    by apply subtype_tctx_incl.
+  Qed.
+
+  Definition tctx_extract_blocked E L p κ ty T T' : Prop :=
+    tctx_incl E L T ((p ◁{κ} ty)::T').
+  Lemma tctx_extract_blocked_cons E L p κ ty T T' x :
+    tctx_extract_blocked E L p κ ty T T' →
+    tctx_extract_blocked E L p κ ty (x::T) (x::T').
+  Proof.
+    move=> /(tctx_incl_frame_l E L [x]) /= Hincl. rewrite /tctx_extract_blocked.
+    etrans; first done. apply contains_tctx_incl, contains_swap.
+  Qed.
+  Lemma tctx_extract_blocked_here E L p κ ty T :
+    tctx_extract_blocked E L p κ ty ((p ◁{κ} ty)::T) T.
+  Proof. intros. by apply (tctx_incl_frame_r E L _ [_] [_]). Qed.
+
+  Definition tctx_extract_ctx E L T T1 T2 : Prop :=
+    tctx_incl E L T1 (T++T2).
+  Lemma tctx_extract_ctx_nil E L T:
+    tctx_extract_ctx E L [] T T.
+  Proof. by unfold tctx_extract_ctx. Qed.
+  Lemma tctx_extract_ctx_hasty E L T T1 T2 T3 p ty:
+    tctx_extract_hasty E L p ty T1 T2 → tctx_extract_ctx E L T T2 T3 →
+    tctx_extract_ctx E L ((p ◁ ty)::T) T1 T3.
+  Proof.
+    intros. rewrite /tctx_extract_ctx. etrans; first done.
+    by apply (tctx_incl_frame_l _ _ [_]).
+  Qed.
+  Lemma tctx_extract_ctx_blocked E L T T1 T2 T3 p κ ty:
+    tctx_extract_blocked E L p κ ty T1 T2 → tctx_extract_ctx E L T T2 T3 →
+    tctx_extract_ctx E L ((p ◁{κ} ty)::T) T1 T3.
+  Proof.
+    intros. rewrite /tctx_extract_ctx. etrans; first done.
+    by apply (tctx_incl_frame_l _ _ [_]).
+  Qed.
+
+  Lemma tctx_extract_ctx_incl E L T T' T0:
+    tctx_extract_ctx E L T' T T0 →
+    tctx_incl E L T T'.
+  Proof.
+    intros. etrans; first done. rewrite {2}(app_nil_end T').
+    apply tctx_incl_frame_l, contains_tctx_incl, contains_nil_l.
+  Qed.
+
+  (* Unblocking a type context. *)
+  (* TODO : That would be great if this could also remove all the
+     instances mentionning the lifetime in question.
+     E.g., if [p ◁ &uniq{κ} ty] should be removed, because this is now
+     useless. *)
 
   Class UnblockTctx (κ : lft) (T1 T2 : tctx) : Prop :=
     unblock_tctx : ∀ tid, [†κ] -∗ tctx_interp tid T1 ={⊤}=∗ tctx_interp tid T2.
@@ -228,3 +320,11 @@ Section type_context.
     by iMod (H12 with "H† HT1") as "$".
   Qed.
 End type_context.
+
+Hint Resolve tctx_extract_hasty_here_copy : lrust_tctx_scope.
+Hint Resolve tctx_extract_hasty_here | 50 : lrust_tctx_scope.
+Hint Resolve tctx_extract_hasty_cons | 100 : lrust_tctx_scope.
+Hint Extern 1 (Copy _) => typeclasses eauto : lrust_tctx_scope.
+Hint Resolve tctx_extract_blocked_here tctx_extract_blocked_cons
+             tctx_extract_ctx_nil tctx_extract_ctx_hasty
+             tctx_extract_ctx_blocked tctx_extract_ctx_incl : lrust_tctx_scope.

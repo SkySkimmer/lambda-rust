@@ -25,7 +25,25 @@ Section borrow.
         by iMod ("Hext" with "H†") as "$".
   Qed.
 
-  Lemma type_deref_uniq_own E L κ p n ty :
+  Lemma tctx_extract_hasty_borrow E L p n ty κ T :
+    tctx_extract_hasty E L p (&uniq{κ}ty) ((p ◁ own n ty)::T)
+                       ((p ◁{κ} own n ty)::T).
+  Proof. apply (tctx_incl_frame_r E L _ [_] [_;_]), tctx_borrow. Qed.
+
+  (* See the comment above [tctx_extract_hasty_share] in [uniq_bor.v]. *)
+  Lemma tctx_extract_hasty_borrow_share E L p ty ty' κ n T :
+    lctx_lft_alive E L κ → subtype E L ty' ty →
+    tctx_extract_hasty E L p (&shr{κ}ty) ((p ◁ own n ty')::T)
+                       ((p ◁ &shr{κ}ty')::(p ◁{κ} own n ty')::T).
+  Proof.
+    intros. apply (tctx_incl_frame_r E L _ [_] [_;_;_]). etrans.
+    { by apply tctx_borrow. }
+    apply (tctx_incl_frame_r E L _ [_] [_;_]). etrans.
+    by apply tctx_share. etrans. by apply copy_tctx_incl, _.
+    by apply (tctx_incl_frame_r E L _ [_] [_]), subtype_tctx_incl, shr_mono'.
+  Qed.
+
+  Lemma type_deref_uniq_own {E L} κ p n ty :
     lctx_lft_alive E L κ →
     typed_instruction_ty E L [p ◁ &uniq{κ} own n ty] (!p) (&uniq{κ} ty).
   Proof.
@@ -48,7 +66,7 @@ Section borrow.
       rewrite -heap_mapsto_vec_singleton. iFrame. iExists _. by iFrame.
   Qed.
 
-  Lemma type_deref_shr_own E L κ p n ty :
+  Lemma type_deref_shr_own {E L} κ p n ty :
     lctx_lft_alive E L κ →
     typed_instruction_ty E L [p ◁ &shr{κ} own n ty] (!p) (&shr{κ} ty).
   Proof.
@@ -65,7 +83,7 @@ Section borrow.
       rewrite tctx_interp_singleton tctx_hasty_val' //. iExists _. auto.
   Qed.
 
-  Lemma type_deref_uniq_uniq E L κ κ' p ty :
+  Lemma type_deref_uniq_uniq {E L} κ κ' p ty :
     lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
     typed_instruction_ty E L [p ◁ &uniq{κ} &uniq{κ'} ty] (!p) (&uniq{κ} ty).
   Proof.
@@ -95,7 +113,7 @@ Section borrow.
     iApply (lft_incl_glb with "Hincl"). iApply lft_incl_refl.
   Qed.
 
-  Lemma type_deref_shr_uniq E L κ κ' p ty :
+  Lemma type_deref_shr_uniq {E L} κ κ' p ty :
     lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
     typed_instruction_ty E L [p ◁ &shr{κ} &uniq{κ'} ty] (!p) (&shr{κ} ty).
   Proof.
@@ -119,3 +137,6 @@ Section borrow.
       iExists _. iSplitR. done. by iApply (ty_shr_mono with "LFT Hincl' Hshr").
   Qed.
 End borrow.
+
+Hint Resolve tctx_extract_hasty_borrow
+     tctx_extract_hasty_borrow_share : lrust_typing.

@@ -79,21 +79,20 @@ Section type.
   Lemma shr_locsE_shrN l n :
     shr_locsE l n ⊆ ↑shrN.
   Proof.
-    revert l; induction n; intros l.
-    - simpl. set_solver+.
-    - simpl. apply union_least; last by auto. solve_ndisj.
+    revert l; induction n=>l /=; first by set_solver+.
+    apply union_least; last by auto. solve_ndisj.
   Qed.
 
   Lemma shr_locsE_subseteq l n m :
     (n ≤ m)%nat → shr_locsE l n ⊆ shr_locsE l m.
   Proof.
-    induction 1; first done.
-    rewrite ->IHle. rewrite -Nat.add_1_l [(_ + _)%nat]comm_L.
-    rewrite shr_locsE_shift. set_solver+.
+    induction 1; first done. etrans; first done.
+    rewrite -Nat.add_1_l [(_ + _)%nat]comm_L shr_locsE_shift. set_solver+.
   Qed.
 
   Lemma shr_locsE_split_tok l n m tid :
-    na_own tid (shr_locsE l (n + m)) ⊣⊢ na_own tid (shr_locsE l n) ∗ na_own tid (shr_locsE (shift_loc l n) m).
+    na_own tid (shr_locsE l (n + m)) ⊣⊢
+      na_own tid (shr_locsE l n) ∗ na_own tid (shr_locsE (shift_loc l n) m).
   Proof.
     rewrite shr_locsE_shift na_own_union //. apply shr_locsE_disj.
   Qed.

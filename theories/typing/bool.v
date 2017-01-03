@@ -1,3 +1,4 @@
+From iris.base_logic Require Import big_op.
 From iris.proofmode Require Import tactics.
 From lrust.typing Require Export type.
 From lrust.typing Require Import programs.
@@ -24,11 +25,12 @@ Section typing.
   Qed.
 
   Lemma type_if E L C T e1 e2 p:
+    (p ◁ bool)%TC ∈ T →
     typed_body E L C T e1 → typed_body E L C T e2 →
-    typed_body E L C ((p ◁ bool) :: T) (if: p then e1 else e2).
+    typed_body E L C T (if: p then e1 else e2).
   Proof.
-    iIntros (He1 He2 tid qE) "#HEAP #LFT Htl HE HL HC".
-    rewrite tctx_interp_cons. iIntros "[Hp HT]".
+    iIntros (Hp He1 He2 tid qE) "#HEAP #LFT Htl HE HL HC HT".
+    iDestruct (big_sepL_elem_of _ _ _ Hp with "HT") as "#Hp".
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
     iDestruct "Hown" as (b) "Hv". iDestruct "Hv" as %[=->].
     destruct b; wp_if.
