@@ -8,9 +8,6 @@ Section fixpoint.
 
   Context (T : type → type) `{Contractive T}.
 
-  (* FIXME : Contrarily to the rule on paper, these rules are
-     coinductive: they let one assume [ty] is [Copy]/[Send]/[Sync] to
-     prove that [T ty] is [Copy]/[Send]/[Sync]. *)
   Global Instance fixpoint_copy :
     (∀ `(!Copy ty), Copy (T ty)) → Copy (fixpoint T).
   Proof.
