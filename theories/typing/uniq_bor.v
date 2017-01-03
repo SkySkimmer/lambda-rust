@@ -100,9 +100,9 @@ Section uniq_bor.
   Global Instance uniq_mono_flip E L :
     Proper (lctx_lft_incl E L ==> eqtype E L ==> flip (subtype E L)) uniq_bor.
   Proof. intros ??????. apply uniq_mono. done. by symmetry. Qed.
-  Global Instance uniq_proper E L κ :
-    Proper (eqtype E L ==> eqtype E L) (uniq_bor κ).
-  Proof. split; by apply uniq_mono. Qed.
+  Global Instance uniq_proper E L :
+    Proper (lctx_lft_eq E L ==> eqtype E L ==> eqtype E L) uniq_bor.
+  Proof. intros ??[]; split; by apply uniq_mono. Qed.
 
   Global Instance uniq_contractive κ : Contractive (uniq_bor κ).
   Proof.

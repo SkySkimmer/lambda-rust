@@ -26,9 +26,9 @@ Section shr_bor.
   Global Instance shr_mono_flip E L :
     Proper (lctx_lft_incl E L ==> flip (subtype E L) ==> flip (subtype E L)) shr_bor.
   Proof. intros ??????. by apply shr_mono. Qed.
-  Global Instance shr_proper E L κ :
-    Proper (eqtype E L ==> eqtype E L) (shr_bor κ).
-  Proof. intros ??[]. by split; apply shr_mono. Qed.
+  Global Instance shr_proper E L :
+    Proper (lctx_lft_eq E L ==> eqtype E L ==> eqtype E L) shr_bor.
+  Proof. intros ??[] ??[]. by split; apply shr_mono. Qed.
 
   Global Instance shr_contractive κ : Contractive (shr_bor κ).
   Proof.

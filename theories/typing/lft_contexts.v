@@ -148,11 +148,11 @@ Section lft_contexts.
 
   (* Lifetime inclusion *)
 
-  (* There does not seem to be a need in the type system for
-     "equivalence" of lifetimes. If so, TODO : add it, and the
-     corresponding [Proper] instances for the relevent types. *)
   Definition lctx_lft_incl κ κ' : Prop :=
     elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗ κ ⊑ κ'.
+
+  Definition lctx_lft_eq κ κ' : Prop :=
+    lctx_lft_incl κ κ' ∧ lctx_lft_incl κ' κ.
 
   Lemma lctx_lft_incl_relf κ : lctx_lft_incl κ κ.
   Proof. iIntros "_ _". iApply lft_incl_refl. Qed.
@@ -162,6 +162,18 @@ Section lft_contexts.
     split; first by intros ?; apply lctx_lft_incl_relf.
     iIntros (??? H1 H2) "#HE #HL". iApply (lft_incl_trans with "[#] [#]").
     iApply (H1 with "HE HL"). iApply (H2 with "HE HL").
+  Qed.
+
+  Global Instance lctx_lft_incl_proper :
+    Proper (lctx_lft_eq ==> lctx_lft_eq ==> iff) lctx_lft_incl.
+  Proof. intros ??[] ??[]. split; intros; by etrans; [|etrans]. Qed.
+
+  Global Instance lctx_lft_eq_equivalence : Equivalence lctx_lft_eq.
+  Proof.
+    split.
+    - by split.
+    - intros ?? Heq; split; apply Heq.
+    - intros ??? H1 H2. split; etrans; (apply H1 || apply H2).
   Qed.
 
   Lemma lctx_lft_incl_static κ : lctx_lft_incl κ static.
