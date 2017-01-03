@@ -64,9 +64,8 @@ Section own.
     iMod (bor_sep with "LFT Hb") as "[Hb1 Hb2]". set_solver.
     iMod (bor_exists with "LFT Hb2") as (l') "Hb2". set_solver. 
     iMod (bor_sep with "LFT Hb2") as "[EQ Hb2]". set_solver.
-    iMod (bor_persistent_tok with "LFT EQ Htok") as "[>% Htok]". set_solver.
-    iFrame "Htok". iExists l'.
-    subst. rewrite heap_mapsto_vec_singleton.
+    iMod (bor_persistent_tok with "LFT EQ Htok") as "[>% $]". set_solver.
+    iExists l'. subst. rewrite heap_mapsto_vec_singleton.
     iMod (bor_sep with "LFT Hb2") as "[Hb2 _]". set_solver.
     iMod (bor_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "$". set_solver.
     rewrite bor_unfold_idx. iDestruct "Hb2" as (i) "(#Hpb&Hpbown)".
@@ -78,9 +77,9 @@ Section own.
       { apply ndisj_subseteq_difference. solve_ndisj. set_solver. } (* FIXME: some tactic should solve this in one go. *)
       { rewrite bor_unfold_idx. eauto. }
       iModIntro. iNext. iMod "Hb".
-      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#$ Htok]". 
+      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#$ $]".
       { apply ndisj_subseteq_difference. solve_ndisj. set_solver. } (* FIXME: some tactic should solve this in one go. *)
-      iFrame "Htok". iApply "Hclose". auto.
+      iApply "Hclose". auto.
     - iMod fupd_intro_mask' as "Hclose'"; last iModIntro. set_solver.
       iNext. iMod "Hclose'" as "_". iMod ("Hclose" with "[]") as "_"; by eauto.
   Qed.
