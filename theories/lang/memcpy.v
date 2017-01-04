@@ -9,7 +9,10 @@ Definition memcpy : val :=
          "memcpy" ["dst" +ₗ #1 ; "len" - #1 ; "src" +ₗ #1].
 Global Opaque memcpy.
 
-Notation "e1 <-{ n } ! e2" := (App memcpy [e1%E ; Lit (LitInt n) ; e2%E])
+Notation "e1 <-{ n } ! e2" :=
+  (memcpy (@cons expr e1%E
+          (@cons expr (Lit n)
+          (@cons expr e2%E nil))))
   (at level 80, n at next level, format "e1  <-{ n }  ! e2") : expr_scope.
 
 Notation "e1 <-[ i ]{ n } ! e2" :=

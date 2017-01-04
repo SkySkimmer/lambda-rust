@@ -3,7 +3,7 @@ From lrust.lang Require Export lang.
 
 (** We define an alternative representation of expressions in which the
 embedding of values and closed expressions is explicit. By reification of
-expressions into this type we can implementation substitution, closedness
+expressions into this type we can implement substitution, closedness
 checking, atomic checking, and conversion into values, by computation. *)
 Module W.
 Inductive expr :=

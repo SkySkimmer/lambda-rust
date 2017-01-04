@@ -321,10 +321,10 @@ Section type_context.
   Qed.
 End type_context.
 
-Hint Resolve tctx_extract_hasty_here_copy : lrust_tctx_scope.
-Hint Resolve tctx_extract_hasty_here | 50 : lrust_tctx_scope.
-Hint Resolve tctx_extract_hasty_cons | 100 : lrust_tctx_scope.
-Hint Extern 1 (Copy _) => typeclasses eauto : lrust_tctx_scope.
+Hint Resolve tctx_extract_hasty_here_copy : lrust_typing.
+Hint Resolve tctx_extract_hasty_here | 50 : lrust_typing.
+Hint Resolve tctx_extract_hasty_cons | 100 : lrust_typing.
+Hint Extern 1 (Copy _) => typeclasses eauto : lrust_typing.
 Hint Resolve tctx_extract_blocked_here tctx_extract_blocked_cons
              tctx_extract_ctx_nil tctx_extract_ctx_hasty
-             tctx_extract_ctx_blocked tctx_extract_ctx_incl : lrust_tctx_scope.
+             tctx_extract_ctx_blocked tctx_extract_ctx_incl : lrust_typing.

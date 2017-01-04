@@ -3,6 +3,7 @@ From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
 From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.lang Require Export new_delete.
+From lrust.lang Require Import memcpy.
 From lrust.typing Require Export type.
 From lrust.typing Require Import uninit type_context programs.
 
@@ -159,8 +160,11 @@ Section typing.
   Proof.
     iIntros (Hsz p tid F qE qL ?) "_ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
-    rewrite ty'.(ty_size_eq). (* This turns out to be the fastest way to apply a lemma below ▷ -- at least if we're fine throwing away the premise even though the result is persistent, which in this case, we are. *)
-    iDestruct "Hown" as ">%". iModIntro. iExists _, _. iFrame "H↦".
+    (* This turns out to be the fastest way to apply a lemma below ▷ -- at
+    least if we're fine throwing away the premise even though the result
+    is persistent, which in this case, we are. *)
+    rewrite ty'.(ty_size_eq). iDestruct "Hown" as ">%". iModIntro.
+    iExists _, _. iFrame "H↦".
     iSplit; first by rewrite Hsz. iIntros "Hown !>".
     iExists _. iSplit; first done. rewrite Hsz. iFrame.
   Qed.
@@ -186,7 +190,7 @@ Section typing.
     iFrame. iApply uninit_own. auto.
   Qed.
 
-  Lemma type_new E L (n : nat) :
+  Lemma type_new {E L} (n : nat) :
     typed_instruction_ty E L [] (new [ #n ]%E) (own n (uninit n)).
   Proof.
     iIntros (tid eq) "#HEAP #LFT $ $ $ _".
@@ -201,17 +205,69 @@ Section typing.
     - by rewrite uninit_sz freeable_sz_full.
   Qed.
 
-  Lemma type_delete E L n ty p :
-    n = ty.(ty_size) →
+  Lemma type_delete {E L} ty n p :
+    ty.(ty_size) = n →
     typed_instruction E L [p ◁ own n ty] (delete [ #n; p])%E (λ _, []).
   Proof.
-    iIntros (-> tid eq) "#HEAP #LFT $ $ $ Hp". rewrite tctx_interp_singleton.
+    iIntros (<- tid eq) "#HEAP #LFT $ $ $ Hp". rewrite tctx_interp_singleton.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
     iDestruct "Hown" as (l) "(Hv & H↦∗: & >H†)". iDestruct "Hv" as %[=->].
     iDestruct "H↦∗:" as (vl) "[>H↦ Hown]". rewrite tctx_interp_nil.
     rewrite ty_size_eq. iDestruct "Hown" as ">Hown". iDestruct "Hown" as %<-.
     iApply (wp_delete with "[-]"); try (by auto); [].
     rewrite freeable_sz_full. by iFrame.
+  Qed.
+
+  Lemma type_letalloc_1 {E L} ty C T T' (x : string) p e :
+    ty.(ty_size) = 1%nat →
+    Closed [] p → Closed (x :b: []) e →
+    tctx_extract_hasty E L p ty T T' →
+    (∀ v, typed_body E L C ((v ◁ own 1 ty)::T') (subst x v e)) →
+    typed_body E L C T (letalloc: x := p in e).
+  Proof.
+    intros. eapply type_let'.
+    - rewrite /Closed /=. rewrite !andb_True.
+      eauto 10 using is_closed_weaken with set_solver.
+    - apply (type_new 1).
+    - solve_typing.
+    - move=>xv /=.
+      assert (subst x xv (x <- p ;; e)%E = (xv <- p ;; subst x xv e)%E) as ->.
+      { (* TODO : simpl_subst should be able to do this. *)
+        unfold subst=>/=. repeat f_equal.
+        - by rewrite bool_decide_true.
+        - eapply is_closed_subst. done. set_solver. }
+      eapply type_let'.
+      + apply subst_is_closed; last done. apply is_closed_of_val.
+      + by apply (type_assign ty (own 1 (uninit 1))), write_own.
+      + solve_typing.
+      + move=>//=.
+  Qed.
+
+  Lemma type_letalloc_n {E L} ty ty1 ty2 C T T' (x : string) p e :
+    Closed [] p → Closed (x :b: []) e →
+    typed_read E L ty1 ty ty2 →
+    tctx_extract_hasty E L p ty1 T T' →
+    (∀ v, typed_body E L C ((v ◁ own (ty.(ty_size)) ty)::(p ◁ ty2)::T') (subst x v e)) →
+    typed_body E L C T (letalloc: x :={ty.(ty_size)} !p in e).
+  Proof.
+    intros. eapply type_let'.
+    - rewrite /Closed /=. rewrite !andb_True.
+      eauto 100 using is_closed_weaken with set_solver.
+    - apply type_new.
+    - solve_typing.
+    - move=>xv /=.
+      assert (subst x xv (x <-{ty.(ty_size)} !p ;; e)%E =
+              (xv <-{ty.(ty_size)} !p ;; subst x xv e)%E) as ->.
+      { (* TODO : simpl_subst should be able to do this. *)
+        unfold subst=>/=. repeat f_equal.
+        - eapply (is_closed_subst []). done. set_solver.
+        - by rewrite bool_decide_true.
+        - eapply is_closed_subst. done. set_solver. }
+      eapply type_let'.
+      + apply subst_is_closed; last done. apply is_closed_of_val.
+      + eapply type_memcpy; try done. apply write_own, symmetry, uninit_sz.
+      + solve_typing.
+      + move=>//=.
   Qed.
 End typing.
 

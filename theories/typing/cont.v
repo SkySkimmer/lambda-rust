@@ -19,12 +19,12 @@ Section typing.
     rewrite -{3}(vec_to_list_of_list args). iApply ("HC" with "* Htl HL HT").
   Qed.
 
-  Lemma type_cont L1 {argsb} T' E L2 C T  econt e2 kb :
+  Lemma type_cont argsb L1 T' E L2 C T  econt e2 kb :
     Closed (kb :b: argsb +b+ []) econt → Closed (kb :b: []) e2 →
     (∀ k args, typed_body E L1 (k ◁cont(L1, T') :: C) (T' args)
                           (subst_v (kb::argsb) (k:::args) econt)) →
     (∀ k, typed_body E L2 (k ◁cont(L1, T') :: C) T (subst' kb k e2)) →
-    typed_body E L2 C T (let: kb := Rec kb argsb econt in e2).
+    typed_body E L2 C T (letcont: kb argsb := econt in e2).
   Proof.
     iIntros (Hc1 Hc2 Hecont He2 tid qE) "#HEAP #LFT Htl HE HL HC HT". iApply wp_let'.
     { simpl. rewrite decide_left. done. }

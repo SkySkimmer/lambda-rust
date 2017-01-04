@@ -235,7 +235,7 @@ End sum.
 (* Σ is commonly used for the current functor. So it cannot be defined
    as Π for products. We stick to the following form. *)
 Notation "Σ[ ty1 ; .. ; tyn ]" :=
-  (sum (cons ty1 (..(cons tyn nil)..))) : lrust_type_scope.
+  (sum (cons ty1 (..(cons tyn nil)..))) : lrust_typing.
 
-Hint Resolve sum_mono' sum_proper' : lrust_type_scope.
-Hint Constructors Forall2 : lrust_type_scope.
+Hint Resolve sum_mono' sum_proper' : lrust_typing.
+Hint Constructors Forall2 : lrust_typing.

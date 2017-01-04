@@ -1,6 +1,6 @@
 From iris.base_logic.lib Require Import namespaces.
 From lrust.lang Require Export notation.
-From lrust.lang Require Import heap proofmode.
+From lrust.lang Require Import heap proofmode memcpy.
 
 Definition new : val :=
   λ: ["n"],
@@ -39,3 +39,11 @@ Section specs.
       wp_lam; wp_op; intros ?; try lia; wp_if; try wp_free; by iApply "HΦ".
   Qed.
 End specs.
+
+(* FIXME : why are these notations not pretty-printed. *)
+Notation "'letalloc:' x := e1 'in' e2" :=
+  ((Lam (@cons binder x%E%E%E nil) (x <- e1 ;; e2)) [new [ #1]])%E
+  (at level 102, x at level 1, e1, e2 at level 200) : expr_scope.
+Notation "'letalloc:' x :={ n } ! e1 'in' e2" :=
+  ((Lam (@cons binder x%E%E%E nil) (x <-{ n%Z%V } ! e1 ;; e2)) [new [ #n]%E%E])%E
+  (at level 102, x at level 1, e1, e2 at level 200) : expr_scope.

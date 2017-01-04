@@ -245,6 +245,6 @@ Section typing.
 End typing.
 
 
-Hint Resolve product_mono' product_proper' : lrust_type_scope.
-Hint Constructors Forall2 : lrust_type_scope.
-Hint Resolve product2_mono' product2_proper' | 100 : lrust_type_scope.
+Hint Resolve product_mono' product_proper' : lrust_typing.
+Hint Constructors Forall2 : lrust_typing.
+Hint Resolve product2_mono' product2_proper' | 100 : lrust_typing.

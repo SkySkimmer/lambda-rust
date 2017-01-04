@@ -3,7 +3,7 @@ From iris.proofmode Require Import tactics.
 From iris.algebra Require Import vector.
 From lrust.lifetime Require Import borrow.
 From lrust.typing Require Export type.
-From lrust.typing Require Import programs.
+From lrust.typing Require Import programs cont.
 
 Section fn.
   Context `{typeG Σ} {A : Type} {n : nat}.
@@ -140,11 +140,11 @@ Section typing.
 
   (* TODO: Define some syntactic sugar for calling and letrec like we do on paper. *)
   Lemma type_call {A} E L E' T p (ps : list path)
-                        (tys : A → vec type (length ps)) ty k x :
+                         (tys : A → vec type (length ps)) ty k x :
     elctx_sat E L (E' x) →
     typed_body E L [k ◁cont(L, λ v : vec _ 1, (v!!!0 ◁ ty x) :: T)]
                ((p ◁ fn E' tys ty) :: zip_with TCtx_hasty ps (tys x) ++ T)
-               (p (of_val k :: ps)).
+               (call: p ps → k).
   Proof.
     iIntros (HE tid qE) "#HEAP #LFT Htl HE HL HC".
     rewrite tctx_interp_cons tctx_interp_app. iIntros "(Hf & Hargs & HT)".
@@ -187,7 +187,7 @@ Section typing.
     tctx_extract_ctx E L (zip_with TCtx_hasty ps (tys x)) T T' →
     (k ◁cont(L, T''))%CC ∈ C →
     (∀ ret : val, tctx_incl E L ((ret ◁ ty x)::T') (T'' [# ret])) →
-    typed_body E L C T (p (of_val k :: ps)).
+    typed_body E L C T (call: p ps → k).
   Proof.
     intros Hfn HE HTT' HC HT'T''.
     rewrite -typed_body_mono /flip; last done; first by eapply type_call.
@@ -195,6 +195,36 @@ Section typing.
       apply cctx_incl_cons; first done. intros args. inv_vec args=>ret q. inv_vec q. done.
     - etrans; last by apply (tctx_incl_frame_l _ _ [_]).
       apply copy_elem_of_tctx_incl; last done. apply _.
+  Qed.
+
+  Lemma type_letcall {A} x E L E' C T T' p (ps : list path)
+                        (tys : A → vec type (length ps)) ty b e :
+    Closed (b :b: []) e → Closed [] p → Forall (Closed []) ps →
+    (p ◁ fn E' tys ty)%TC ∈ T →
+    elctx_sat E L (E' x) →
+    tctx_extract_ctx E L (zip_with TCtx_hasty ps (tys x)) T T' →
+    (∀ ret : val, typed_body E L C ((ret ◁ ty x)::T') (subst' b ret e)) →
+    typed_body E L C T (letcall: b := p ps in e).
+  Proof.
+    intros ?? Hpsc ????. eapply (type_cont [_] _ (λ r, (r!!!0 ◁ ty x) :: T')%TC).
+    - (* TODO : make [solve_closed] work here. *)
+      eapply is_closed_weaken; first done. set_solver+.
+    - (* TODO : make [solve_closed] work here. *)
+      rewrite /Closed /= !andb_True. split.
+      + by eapply is_closed_weaken, list_subseteq_nil.
+      + eapply Is_true_eq_left, forallb_forall, List.Forall_forall, Forall_impl=>//.
+        intros. eapply Is_true_eq_true, is_closed_weaken=>//. set_solver+.
+    - intros k ret. inv_vec ret=>ret v0. inv_vec v0. rewrite /subst_v /=.
+      rewrite ->(is_closed_subst []), incl_cctx_incl; first done; try set_solver+.
+      apply subst'_is_closed; last done. apply is_closed_of_val.
+    - intros.
+      (* TODO : make [simpl_subst] work here. *)
+      change (subst' "_k" k (p (Var "_k" :: ps))) with
+             ((subst "_k" k p) (of_val k :: map (subst "_k" k) ps)).
+      rewrite is_closed_nil_subst //.
+      assert (map (subst "_k" k) ps = ps) as ->.
+      { clear -Hpsc. induction Hpsc=>//=. rewrite is_closed_nil_subst //. congruence. }
+      eapply type_call'; try done. constructor. done.
   Qed.
 
   Lemma type_fn {A} E L E' fb kb (argsb : list binder) e
@@ -206,7 +236,7 @@ Section typing.
                    ((f ◁ fn E' tys ty) ::
                       zip_with (TCtx_hasty ∘ of_val) args (tys x) ++ T)
                    (subst_v (fb :: kb :: argsb) (f ::: k ::: args) e)) →
-    typed_instruction_ty E L T (Rec fb (kb :: argsb) e) (fn E' tys ty).
+    typed_instruction_ty E L T (funrec: fb argsb → kb := e) (fn E' tys ty).
   Proof.
     iIntros (Hc Hbody tid qE) "#HEAP #LFT $ $ $ #HT". iApply wp_value.
     { simpl. rewrite decide_left. done. }

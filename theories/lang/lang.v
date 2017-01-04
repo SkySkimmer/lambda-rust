@@ -19,6 +19,13 @@ Inductive binder := BAnon | BNamed : string → binder.
 Delimit Scope lrust_binder_scope with RustB.
 Bind Scope lrust_binder_scope with binder.
 
+Notation "a :: b" := (@cons binder a%RustB b%RustB)
+  (at level 60, right associativity) : lrust_binder_scope.
+Notation "[ x1 ; x2 ; .. ; xn ]" :=
+  (@cons binder x1%RustB (@cons binder x2%RustB
+        (..(@cons binder xn%RustB (@nil binder))..))) : lrust_binder_scope.
+Notation "[ x ]" := (@cons binder x%RustB (@nil binder)) : lrust_binder_scope.
+
 Definition cons_binder (mx : binder) (X : list string) : list string :=
   match mx with BAnon => X | BNamed x => x :: X end.
 Infix ":b:" := cons_binder (at level 60, right associativity).
@@ -476,6 +483,23 @@ Proof. intros. apply is_closed_subst with []; set_solver. Qed.
 
 Lemma is_closed_of_val X v : is_closed X (of_val v).
 Proof. apply is_closed_weaken_nil. induction v; simpl; auto. Qed.
+
+Lemma subst_is_closed X x es e :
+  is_closed X es → is_closed (x::X) e → is_closed X (subst x es e).
+Proof.
+  revert e X. fix 1; destruct e=>X //=; repeat (case_bool_decide=>//=);
+    try naive_solver; rewrite ?andb_True; intros.
+  - set_solver.
+  - eauto using is_closed_weaken with set_solver.
+  - eapply is_closed_weaken; first done.
+    destruct (decide (BNamed x = f)), (decide (BNamed x ∈ xl)); set_solver.
+  - split; first naive_solver. induction el; naive_solver.
+  - split; first naive_solver. induction el; naive_solver.
+Qed.
+
+Lemma subst'_is_closed X b es e :
+  is_closed X es → is_closed (b:b:X) e → is_closed X (subst' b es e).
+Proof. destruct b; first done. apply subst_is_closed. Qed.
 
 (* Operations on literals *)
 Lemma lit_eq_state σ1 σ2 l1 l2 :
