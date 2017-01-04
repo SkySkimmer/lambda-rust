@@ -127,9 +127,8 @@ Section typing.
     Proper (pointwise_relation A (λ (v1 v2 : vec type n), Forall2 (eqtype E0 L0) v1 v2) ==>
             pointwise_relation A (eqtype E0 L0) ==> eqtype E0 L0) (fn E).
   Proof.
-    intros tys1 tys2 Htys ty1 ty2 Hty. split; eapply fn_subtype_ty'; try (by intro; apply Hty).
-    - intros x. eapply Forall2_flip, Forall2_impl; first by eapply (Htys x). by intros ??[].
-    - intros x. eapply Forall2_impl; first by eapply (Htys x). by intros ??[].
+    intros tys1 tys2 Htys ty1 ty2 Hty. split; eapply fn_subtype_ty'; try (by intro; apply Hty);
+      intros x; (apply Forall2_flip + idtac); (eapply Forall2_impl; first by eapply (Htys x)); by intros ??[].
   Qed.
 
   Lemma fn_subtype_elctx_sat {A n} E0 L0 E E' (tys : A → vec type n) ty :
