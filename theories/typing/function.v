@@ -108,9 +108,7 @@ Section typing.
     (∀ x, Forall2 (subtype (E0 ++ E x) L0) (tys2 x) (tys1 x)) →
     (∀ x, subtype (E0 ++ E x) L0 (ty1 x) (ty2 x)) →
     subtype E0 L0 (fn E tys1 ty1) (fn E tys2 ty2).
-  Proof.
-    intros. apply fn_subtype_full; try done.
-  Qed.
+  Proof. intros. by apply fn_subtype_full. Qed.
 
   (* This proper and the next can probably not be inferred, but oh well. *)
   Global Instance fn_subtype_ty' {A n} E0 L0 E :

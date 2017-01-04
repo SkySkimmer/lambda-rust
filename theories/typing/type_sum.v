@@ -153,15 +153,15 @@ Section case.
   Qed.
 
   Lemma type_sum_assign {E L} (i : nat) tyl ty1 ty2 ty p1 p2 :
-    Closed [] p1 → Closed [] p2 →
     tyl !! i = Some ty →
     typed_write E L ty1 (sum tyl) ty2 →
     typed_instruction E L [p1 ◁ ty1; p2 ◁ ty] (p1 <-{i} p2) (λ _, [p1 ◁ ty2]%TC).
   Proof.
-    iIntros (?? Hty Hw ??) "#HEAP #LFT $ HE HL Hp".
+    iIntros (Hty Hw ??) "#HEAP #LFT $ HE HL Hp".
     rewrite tctx_interp_cons tctx_interp_singleton.
-    iDestruct "Hp" as "[Hp1 Hp2]". wp_bind p1. iApply (wp_hasty with "Hp1").
-    iIntros (v1 Hv1) "Hty1".
+    iDestruct "Hp" as "[Hp1 Hp2]". iDestruct (closed_hasty with "Hp1") as "%".
+    iDestruct (closed_hasty with "Hp2") as "%". wp_bind p1.
+    iApply (wp_hasty with "Hp1"). iIntros (v1 Hv1) "Hty1".
     iMod (Hw with "LFT HE HL Hty1") as (l vl) "(H & H↦ & Hw)"=>//=.
     destruct vl as [|? vl]; iDestruct "H" as %[[= Hlen] ->].
     rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[H↦0 H↦vl]".
@@ -195,17 +195,17 @@ Section case.
   Qed.
 
   Lemma type_sum_memcpy {E L} (i : nat) tyl ty1 ty1' ty2 ty2' ty p1 p2 :
-    Closed [] p1 → Closed [] p2 →
     tyl !! i = Some ty →
     typed_write E L ty1 (sum tyl) ty1' →
     typed_read E L ty2 ty ty2' →
     typed_instruction E L [p1 ◁ ty1; p2 ◁ ty2]
                (p1 <⋯{i} !{ty.(ty_size)}p2) (λ _, [p1 ◁ ty1'; p2 ◁ ty2']%TC).
   Proof.
-    iIntros (?? Hty Hw Hr ??) "#HEAP #LFT Htl [HE1 HE2] [HL1 HL2] Hp".
+    iIntros (Hty Hw Hr ??) "#HEAP #LFT Htl [HE1 HE2] [HL1 HL2] Hp".
     rewrite tctx_interp_cons tctx_interp_singleton.
-    iDestruct "Hp" as "[Hp1 Hp2]". wp_bind p1. iApply (wp_hasty with "Hp1").
-    iIntros (v1 Hv1) "Hty1".
+    iDestruct "Hp" as "[Hp1 Hp2]". iDestruct (closed_hasty with "Hp1") as "%".
+    iDestruct (closed_hasty with "Hp2") as "%". wp_bind p1.
+    iApply (wp_hasty with "Hp1"). iIntros (v1 Hv1) "Hty1".
     iMod (Hw with "LFT HE1 HL1 Hty1") as (l1 vl1) "(H & H↦ & Hw)"=>//=.
     destruct vl1 as [|? vl1]; iDestruct "H" as %[[= Hlen] ->].
     rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[H↦0 H↦vl1]". wp_write.
