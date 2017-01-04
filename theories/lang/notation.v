@@ -79,7 +79,7 @@ Notation "'letcall:' x := f args 'in' e" :=
   (letcont: "_k" [ x ] := e in call: f args → "_k")%E
   (at level 102, x, f, args at level 1, e at level 200) : expr_scope.
 
-Notation "e1 <-[ i ] '☇'" := (e1 <- #i)%E
+Notation "e1 <-{ i } '☇'" := (e1 <- #i)%E
   (only parsing, at level 80) : expr_scope.
-Notation "e1 <-[ i ] e2" := (e1 <-[i] ☇ ;; e1+ₗ#1 <- e2)%E
+Notation "e1 <-{ i } e2" := (e1 <-{i} ☇ ;; e1+ₗ#1 <- e2)%E
   (at level 80) : expr_scope.

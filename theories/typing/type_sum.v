@@ -1,8 +1,8 @@
 From iris.proofmode Require Import tactics.
-From lrust.lang Require Import heap.
+From lrust.lang Require Import heap memcpy.
 From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.typing Require Export uninit uniq_bor shr_bor own sum.
-From lrust.typing Require Import lft_contexts type_context programs.
+From lrust.typing Require Import lft_contexts type_context programs product.
 
 Section case.
   Context `{typeG Σ}.
@@ -150,5 +150,85 @@ Section case.
   Proof.
     intros. rewrite ->copy_elem_of_tctx_incl; last done; last apply _.
     apply type_case_shr; first done. eapply Forall2_impl; first done. auto.
+  Qed.
+
+  Lemma type_sum_assign {E L} (i : nat) tyl ty1 ty2 ty p1 p2 :
+    Closed [] p1 → Closed [] p2 →
+    tyl !! i = Some ty →
+    typed_write E L ty1 (sum tyl) ty2 →
+    typed_instruction E L [p1 ◁ ty1; p2 ◁ ty] (p1 <-{i} p2) (λ _, [p1 ◁ ty2]%TC).
+  Proof.
+    iIntros (?? Hty Hw ??) "#HEAP #LFT $ HE HL Hp".
+    rewrite tctx_interp_cons tctx_interp_singleton.
+    iDestruct "Hp" as "[Hp1 Hp2]". wp_bind p1. iApply (wp_hasty with "Hp1").
+    iIntros (v1 Hv1) "Hty1".
+    iMod (Hw with "LFT HE HL Hty1") as (l vl) "(H & H↦ & Hw)"=>//=.
+    destruct vl as [|? vl]; iDestruct "H" as %[[= Hlen] ->].
+    rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[H↦0 H↦vl]".
+    wp_write. iApply wp_seq. done. iNext. wp_bind p1.
+    iApply (wp_wand with "[]"); first by iApply (wp_eval_path).
+    iIntros (? ->). wp_op. wp_bind p2. iApply (wp_hasty with "Hp2").
+    iIntros (v2 Hv2) "Hty2". iDestruct (ty_size_eq with "Hty2") as %Hlenty.
+    destruct vl as [|? vl].
+    { exfalso. revert i Hty. clear - Hlen Hlenty. induction tyl=>//= -[|i] /=.
+      - intros [= ->]. simpl in *. lia.
+      - apply IHtyl. simpl in *. lia. }
+    rewrite heap_mapsto_vec_cons. iDestruct "H↦vl" as "[H↦ H↦vl]". wp_write.
+    rewrite tctx_interp_singleton tctx_hasty_val' //. iApply "Hw". iNext.
+    iExists (_::_::_). rewrite !heap_mapsto_vec_cons. iFrame.
+    iExists i, [_], _. rewrite -Hlen nth_lookup Hty. auto.
+  Qed.
+
+  Lemma type_sum_assign_unit {E L} (i : nat) tyl ty1 ty2 p :
+    tyl !! i = Some unit →
+    typed_write E L ty1 (sum tyl) ty2 →
+    typed_instruction E L [p ◁ ty1] (p <-{i} ☇) (λ _, [p ◁ ty2]%TC).
+  Proof.
+    iIntros (Hty Hw ??) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
+    wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v Hv) "Hty".
+    iMod (Hw with "LFT HE HL Hty") as (l vl) "(H & H↦ & Hw)". done.
+    simpl. destruct vl as [|? vl]; iDestruct "H" as %[[= Hlen] ->].
+    rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[H↦0 H↦vl]".
+    wp_write. rewrite tctx_interp_singleton tctx_hasty_val' //.
+    iApply "Hw". iModIntro. iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame.
+    iExists i, [], _. rewrite -Hlen nth_lookup Hty. auto.
+  Qed.
+
+  Lemma type_sum_memcpy {E L} (i : nat) tyl ty1 ty1' ty2 ty2' ty p1 p2 :
+    Closed [] p1 → Closed [] p2 →
+    tyl !! i = Some ty →
+    typed_write E L ty1 (sum tyl) ty1' →
+    typed_read E L ty2 ty ty2' →
+    typed_instruction E L [p1 ◁ ty1; p2 ◁ ty2]
+               (p1 <⋯{i} !{ty.(ty_size)}p2) (λ _, [p1 ◁ ty1'; p2 ◁ ty2']%TC).
+  Proof.
+    iIntros (?? Hty Hw Hr ??) "#HEAP #LFT Htl [HE1 HE2] [HL1 HL2] Hp".
+    rewrite tctx_interp_cons tctx_interp_singleton.
+    iDestruct "Hp" as "[Hp1 Hp2]". wp_bind p1. iApply (wp_hasty with "Hp1").
+    iIntros (v1 Hv1) "Hty1".
+    iMod (Hw with "LFT HE1 HL1 Hty1") as (l1 vl1) "(H & H↦ & Hw)"=>//=.
+    destruct vl1 as [|? vl1]; iDestruct "H" as %[[= Hlen] ->].
+    rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[H↦0 H↦vl1]". wp_write.
+    iApply wp_seq. done. iNext. wp_bind p1.
+    iApply (wp_wand with "[]"); first by iApply (wp_eval_path). iIntros (? ->).
+    wp_op. wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2 Hv2) "Hty2".
+    iMod (Hr with "LFT Htl HE2 HL2 Hty2") as (l2 vl2 q) "(% & H↦2 & Hty & Hr)"=>//=. subst.
+    assert (ty.(ty_size) ≤ length vl1).
+    { revert i Hty. rewrite Hlen. clear. induction tyl=>//= -[|i] /=.
+      - intros [= ->]. lia.
+      - specialize (IHtyl i). intuition lia. }
+    rewrite -(take_drop (ty.(ty_size)) vl1) heap_mapsto_vec_app.
+    iDestruct "H↦vl1" as "[H↦vl1 H↦pad]".
+    iAssert (▷ ⌜length vl2 = ty.(ty_size)⌝)%I with "[#]" as ">%". by rewrite -ty_size_eq.
+    iApply wp_fupd. iApply (wp_memcpy with "[$HEAP $H↦vl1 $H↦2]"); try done.
+    { rewrite take_length. lia. }
+    iNext; iIntros "[H↦vl1 H↦2]".
+    rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //.
+    iMod ("Hr" with "H↦2") as "($ & $ & $ & $)". iApply "Hw". iNext.
+    rewrite split_sum_mt /is_pad. iExists i. rewrite nth_lookup Hty. iFrame.
+    iSplitL "H↦pad".
+    - rewrite (shift_loc_assoc_nat _ 1) take_length Nat.min_l; last lia.
+      iExists _. iFrame. rewrite /= drop_length. iPureIntro. lia.
+    - iExists _. iFrame.
   Qed.
 End case.

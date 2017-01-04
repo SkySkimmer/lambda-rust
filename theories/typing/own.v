@@ -63,7 +63,7 @@ Section own.
     move=>n ty N κ l tid ?? /=. iIntros "#LFT Hshr Htok".
     iMod (bor_exists with "LFT Hshr") as (vl) "Hb". set_solver.
     iMod (bor_sep with "LFT Hb") as "[Hb1 Hb2]". set_solver.
-    iMod (bor_exists with "LFT Hb2") as (l') "Hb2". set_solver. 
+    iMod (bor_exists with "LFT Hb2") as (l') "Hb2". set_solver.
     iMod (bor_sep with "LFT Hb2") as "[EQ Hb2]". set_solver.
     iMod (bor_persistent_tok with "LFT EQ Htok") as "[>% $]". set_solver.
     iExists l'. subst. rewrite heap_mapsto_vec_singleton.
@@ -256,8 +256,8 @@ Section typing.
     - apply type_new.
     - solve_typing.
     - move=>xv /=.
-      assert (subst x xv (x <-{ty.(ty_size)} !p ;; e)%E =
-              (xv <-{ty.(ty_size)} !p ;; subst x xv e)%E) as ->.
+      assert (subst x xv (x <⋯ !{ty.(ty_size)}p ;; e)%E =
+              (xv <⋯ !{ty.(ty_size)}p ;; subst x xv e)%E) as ->.
       { (* TODO : simpl_subst should be able to do this. *)
         unfold subst=>/=. repeat f_equal.
         - eapply (is_closed_subst []). done. set_solver.

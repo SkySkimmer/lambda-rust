@@ -177,7 +177,7 @@ Section typing_rules.
     ty.(ty_size) = n → typed_write E L ty1 ty ty1' → typed_read E L ty2 ty ty2' →
     {{{ heap_ctx ∗ lft_ctx ∗ na_own tid ⊤ ∗ elctx_interp E qE ∗ llctx_interp L qL ∗
         tctx_elt_interp tid (p1 ◁ ty1) ∗ tctx_elt_interp tid (p2 ◁ ty2) }}}
-      (p1 <-{n} !p2)
+      (p1 <⋯ !{n}p2)
     {{{ RET #(); na_own tid ⊤ ∗ elctx_interp E qE ∗ llctx_interp L qL ∗
                  tctx_elt_interp tid (p1 ◁ ty1') ∗ tctx_elt_interp tid (p2 ◁ ty2') }}}.
   Proof.
@@ -199,7 +199,7 @@ Section typing_rules.
 
   Lemma type_memcpy {E L} ty ty1 ty1' ty2 ty2' n p1 p2 :
     ty.(ty_size) = n → typed_write E L ty1 ty ty1' → typed_read E L ty2 ty ty2' →
-    typed_instruction E L [p1 ◁ ty1; p2 ◁ ty2] (p1 <-{n} !p2)
+    typed_instruction E L [p1 ◁ ty1; p2 ◁ ty2] (p1 <⋯ !{n}p2)
                       (λ _, [p1 ◁ ty1'; p2 ◁ ty2']%TC).
   Proof.
     iIntros (Hsz Hwrt Hread tid qE) "#HEAP #LFT Htl HE HL HT".

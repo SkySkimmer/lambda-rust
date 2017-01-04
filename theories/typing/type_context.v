@@ -63,6 +63,16 @@ Section type_context.
     iIntros (v) "%". subst v. wp_op. done.
   Qed.
 
+  Lemma eval_path_closed p v :
+    eval_path p = Some v → Closed [] p.
+  Proof.
+    intros Hpv. revert v Hpv.
+    induction p as [| | |[] p IH [|[]| | | | | | | | | |] _| | | | | | | |]=>//.
+    - unfold eval_path=>? /of_to_val <-. apply is_closed_of_val.
+    - simpl. destruct (eval_path p) as [[[]|]|]; intros ? [= <-].
+      specialize (IH _ eq_refl). apply _.
+  Qed.
+
   (** Type context element *)
   Definition tctx_elt_interp (tid : thread_id) (x : tctx_elt) : iProp Σ :=
     match x with
@@ -104,6 +114,11 @@ Section type_context.
     iIntros "Hty HΦ". iDestruct "Hty" as (v) "[% Hown]".
     iApply (wp_wand with "[]"). { iApply wp_eval_path. done. }
     iIntros (v') "%". subst v'. iApply ("HΦ" with "* [] Hown"). by auto.
+  Qed.
+
+  Lemma closed_hasty tid p ty : tctx_elt_interp tid (p ◁ ty) -∗ ⌜Closed [] p⌝.
+  Proof.
+    iIntros "H". iDestruct "H" as (?) "[% _]". eauto using eval_path_closed.
   Qed.
 
   (** Type context *)
