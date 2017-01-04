@@ -112,6 +112,26 @@ Section typing.
     intros. apply fn_subtype_full; try done. intros. apply elctx_incl_refl.
   Qed.
 
+  (* This proper and the next can probably not be inferred, but oh well. *)
+  Global Instance fn_subtype_ty' {A n} E0 L0 E :
+    Proper (flip (pointwise_relation A (λ (v1 v2 : vec type n), Forall2 (subtype E0 L0) v1 v2)) ==>
+            pointwise_relation A (subtype E0 L0) ==> subtype E0 L0) (fn E).
+  Proof.
+    intros tys1 tys2 Htys ty1 ty2 Hty. apply fn_subtype_ty.
+    - intros. eapply Forall2_impl; first eapply Htys. intros ??.
+      eapply subtype_weaken; last done. by apply contains_inserts_r.
+    - intros. eapply subtype_weaken, Hty; last done. by apply contains_inserts_r.
+  Qed.
+
+  Global Instance fn_eqtype_ty' {A n} E0 L0 E :
+    Proper (pointwise_relation A (λ (v1 v2 : vec type n), Forall2 (eqtype E0 L0) v1 v2) ==>
+            pointwise_relation A (eqtype E0 L0) ==> eqtype E0 L0) (fn E).
+  Proof.
+    intros tys1 tys2 Htys ty1 ty2 Hty. split; eapply fn_subtype_ty'; try (by intro; apply Hty).
+    - intros x. eapply Forall2_flip, Forall2_impl; first by eapply (Htys x). by intros ??[].
+    - intros x. eapply Forall2_impl; first by eapply (Htys x). by intros ??[].
+  Qed.
+
   Lemma fn_subtype_elctx_sat {A n} E0 L0 E E' (tys : A → vec type n) ty :
     (∀ x, elctx_sat (E x) [] (E' x)) →
     subtype E0 L0 (fn E' tys ty) (fn E tys ty).
