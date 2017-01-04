@@ -109,7 +109,7 @@ Section typing.
     (∀ x, subtype (E0 ++ E x) L0 (ty1 x) (ty2 x)) →
     subtype E0 L0 (fn E tys1 ty1) (fn E tys2 ty2).
   Proof.
-    intros. apply fn_subtype_full; try done. intros. apply elctx_incl_refl.
+    intros. apply fn_subtype_full; try done.
   Qed.
 
   (* This proper and the next can probably not be inferred, but oh well. *)
@@ -145,7 +145,7 @@ Section typing.
     intros Hκκ'. apply fn_subtype_full; try done. intros.
     apply elctx_incl_lft_incl; last by apply elctx_incl_refl.
     iIntros "#HE #HL". iApply (Hκκ' with "[HE] HL").
-    rewrite /elctx_interp_0 big_sepL_app. iDestruct "HE" as "[_ $]".
+    rewrite /elctx_interp_0 big_sepL_app. iDestruct "HE" as "[$ _]".
   Qed.
 
   Lemma fn_subtype_specialize {A B n} (σ : A → B) E0 L0 E tys ty :
