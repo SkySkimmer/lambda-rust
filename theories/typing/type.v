@@ -1,4 +1,5 @@
 From iris.base_logic.lib Require Export na_invariants.
+From iris.base_logic Require Import big_op.
 From lrust.lang Require Export proofmode notation.
 From lrust.lifetime Require Import borrow frac_borrow reborrow.
 From lrust.typing Require Import lft_contexts.
@@ -427,6 +428,23 @@ Section subtyping.
       by iApply (Hst with "* [] [] []").
   Qed.
 End subtyping.
+
+Section weakening.
+  Context `{typeG Σ}.
+
+  Lemma subtype_weaken E1 E2 L1 L2 ty1 ty2 :
+    E1 `contains` E2 → L1 `contains` L2 →
+    subtype E1 L1 ty1 ty2 → subtype E2 L2 ty1 ty2.
+  Proof.
+    (* TODO: There's no lemma relating `contains` to membership (∈)...?? *)
+    iIntros (HE12 [L' HL12]%contains_Permutation Hsub) "#LFT HE HL".
+    iApply (Hsub with "LFT [HE] [HL]").
+    - rewrite /elctx_interp_0. by iApply big_sepL_contains.
+    - iDestruct "HL" as %HL. iPureIntro. intros ??. apply HL.
+      rewrite HL12. set_solver.
+  Qed.
+
+End weakening.
 
 Hint Resolve subtype_refl eqtype_refl : lrust_typing.
 
