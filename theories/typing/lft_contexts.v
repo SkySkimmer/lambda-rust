@@ -1,7 +1,7 @@
 From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import fractional.
-From lrust.lifetime Require Export derived.
+From lrust.lifetime Require Import derived borrow frac_borrow.
 
 Inductive elctx_elt : Type :=
 | ELCtx_Alive (κ : lft)
@@ -142,6 +142,24 @@ Section lft_contexts.
   Proof.
     iIntros "H". iIntros (x ?). iApply llctx_elt_interp_persist.
     unfold llctx_interp. by iApply (big_sepL_elem_of with "H").
+  Qed.
+
+  Lemma lctx_equalize_lft qE qL κ1 κ2 `{!frac_borG Σ} :
+    lft_ctx -∗ llctx_elt_interp (κ1 ⊑ [κ2]%list) qL ={⊤}=∗
+      elctx_elt_interp (κ1 ⊑ κ2) qE ∗ elctx_elt_interp (κ2 ⊑ κ1) qE.
+  Proof.
+    iIntros "#LFT Hκ". rewrite /llctx_elt_interp /=. (* TODO: Why is this unfold necessary? *)
+    iDestruct "Hκ" as (κ) "(% & Hκ & _)".
+    iMod (bor_create _ κ2 with "LFT [Hκ]") as "[Hκ _]"; first done; first by iFrame.
+    iMod (bor_fracture (λ q, (qL * q).[_])%I with "LFT [Hκ]") as "#Hκ"; first done.
+    { rewrite Qp_mult_1_r. done. }
+    iModIntro. subst κ1. iSplit.
+    - iApply lft_le_incl.
+      rewrite <-!gmultiset_union_subseteq_l. done.
+    - iApply (lft_incl_glb with "[]"); first iApply (lft_incl_glb with "[]").
+      + iApply lft_incl_refl.
+      + iApply lft_incl_static.
+      + iApply (frac_bor_lft_incl with "LFT"). done.
   Qed.
 
   Context (E : elctx) (L : llctx).

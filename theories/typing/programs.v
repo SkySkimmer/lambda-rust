@@ -84,6 +84,22 @@ Notation typed_instruction_ty E L T1 e ty :=
 Section typing_rules.
   Context `{typeG Σ}.
 
+  (* TODO: notation scopes need tuing to avoid the %list here. *)
+  (* TODO: Proof a version of this that substitutes into a compatible context...
+     if we really want to do that. *)
+  Lemma type_equivalize_lft E L C T κ1 κ2 e :
+    typed_body ((κ1 ⊑ κ2) :: (κ2 ⊑ κ1) :: E) L C T e →
+    typed_body E ((κ1 ⊑ [κ2]%list) :: L) C T e.
+  Proof.
+    iIntros (He tid qE) "#HEAP #LFT Htl HE HL HC HT".
+    rewrite /llctx_interp big_sepL_cons. iDestruct "HL" as "[Hκ HL]".
+    iMod (lctx_equalize_lft with "LFT Hκ") as "[Hκ1 Hκ2]".
+    iApply (He with "HEAP LFT Htl [Hκ1 Hκ2 HE] HL [HC] HT").
+    - rewrite /elctx_interp !big_sepL_cons. by iFrame.
+    - rewrite /elctx_interp !big_sepL_cons. iIntros "(_ & _ & HE)".
+      iApply "HC". done.
+  Qed.
+
   Lemma type_let E L T1 T2 (T : tctx) C xb e e' :
     Closed (xb :b: []) e' →
     typed_instruction E L T1 e T2 →
