@@ -311,7 +311,10 @@ End lft_contexts.
 
 Section elctx_incl.
   (* External lifetime context inclusion, in a persistent context.
-     (Used for function types subtyping). *)
+     (Used for function types subtyping).
+     On paper, this corresponds to using only the inclusions from E, L
+     to show E1; [] |- E2.
+  *)
 
   Context `{invG Σ, lftG Σ} (E : elctx) (L : llctx).
 
@@ -320,8 +323,19 @@ Section elctx_incl.
     ∀ qE1, elctx_interp E1 qE1 ={F}=∗ ∃ qE2, elctx_interp E2 qE2 ∗
        (elctx_interp E2 qE2 ={F}=∗ elctx_interp E1 qE1).
 
+  Global Instance elctx_incl_preorder : PreOrder elctx_incl.
+  Proof.
+    split.
+    - iIntros (???) "_ _ * ?". iExists _. iFrame. eauto.
+    - iIntros (x y z Hxy Hyz ??) "#HE #HL * HE1".
+      iMod (Hxy with "HE HL * HE1") as (qy) "[HE1 Hclose1]"; first done.
+      iMod (Hyz with "HE HL * HE1") as (qz) "[HE1 Hclose2]"; first done.
+      iModIntro. iExists qz. iFrame "HE1". iIntros "HE1".
+      iApply ("Hclose1" with ">"). iApply "Hclose2". done.
+  Qed.
+
   Lemma elctx_incl_refl E' : elctx_incl E' E'.
-  Proof. iIntros (??) "_ _ * ?". iExists _. iFrame. eauto. Qed.
+  Proof. reflexivity. Qed.
 
   Lemma elctx_incl_nil E' : elctx_incl E' [].
   Proof.
@@ -329,22 +343,50 @@ Section elctx_incl.
     rewrite /elctx_interp big_sepL_nil. auto.
   Qed.
 
+  Global Instance elctx_incl_app :
+    Proper (elctx_incl ==> elctx_incl ==> elctx_incl) app.
+  Proof.
+    iIntros (?? HE1 ?? HE2 ??) "#HE #HL *". rewrite {1}/elctx_interp big_sepL_app.
+    iIntros "[HE1 HE2]".
+    iMod (HE1 with "HE HL * HE1") as (q1) "[HE1 Hclose1]"; first done.
+    iMod (HE2 with "HE HL * HE2") as (q2) "[HE2 Hclose2]"; first done.
+    destruct (Qp_lower_bound q1 q2) as (q & ? & ? & -> & ->).
+    iModIntro. iExists q. rewrite /elctx_interp !big_sepL_app.
+    iDestruct "HE1" as "[$ HE1]". iDestruct "HE2" as "[$ HE2]".
+    iIntros "[HE1' HE2']".
+    iMod ("Hclose1" with "[$HE1 $HE1']") as "$".
+    iMod ("Hclose2" with "[$HE2 $HE2']") as "$".
+    done.
+  Qed.
+
+  Lemma elctx_incl_dup E1 :
+    elctx_incl E1 (E1 ++ E1).
+  Proof.
+    iIntros (??) "#HE #HL * [HE1 HE1']".
+    iModIntro. iExists (qE1 / 2)%Qp.
+    rewrite /elctx_interp !big_sepL_app. iFrame.
+    iIntros "[HE1 HE1']". by iFrame.
+  Qed.
+
+  Lemma elctx_sat_incl E1 E2 :
+    elctx_sat E1 [] E2 → elctx_incl E1 E2.
+   Proof.
+    iIntros (H12 ??) "#HE #HL * HE1".
+    iMod (H12 _ 1%Qp with "HE1 []") as (qE2) "[HE2 Hclose]". done.
+    { by rewrite /llctx_interp big_sepL_nil. }
+    iExists qE2. iFrame. iIntros "!> HE2".
+    by iMod ("Hclose" with "HE2") as "[$ _]".
+   Qed.
+
   Lemma elctx_incl_lft_alive E1 E2 κ :
     lctx_lft_alive E1 [] κ → elctx_incl E1 E2 → elctx_incl E1 ((☀κ) :: E2).
   Proof.
-    iIntros (Hκ HE2 ??) "#HE #HL * [HE11 HE12]".
-    iMod (Hκ _ _ 1%Qp with "HE11 []") as (qE21) "[Hκ Hclose]". done.
-    { by rewrite /llctx_interp big_sepL_nil. }
-    iMod (HE2 with "HE HL * HE12") as (qE22) "[HE2 Hclose']". done.
-    destruct (Qp_lower_bound qE21 qE22) as (qE2 & ? & ? & -> & ->).
-    iExists qE2. rewrite /elctx_interp big_sepL_cons /=.
-    iDestruct "HE2" as "[$ HE2]". iDestruct "Hκ" as "[$ Hκ]". iIntros "!> [Hκ' HE2']".
-    iMod ("Hclose" with "[$Hκ $Hκ']") as "[$ _]".
-    iApply "Hclose'". by iFrame.
+    intros Hκ HE2. rewrite ->elctx_incl_dup. apply (elctx_incl_app _ [_]); last done.
+    apply elctx_sat_incl. apply elctx_sat_alive, elctx_sat_nil; first done.
   Qed.
 
   Lemma elctx_incl_lft_incl E1 E2 κ κ' :
-    lctx_lft_incl (E1 ++ E) L κ κ' → elctx_incl E1 E2 →
+    lctx_lft_incl (E ++ E1) L κ κ' → elctx_incl E1 E2 →
     elctx_incl E1 ((κ ⊑ κ') :: E2).
   Proof.
     iIntros (Hκκ' HE2 ??) "#HE #HL * HE1".
@@ -356,14 +398,20 @@ Section elctx_incl.
     iIntros "!> [_ HE2']". by iApply "Hclose'".
   Qed.
 
-  Lemma elctx_sat_incl E1 E2 :
-    elctx_sat E1 [] E2 → elctx_incl E1 E2.
+  Lemma elctx_incl_lft_incl_alive E1 E2 κ κ' :
+    lctx_lft_incl (E ++ E1) L κ κ' → elctx_incl E1 E2 →
+    elctx_incl ((☀κ) :: E1) ((☀κ') :: E2).
   Proof.
-    iIntros (H12 ??) "#HE #HL * HE1".
-    iMod (H12 _ 1%Qp with "HE1 []") as (qE2) "[HE2 Hclose]". done.
-    { by rewrite /llctx_interp big_sepL_nil. }
-    iExists qE2. iFrame. iIntros "!> HE2".
-    by iMod ("Hclose" with "HE2") as "[$ _]".
+    intros Hκκ' HE2%(elctx_incl_lft_incl _ _ _ _ Hκκ').
+    (* TODO: can we do this more in rewrite-style? *)
+    trans ((☀ κ) :: (κ ⊑ κ') :: E2)%EL.
+    { by apply (elctx_incl_app [_] [_]). }
+    apply (elctx_incl_app [_; _] [_]); last done.
+    (* TODO: Can we test the auto-context stuff here? *)
+    clear. apply elctx_sat_incl. apply elctx_sat_alive, elctx_sat_nil.
+    eapply lctx_lft_alive_external'.
+    - left.
+    - right. by apply elem_of_list_singleton.
   Qed.
 End elctx_incl.
 

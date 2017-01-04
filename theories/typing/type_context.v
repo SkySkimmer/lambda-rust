@@ -182,21 +182,20 @@ Section type_context.
     rewrite /tctx_incl. iIntros (Hc ???) "_ $ $ H". by iApply big_sepL_contains.
   Qed.
 
-  Lemma tctx_incl_frame E L T11 T12 T21 T22 :
-    tctx_incl E L T11 T12 → tctx_incl E L T21 T22 →
-    tctx_incl E L (T11++T21) (T12++T22).
+  Global Instance tctx_incl_app E L :
+    Proper (tctx_incl E L ==> tctx_incl E L ==> tctx_incl E L) app.
   Proof.
-    intros Hincl1 Hincl2 ???. rewrite /tctx_interp !big_sepL_app.
+    intros ?? Hincl1 ?? Hincl2 ???. rewrite /tctx_interp !big_sepL_app.
     iIntros "#LFT HE HL [H1 H2]".
     iMod (Hincl1 with "LFT HE HL H1") as "(HE & HL & $)".
     iApply (Hincl2 with "LFT HE HL H2").
   Qed.
   Lemma tctx_incl_frame_l E L T T1 T2 :
     tctx_incl E L T1 T2 → tctx_incl E L (T++T1) (T++T2).
-  Proof. by apply tctx_incl_frame. Qed.
+  Proof. by apply tctx_incl_app. Qed.
   Lemma tctx_incl_frame_r E L T T1 T2 :
     tctx_incl E L T1 T2 → tctx_incl E L (T1++T) (T2++T).
-  Proof. by intros; apply tctx_incl_frame. Qed.
+  Proof. by intros; apply tctx_incl_app. Qed.
 
   Lemma copy_tctx_incl E L p `{!Copy ty} :
     tctx_incl E L [p ◁ ty] [p ◁ ty; p ◁ ty].
