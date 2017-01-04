@@ -155,7 +155,7 @@ Section typing.
   Context `{typeG Σ}.
 
   (** Typing *)
-  Lemma write_own E L ty ty' n :
+  Lemma write_own {E L} ty ty' n :
     ty.(ty_size) = ty'.(ty_size) → typed_write E L (own n ty') ty (own n ty).
   Proof.
     iIntros (Hsz p tid F qE qL ?) "_ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
@@ -186,8 +186,8 @@ Section typing.
     iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
     { by iApply ty_size_eq. }
     iModIntro. iExists l, vl, _. iSplit; first done. iFrame "∗#". iIntros "Hl !>".
-    iExists _. iSplit; first done. rewrite uninit_sz. iFrame "H†". iExists _.
-    iFrame. iApply uninit_own. auto.
+    iExists _. iSplit; first done. iFrame "H†". iExists _. iFrame.
+    iApply uninit_own. auto.
   Qed.
 
   Lemma type_new {E L} (n : nat) :
@@ -196,13 +196,12 @@ Section typing.
     iIntros (tid eq) "#HEAP #LFT $ $ $ _".
     iApply (wp_new with "HEAP"); try done; first omega. iModIntro.
     iIntros (l vl) "(% & H† & Hlft)". rewrite tctx_interp_singleton tctx_hasty_val.
-    iExists _. iSplit; first done. iNext. rewrite Nat2Z.id. iSplitR "H†".
-    - iExists vl. iFrame.
-      match goal with H : Z.of_nat n = Z.of_nat (length vl) |- _ => rename H into Hlen end.
-      apply (inj Z.of_nat) in Hlen. subst.
-      iInduction vl as [|v vl] "IH". done.
-      iExists [v], vl. iSplit. done. by iSplit.
-    - by rewrite uninit_sz freeable_sz_full.
+    iExists _. iSplit; first done. iNext. rewrite Nat2Z.id freeable_sz_full. iFrame.
+    iExists vl. iFrame.
+    match goal with H : Z.of_nat n = Z.of_nat (length vl) |- _ => rename H into Hlen end.
+    apply (inj Z.of_nat) in Hlen. subst.
+    iInduction vl as [|v vl] "IH". done.
+    iExists [v], vl. iSplit. done. by iSplit.
   Qed.
 
   Lemma type_delete {E L} ty n p :
@@ -265,7 +264,7 @@ Section typing.
         - eapply is_closed_subst. done. set_solver. }
       eapply type_let'.
       + apply subst_is_closed; last done. apply is_closed_of_val.
-      + eapply type_memcpy; try done. apply write_own, symmetry, uninit_sz.
+      + eapply type_memcpy; try done. by eapply (write_own _ (uninit _)).
       + solve_typing.
       + move=>//=.
   Qed.

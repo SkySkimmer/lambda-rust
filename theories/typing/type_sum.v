@@ -39,7 +39,7 @@ Section case.
         rewrite heap_mapsto_vec_singleton.
         iFrame. iExists [_], []. auto.
       + iExists _. iFrame. iSplit. done. iExists _. iFrame.
-      + rewrite -EQlen app_length minus_plus uninit_sz -(shift_loc_assoc_nat _ 1).
+      + rewrite -EQlen app_length minus_plus -(shift_loc_assoc_nat _ 1).
         iExists _. iFrame. iSplit. done. iExists _. iFrame. rewrite uninit_own. auto.
     - iExists _. iSplit. done.
       assert (EQf:=freeable_sz_split n 1). simpl in EQf. rewrite -EQf. clear EQf.
