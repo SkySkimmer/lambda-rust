@@ -374,19 +374,19 @@ Section product_split.
     tyl ≠ [] →
     extract_tyl E L p (own n) tyl 0 T T' →
     tctx_extract_hasty E L p (own n (Π tyl)) T T'.
-  Proof. intro Htyl. apply tctx_extract_merge_ptr_prod, tctx_merge_own_prod, Htyl. Qed.
+  Proof. auto using tctx_extract_merge_ptr_prod, tctx_merge_own_prod. Qed.
 
   Lemma tctx_extract_merge_uniq_prod E L p κ tyl T T' :
     tyl ≠ [] →
     extract_tyl E L p (uniq_bor κ) tyl 0 T T' →
     tctx_extract_hasty E L p (&uniq{κ}Π tyl) T T'.
-  Proof. intro Htyl. apply tctx_extract_merge_ptr_prod, tctx_merge_uniq_prod, Htyl. Qed.
+  Proof. auto using tctx_extract_merge_ptr_prod, tctx_merge_uniq_prod. Qed.
 
   Lemma tctx_extract_merge_shr_prod E L p κ tyl T T' :
     tyl ≠ [] →
     extract_tyl E L p (shr_bor κ) tyl 0 T T' →
     tctx_extract_hasty E L p (&shr{κ}Π tyl) T T'.
-  Proof. intro Htyl. apply tctx_extract_merge_ptr_prod, tctx_merge_shr_prod, Htyl. Qed.
+  Proof. auto using tctx_extract_merge_ptr_prod, tctx_merge_shr_prod. Qed.
 End product_split.
 
 (* We make sure that this is applied after [tctx_extract_hasty_here] but before
