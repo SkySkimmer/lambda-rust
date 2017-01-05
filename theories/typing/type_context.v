@@ -182,6 +182,7 @@ Section type_context.
     ∀ tid q1 q2, lft_ctx -∗ elctx_interp E q1 -∗ llctx_interp L q2 -∗
               tctx_interp tid T1 ={⊤}=∗ elctx_interp E q1 ∗ llctx_interp L q2 ∗
                                      tctx_interp tid T2.
+  Global Instance : ∀ E L, RewriteRelation (tctx_incl E L).
 
   Global Instance tctx_incl_preorder E L : PreOrder (tctx_incl E L).
   Proof.
@@ -205,10 +206,14 @@ Section type_context.
     iMod (Hincl1 with "LFT HE HL H1") as "(HE & HL & $)".
     iApply (Hincl2 with "LFT HE HL H2").
   Qed.
-  Lemma tctx_incl_frame_l E L T T1 T2 :
+  Global Instance tctx_incl_cons E L x :
+    Proper (tctx_incl E L ==> tctx_incl E L) (cons x).
+  Proof. by apply (tctx_incl_app E L [_] [_]). Qed.
+
+  Lemma tctx_incl_frame_l {E L} T T1 T2 :
     tctx_incl E L T1 T2 → tctx_incl E L (T++T1) (T++T2).
   Proof. by apply tctx_incl_app. Qed.
-  Lemma tctx_incl_frame_r E L T T1 T2 :
+  Lemma tctx_incl_frame_r {E L} T T1 T2 :
     tctx_incl E L T1 T2 → tctx_incl E L (T1++T) (T2++T).
   Proof. by intros; apply tctx_incl_app. Qed.
 
@@ -223,8 +228,8 @@ Section type_context.
     (p ◁ ty)%TC ∈ T → tctx_incl E L T ((p ◁ ty) :: T).
   Proof.
     remember (p ◁ ty)%TC. induction 1 as [|???? IH]; subst.
-    - apply (tctx_incl_frame_r E L _ [_] [_;_]), copy_tctx_incl, _.
-    - etrans. by apply (tctx_incl_frame_l E L [_]), IH, reflexivity.
+    - apply (tctx_incl_frame_r _ [_] [_;_]), copy_tctx_incl, _.
+    - etrans. by apply (tctx_incl_frame_l [_]), IH, reflexivity.
       apply contains_tctx_incl, contains_swap.
   Qed.
 
@@ -246,23 +251,19 @@ Section type_context.
   Lemma tctx_extract_hasty_cons E L p ty T T' x :
     tctx_extract_hasty E L p ty T T' →
     tctx_extract_hasty E L p ty (x::T) (x::T').
-  Proof.
-    move=> /(tctx_incl_frame_l E L [x]) /= Hincl. rewrite /tctx_extract_hasty.
-    etrans; first done. apply contains_tctx_incl, contains_swap.
-  Qed.
+  Proof. unfold tctx_extract_hasty=>->. apply contains_tctx_incl, contains_swap. Qed.
   Lemma tctx_extract_hasty_here_copy E L p ty ty' T `{!Copy ty} :
     subtype E L ty ty' →
     tctx_extract_hasty E L p ty' ((p ◁ ty)::T) ((p ◁ ty)::T).
   Proof.
-    intros. apply (tctx_incl_frame_r E L _ [_] [_;_]).
+    intros. apply (tctx_incl_frame_r _ [_] [_;_]).
     etrans; first by apply copy_tctx_incl, _.
-    by apply (tctx_incl_frame_r E L _ [_] [_]), subtype_tctx_incl.
+    by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl.
   Qed.
   Lemma tctx_extract_hasty_here E L p ty ty' T :
     subtype E L ty ty' → tctx_extract_hasty E L p ty' ((p ◁ ty)::T) T.
   Proof.
-    intros. apply (tctx_incl_frame_r E L _ [_] [_]).
-    by apply subtype_tctx_incl.
+    intros. by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl.
   Qed.
 
   Definition tctx_extract_blocked E L p κ ty T T' : Prop :=
@@ -271,12 +272,12 @@ Section type_context.
     tctx_extract_blocked E L p κ ty T T' →
     tctx_extract_blocked E L p κ ty (x::T) (x::T').
   Proof.
-    move=> /(tctx_incl_frame_l E L [x]) /= Hincl. rewrite /tctx_extract_blocked.
+    move=> /(tctx_incl_frame_l [x]) /= Hincl. rewrite /tctx_extract_blocked.
     etrans; first done. apply contains_tctx_incl, contains_swap.
   Qed.
   Lemma tctx_extract_blocked_here E L p κ ty T :
     tctx_extract_blocked E L p κ ty ((p ◁{κ} ty)::T) T.
-  Proof. intros. by apply (tctx_incl_frame_r E L _ [_] [_]). Qed.
+  Proof. intros. by apply (tctx_incl_frame_r _ [_] [_]). Qed.
 
   Definition tctx_extract_ctx E L T T1 T2 : Prop :=
     tctx_incl E L T1 (T++T2).
@@ -286,24 +287,18 @@ Section type_context.
   Lemma tctx_extract_ctx_hasty E L T T1 T2 T3 p ty:
     tctx_extract_hasty E L p ty T1 T2 → tctx_extract_ctx E L T T2 T3 →
     tctx_extract_ctx E L ((p ◁ ty)::T) T1 T3.
-  Proof.
-    intros. rewrite /tctx_extract_ctx. etrans; first done.
-    by apply (tctx_incl_frame_l _ _ [_]).
-  Qed.
+  Proof. unfold tctx_extract_ctx, tctx_extract_hasty=>->->//. Qed.
   Lemma tctx_extract_ctx_blocked E L T T1 T2 T3 p κ ty:
     tctx_extract_blocked E L p κ ty T1 T2 → tctx_extract_ctx E L T T2 T3 →
     tctx_extract_ctx E L ((p ◁{κ} ty)::T) T1 T3.
-  Proof.
-    intros. rewrite /tctx_extract_ctx. etrans; first done.
-    by apply (tctx_incl_frame_l _ _ [_]).
-  Qed.
+  Proof. unfold tctx_extract_ctx, tctx_extract_blocked=>->->//. Qed.
 
   Lemma tctx_extract_ctx_incl E L T T' T0:
     tctx_extract_ctx E L T' T T0 →
     tctx_incl E L T T'.
   Proof.
-    intros. etrans; first done. rewrite {2}(app_nil_end T').
-    apply tctx_incl_frame_l, contains_tctx_incl, contains_nil_l.
+    unfold tctx_extract_ctx=>->.
+      by apply contains_tctx_incl, contains_inserts_r.
   Qed.
 
   (* Unblocking a type context. *)

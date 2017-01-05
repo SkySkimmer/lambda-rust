@@ -340,6 +340,7 @@ Section elctx_incl.
     ∀ F, ↑lftN ⊆ F → elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
     ∀ qE1, elctx_interp E1 qE1 ={F}=∗ ∃ qE2, elctx_interp E2 qE2 ∗
        (elctx_interp E2 qE2 ={F}=∗ elctx_interp E1 qE1).
+  Global Instance : RewriteRelation elctx_incl.
 
   Global Instance elctx_incl_preorder : PreOrder elctx_incl.
   Proof.
@@ -376,10 +377,9 @@ Section elctx_incl.
     iMod ("Hclose2" with "[$HE2 $HE2']") as "$".
     done.
   Qed.
-
   Global Instance elctx_incl_cons_proper x :
     Proper (elctx_incl ==> elctx_incl) (cons x).
-  Proof. intros ???. by apply (elctx_incl_app_proper [_] [_]). Qed.
+  Proof. by apply (elctx_incl_app_proper [_] [_]). Qed.
 
   Lemma elctx_incl_dup E1 :
     elctx_incl E1 (E1 ++ E1).
@@ -403,7 +403,7 @@ Section elctx_incl.
   Lemma elctx_incl_lft_alive E1 E2 κ :
     lctx_lft_alive E1 [] κ → elctx_incl E1 E2 → elctx_incl E1 ((☀κ) :: E2).
   Proof.
-    intros Hκ HE2. rewrite ->elctx_incl_dup.
+    intros Hκ HE2. rewrite (elctx_incl_dup E1).
     apply (elctx_incl_app_proper _ [_]); last done.
     apply elctx_sat_incl. apply elctx_sat_alive, elctx_sat_nil; first done.
   Qed.
@@ -446,6 +446,6 @@ Lemma elctx_incl_lft_incl_alive `{invG Σ, lftG Σ} E L E1 E2 κ κ' :
   lctx_lft_incl (E ++ E1) L κ κ' → elctx_incl E L E1 E2 →
   elctx_incl E L ((☀κ) :: E1) ((☀κ') :: E2).
 Proof.
-  intros Hκκ' ->%(elctx_incl_lft_incl _ _ _ _ _ _ Hκκ').
+  move=> ? /elctx_incl_lft_incl -> //.
   apply (elctx_incl_app_proper _ _ [_; _] [_]); solve_typing.
 Qed.

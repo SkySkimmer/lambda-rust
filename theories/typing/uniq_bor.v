@@ -195,11 +195,10 @@ Section typing.
     tctx_extract_hasty E L p (&shr{κ}ty) ((p ◁ &uniq{κ'}ty')::T)
                        ((p ◁ &shr{κ}ty')::(p ◁{κ} &uniq{κ'}ty')::T).
   Proof.
-    intros. apply (tctx_incl_frame_r E L _ [_] [_;_;_]). etrans.
-    { by apply tctx_reborrow_uniq. }
-    apply (tctx_incl_frame_r E L _ [_] [_;_]). etrans.
-    by apply tctx_share. etrans. by apply copy_tctx_incl, _.
-    by apply (tctx_incl_frame_r E L _ [_] [_]), subtype_tctx_incl, shr_mono'.
+    intros. apply (tctx_incl_frame_r _ [_] [_;_;_]).
+    rewrite tctx_reborrow_uniq //. apply (tctx_incl_frame_r _ [_] [_;_]).
+    rewrite tctx_share // {1}copy_tctx_incl.
+    by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl, shr_mono'.
   Qed.
 
   Lemma tctx_extract_hasty_reborrow E L p ty ty' κ κ' T :
@@ -207,9 +206,8 @@ Section typing.
     tctx_extract_hasty E L p (&uniq{κ'}ty) ((p ◁ &uniq{κ}ty')::T)
                        ((p ◁{κ'} &uniq{κ}ty')::T).
   Proof.
-    intros. apply (tctx_incl_frame_r E L _ [_] [_;_]). etrans.
-    by apply tctx_reborrow_uniq.
-    by apply (tctx_incl_frame_r E L _ [_] [_]), subtype_tctx_incl, uniq_mono'.
+    intros. apply (tctx_incl_frame_r _ [_] [_;_]). rewrite tctx_reborrow_uniq //.
+    by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl, uniq_mono'.
   Qed.
 
   Lemma read_uniq E L κ ty :

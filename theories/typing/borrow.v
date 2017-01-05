@@ -28,7 +28,7 @@ Section borrow.
   Lemma tctx_extract_hasty_borrow E L p n ty κ T :
     tctx_extract_hasty E L p (&uniq{κ}ty) ((p ◁ own n ty)::T)
                        ((p ◁{κ} own n ty)::T).
-  Proof. apply (tctx_incl_frame_r E L _ [_] [_;_]), tctx_borrow. Qed.
+  Proof. apply (tctx_incl_frame_r _ [_] [_;_]), tctx_borrow. Qed.
 
   (* See the comment above [tctx_extract_hasty_share] in [uniq_bor.v]. *)
   Lemma tctx_extract_hasty_borrow_share E L p ty ty' κ n T :
@@ -36,11 +36,8 @@ Section borrow.
     tctx_extract_hasty E L p (&shr{κ}ty) ((p ◁ own n ty')::T)
                        ((p ◁ &shr{κ}ty')::(p ◁{κ} own n ty')::T).
   Proof.
-    intros. apply (tctx_incl_frame_r E L _ [_] [_;_;_]). etrans.
-    { by apply tctx_borrow. }
-    apply (tctx_incl_frame_r E L _ [_] [_;_]). etrans.
-    by apply tctx_share. etrans. by apply copy_tctx_incl, _.
-    by apply (tctx_incl_frame_r E L _ [_] [_]), subtype_tctx_incl, shr_mono'.
+    intros. apply (tctx_incl_frame_r _ [_] [_;_;_]). rewrite ->tctx_borrow.
+    apply (tctx_incl_frame_r _ [_] [_;_]). rewrite ->tctx_share; solve_typing.
   Qed.
 
   Lemma type_deref_uniq_own {E L} κ p n ty :

@@ -244,6 +244,6 @@ Section typing.
   Proof. by rewrite -prod_flatten_r -prod_flatten_l. Qed.
 End typing.
 
-
 Hint Resolve product_mono' product_proper' : lrust_typing.
 Hint Resolve product2_mono' product2_proper' | 100 : lrust_typing.
+Hint Opaque product : lrust_typing.
