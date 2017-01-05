@@ -397,7 +397,9 @@ Hint Resolve tctx_extract_split_own_prod2 tctx_extract_split_uniq_prod2
      | 60 : lrust_typing.
 
 (* We make sure that this is applied after everything. *)
-Hint Resolve tctx_extract_merge_own_prod tctx_extract_merge_uniq_prod
-             tctx_extract_merge_shr_prod | 150 : lrust_typing.
+Hint Resolve tctx_extract_merge_own_prod2 tctx_extract_merge_uniq_prod2
+             tctx_extract_merge_shr_prod2 tctx_extract_merge_own_prod
+             tctx_extract_merge_uniq_prod tctx_extract_merge_shr_prod
+     | 150 : lrust_typing.
 
 Hint Unfold extract_tyl : lrust_typing.
