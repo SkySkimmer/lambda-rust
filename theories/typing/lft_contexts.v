@@ -436,9 +436,9 @@ Hint Resolve
 (* We declare these as hint extern, so that the [B] parameter of elem_of does
    not have to be [list _] and can be an alias of this. *)
 Hint Extern 0 (@elem_of _ _ (@elem_of_list _) _ (_ :: _)) =>
-  eapply @elem_of_list_here.
+  eapply @elem_of_list_here : lrust_typing.
 Hint Extern 1 (@elem_of _ _ (@elem_of_list _) _ (_ :: _)) =>
-  eapply @elem_of_list_further.
+  eapply @elem_of_list_further : lrust_typing.
 
 Hint Resolve lctx_lft_alive_external' | 100 : lrust_typing.
 
