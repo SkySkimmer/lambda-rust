@@ -447,5 +447,3 @@ Section weakening.
 End weakening.
 
 Hint Resolve subtype_refl eqtype_refl : lrust_typing.
-
-Ltac solve_typing := by eauto 100 with lrust_typing.

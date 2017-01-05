@@ -361,7 +361,7 @@ Section elctx_incl.
     rewrite /elctx_interp big_sepL_nil. auto.
   Qed.
 
-  Global Instance elctx_incl_app :
+  Global Instance elctx_incl_app_proper :
     Proper (elctx_incl ==> elctx_incl ==> elctx_incl) app.
   Proof.
     iIntros (?? HE1 ?? HE2 ??) "#HE #HL *". rewrite {1}/elctx_interp big_sepL_app.
@@ -376,6 +376,10 @@ Section elctx_incl.
     iMod ("Hclose2" with "[$HE2 $HE2']") as "$".
     done.
   Qed.
+
+  Global Instance elctx_incl_cons_proper x :
+    Proper (elctx_incl ==> elctx_incl) (cons x).
+  Proof. intros ???. by apply (elctx_incl_app_proper [_] [_]). Qed.
 
   Lemma elctx_incl_dup E1 :
     elctx_incl E1 (E1 ++ E1).
@@ -399,7 +403,8 @@ Section elctx_incl.
   Lemma elctx_incl_lft_alive E1 E2 κ :
     lctx_lft_alive E1 [] κ → elctx_incl E1 E2 → elctx_incl E1 ((☀κ) :: E2).
   Proof.
-    intros Hκ HE2. rewrite ->elctx_incl_dup. apply (elctx_incl_app _ [_]); last done.
+    intros Hκ HE2. rewrite ->elctx_incl_dup.
+    apply (elctx_incl_app_proper _ [_]); last done.
     apply elctx_sat_incl. apply elctx_sat_alive, elctx_sat_nil; first done.
   Qed.
 
@@ -415,25 +420,11 @@ Section elctx_incl.
     iExists qE2. rewrite /elctx_interp big_sepL_cons /=. iFrame "∗#".
     iIntros "!> [_ HE2']". by iApply "Hclose'".
   Qed.
-
-  Lemma elctx_incl_lft_incl_alive E1 E2 κ κ' :
-    lctx_lft_incl (E ++ E1) L κ κ' → elctx_incl E1 E2 →
-    elctx_incl ((☀κ) :: E1) ((☀κ') :: E2).
-  Proof.
-    intros Hκκ' HE2%(elctx_incl_lft_incl _ _ _ _ Hκκ').
-    (* TODO: can we do this more in rewrite-style? *)
-    trans ((☀ κ) :: (κ ⊑ κ') :: E2)%EL.
-    { by apply (elctx_incl_app [_] [_]). }
-    apply (elctx_incl_app [_; _] [_]); last done.
-    (* TODO: Can we test the auto-context stuff here? *)
-    clear. apply elctx_sat_incl. apply elctx_sat_alive, elctx_sat_nil.
-    eapply lctx_lft_alive_external'.
-    - left.
-    - right. by apply elem_of_list_singleton.
-  Qed.
 End elctx_incl.
 
-Hint Constructors Forall elem_of_list : lrust_typing.
+Ltac solve_typing := by eauto 100 with lrust_typing.
+
+Hint Constructors Forall : lrust_typing.
 Hint Resolve
      lctx_lft_incl_relf lctx_lft_incl_static lctx_lft_incl_local'
      lctx_lft_incl_external'
@@ -442,4 +433,19 @@ Hint Resolve
      elctx_incl_refl elctx_incl_nil elctx_incl_lft_alive elctx_incl_lft_incl
   : lrust_typing.
 
+(* We declare these as hint extern, so that the [B] parameter of elem_of does
+   not have to be [list _] and can be an alias of this. *)
+Hint Extern 0 (@elem_of _ _ (@elem_of_list _) _ (_ :: _)) =>
+  eapply @elem_of_list_here.
+Hint Extern 1 (@elem_of _ _ (@elem_of_list _) _ (_ :: _)) =>
+  eapply @elem_of_list_further.
+
 Hint Resolve lctx_lft_alive_external' | 100 : lrust_typing.
+
+Lemma elctx_incl_lft_incl_alive `{invG Σ, lftG Σ} E L E1 E2 κ κ' :
+  lctx_lft_incl (E ++ E1) L κ κ' → elctx_incl E L E1 E2 →
+  elctx_incl E L ((☀κ) :: E1) ((☀κ') :: E2).
+Proof.
+  intros Hκκ' ->%(elctx_incl_lft_incl _ _ _ _ _ _ Hκκ').
+  apply (elctx_incl_app_proper _ _ [_; _] [_]); solve_typing.
+Qed.
