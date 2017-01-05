@@ -424,7 +424,7 @@ End elctx_incl.
 
 Ltac solve_typing := by eauto 100 with lrust_typing.
 
-Hint Constructors Forall : lrust_typing.
+Hint Constructors Forall Forall2 : lrust_typing.
 Hint Resolve
      lctx_lft_incl_relf lctx_lft_incl_static lctx_lft_incl_local'
      lctx_lft_incl_external'

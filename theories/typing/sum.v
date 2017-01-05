@@ -238,4 +238,3 @@ Notation "Σ[ ty1 ; .. ; tyn ]" :=
   (sum (cons ty1 (..(cons tyn nil)..))) : lrust_typing.
 
 Hint Resolve sum_mono' sum_proper' : lrust_typing.
-Hint Constructors Forall2 : lrust_typing.

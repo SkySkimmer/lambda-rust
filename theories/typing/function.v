@@ -268,4 +268,3 @@ Section typing.
 End typing.
 
 Hint Resolve fn_subtype_full : lrust_typing.
-Hint Constructors Forall2 elem_of_list: lrust_typing.

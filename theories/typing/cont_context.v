@@ -92,7 +92,7 @@ Section cont_context.
     iApply ("H" with "HE * [%]"). by apply HC1C2.
   Qed.
 
-  Lemma cctx_incl_cons E k L n (T1 T2 : vec val n → tctx) C1 C2 :
+  Lemma cctx_incl_cons_match E k L n (T1 T2 : vec val n → tctx) C1 C2 :
     cctx_incl E C1 C2 → (∀ args, tctx_incl E L (T2 args) (T1 args)) →
     cctx_incl E (k ◁cont(L, T1) :: C1) (k ◁cont(L, T2) :: C2).
   Proof.
@@ -111,4 +111,18 @@ Section cont_context.
   Lemma cctx_incl_nil E C : cctx_incl E C [].
   Proof. apply incl_cctx_incl. by set_unfold. Qed.
 
+  Lemma cctx_incl_cons E k L n (T1 T2 : vec val n → tctx) C1 C2 :
+    (k ◁cont(L, T1))%CC ∈ C1 →
+    (∀ args, tctx_incl E L (T2 args) (T1 args)) →
+    cctx_incl E C1 C2 →
+    cctx_incl E C1 (k ◁cont(L, T2) :: C2).
+  Proof.
+    intros Hin ??. rewrite <-cctx_incl_cons_match; try done.
+    iIntros (??) "_ HC HE". iSpecialize ("HC" with "HE").
+    rewrite cctx_interp_cons. iSplit; last done. clear -Hin.
+    iInduction Hin as [] "IH"; rewrite cctx_interp_cons;
+      [iDestruct "HC" as "[$ _]" | iApply "IH"; iDestruct "HC" as "[_ $]"].
+  Qed.
 End cont_context.
+
+Hint Resolve cctx_incl_nil cctx_incl_cons : lrust_typing.
