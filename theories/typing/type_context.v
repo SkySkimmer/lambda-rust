@@ -253,6 +253,8 @@ Section type_context.
   Definition tctx_extract_hasty E L p ty T T' : Prop :=
     tctx_incl E L T ((p ◁ ty)::T').
   Global Arguments tctx_extract_hasty _%EL _%LL _%E _%T _%TC _%TC.
+  Definition tctx_extract_hasty_unfold :
+    tctx_extract_hasty = λ E L p ty T T', tctx_incl E L T ((p ◁ ty)::T') := eq_refl.
   Lemma tctx_extract_hasty_cons E L p ty T T' x :
     tctx_extract_hasty E L p ty T T' →
     tctx_extract_hasty E L p ty (x::T) (x::T').
@@ -287,6 +289,8 @@ Section type_context.
 
   Definition tctx_extract_ctx E L T T1 T2 : Prop :=
     tctx_incl E L T1 (T++T2).
+  Definition tctx_extract_ctx_unfold :
+    tctx_extract_ctx = λ E L T T1 T2, tctx_incl E L T1 (T++T2) := eq_refl.
   Global Arguments tctx_extract_ctx _%EL _%LL _%TC _%TC _%TC.
   Lemma tctx_extract_ctx_nil E L T:
     tctx_extract_ctx E L [] T T.
@@ -338,6 +342,7 @@ Section type_context.
   Qed.
 End type_context.
 
+Global Opaque tctx_extract_ctx tctx_extract_hasty tctx_extract_blocked.
 Hint Resolve tctx_extract_hasty_here_copy : lrust_typing.
 Hint Resolve tctx_extract_hasty_here | 50 : lrust_typing.
 Hint Resolve tctx_extract_hasty_cons | 100 : lrust_typing.

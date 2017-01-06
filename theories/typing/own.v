@@ -190,23 +190,29 @@ Section typing.
     iApply uninit_own. auto.
   Qed.
 
-  Lemma type_new {E L} (n : nat) :
-    typed_instruction_ty E L [] (new [ #n ]%E) (own n (uninit n)).
+  Lemma type_new_instr {E L} (n : Z) :
+    0 ≤ n →
+    let n' := Z.to_nat n in
+    typed_instruction_ty E L [] (new [ #n ]%E) (own n' (uninit n')).
   Proof.
-    iIntros (tid eq) "#HEAP #LFT $ $ $ _".
-    iApply (wp_new with "HEAP"); try done; first omega. iModIntro.
-    iIntros (l vl) "(% & H† & Hlft)". rewrite tctx_interp_singleton tctx_hasty_val.
-    iExists _. iSplit; first done. iNext. rewrite Nat2Z.id freeable_sz_full. iFrame.
-    iExists vl. iFrame.
-    match goal with H : Z.of_nat n = Z.of_nat (length vl) |- _ => rename H into Hlen end.
-    apply (inj Z.of_nat) in Hlen. subst.
-    iInduction vl as [|v vl] "IH". done.
-    iExists [v], vl. iSplit. done. by iSplit.
+    iIntros (? ? tid q) "#HEAP #LFT $ $ $ _".
+    iApply (wp_new with "HEAP"); try done. iModIntro.
+    iIntros (l vl) "(% & H† & Hlft)". subst. rewrite tctx_interp_singleton tctx_hasty_val.
+    iExists _. iSplit; first done. iNext. rewrite freeable_sz_full Z2Nat.id //. iFrame.
+    iExists vl. iFrame. subst n'. by rewrite Nat2Z.id uninit_own.
   Qed.
 
-  Lemma type_delete {E L} ty n p :
-    ty.(ty_size) = n →
-    typed_instruction E L [p ◁ own n ty] (delete [ #n; p])%E (λ _, []).
+  Lemma type_new E L C T x (n : Z) e :
+    Closed (x :b: []) e →
+    0 ≤ n →
+    (∀ (v : val) (n' := Z.to_nat n),
+        typed_body E L C ((v ◁ own n' (uninit n')) :: T) (subst' x v e)) →
+    typed_body E L C T (let: x := new [ #n ] in e).
+  Proof. intros. eapply type_let. done. by apply type_new_instr. solve_typing. done. Qed.
+
+  Lemma type_delete_instr {E L} ty (n : Z) p :
+    Z.of_nat (ty.(ty_size)) = n →
+    typed_instruction E L [p ◁ own (ty.(ty_size)) ty] (delete [ #n; p])%E (λ _, []).
   Proof.
     iIntros (<- tid eq) "#HEAP #LFT $ $ $ Hp". rewrite tctx_interp_singleton.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
@@ -217,6 +223,17 @@ Section typing.
     rewrite freeable_sz_full. by iFrame.
   Qed.
 
+  Lemma type_delete E L C T T' (n' : nat) ty (n : Z)  p e :
+    Closed [] e →
+    tctx_extract_hasty E L p (own n' ty) T T' →
+    n = n' → Z.of_nat (ty.(ty_size)) = n →
+    typed_body E L C T' e →
+    typed_body E L C T (delete [ #n; p ] ;; e).
+  Proof.
+    intros ?? -> Hlen ?. eapply type_seq; [done|by apply type_delete_instr| |done].
+    by rewrite (inj _ _ _ Hlen).
+  Qed.
+
   Lemma type_letalloc_1 {E L} ty C T T' (x : string) p e :
     ty.(ty_size) = 1%nat →
     Closed [] p → Closed (x :b: []) e →
@@ -224,22 +241,18 @@ Section typing.
     (∀ (v : val), typed_body E L C ((v ◁ own 1 ty)::T') (subst x v e)) →
     typed_body E L C T (letalloc: x := p in e).
   Proof.
-    intros. eapply type_let'.
+    intros. eapply type_new.
     - rewrite /Closed /=. rewrite !andb_True.
       eauto 10 using is_closed_weaken with set_solver.
-    - apply (type_new 1).
-    - solve_typing.
+    - done.
     - move=>xv /=.
       assert (subst x xv (x <- p ;; e)%E = (xv <- p ;; subst x xv e)%E) as ->.
       { (* TODO : simpl_subst should be able to do this. *)
         unfold subst=>/=. repeat f_equal.
         - by rewrite bool_decide_true.
         - eapply is_closed_subst. done. set_solver. }
-      eapply type_let'.
-      + apply subst_is_closed; last done. apply is_closed_of_val.
-      + by apply (type_assign ty (own 1 (uninit 1))), write_own.
-      + solve_typing.
-      + move=>//=.
+      eapply type_assign; [|solve_typing|by eapply write_own|done].
+      apply subst_is_closed; last done. apply is_closed_of_val.
   Qed.
 
   Lemma type_letalloc_n {E L} ty ty1 ty2 C T T' (x : string) p e :
@@ -250,11 +263,10 @@ Section typing.
         typed_body E L C ((v ◁ own (ty.(ty_size)) ty)::(p ◁ ty2)::T') (subst x v e)) →
     typed_body E L C T (letalloc: x :={ty.(ty_size)} !p in e).
   Proof.
-    intros. eapply type_let'.
+    intros. eapply type_new.
     - rewrite /Closed /=. rewrite !andb_True.
       eauto 100 using is_closed_weaken with set_solver.
-    - apply type_new.
-    - solve_typing.
+    - lia.
     - move=>xv /=.
       assert (subst x xv (x <⋯ !{ty.(ty_size)}p ;; e)%E =
               (xv <⋯ !{ty.(ty_size)}p ;; subst x xv e)%E) as ->.
@@ -263,11 +275,9 @@ Section typing.
         - eapply (is_closed_subst []). done. set_solver.
         - by rewrite bool_decide_true.
         - eapply is_closed_subst. done. set_solver. }
-      eapply type_let'.
+      eapply type_memcpy; try solve_typing.
       + apply subst_is_closed; last done. apply is_closed_of_val.
-      + eapply type_memcpy; try done. by eapply (write_own _ (uninit _)).
-      + solve_typing.
-      + move=>//=.
+      + rewrite Nat2Z.id. by apply write_own.
   Qed.
 End typing.
 

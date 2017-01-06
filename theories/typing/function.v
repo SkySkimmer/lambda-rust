@@ -156,7 +156,7 @@ Section typing.
   Qed.
 
   (* TODO: Define some syntactic sugar for calling and letrec like we do on paper. *)
-  Lemma type_call {A} E L E' T p (ps : list path)
+  Lemma type_call' {A} E L E' T p (ps : list path)
                          (tys : A → vec type (length ps)) ty k x :
     elctx_sat E L (E' x) →
     typed_body E L [k ◁cont(L, λ v : vec _ 1, (v!!!0 ◁ ty x) :: T)]
@@ -197,7 +197,7 @@ Section typing.
         iApply (big_sepL_mono' with "Hvl"). by iIntros (i [v ty']).
   Qed.
 
-  Lemma type_call' {A} x E L E' C T T' T'' p (ps : list path)
+  Lemma type_call {A} x E L E' C T T' T'' p (ps : list path)
                         (tys : A → vec type (length ps)) ty k :
     (p ◁ fn E' tys ty)%TC ∈ T →
     elctx_sat E L (E' x) →
@@ -207,10 +207,11 @@ Section typing.
     typed_body E L C T (call: p ps → k).
   Proof.
     intros Hfn HE HTT' HC HT'T''.
-    rewrite -typed_body_mono /flip; last done; first by eapply type_call.
+    rewrite -typed_body_mono /flip; last done; first by eapply type_call'.
     - etrans. eapply (incl_cctx_incl _ [_]); first by intros ? ->%elem_of_list_singleton.
-      apply cctx_incl_cons_match; first done. intros args. inv_vec args=>ret q. inv_vec q. done.
-    - etrans; last by apply (tctx_incl_frame_l [_]).
+      apply cctx_incl_cons_match; first done. intros args. by inv_vec args.
+    - rewrite tctx_extract_ctx_unfold in HTT'.
+      etrans; last by apply (tctx_incl_frame_l [_]).
       apply copy_elem_of_tctx_incl; last done. apply _.
   Qed.
 
@@ -231,7 +232,7 @@ Section typing.
       + by eapply is_closed_weaken, list_subseteq_nil.
       + eapply Is_true_eq_left, forallb_forall, List.Forall_forall, Forall_impl=>//.
         intros. eapply Is_true_eq_true, is_closed_weaken=>//. set_solver+.
-    - intros k ret. inv_vec ret=>ret v0. inv_vec v0. rewrite /subst_v /=.
+    - intros k ret. inv_vec ret=>ret. rewrite /subst_v /=.
       rewrite ->(is_closed_subst []), incl_cctx_incl; first done; try set_solver+.
       apply subst'_is_closed; last done. apply is_closed_of_val.
     - intros.
@@ -241,7 +242,7 @@ Section typing.
       rewrite is_closed_nil_subst //.
       assert (map (subst "_k" k) ps = ps) as ->.
       { clear -Hpsc. induction Hpsc=>//=. rewrite is_closed_nil_subst //. congruence. }
-      eapply type_call'; try done. constructor. done.
+      eapply type_call; try done. constructor. done.
   Qed.
 
   Lemma type_rec {A} E L E' fb kb (argsb : list binder) e

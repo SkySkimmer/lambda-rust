@@ -7,8 +7,7 @@ From lrust.typing Require Import lft_contexts type_context programs product.
 Section case.
   Context `{typeG Σ}.
 
-  (* FIXME : the doc does not give [p +ₗ #(S (ty.(ty_size))) ◁ ...]. *)
-  Lemma type_case_own E L C T p n tyl el :
+  Lemma type_case_own' E L C T p n tyl el :
     Forall2 (λ ty e,
       typed_body E L C ((p +ₗ #0 ◁ own n (uninit 1)) :: (p +ₗ #1 ◁ own n ty) ::
          (p +ₗ #(S (ty.(ty_size))) ◁
@@ -49,7 +48,7 @@ Section case.
       iFrame. iExists i, vl', vl''. rewrite /= app_length nth_lookup EQty. auto.
   Qed.
 
-  Lemma type_case_own' E L C T T' p n tyl el :
+  Lemma type_case_own E L C T T' p n tyl el :
     tctx_extract_hasty E L p (own n (sum tyl)) T T' →
     Forall2 (λ ty e,
       typed_body E L C ((p +ₗ #0 ◁ own n (uninit 1)) :: (p +ₗ #1 ◁ own n ty) ::
@@ -57,9 +56,9 @@ Section case.
             own n (uninit (list_max (map ty_size tyl) - ty_size ty))) :: T') e ∨
       typed_body E L C ((p ◁ own n (sum tyl)) :: T') e) tyl el →
     typed_body E L C T (case: !p of el).
-  Proof. unfold tctx_extract_hasty. intros ->. apply type_case_own. Qed.
+  Proof. rewrite tctx_extract_hasty_unfold=>->. apply type_case_own'. Qed.
 
-  Lemma type_case_uniq E L C T p κ tyl el :
+  Lemma type_case_uniq' E L C T p κ tyl el :
     lctx_lft_alive E L κ →
     Forall2 (λ ty e,
       typed_body E L C ((p +ₗ #1 ◁ &uniq{κ}ty) :: T) e ∨
@@ -107,16 +106,16 @@ Section case.
       iExists _, _. iFrame. iSplit. done. iSplit; iIntros "!>!#$".
   Qed.
 
-  Lemma type_case_uniq' E L C T T' p κ tyl el :
+  Lemma type_case_uniq E L C T T' p κ tyl el :
     tctx_extract_hasty E L p (&uniq{κ}sum tyl) T T' →
     lctx_lft_alive E L κ →
     Forall2 (λ ty e,
       typed_body E L C ((p +ₗ #1 ◁ &uniq{κ}ty) :: T') e ∨
       typed_body E L C ((p ◁ &uniq{κ}sum tyl) :: T') e) tyl el →
     typed_body E L C T (case: !p of el).
-  Proof. unfold tctx_extract_hasty. intros ->. apply type_case_uniq. Qed.
+  Proof. rewrite tctx_extract_hasty_unfold=>->. apply type_case_uniq'. Qed.
 
-  Lemma type_case_shr E L C T p κ tyl el:
+  Lemma type_case_shr' E L C T p κ tyl el:
     lctx_lft_alive E L κ →
     Forall2 (λ ty e,
       typed_body E L C ((p +ₗ #1 ◁ &shr{κ}ty) :: T) e ∨
@@ -142,14 +141,14 @@ Section case.
     - iExists _. iSplit. done. iExists i. rewrite nth_lookup EQty /=. auto.
   Qed.
 
-  Lemma type_case_shr' E L C T p κ tyl el :
+  Lemma type_case_shr E L C T p κ tyl el :
     (p ◁ &shr{κ}sum tyl)%TC ∈ T →
     lctx_lft_alive E L κ →
     Forall2 (λ ty e, typed_body E L C ((p +ₗ #1 ◁ &shr{κ}ty) :: T) e) tyl el →
     typed_body E L C T (case: !p of el).
   Proof.
     intros. rewrite ->copy_elem_of_tctx_incl; last done; last apply _.
-    apply type_case_shr; first done. eapply Forall2_impl; first done. auto.
+    apply type_case_shr'; first done. eapply Forall2_impl; first done. auto.
   Qed.
 
   Lemma type_sum_assign {E L} (i : nat) tyl ty1 ty2 ty p1 p2 :
