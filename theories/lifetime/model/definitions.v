@@ -1,64 +1,20 @@
-From iris.algebra Require Import csum auth frac gmap agree gset.
-From iris.prelude Require Export gmultiset strings.
-From iris.base_logic.lib Require Export invariants.
-From iris.base_logic.lib Require Import boxes.
+From iris.algebra Require Import csum auth frac agree gset.
 From iris.base_logic Require Import big_op.
+From iris.base_logic.lib Require Import boxes.
+From lrust.lifetime Require Export lifetime_sig.
+Set Default Proof Using "Type".
 Import uPred.
 
-Definition lftN : namespace := nroot .@ "lft".
-Definition borN : namespace := lftN .@ "bor".
-Definition inhN : namespace := lftN .@ "inh".
-Definition mgmtN : namespace := lftN .@ "mgmt".
-
-Definition atomic_lft := positive.
-Notation lft := (gmultiset positive).
-Definition static : lft := ∅.
-
-Inductive bor_state :=
-  | Bor_in
-  | Bor_open (q : frac)
-  | Bor_rebor (κ : lft).
-Instance bor_state_eq_dec : EqDecision bor_state.
-Proof. solve_decision. Defined.
-Canonical bor_stateC := leibnizC bor_state.
 
 Definition bor_filled (s : bor_state) : bool :=
   match s with Bor_in => true | _ => false end.
 
-Definition lft_stateR := csumR fracR unitR.
 Definition to_lft_stateR (b : bool) : lft_stateR :=
   if b then Cinl 1%Qp else Cinr ().
-
-Record lft_names := LftNames {
-  bor_name : gname;
-  cnt_name : gname;
-  inh_name : gname
-}.
-Instance lft_names_eq_dec : EqDecision lft_names.
-Proof. solve_decision. Defined.
-Canonical lft_namesC := leibnizC lft_names.
-
-Definition alftUR := gmapUR atomic_lft lft_stateR.
 Definition to_alftUR : gmap atomic_lft bool → alftUR := fmap to_lft_stateR.
-
-Definition ilftUR := gmapUR lft (agreeR lft_namesC).
 Definition to_ilftUR : gmap lft lft_names → ilftUR := fmap to_agree.
-
-Definition borUR := gmapUR slice_name (prodR fracR (agreeR bor_stateC)).
 Definition to_borUR : gmap slice_name bor_state → borUR := fmap ((1%Qp,) ∘ to_agree).
 
-Definition inhUR := gset_disjUR slice_name.
-
-Class lftG Σ := LftG {
-  lft_box :> boxG Σ;
-  alft_inG :> inG Σ (authR alftUR);
-  alft_name : gname;
-  ilft_inG :> inG Σ (authR ilftUR);
-  ilft_name : gname;
-  lft_bor_inG :> inG Σ (authR borUR);
-  lft_cnt_inG :> inG Σ (authR natUR);
-  lft_inh_inG :> inG Σ (authR inhUR);
-}.
 
 Section defs.
   Context `{invG Σ, lftG Σ}.
@@ -185,9 +141,9 @@ End defs.
 Instance: Params (@lft_bor_alive) 4.
 Instance: Params (@lft_inh) 5.
 Instance: Params (@lft_vs) 4.
-Instance: Params (@idx_bor) 5.
-Instance: Params (@raw_bor) 4.
-Instance: Params (@bor) 4.
+Instance idx_bor_params : Params (@idx_bor) 5.
+Instance raw_bor_params : Params (@raw_bor) 4.
+Instance bor_params : Params (@bor) 4.
 
 Notation "q .[ κ ]" := (lft_tok q κ)
     (format "q .[ κ ]", at level 0) : uPred_scope.
@@ -200,6 +156,9 @@ Notation "&{ κ , i } P" := (idx_bor κ i P)
 
 Infix "⊑" := lft_incl (at level 70) : uPred_scope.
 
+(* TODO: Making all these things opaque is rather annoying, we should
+   find a way to avoid it, or *at least*, to avoid having to manually unfold
+   this because iDestruct et al don't look through these names any more. *)
 Typeclasses Opaque lft_tok lft_dead bor_cnt lft_bor_alive lft_bor_dead
   lft_inh lft_inv_alive lft_vs_inv lft_vs lft_inv_dead lft_inv lft_incl
   idx_bor_own idx_bor raw_bor bor.
@@ -306,8 +265,8 @@ Proof. rewrite /lft_tok. apply _. Qed.
 
 Global Instance lft_dead_persistent κ : PersistentP [†κ].
 Proof. rewrite /lft_dead. apply _. Qed.
-Global Instance lft_dead_timeless κ : PersistentP [†κ].
-Proof. rewrite /lft_tok. apply _. Qed.
+Global Instance lft_dead_timeless κ : TimelessP [†κ].
+Proof. rewrite /lft_dead. apply _. Qed.
 
 Global Instance lft_incl_persistent κ κ' : PersistentP (κ ⊑ κ').
 Proof. rewrite /lft_incl. apply _. Qed.

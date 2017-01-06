@@ -1,7 +1,7 @@
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import list.
-From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.typing Require Export type.
+Set Default Proof Using "Type".
 
 Section product.
   Context `{typeG Σ}.

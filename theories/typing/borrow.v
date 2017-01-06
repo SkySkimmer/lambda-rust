@@ -1,9 +1,9 @@
 From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
-From lrust.lifetime Require Import reborrow frac_borrow.
 From lrust.lang Require Import heap.
 From lrust.typing Require Export uniq_bor shr_bor own.
 From lrust.typing Require Import lft_contexts type_context programs.
+Set Default Proof Using "Type".
 
 (** The rules for borrowing and derferencing borrowed non-Copy pointers are in
   a separate file so make sure that own.v and uniq_bor.v can be compiled
@@ -48,7 +48,7 @@ Section borrow.
     lctx_lft_alive E L κ →
     typed_instruction_ty E L [p ◁ &uniq{κ} own n ty] (!p) (&uniq{κ} ty).
   Proof.
-    iIntros (Hκ tid eq) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
+    iIntros (Hκ) "!#". iIntros (tid qE) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
     iDestruct "Hown" as (l P) "[[Heq #HPiff] HP]". iDestruct "Heq" as %[=->].
@@ -71,7 +71,7 @@ Section borrow.
     lctx_lft_alive E L κ →
     typed_instruction_ty E L [p ◁ &shr{κ} own n ty] (!p) (&shr{κ} ty).
   Proof.
-    iIntros (Hκ tid eq) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
+    iIntros (Hκ) "!#". iIntros (tid qE) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
     iMod (Hκ with "HE HL") as (q) "[[Htok1 Htok2] Hclose]"; first set_solver.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
     iDestruct "Hown" as (l) "[Heq #H↦]". iDestruct "Heq" as %[=->].
@@ -88,7 +88,7 @@ Section borrow.
     lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
     typed_instruction_ty E L [p ◁ &uniq{κ} &uniq{κ'} ty] (!p) (&uniq{κ} ty).
   Proof.
-    iIntros (Hκ Hincl tid eq) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
+    iIntros (Hκ Hincl) "!#". iIntros (tid qE) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
     iPoseProof (Hincl with "[#] [#]") as "Hincl".
     { by iApply elctx_interp_persist. } { by iApply llctx_interp_persist. }
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
@@ -118,7 +118,7 @@ Section borrow.
     lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
     typed_instruction_ty E L [p ◁ &shr{κ} &uniq{κ'} ty] (!p) (&shr{κ} ty).
   Proof.
-    iIntros (Hκ Hincl tid eq) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
+    iIntros (Hκ Hincl) "!# * #HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
     iPoseProof (Hincl with "[#] [#]") as "Hincl".
     { by iApply elctx_interp_persist. } { by iApply llctx_interp_persist. }
     iMod (Hκ with "HE HL") as (q) "[[Htok1 Htok2] Hclose]"; first set_solver.

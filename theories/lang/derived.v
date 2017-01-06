@@ -1,6 +1,7 @@
 From lrust.lang Require Export lifting.
 From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
+Set Default Proof Using "Type".
 Import uPred.
 
 (** Define some derived forms, and derived lemmas about them. *)

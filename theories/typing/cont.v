@@ -1,8 +1,8 @@
 From iris.base_logic Require Import big_op.
 From iris.proofmode Require Import tactics.
-From lrust.lifetime Require Import borrow.
 From lrust.typing Require Export type.
 From lrust.typing Require Import programs.
+Set Default Proof Using "Type".
 
 Section typing.
   Context `{typeG Σ}.
@@ -13,7 +13,7 @@ Section typing.
     tctx_incl E L T (T' (list_to_vec args)) →
     typed_body E L C T (k (of_val <$> args)).
   Proof.
-    iIntros (HC Hincl tid qE) "#HEAP #LFT Htl HE HL HC HT".
+    iIntros (HC Hincl) "!#". iIntros (tid qE) "#HEAP #LFT Htl HE HL HC HT".
     iMod (Hincl with "LFT HE HL HT") as "(HE & HL & HT)".
     iSpecialize ("HC" with "HE * []"); first done.
     rewrite -{3}(vec_to_list_of_list args). iApply ("HC" with "* Htl HL HT").
@@ -26,7 +26,7 @@ Section typing.
     (∀ k, typed_body E L2 (k ◁cont(L1, T') :: C) T (subst' kb k e2)) →
     typed_body E L2 C T (letcont: kb argsb := econt in e2).
   Proof.
-    iIntros (Hc1 Hc2 Hecont He2 tid qE) "#HEAP #LFT Htl HE HL HC HT". iApply wp_let'.
+    iIntros (Hc1 Hc2 Hecont He2) "!#". iIntros (tid qE) "#HEAP #LFT Htl HE HL HC HT". iApply wp_let'.
     { simpl. rewrite decide_left. done. }
     iModIntro. iApply (He2 with "* HEAP LFT Htl HE HL [HC] HT"). clear He2.
     iIntros "HE". iLöb as "IH". iIntros (x) "H".

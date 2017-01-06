@@ -1,8 +1,8 @@
 From iris.proofmode Require Import tactics.
 From lrust.lang Require Import heap memcpy.
-From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.typing Require Export uninit uniq_bor shr_bor own sum.
 From lrust.typing Require Import lft_contexts type_context programs product.
+Set Default Proof Using "Type".
 
 Section case.
   Context `{typeG Σ}.
@@ -15,7 +15,7 @@ Section case.
       typed_body E L C ((p ◁ own n (sum tyl)) :: T) e) tyl el →
     typed_body E L C ((p ◁ own n (sum tyl)) :: T) (case: !p of el).
   Proof.
-    iIntros (Hel tid qE) "#HEAP #LFT Hna HE HL HC HT". wp_bind p.
+    iIntros (Hel) "!#". iIntros (tid qE) "#HEAP #LFT Hna HE HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
     iApply (wp_hasty with "Hp"). iIntros (v Hv) "Hp".
     iDestruct "Hp" as (l) "[EQ [H↦ Hf]]". iDestruct "EQ" as %[=->].
@@ -65,7 +65,7 @@ Section case.
       typed_body E L C ((p ◁ &uniq{κ}sum tyl) :: T) e) tyl el →
     typed_body E L C ((p ◁ &uniq{κ}sum tyl) :: T) (case: !p of el).
   Proof.
-    iIntros (Halive Hel tid qE) "#HEAP #LFT Hna HE HL HC HT". wp_bind p.
+    iIntros (Halive Hel) "!#". iIntros (tid qE) "#HEAP #LFT Hna HE HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
     iApply (wp_hasty with "Hp"). iIntros (v Hv) "Hp".
     iDestruct "Hp" as (l P) "[[EQ HP] Hb]". iDestruct "EQ" as %[=->].
@@ -122,7 +122,7 @@ Section case.
       typed_body E L C ((p ◁ &shr{κ}sum tyl) :: T) e) tyl el →
     typed_body E L C ((p ◁ &shr{κ}sum tyl) :: T) (case: !p of el).
   Proof.
-    iIntros (Halive Hel tid qE) "#HEAP #LFT Hna HE HL HC HT". wp_bind p.
+    iIntros (Halive Hel) "!#". iIntros (tid qE) "#HEAP #LFT Hna HE HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
     iApply (wp_hasty with "Hp"). iIntros (v Hv) "Hp".
     iDestruct "Hp" as (l) "[EQ Hl]". iDestruct "EQ" as %[=->].
@@ -156,12 +156,12 @@ Section case.
     typed_write E L ty1 (sum tyl) ty2 →
     typed_instruction E L [p1 ◁ ty1; p2 ◁ ty] (p1 <-{i} p2) (λ _, [p1 ◁ ty2]%TC).
   Proof.
-    iIntros (Hty Hw ??) "#HEAP #LFT $ HE HL Hp".
+    iIntros (Hty Hw) "!# * #HEAP #LFT $ HE HL Hp".
     rewrite tctx_interp_cons tctx_interp_singleton.
     iDestruct "Hp" as "[Hp1 Hp2]". iDestruct (closed_hasty with "Hp1") as "%".
     iDestruct (closed_hasty with "Hp2") as "%". wp_bind p1.
     iApply (wp_hasty with "Hp1"). iIntros (v1 Hv1) "Hty1".
-    iMod (Hw with "LFT HE HL Hty1") as (l vl) "(H & H↦ & Hw)"=>//=.
+    iMod (Hw with "* [] LFT HE HL Hty1") as (l vl) "(H & H↦ & Hw)"=>//=.
     destruct vl as [|? vl]; iDestruct "H" as %[[= Hlen] ->].
     rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[H↦0 H↦vl]".
     wp_write. iApply wp_seq. done. iNext. wp_bind p1.
@@ -183,9 +183,9 @@ Section case.
     typed_write E L ty1 (sum tyl) ty2 →
     typed_instruction E L [p ◁ ty1] (p <-{i} ☇) (λ _, [p ◁ ty2]%TC).
   Proof.
-    iIntros (Hty Hw ??) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
+    iIntros (Hty Hw) "!# * #HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v Hv) "Hty".
-    iMod (Hw with "LFT HE HL Hty") as (l vl) "(H & H↦ & Hw)". done.
+    iMod (Hw with "* [] LFT HE HL Hty") as (l vl) "(H & H↦ & Hw)". done.
     simpl. destruct vl as [|? vl]; iDestruct "H" as %[[= Hlen] ->].
     rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[H↦0 H↦vl]".
     wp_write. rewrite tctx_interp_singleton tctx_hasty_val' //.
@@ -200,18 +200,18 @@ Section case.
     typed_instruction E L [p1 ◁ ty1; p2 ◁ ty2]
                (p1 <⋯{i} !{ty.(ty_size)}p2) (λ _, [p1 ◁ ty1'; p2 ◁ ty2']%TC).
   Proof.
-    iIntros (Hty Hw Hr ??) "#HEAP #LFT Htl [HE1 HE2] [HL1 HL2] Hp".
+    iIntros (Hty Hw Hr) "!# * #HEAP #LFT Htl [HE1 HE2] [HL1 HL2] Hp".
     rewrite tctx_interp_cons tctx_interp_singleton.
     iDestruct "Hp" as "[Hp1 Hp2]". iDestruct (closed_hasty with "Hp1") as "%".
     iDestruct (closed_hasty with "Hp2") as "%". wp_bind p1.
     iApply (wp_hasty with "Hp1"). iIntros (v1 Hv1) "Hty1".
-    iMod (Hw with "LFT HE1 HL1 Hty1") as (l1 vl1) "(H & H↦ & Hw)"=>//=.
+    iMod (Hw with "* [] LFT HE1 HL1 Hty1") as (l1 vl1) "(H & H↦ & Hw)"=>//=.
     destruct vl1 as [|? vl1]; iDestruct "H" as %[[= Hlen] ->].
     rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[H↦0 H↦vl1]". wp_write.
     iApply wp_seq. done. iNext. wp_bind p1.
     iApply (wp_wand with "[]"); first by iApply (wp_eval_path). iIntros (? ->).
     wp_op. wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2 Hv2) "Hty2".
-    iMod (Hr with "LFT Htl HE2 HL2 Hty2") as (l2 vl2 q) "(% & H↦2 & Hty & Hr)"=>//=. subst.
+    iMod (Hr with "* [] LFT Htl HE2 HL2 Hty2") as (l2 vl2 q) "(% & H↦2 & Hty & Hr)"=>//=. subst.
     assert (ty.(ty_size) ≤ length vl1).
     { revert i Hty. rewrite Hlen. clear. induction tyl=>//= -[|i] /=.
       - intros [= ->]. lia.

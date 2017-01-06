@@ -3,6 +3,7 @@ From iris.proofmode Require Import tactics.
 From iris.algebra Require Import csum auth frac gmap agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
+Set Default Proof Using "Type".
 
 Section accessors.
 Context `{invG Σ, lftG Σ}.
@@ -254,18 +255,7 @@ Proof.
       iApply fupd_intro_mask'. solve_ndisj.
 Qed.
 
-Lemma bor_acc_cons E q κ P :
-  ↑lftN ⊆ E →
-  lft_ctx -∗ &{κ} P -∗ q.[κ] ={E}=∗ ▷ P ∗
-    ∀ Q, ▷ Q -∗ ▷(▷ Q ={⊤∖↑lftN}=∗ ▷ P) ={E}=∗ &{κ} Q ∗ q.[κ].
-Proof.
-  iIntros (?) "#LFT HP Htok".
-  iMod (bor_acc_strong with "LFT HP Htok") as (κ') "(#Hκκ' & $ & Hclose)"; first done.
-  iIntros "!>*HQ HPQ". iMod ("Hclose" with "*HQ [HPQ]") as "[Hb $]".
-  - iNext. iIntros "? _". by iApply "HPQ".
-  - iApply (bor_shorten with "Hκκ' Hb").
-Qed.
-
+(* These derived lemmas are needed inside the model. *)
 Lemma bor_acc_atomic_cons E κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ} P ={E,E∖↑lftN}=∗
@@ -281,15 +271,6 @@ Proof.
   - iRight. by iFrame.
 Qed.
 
-Lemma bor_acc E q κ P :
-  ↑lftN ⊆ E →
-  lft_ctx -∗ &{κ}P -∗ q.[κ] ={E}=∗ ▷ P ∗ (▷ P ={E}=∗ &{κ}P ∗ q.[κ]).
-Proof.
-  iIntros (?) "#LFT HP Htok".
-  iMod (bor_acc_cons with "LFT HP Htok") as "($ & Hclose)"; first done.
-  iIntros "!>HP". iMod ("Hclose" with "*HP []") as "[$ $]"; auto.
-Qed.
-
 Lemma bor_acc_atomic E κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ}P ={E,E∖↑lftN}=∗
@@ -300,4 +281,5 @@ Proof.
   - iLeft. iIntros "!> {$HP} HP". iMod ("Hclose" with "* HP []"); auto.
   - iRight. by iFrame.
 Qed.
+
 End accessors.

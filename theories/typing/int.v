@@ -1,6 +1,7 @@
 From iris.proofmode Require Import tactics.
 From lrust.typing Require Export type.
 From lrust.typing Require Import bool programs.
+Set Default Proof Using "Type".
 
 Section int.
   Context `{typeG Σ}.
@@ -19,7 +20,7 @@ Section typing.
   Lemma type_int_instr (z : Z) E L :
     typed_instruction_ty E L [] #z int.
   Proof.
-    iIntros (tid qE) "_ _ $ $ $ _". wp_value.
+    iAlways. iIntros (tid qE) "_ _ $ $ $ _". wp_value.
     rewrite tctx_interp_singleton tctx_hasty_val. iExists _. done.
   Qed.
 
@@ -34,7 +35,7 @@ Section typing.
   Lemma type_plus_instr E L p1 p2 :
     typed_instruction_ty E L [p1 ◁ int; p2 ◁ int] (p1 + p2) int.
   Proof.
-    iIntros (tid qE) "_ _ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
+    iAlways. iIntros (tid qE) "_ _ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
     wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "_ Hown1".
     wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "_ Hown2".
@@ -56,7 +57,7 @@ Section typing.
   Lemma type_minus_instr E L p1 p2 :
     typed_instruction_ty E L [p1 ◁ int; p2 ◁ int] (p1 - p2) int.
   Proof.
-    iIntros (tid qE) "_ _ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
+    iAlways. iIntros (tid qE) "_ _ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
     wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "_ Hown1".
     wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "_ Hown2".
@@ -78,7 +79,7 @@ Section typing.
   Lemma type_le_instr E L p1 p2 :
     typed_instruction_ty E L [p1 ◁ int; p2 ◁ int] (p1 ≤ p2) bool.
   Proof.
-    iIntros (tid qE) "_ _ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
+    iAlways. iIntros (tid qE) "_ _ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
     wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "_ Hown1".
     wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "_ Hown2".

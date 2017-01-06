@@ -1,11 +1,11 @@
 From Coq Require Import Qcanon.
 From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
-From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.lang Require Export new_delete.
 From lrust.lang Require Import memcpy.
 From lrust.typing Require Export type.
 From lrust.typing Require Import uninit type_context programs.
+Set Default Proof Using "Type".
 
 Section own.
   Context `{typeG Σ}.
@@ -158,7 +158,7 @@ Section typing.
   Lemma write_own {E L} ty ty' n :
     ty.(ty_size) = ty'.(ty_size) → typed_write E L (own n ty') ty (own n ty).
   Proof.
-    iIntros (Hsz p tid F qE qL ?) "_ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
+    iIntros (Hsz) "!#". iIntros (p tid F qE qL ?) "_ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
     (* This turns out to be the fastest way to apply a lemma below ▷ -- at
     least if we're fine throwing away the premise even though the result
@@ -172,7 +172,7 @@ Section typing.
   Lemma read_own_copy E L ty n :
     Copy ty → typed_read E L (own n ty) ty (own n ty).
   Proof.
-    iIntros (Hsz p tid F qE qL ?) "_ $ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
+    iIntros (Hsz) "!#". iIntros (p tid F qE qL ?) "_ $ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ #Hown]". iModIntro.
     iExists l, _, _. iSplit; first done. iFrame "∗#". iIntros "Hl !>".
     iExists _. iSplit; first done. iFrame "H†". iExists _. by iFrame.
@@ -181,7 +181,7 @@ Section typing.
   Lemma read_own_move E L ty n :
     typed_read E L (own n ty) ty (own n $ uninit ty.(ty_size)).
   Proof.
-    iIntros (p tid F qE qL ?) "_ $ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
+    iAlways. iIntros (p tid F qE qL ?) "_ $ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
     iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
     { by iApply ty_size_eq. }
@@ -195,11 +195,11 @@ Section typing.
     let n' := Z.to_nat n in
     typed_instruction_ty E L [] (new [ #n ]%E) (own n' (uninit n')).
   Proof.
-    iIntros (? ? tid q) "#HEAP #LFT $ $ $ _".
+    intros. iAlways. iIntros (tid q) "#HEAP #LFT $ $ $ _".
     iApply (wp_new with "HEAP"); try done. iModIntro.
     iIntros (l vl) "(% & H† & Hlft)". subst. rewrite tctx_interp_singleton tctx_hasty_val.
     iExists _. iSplit; first done. iNext. rewrite freeable_sz_full Z2Nat.id //. iFrame.
-    iExists vl. iFrame. subst n'. by rewrite Nat2Z.id uninit_own.
+    iExists vl. iFrame. by rewrite Nat2Z.id uninit_own.
   Qed.
 
   Lemma type_new E L C T x (n : Z) e :
@@ -214,7 +214,7 @@ Section typing.
     Z.of_nat (ty.(ty_size)) = n →
     typed_instruction E L [p ◁ own (ty.(ty_size)) ty] (delete [ #n; p])%E (λ _, []).
   Proof.
-    iIntros (<- tid eq) "#HEAP #LFT $ $ $ Hp". rewrite tctx_interp_singleton.
+    iIntros (<-) "!#". iIntros (tid eq) "#HEAP #LFT $ $ $ Hp". rewrite tctx_interp_singleton.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
     iDestruct "Hown" as (l) "(Hv & H↦∗: & >H†)". iDestruct "Hv" as %[=->].
     iDestruct "H↦∗:" as (vl) "[>H↦ Hown]". rewrite tctx_interp_nil.
@@ -275,9 +275,17 @@ Section typing.
         - eapply (is_closed_subst []). done. set_solver.
         - by rewrite bool_decide_true.
         - eapply is_closed_subst. done. set_solver. }
-      eapply type_memcpy; try solve_typing.
+      rewrite Nat2Z.id. eapply type_memcpy.
       + apply subst_is_closed; last done. apply is_closed_of_val.
-      + rewrite Nat2Z.id. by apply write_own.
+      + solve_typing.
+      + (* TODO: Doing "eassumption" here shows that unification takes *forever* to fail.
+           I guess that's caused by it trying to unify typed_read and typed_write,
+           but considering that the Iris connectives are all sealed, why does
+           that take so long? *)
+        by eapply (write_own ty (uninit _)).
+      + solve_typing.
+      + done.
+      + done.
   Qed.
 End typing.
 

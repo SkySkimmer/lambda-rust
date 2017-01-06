@@ -2,6 +2,7 @@ From iris.prelude Require Import gmap.
 From iris.program_logic Require Export hoare.
 From iris.program_logic Require Import adequacy.
 From lrust.lang Require Import tactics.
+Set Default Proof Using "Type".
 
 Inductive access_kind : Type := ReadAcc | WriteAcc | FreeAcc.
 

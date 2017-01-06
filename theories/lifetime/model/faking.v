@@ -3,6 +3,7 @@ From iris.algebra Require Import csum auth frac gmap agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 From iris.proofmode Require Import tactics.
+Set Default Proof Using "Type".
 
 Section faking.
 Context `{invG Σ, lftG Σ}.
@@ -111,8 +112,7 @@ Proof.
 Qed.
 
 Lemma bor_fake E κ P :
-  ↑lftN ⊆ E →
-  lft_ctx -∗ [†κ] ={E}=∗ &{κ}P.
+  ↑lftN ⊆ E → lft_ctx -∗ [†κ] ={E}=∗ &{κ}P.
 Proof.
   iIntros (?) "#LFT H†". iMod (raw_bor_fake' with "LFT H†"); first done.
   iModIntro. unfold bor. iExists κ. iFrame. iApply lft_incl_refl.

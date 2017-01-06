@@ -1,4 +1,5 @@
 From lrust.lang Require Export tactics derived.
+Set Default Proof Using "Type".
 Import uPred.
 
 (** wp-specific helper tactics *)

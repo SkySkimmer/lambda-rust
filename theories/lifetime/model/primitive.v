@@ -1,8 +1,9 @@
-From lrust.lifetime Require Export definitions.
+From lrust.lifetime.model Require Export definitions.
 From iris.algebra Require Import csum auth frac gmap agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes fractional.
 From iris.proofmode Require Import tactics.
+Set Default Proof Using "Type".
 Import uPred.
 
 Section primitive.
@@ -352,6 +353,12 @@ Proof.
   iIntros (?) "#[_ H] Hq". iApply fupd_mask_mono; first done. by iApply "H".
 Qed.
 
+Lemma lft_incl_intro κ κ' :
+  □ ((∀ q, lft_tok q κ ={↑lftN}=∗ ∃ q',
+               lft_tok q' κ' ∗ (lft_tok q' κ' ={↑lftN}=∗ lft_tok q κ)) ∗
+      (lft_dead κ' ={↑lftN}=∗ lft_dead κ)) -∗ κ ⊑ κ'.
+Proof. reflexivity. Qed.
+
 (** Basic rules about borrows *)
 Lemma bor_unfold_idx κ P : &{κ}P ⊣⊢ ∃ i, &{κ,i}P ∗ idx_bor_own 1 i.
 Proof.
@@ -362,7 +369,7 @@ Proof.
     iExists κ'. iFrame. iExists s. by iFrame.
 Qed.
 
-Lemma bor_shorten κ κ' P: κ ⊑ κ' -∗ &{κ'}P -∗ &{κ}P.
+Lemma bor_shorten κ κ' P : κ ⊑ κ' -∗ &{κ'}P -∗ &{κ}P.
 Proof.
   rewrite /bor. iIntros "#Hκκ'". iDestruct 1 as (i) "[#? ?]".
   iExists i. iFrame. by iApply (lft_incl_trans with "Hκκ'").

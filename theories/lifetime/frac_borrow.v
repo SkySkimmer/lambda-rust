@@ -2,7 +2,8 @@ From Coq Require Import Qcanon.
 From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import lib.fractional.
 From iris.algebra Require Import frac.
-From lrust.lifetime Require Export shr_borrow .
+From lrust.lifetime Require Export shr_borrow.
+Set Default Proof Using "Type".
 
 Class frac_borG Σ := frac_borG_inG :> inG Σ fracR.
 
@@ -127,7 +128,7 @@ Section frac_bor.
   Lemma frac_bor_lft_incl κ κ' q:
     lft_ctx -∗ &frac{κ}(λ q', (q * q').[κ']) -∗ κ ⊑ κ'.
   Proof.
-    iIntros "#LFT#Hbor!#". iSplitR.
+    iIntros "#LFT#Hbor". iApply lft_incl_intro. iAlways. iSplitR.
     - iIntros (q') "Hκ'".
       iMod (frac_bor_acc with "LFT Hbor Hκ'") as (q'') "[>? Hclose]". done.
       iExists _. iFrame. iIntros "!>Hκ'". iApply "Hclose". auto.

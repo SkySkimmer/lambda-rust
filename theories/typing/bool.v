@@ -2,6 +2,7 @@ From iris.base_logic Require Import big_op.
 From iris.proofmode Require Import tactics.
 From lrust.typing Require Export type.
 From lrust.typing Require Import programs.
+Set Default Proof Using "Type".
 
 Section bool.
   Context `{typeG Σ}.
@@ -20,7 +21,7 @@ Section typing.
   Lemma type_bool_instr (b : Datatypes.bool) E L :
     typed_instruction_ty E L [] #b bool.
   Proof.
-    iIntros (tid qE) "_ _ $ $ $ _". wp_value.
+    iAlways. iIntros (tid qE) "_ _ $ $ $ _". wp_value.
     rewrite tctx_interp_singleton tctx_hasty_val. iExists _. done.
   Qed.
 
@@ -37,7 +38,7 @@ Section typing.
     typed_body E L C T e1 → typed_body E L C T e2 →
     typed_body E L C T (if: p then e1 else e2).
   Proof.
-    iIntros (Hp He1 He2 tid qE) "#HEAP #LFT Htl HE HL HC HT".
+    iIntros (Hp He1 He2) "!#". iIntros (tid qE) "#HEAP #LFT Htl HE HL HC HT".
     iDestruct (big_sepL_elem_of _ _ _ Hp with "HT") as "#Hp".
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
     iDestruct "Hown" as (b) "Hv". iDestruct "Hv" as %[=->].

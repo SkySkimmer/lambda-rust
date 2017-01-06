@@ -4,6 +4,7 @@ From iris.algebra Require Import csum auth frac gmap agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 From iris.proofmode Require Import tactics.
+Set Default Proof Using "Type".
 
 Section borrow.
 Context `{invG Σ, lftG Σ}.
@@ -181,4 +182,5 @@ Proof.
       iRight. iSplit; last by auto. iExists _. iFrame. }
     unfold bor. iExists _. iFrame. iApply (lft_incl_glb with "Hκ1 Hκ2").
 Qed.
+
 End borrow.

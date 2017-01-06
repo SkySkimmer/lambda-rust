@@ -1,5 +1,5 @@
-From lrust.lifetime Require Import definitions.
 From lrust.typing Require Export lft_contexts type bool.
+Set Default Proof Using "Type".
 
 Section fixpoint.
   Context `{typeG Σ}.

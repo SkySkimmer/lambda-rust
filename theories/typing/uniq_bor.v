@@ -1,9 +1,9 @@
 From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
-From lrust.lifetime Require Import borrow frac_borrow reborrow.
 From lrust.lang Require Import heap.
 From lrust.typing Require Export type.
 From lrust.typing Require Import lft_contexts type_context shr_bor programs.
+Set Default Proof Using "Type".
 
 Section uniq_bor.
   Context `{typeG Σ}.
@@ -224,7 +224,7 @@ Section typing.
   Lemma read_uniq E L κ ty :
     Copy ty → lctx_lft_alive E L κ → typed_read E L (&uniq{κ}ty) ty (&uniq{κ}ty).
   Proof.
-    iIntros (Hcopy Halive v tid F qE qL ?) "#LFT Htl HE HL Hown".
+    iIntros (Hcopy Halive) "!#". iIntros (v tid F qE qL ?) "#LFT Htl HE HL Hown".
     iMod (Halive with "HE HL") as (q) "[Hκ Hclose]"; first set_solver.
     iDestruct "Hown" as (l P) "[[EQ #HP] H↦]". iDestruct "EQ" as %[=->].
     iMod (bor_iff with "LFT [] H↦") as "H↦". set_solver. by eauto.
@@ -241,7 +241,7 @@ Section typing.
   Lemma write_uniq E L κ ty :
     lctx_lft_alive E L κ → typed_write E L (&uniq{κ}ty) ty (&uniq{κ}ty).
   Proof.
-    iIntros (Halive p tid F qE qL ?) "#LFT HE HL Hown".
+    iIntros (Halive) "!#". iIntros (p tid F qE qL ?) "#LFT HE HL Hown".
     iMod (Halive with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
     iDestruct "Hown" as (l P) "[[EQ #HP] H↦]". iDestruct "EQ" as %[=->].
     iMod (bor_iff with "LFT [] H↦") as "H↦". set_solver. by eauto.
