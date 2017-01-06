@@ -62,8 +62,8 @@ Section product_split.
     iIntros (Hptr Htyl Hmerge Hloc p tid q1 q2) "#LFT HE HL H".
     iInduction tyl as [|ty tyl IH] "IH" forall (p Htyl); first done.
     rewrite product_cons. rewrite /= tctx_interp_singleton tctx_interp_cons.
-    iDestruct "H" as "[Hty Htyl]". iDestruct "Hty" as (v) "[Hp Hty]". iDestruct "Hp" as %Hp. 
-    iDestruct (Hloc with "Hty") as %[l [=->]].
+    iDestruct "H" as "[Hty Htyl]". iDestruct "Hty" as (v) "[Hp Hty]".
+    iDestruct "Hp" as %Hp. iDestruct (Hloc with "Hty") as %[l [=->]].
     assert (eval_path p = Some #l) as Hp'.
     { move:Hp. simpl. clear. destruct (eval_path p); last done.
       destruct v; try done. destruct l0; try done. rewrite shift_loc_0. done. }
@@ -114,8 +114,8 @@ Section product_split.
     iDestruct "Hp1" as %Hp1. iDestruct "H1" as (l) "(EQ & H↦1 & H†1)".
     iDestruct "EQ" as %[=->]. iDestruct "H2" as (v2) "(Hp2 & H2)".
     rewrite /= Hp1. iDestruct "Hp2" as %[=<-]. iDestruct "H2" as (l') "(EQ & H↦2 & H†2)".
-    iDestruct "EQ" as %[=<-]. iExists #l. iSplitR; first done. iExists l. iSplitR; first done.
-    rewrite -freeable_sz_split. iFrame.
+    iDestruct "EQ" as %[=<-]. iExists #l. iSplitR; first done. iExists l.
+    iSplitR; first done. rewrite -freeable_sz_split. iFrame.
     iDestruct "H↦1" as (vl1) "[H↦1 H1]". iDestruct "H↦2" as (vl2) "[H↦2 H2]".
     iExists (vl1 ++ vl2). rewrite heap_mapsto_vec_app. iFrame.
     iAssert (▷ ⌜length vl1 = ty_size ty1⌝)%I with "[#]" as ">EQ".
@@ -271,7 +271,7 @@ Section product_split.
     tctx_extract_hasty E L p' ty [p ◁ own n ty1; p +ₗ #ty1.(ty_size) ◁ own n ty2] T' →
     tctx_extract_hasty E L p' ty ((p ◁ own n $ product2 ty1 ty2) :: T) (T' ++ T) .
   Proof.
-    unfold tctx_extract_hasty. intros ?. apply (tctx_incl_frame_r T [_] (_::_)).
+    rewrite !tctx_extract_hasty_unfold. intros ?. apply (tctx_incl_frame_r T [_] (_::_)).
     by rewrite tctx_split_own_prod2.
   Qed.
 
@@ -280,7 +280,7 @@ Section product_split.
             [p ◁ &uniq{κ}ty1; p +ₗ #ty1.(ty_size) ◁ &uniq{κ}ty2] T' →
     tctx_extract_hasty E L p' ty ((p ◁ &uniq{κ} product2 ty1 ty2) :: T) (T' ++ T) .
   Proof.
-    unfold tctx_extract_hasty=>?. apply (tctx_incl_frame_r T [_] (_::_)).
+    rewrite !tctx_extract_hasty_unfold=>?. apply (tctx_incl_frame_r T [_] (_::_)).
     by rewrite tctx_split_uniq_prod2.
   Qed.
 
@@ -290,7 +290,7 @@ Section product_split.
     tctx_extract_hasty E L p' ty ((p ◁ &shr{κ} product2 ty1 ty2) :: T)
                                  ((p ◁ &shr{κ} product2 ty1 ty2) :: T).
   Proof.
-    unfold tctx_extract_hasty=>?. apply (tctx_incl_frame_r _ [_] [_;_]).
+    rewrite !tctx_extract_hasty_unfold=>?. apply (tctx_incl_frame_r _ [_] [_;_]).
     rewrite {1}copy_tctx_incl. apply (tctx_incl_frame_r _ [_] [_]).
     rewrite tctx_split_shr_prod2 -(contains_tctx_incl _ _ [p' ◁ ty]%TC) //.
     apply contains_skip, contains_nil_l.
@@ -300,7 +300,7 @@ Section product_split.
     tctx_extract_hasty E L p' ty (hasty_ptr_offsets p (own n) tyl 0) T' →
     tctx_extract_hasty E L p' ty ((p ◁ own n $ Π tyl) :: T) (T' ++ T).
   Proof.
-    unfold tctx_extract_hasty=>?. apply (tctx_incl_frame_r T [_] (_::_)).
+    rewrite !tctx_extract_hasty_unfold=>?. apply (tctx_incl_frame_r T [_] (_::_)).
     by rewrite tctx_split_own_prod.
   Qed.
 
@@ -308,7 +308,7 @@ Section product_split.
     tctx_extract_hasty E L p' ty (hasty_ptr_offsets p (uniq_bor κ) tyl 0) T' →
     tctx_extract_hasty E L p' ty ((p ◁ &uniq{κ} Π tyl) :: T) (T' ++ T).
   Proof.
-    unfold tctx_extract_hasty=>?. apply (tctx_incl_frame_r T [_] (_::_)).
+    rewrite !tctx_extract_hasty_unfold=>?. apply (tctx_incl_frame_r T [_] (_::_)).
     by rewrite tctx_split_uniq_prod.
   Qed.
 
@@ -316,7 +316,7 @@ Section product_split.
     tctx_extract_hasty E L p' ty (hasty_ptr_offsets p (shr_bor κ) tyl 0) T' →
     tctx_extract_hasty E L p' ty ((p ◁ &shr{κ} Π tyl) :: T) ((p ◁ &shr{κ} Π tyl) :: T).
   Proof.
-    unfold tctx_extract_hasty=>?. apply (tctx_incl_frame_r _ [_] [_;_]).
+    rewrite !tctx_extract_hasty_unfold=>?. apply (tctx_incl_frame_r _ [_] [_;_]).
     rewrite {1}copy_tctx_incl. apply (tctx_incl_frame_r _ [_] [_]).
     rewrite tctx_split_shr_prod -(contains_tctx_incl _ _ [p' ◁ ty]%TC) //.
     apply contains_skip, contains_nil_l.
@@ -329,7 +329,7 @@ Section product_split.
     tctx_extract_hasty E L (p +ₗ #ty1.(ty_size)) (own n ty2) T2 T3 →
     tctx_extract_hasty E L p (own n (product2 ty1 ty2)) T1 T3.
   Proof.
-    unfold tctx_extract_hasty=>->->.
+    rewrite !tctx_extract_hasty_unfold=>->->.
     apply (tctx_incl_frame_r _ [_;_] [_]), tctx_merge_own_prod2.
   Qed.
 
@@ -338,7 +338,7 @@ Section product_split.
     tctx_extract_hasty E L (p +ₗ #ty1.(ty_size)) (&uniq{κ}ty2) T2 T3 →
     tctx_extract_hasty E L p (&uniq{κ}product2 ty1 ty2) T1 T3.
   Proof.
-    unfold tctx_extract_hasty=>->->.
+    rewrite !tctx_extract_hasty_unfold=>->->.
     apply (tctx_incl_frame_r _ [_;_] [_]), tctx_merge_uniq_prod2.
   Qed.
 
@@ -347,7 +347,7 @@ Section product_split.
     tctx_extract_hasty E L (p +ₗ #ty1.(ty_size)) (&shr{κ}ty2) T2 T3 →
     tctx_extract_hasty E L p (&shr{κ}product2 ty1 ty2) T1 T3.
   Proof.
-    unfold tctx_extract_hasty=>->->.
+    rewrite !tctx_extract_hasty_unfold=>->->.
     apply (tctx_incl_frame_r _ [_;_] [_]), tctx_merge_shr_prod2.
   Qed.
 
@@ -364,10 +364,9 @@ Section product_split.
     extract_tyl E L p ptr tyl 0 T T' →
     tctx_extract_hasty E L p (ptr (Π tyl)) T T'.
   Proof.
-    unfold tctx_extract_hasty=>Hi Htyl.
+    rewrite /extract_tyl !tctx_extract_hasty_unfold=>Hi Htyl.
     etrans. 2:by eapply (tctx_incl_frame_r T' _ [_]). revert T Htyl. clear.
-    generalize 0%nat. induction tyl=>[T n /= -> //|T n /=].
-    unfold tctx_extract_hasty=>-[T'' [-> Htyl]]. f_equiv. auto.
+    generalize 0%nat. induction tyl=>[T n /= -> //|T n /= [T'' [-> Htyl]]]. f_equiv. auto.
   Qed.
 
   Lemma tctx_extract_merge_own_prod E L p n tyl T T' :

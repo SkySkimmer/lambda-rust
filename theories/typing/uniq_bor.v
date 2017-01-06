@@ -195,7 +195,7 @@ Section typing.
     tctx_extract_hasty E L p (&shr{κ}ty) ((p ◁ &uniq{κ'}ty')::T)
                        ((p ◁ &shr{κ}ty')::(p ◁{κ} &uniq{κ'}ty')::T).
   Proof.
-    intros. apply (tctx_incl_frame_r _ [_] [_;_;_]).
+    rewrite tctx_extract_hasty_unfold=>???. apply (tctx_incl_frame_r _ [_] [_;_;_]).
     rewrite tctx_reborrow_uniq //. apply (tctx_incl_frame_r _ [_] [_;_]).
     rewrite tctx_share // {1}copy_tctx_incl.
     by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl, shr_mono'.
@@ -206,7 +206,7 @@ Section typing.
     tctx_extract_hasty E L p (&shr{κ}ty) ((p ◁ &uniq{κ}ty')::T)
                                          ((p ◁ &shr{κ}ty')::T).
   Proof.
-    intros. apply (tctx_incl_frame_r _ [_] [_;_]).
+    rewrite tctx_extract_hasty_unfold=>??. apply (tctx_incl_frame_r _ [_] [_;_]).
     rewrite tctx_share // {1}copy_tctx_incl.
     by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl, shr_mono'.
   Qed.
@@ -216,7 +216,8 @@ Section typing.
     tctx_extract_hasty E L p (&uniq{κ'}ty) ((p ◁ &uniq{κ}ty')::T)
                        ((p ◁{κ'} &uniq{κ}ty')::T).
   Proof.
-    intros. apply (tctx_incl_frame_r _ [_] [_;_]). rewrite tctx_reborrow_uniq //.
+    rewrite tctx_extract_hasty_unfold=>??.
+    apply (tctx_incl_frame_r _ [_] [_;_]). rewrite tctx_reborrow_uniq //.
     by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl, uniq_mono'.
   Qed.
 

@@ -17,22 +17,14 @@ Section get_x.
         (fn (λ α, [☀α])%EL (λ α, [# own 1 (&uniq{α}Π[int; int])])
             (λ α, own 1 (&shr{α} int))).
   Proof.
-    apply type_fn; try apply _. move=> /= α ret args. inv_vec args=>p args.
-    inv_vec args. simpl_subst.
+    apply type_fn; try apply _. move=> /= α ret p. inv_vec p=>p. simpl_subst.
 
-    eapply type_let'.
-    { apply _. }
-    { by eapply (type_deref (&uniq{α} _)), read_own_move. }
-    { solve_typing. }
-    intros p'. simpl_subst.
+    eapply type_deref; try solve_typing. by apply read_own_move. done.
+    intros p'; simpl_subst.
 
     eapply (type_letalloc_1 (&shr{α}int)); (try solve_typing)=>r. simpl_subst.
 
-    eapply type_let'.
-    { apply _. }
-    { by eapply (type_delete (uninit 1) 1). }
-    { solve_typing. }
-    move=> /= _.
+    eapply type_delete; try solve_typing.
 
     eapply type_jump with (args := [r]); solve_typing.
   Qed.
