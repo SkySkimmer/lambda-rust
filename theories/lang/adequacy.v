@@ -2,6 +2,7 @@ From iris.program_logic Require Export hoare adequacy.
 From iris.algebra Require Import auth.
 From lrust.lang Require Export heap.
 From lrust.lang Require Import proofmode notation.
+Set Default Proof Using "Type".
 
 Class heapPreG Σ := HeapPreG {
   heap_preG_ownP :> ownPPreG lrust_lang Σ;

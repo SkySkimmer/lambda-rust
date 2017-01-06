@@ -3,6 +3,7 @@ From iris.proofmode Require Import tactics.
 From lrust.lifetime Require Import frac_borrow.
 From lrust.typing Require Export type.
 From lrust.typing Require Import lft_contexts type_context programs.
+Set Default Proof Using "Type".
 
 Section shr_bor.
   Context `{typeG Σ}.

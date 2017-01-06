@@ -3,6 +3,7 @@ From iris.algebra Require Import csum auth frac gmap agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes fractional.
 From iris.proofmode Require Import tactics.
+Set Default Proof Using "Type".
 Import uPred.
 
 Section primitive.

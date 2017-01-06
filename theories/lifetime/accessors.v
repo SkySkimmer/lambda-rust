@@ -3,6 +3,7 @@ From iris.proofmode Require Import tactics.
 From iris.algebra Require Import csum auth frac gmap agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
+Set Default Proof Using "Type".
 
 Section accessors.
 Context `{invG Σ, lftG Σ}.

@@ -2,6 +2,7 @@ From iris.proofmode Require Import coq_tactics.
 From iris.proofmode Require Export tactics.
 From iris.base_logic Require Import namespaces.
 From lrust.lang Require Export wp_tactics heap.
+Set Default Proof Using "Type".
 Import uPred.
 
 Ltac wp_strip_later ::= iNext.

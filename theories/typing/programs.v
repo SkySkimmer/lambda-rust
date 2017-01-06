@@ -3,6 +3,7 @@ From lrust.lang Require Export notation.
 From lrust.lang Require Import proofmode memcpy.
 From lrust.lifetime Require Import frac_borrow reborrow borrow creation.
 From lrust.typing Require Export type lft_contexts type_context cont_context.
+Set Default Proof Using "Type".
 
 Section typing.
   Context `{typeG Σ}.

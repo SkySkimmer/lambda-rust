@@ -3,6 +3,7 @@ From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import lib.fractional.
 From iris.algebra Require Import frac.
 From lrust.lifetime Require Export shr_borrow .
+Set Default Proof Using "Type".
 
 Class frac_borG Σ := frac_borG_inG :> inG Σ fracR.
 

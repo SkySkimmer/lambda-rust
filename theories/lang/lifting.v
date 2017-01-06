@@ -3,6 +3,7 @@ From iris.program_logic Require Import ectx_lifting.
 From lrust.lang Require Export lang.
 From lrust.lang Require Import tactics.
 From iris.proofmode Require Import tactics.
+Set Default Proof Using "Type".
 Import uPred.
 Local Hint Extern 0 (head_reducible _ _) => do_head_step eauto 2.
 

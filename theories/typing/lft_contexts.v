@@ -2,6 +2,7 @@ From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import fractional.
 From lrust.lifetime Require Import derived borrow frac_borrow.
+Set Default Proof Using "Type".
 
 Inductive elctx_elt : Type :=
 | ELCtx_Alive (κ : lft)

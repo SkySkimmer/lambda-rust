@@ -4,6 +4,7 @@ From lrust.lifetime Require Import borrow frac_borrow reborrow.
 From lrust.lang Require Import heap.
 From lrust.typing Require Export type.
 From lrust.typing Require Import lft_contexts type_context shr_bor programs.
+Set Default Proof Using "Type".
 
 Section uniq_bor.
   Context `{typeG Σ}.

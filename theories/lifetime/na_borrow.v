@@ -1,6 +1,7 @@
 From lrust.lifetime Require Export derived.
 From iris.base_logic.lib Require Export na_invariants.
 From iris.proofmode Require Import tactics.
+Set Default Proof Using "Type".
 
 Definition na_bor `{invG Σ, lftG Σ, na_invG Σ}
            (κ : lft) (tid : na_inv_pool_name) (N : namespace) (P : iProp Σ) :=

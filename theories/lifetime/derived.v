@@ -1,6 +1,7 @@
 From lrust.lifetime Require Export primitive accessors faking.
 From lrust.lifetime Require Export raw_reborrow.
 From iris.proofmode Require Import tactics.
+Set Default Proof Using "Type".
 (* TODO: the name derived makes no sense: reborrow/bor_unnest, which is proven
 in the model, depends on this file. *)
 

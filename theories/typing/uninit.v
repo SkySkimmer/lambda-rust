@@ -1,6 +1,7 @@
 From iris.proofmode Require Import tactics.
 From lrust.typing Require Export type.
 From lrust.typing Require Import product.
+Set Default Proof Using "Type".
 
 Section uninit.
   Context `{typeG Σ}.

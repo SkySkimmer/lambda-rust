@@ -6,6 +6,7 @@ From lrust.lang Require Export new_delete.
 From lrust.lang Require Import memcpy.
 From lrust.typing Require Export type.
 From lrust.typing Require Import uninit type_context programs.
+Set Default Proof Using "Type".
 
 Section own.
   Context `{typeG Σ}.

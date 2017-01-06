@@ -4,6 +4,7 @@ From iris.algebra Require Import vector.
 From lrust.lifetime Require Import borrow.
 From lrust.typing Require Export type.
 From lrust.typing Require Import programs cont.
+Set Default Proof Using "Type".
 
 Section fn.
   Context `{typeG Σ} {A : Type} {n : nat}.

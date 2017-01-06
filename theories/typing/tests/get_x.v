@@ -2,6 +2,7 @@ From lrust.lifetime Require Import definitions.
 From lrust.lang Require Import new_delete.
 From lrust.typing Require Import programs product product_split own uniq_bor
                     shr_bor int function lft_contexts uninit cont.
+Set Default Proof Using "Type".
 
 Section get_x.
   Context `{typeG Σ}.

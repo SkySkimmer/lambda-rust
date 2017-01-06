@@ -3,6 +3,7 @@ From iris.proofmode Require Import tactics.
 From lrust.lifetime Require Import borrow.
 From lrust.typing Require Export type.
 From lrust.typing Require Import programs.
+Set Default Proof Using "Type".
 
 Section typing.
   Context `{typeG Σ}.

@@ -3,6 +3,7 @@ From iris.prelude Require Export gmultiset strings.
 From iris.base_logic.lib Require Export invariants.
 From iris.base_logic.lib Require Import boxes.
 From iris.base_logic Require Import big_op.
+Set Default Proof Using "Type".
 Import uPred.
 
 Definition lftN : namespace := nroot .@ "lft".

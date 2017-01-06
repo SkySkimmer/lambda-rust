@@ -3,6 +3,7 @@ From iris.base_logic Require Import big_op.
 From lrust.lang Require Export proofmode notation.
 From lrust.lifetime Require Import borrow frac_borrow reborrow.
 From lrust.typing Require Import lft_contexts.
+Set Default Proof Using "Type".
 
 Class typeG Σ := TypeG {
   type_heapG :> heapG Σ;

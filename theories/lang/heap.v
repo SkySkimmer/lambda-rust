@@ -4,6 +4,7 @@ From iris.algebra Require Import csum excl auth.
 From iris.base_logic Require Import big_op lib.invariants lib.fractional.
 From iris.proofmode Require Export tactics.
 From lrust.lang Require Export lifting.
+Set Default Proof Using "Type".
 Import uPred.
 
 Definition heapN : namespace := nroot .@ "heap".

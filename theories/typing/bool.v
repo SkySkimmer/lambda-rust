@@ -2,6 +2,7 @@ From iris.base_logic Require Import big_op.
 From iris.proofmode Require Import tactics.
 From lrust.typing Require Export type.
 From lrust.typing Require Import programs.
+Set Default Proof Using "Type".
 
 Section bool.
   Context `{typeG Σ}.
