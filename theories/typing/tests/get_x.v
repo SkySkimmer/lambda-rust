@@ -22,7 +22,7 @@ Section get_x.
 
     eapply type_let'.
     { apply _. }
-    { by apply (type_deref (&uniq{α}Π [int; int])), read_own_move. }
+    { by eapply (type_deref (&uniq{α} _)), read_own_move. }
     { solve_typing. }
     intros p'. simpl_subst.
 
@@ -30,7 +30,7 @@ Section get_x.
 
     eapply type_let'.
     { apply _. }
-    { eapply (type_delete (uninit 1) 1); solve_typing. }
+    { by eapply (type_delete (uninit 1) 1). }
     { solve_typing. }
     move=> /= _.
 

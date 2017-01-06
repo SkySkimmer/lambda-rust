@@ -201,6 +201,16 @@ Section typing.
     by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl, shr_mono'.
   Qed.
 
+  Lemma tctx_extract_hasty_share_samelft E L p ty ty' κ T :
+    lctx_lft_alive E L κ → subtype E L ty' ty →
+    tctx_extract_hasty E L p (&shr{κ}ty) ((p ◁ &uniq{κ}ty')::T)
+                                         ((p ◁ &shr{κ}ty')::T).
+  Proof.
+    intros. apply (tctx_incl_frame_r _ [_] [_;_]).
+    rewrite tctx_share // {1}copy_tctx_incl.
+    by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl, shr_mono'.
+  Qed.
+
   Lemma tctx_extract_hasty_reborrow E L p ty ty' κ κ' T :
     lctx_lft_incl E L κ' κ → eqtype E L ty ty' →
     tctx_extract_hasty E L p (&uniq{κ'}ty) ((p ◁ &uniq{κ}ty')::T)
@@ -246,3 +256,4 @@ End typing.
 
 Hint Resolve uniq_mono' uniq_proper' tctx_extract_hasty_share
              tctx_extract_hasty_reborrow : lrust_typing.
+Hint Resolve tctx_extract_hasty_share_samelft | 0 : lrust_typing.
