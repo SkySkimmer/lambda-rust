@@ -1,6 +1,5 @@
 From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
-From lrust.lifetime Require Import borrow frac_borrow reborrow.
 From lrust.lang Require Import heap.
 From lrust.typing Require Export type.
 From lrust.typing Require Import lft_contexts type_context shr_bor programs.

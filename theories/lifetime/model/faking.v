@@ -112,8 +112,7 @@ Proof.
 Qed.
 
 Lemma bor_fake E κ P :
-  ↑lftN ⊆ E →
-  lft_ctx -∗ [†κ] ={E}=∗ &{κ}P.
+  ↑lftN ⊆ E → lft_ctx -∗ [†κ] ={E}=∗ &{κ}P.
 Proof.
   iIntros (?) "#LFT H†". iMod (raw_bor_fake' with "LFT H†"); first done.
   iModIntro. unfold bor. iExists κ. iFrame. iApply lft_incl_refl.

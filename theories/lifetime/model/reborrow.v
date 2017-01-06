@@ -1,4 +1,4 @@
-From lrust.lifetime Require Export borrow derived.
+From lrust.lifetime Require Export borrow.
 From lrust.lifetime Require Import raw_reborrow accessors.
 From iris.algebra Require Import csum auth frac gmap agree gset.
 From iris.base_logic Require Import big_op.
@@ -9,6 +9,18 @@ Set Default Proof Using "Type".
 Section reborrow.
 Context `{invG Σ, lftG Σ}.
 Implicit Types κ : lft.
+
+(* This lemma has no good place... and reborrowing is where we need it inside the model. *)
+Lemma bor_exists {A} (Φ : A → iProp Σ) `{!Inhabited A} E κ :
+  ↑lftN ⊆ E →
+  lft_ctx -∗ &{κ}(∃ x, Φ x) ={E}=∗ ∃ x, &{κ}Φ x.
+Proof.
+  iIntros (?) "#LFT Hb".
+  iMod (bor_acc_atomic_cons with "LFT Hb") as "[H|[H† >_]]"; first done.
+  - iDestruct "H" as "[HΦ Hclose]". iDestruct "HΦ" as (x) "HΦ".
+    iExists x. iApply ("Hclose" with "HΦ"). iIntros "!> ?"; eauto.
+  - iExists inhabitant. by iApply (bor_fake with "LFT").
+Qed.
 
 Lemma rebor E κ κ' P :
   ↑lftN ⊆ E →

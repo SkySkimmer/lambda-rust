@@ -1,4 +1,4 @@
-From lrust.lifetime Require Export derived.
+From lrust.lifetime Require Export lifetime.
 From iris.base_logic.lib Require Export na_invariants.
 From iris.proofmode Require Import tactics.
 Set Default Proof Using "Type".

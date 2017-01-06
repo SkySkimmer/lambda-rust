@@ -1,6 +1,5 @@
 From iris.proofmode Require Import tactics.
 From lrust.lang Require Import heap memcpy.
-From lrust.lifetime Require Import borrow frac_borrow.
 From lrust.typing Require Export uninit uniq_bor shr_bor own sum.
 From lrust.typing Require Import lft_contexts type_context programs product.
 Set Default Proof Using "Type".

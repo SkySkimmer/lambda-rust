@@ -1,23 +1,42 @@
-From lrust.lifetime Require Export primitive accessors faking.
-From lrust.lifetime Require Export raw_reborrow.
+From lrust.lifetime Require Export lifetime_sig.
+From lrust.lifetime.model Require definitions primitive accessors faking borrow
+     reborrow creation.
 From iris.proofmode Require Import tactics.
 Set Default Proof Using "Type".
-(* TODO: the name derived makes no sense: reborrow/bor_unnest, which is proven
-in the model, depends on this file. *)
+
+Module Export lifetime : lifetime_sig.
+  Include definitions.
+  Include primitive.
+  Include borrow.
+  Include faking.
+  Include reborrow.
+  Include accessors.
+  Include creation.
+End lifetime.
 
 Section derived.
 Context `{invG Σ, lftG Σ}.
 Implicit Types κ : lft.
 
-Lemma bor_exists {A} (Φ : A → iProp Σ) `{!Inhabited A} E κ :
+Lemma bor_acc_cons E q κ P :
   ↑lftN ⊆ E →
-  lft_ctx -∗ &{κ}(∃ x, Φ x) ={E}=∗ ∃ x, &{κ}Φ x.
+  lft_ctx -∗ &{κ} P -∗ q.[κ] ={E}=∗ ▷ P ∗
+    ∀ Q, ▷ Q -∗ ▷(▷ Q ={⊤∖↑lftN}=∗ ▷ P) ={E}=∗ &{κ} Q ∗ q.[κ].
 Proof.
-  iIntros (?) "#LFT Hb".
-  iMod (bor_acc_atomic_cons with "LFT Hb") as "[H|[H† >_]]"; first done.
-  - iDestruct "H" as "[HΦ Hclose]". iDestruct "HΦ" as (x) "HΦ".
-    iExists x. iApply ("Hclose" with "HΦ"). iIntros "!> ?"; eauto.
-  - iExists inhabitant. by iApply (bor_fake with "LFT").
+  iIntros (?) "#LFT HP Htok".
+  iMod (bor_acc_strong with "LFT HP Htok") as (κ') "(#Hκκ' & $ & Hclose)"; first done.
+  iIntros "!>*HQ HPQ". iMod ("Hclose" with "*HQ [HPQ]") as "[Hb $]".
+  - iNext. iIntros "? _". by iApply "HPQ".
+  - iApply (bor_shorten with "Hκκ' Hb").
+Qed.
+
+Lemma bor_acc E q κ P :
+  ↑lftN ⊆ E →
+  lft_ctx -∗ &{κ}P -∗ q.[κ] ={E}=∗ ▷ P ∗ (▷ P ={E}=∗ &{κ}P ∗ q.[κ]).
+Proof.
+  iIntros (?) "#LFT HP Htok".
+  iMod (bor_acc_cons with "LFT HP Htok") as "($ & Hclose)"; first done.
+  iIntros "!>HP". iMod ("Hclose" with "*HP []") as "[$ $]"; auto.
 Qed.
 
 Lemma bor_or E κ P Q :
@@ -80,8 +99,9 @@ Qed.
 
 Lemma lft_incl_static κ : (κ ⊑ static)%I.
 Proof.
-  iIntros "!#". iSplitR.
+  iApply lft_incl_intro. iIntros "!#". iSplitR.
   - iIntros (q) "?". iExists 1%Qp. iSplitR. by iApply lft_tok_static. auto.
   - iIntros "Hst". by iDestruct (lft_dead_static with "Hst") as "[]".
 Qed.
 End derived.
+

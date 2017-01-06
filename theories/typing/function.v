@@ -1,7 +1,6 @@
 From iris.base_logic Require Import big_op.
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import vector.
-From lrust.lifetime Require Import borrow.
 From lrust.typing Require Export type.
 From lrust.typing Require Import programs cont.
 Set Default Proof Using "Type".

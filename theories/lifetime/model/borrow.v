@@ -182,4 +182,5 @@ Proof.
       iRight. iSplit; last by auto. iExists _. iFrame. }
     unfold bor. iExists _. iFrame. iApply (lft_incl_glb with "Hκ1 Hκ2").
 Qed.
+
 End borrow.

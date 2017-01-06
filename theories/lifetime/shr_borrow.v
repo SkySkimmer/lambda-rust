@@ -1,6 +1,6 @@
 From iris.algebra Require Import gmap auth frac.
 From iris.proofmode Require Import tactics.
-From lrust.lifetime Require Export derived.
+From lrust.lifetime Require Export lifetime.
 Set Default Proof Using "Type".
 
 (** Shared bors  *)
