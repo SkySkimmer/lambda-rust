@@ -158,7 +158,7 @@ Section typing.
   Lemma write_own {E L} ty ty' n :
     ty.(ty_size) = ty'.(ty_size) → typed_write E L (own n ty') ty (own n ty).
   Proof.
-    iIntros (Hsz p tid F qE qL ?) "_ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
+    iIntros (Hsz) "!#". iIntros (p tid F qE qL ?) "_ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
     (* This turns out to be the fastest way to apply a lemma below ▷ -- at
     least if we're fine throwing away the premise even though the result
@@ -172,7 +172,7 @@ Section typing.
   Lemma read_own_copy E L ty n :
     Copy ty → typed_read E L (own n ty) ty (own n ty).
   Proof.
-    iIntros (Hsz p tid F qE qL ?) "_ $ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
+    iIntros (Hsz) "!#". iIntros (p tid F qE qL ?) "_ $ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ #Hown]". iModIntro.
     iExists l, _, _. iSplit; first done. iFrame "∗#". iIntros "Hl !>".
     iExists _. iSplit; first done. iFrame "H†". iExists _. by iFrame.
@@ -181,7 +181,7 @@ Section typing.
   Lemma read_own_move E L ty n :
     typed_read E L (own n ty) ty (own n $ uninit ty.(ty_size)).
   Proof.
-    iIntros (p tid F qE qL ?) "_ $ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
+    iAlways. iIntros (p tid F qE qL ?) "_ $ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
     iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
     { by iApply ty_size_eq. }
@@ -193,7 +193,7 @@ Section typing.
   Lemma type_new {E L} (n : nat) :
     typed_instruction_ty E L [] (new [ #n ]%E) (own n (uninit n)).
   Proof.
-    iIntros (tid eq) "#HEAP #LFT $ $ $ _".
+    iAlways. iIntros (tid eq) "#HEAP #LFT $ $ $ _".
     iApply (wp_new with "HEAP"); try done; first omega. iModIntro.
     iIntros (l vl) "(% & H† & Hlft)". rewrite tctx_interp_singleton tctx_hasty_val.
     iExists _. iSplit; first done. iNext. rewrite Nat2Z.id freeable_sz_full. iFrame.
@@ -208,7 +208,7 @@ Section typing.
     ty.(ty_size) = n →
     typed_instruction E L [p ◁ own n ty] (delete [ #n; p])%E (λ _, []).
   Proof.
-    iIntros (<- tid eq) "#HEAP #LFT $ $ $ Hp". rewrite tctx_interp_singleton.
+    iIntros (<-) "!#". iIntros (tid eq) "#HEAP #LFT $ $ $ Hp". rewrite tctx_interp_singleton.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
     iDestruct "Hown" as (l) "(Hv & H↦∗: & >H†)". iDestruct "Hv" as %[=->].
     iDestruct "H↦∗:" as (vl) "[>H↦ Hown]". rewrite tctx_interp_nil.
@@ -264,7 +264,12 @@ Section typing.
         - eapply is_closed_subst. done. set_solver. }
       eapply type_let'.
       + apply subst_is_closed; last done. apply is_closed_of_val.
-      + eapply type_memcpy; try done. by eapply (write_own _ (uninit _)).
+      + eapply type_memcpy; first done; last done.
+        (* TODO: Doing "eassumption" here shows that unification takes *forever* to fail.
+           I guess that's caused by it trying to unify typed_read and typed_write,
+           but considering that the Iris connectives are all sealed, why does
+           that take so long? *)
+        by eapply (write_own _ (uninit _)).
       + solve_typing.
       + move=>//=.
   Qed.

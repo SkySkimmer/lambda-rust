@@ -80,7 +80,7 @@ Section typing.
   Lemma read_shr E L κ ty :
     Copy ty → lctx_lft_alive E L κ → typed_read E L (&shr{κ}ty) ty (&shr{κ}ty).
   Proof.
-    iIntros (Hcopy Halive v tid F qE qL ?) "#LFT Htl HE HL Hown".
+    iIntros (Hcopy Halive) "!#". iIntros (v tid F qE qL ?) "#LFT Htl HE HL Hown".
     iMod (Halive with "HE HL") as (q) "[Hκ Hclose]"; first set_solver.
     iDestruct "Hown" as (l) "[EQ #Hshr]". iDestruct "EQ" as %[=->].
      assert (↑shrN ⊆ (↑lrustN : coPset)) by solve_ndisj. (* set_solver needs some help. *)

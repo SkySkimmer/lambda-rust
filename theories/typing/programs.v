@@ -220,7 +220,10 @@ Section typing_rules.
                       (λ _, [p1 ◁ ty1'; p2 ◁ ty2']%TC).
   Proof.
     iIntros (Hsz Hwrt Hread) "!#". iIntros (tid qE) "#HEAP #LFT Htl HE HL HT".
-    iApply (type_memcpy_iris with "* [] [] []"). [$HEAP $LFT $Htl $HE $HL HT]"). ; try done.
+    iApply (type_memcpy_iris with "[] [] * [$HEAP $LFT $Htl $HE $HL HT]"); try done.
+    (* TODO: This is kind of silly, why can't I iApply the assumptions directly? *)
+    { iPoseProof Hwrt as "Hwrt". done. }
+    { iPoseProof Hread as "Hread". done. }
     { by rewrite tctx_interp_cons tctx_interp_singleton. }
     rewrite tctx_interp_cons tctx_interp_singleton. auto.
   Qed.
