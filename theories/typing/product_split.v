@@ -13,7 +13,7 @@ Section product_split.
     match tyl with
     | [] => []
     | ty :: tyl =>
-      (p +ₗ #off ◁ ptr ty) :: hasty_ptr_offsets p ptr tyl (off + ty.(ty_size))
+      (p +ₗ #off ◁ ptr ty)%TC :: hasty_ptr_offsets p ptr tyl (off + ty.(ty_size))
     end.
 
   Lemma hasty_ptr_offsets_offset (l : loc) p (off1 off2 : nat) ptr tyl tid :
@@ -292,7 +292,7 @@ Section product_split.
   Proof.
     unfold tctx_extract_hasty=>?. apply (tctx_incl_frame_r _ [_] [_;_]).
     rewrite {1}copy_tctx_incl. apply (tctx_incl_frame_r _ [_] [_]).
-    rewrite tctx_split_shr_prod2 -(contains_tctx_incl _ _ [p' ◁ ty]) //.
+    rewrite tctx_split_shr_prod2 -(contains_tctx_incl _ _ [p' ◁ ty]%TC) //.
     apply contains_skip, contains_nil_l.
   Qed.
 
@@ -318,7 +318,7 @@ Section product_split.
   Proof.
     unfold tctx_extract_hasty=>?. apply (tctx_incl_frame_r _ [_] [_;_]).
     rewrite {1}copy_tctx_incl. apply (tctx_incl_frame_r _ [_] [_]).
-    rewrite tctx_split_shr_prod -(contains_tctx_incl _ _ [p' ◁ ty]) //.
+    rewrite tctx_split_shr_prod -(contains_tctx_incl _ _ [p' ◁ ty]%TC) //.
     apply contains_skip, contains_nil_l.
   Qed.
 
@@ -401,5 +401,9 @@ Hint Resolve tctx_extract_merge_own_prod2 tctx_extract_merge_uniq_prod2
              tctx_extract_merge_shr_prod2 tctx_extract_merge_own_prod
              tctx_extract_merge_uniq_prod tctx_extract_merge_shr_prod
      | 150 : lrust_typing.
+
+Hint Extern 0
+     (tctx_extract_hasty _ _ _ _ (hasty_ptr_offsets _ _ _ _) _) =>
+        cbn[hasty_ptr_offsets].
 
 Hint Unfold extract_tyl : lrust_typing.

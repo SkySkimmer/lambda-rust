@@ -221,7 +221,7 @@ Section typing.
     ty.(ty_size) = 1%nat →
     Closed [] p → Closed (x :b: []) e →
     tctx_extract_hasty E L p ty T T' →
-    (∀ v, typed_body E L C ((v ◁ own 1 ty)::T') (subst x v e)) →
+    (∀ (v : val), typed_body E L C ((v ◁ own 1 ty)::T') (subst x v e)) →
     typed_body E L C T (letalloc: x := p in e).
   Proof.
     intros. eapply type_let'.
@@ -246,7 +246,8 @@ Section typing.
     Closed [] p → Closed (x :b: []) e →
     typed_read E L ty1 ty ty2 →
     tctx_extract_hasty E L p ty1 T T' →
-    (∀ v, typed_body E L C ((v ◁ own (ty.(ty_size)) ty)::(p ◁ ty2)::T') (subst x v e)) →
+    (∀ (v : val),
+        typed_body E L C ((v ◁ own (ty.(ty_size)) ty)::(p ◁ ty2)::T') (subst x v e)) →
     typed_body E L C T (letalloc: x :={ty.(ty_size)} !p in e).
   Proof.
     intros. eapply type_let'.

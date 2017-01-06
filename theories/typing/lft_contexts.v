@@ -6,10 +6,13 @@ From lrust.lifetime Require Import derived borrow frac_borrow.
 Inductive elctx_elt : Type :=
 | ELCtx_Alive (κ : lft)
 | ELCtx_Incl (κ κ' : lft).
-Definition elctx := list elctx_elt.
+Notation elctx := (list elctx_elt).
 
 Delimit Scope lrust_elctx_scope with EL.
-Bind Scope lrust_elctx_scope with elctx elctx_elt.
+(* We need to define [elctx] and [llctx] as notations to make eauto
+   work. But then, Coq is not able to bind them to their
+   notations, so we have to use [Arguments] everywhere. *)
+Bind Scope lrust_elctx_scope with elctx_elt.
 
 Notation "☀ κ" := (ELCtx_Alive κ) (at level 70) : lrust_elctx_scope.
 Infix "⊑" := ELCtx_Incl (at level 70) : lrust_elctx_scope.
@@ -22,10 +25,10 @@ Notation "[ x1 ; x2 ; .. ; xn ]" :=
 Notation "[ x ]" := (@cons elctx_elt x%EL (@nil elctx_elt)) : lrust_elctx_scope.
 
 Definition llctx_elt : Type := lft * list lft.
-Definition llctx := list llctx_elt.
+Notation llctx := (list llctx_elt).
 
 Delimit Scope lrust_llctx_scope with LL.
-Bind Scope lrust_llctx_scope with llctx llctx_elt.
+Bind Scope lrust_llctx_scope with llctx_elt.
 
 Notation "κ ⊑ κl" := (@pair lft (list lft) κ κl) (at level 70) : lrust_llctx_scope.
 
@@ -66,6 +69,7 @@ Section lft_contexts.
 
   Definition elctx_interp (E : elctx) (q : Qp) : iProp Σ :=
     ([∗ list] x ∈ E, elctx_elt_interp x q)%I.
+  Global Arguments elctx_interp _%EL _%Qp.
   Global Instance elctx_interp_fractional E:
     Fractional (elctx_interp E).
   Proof. intros ??. rewrite -big_sepL_sepL. by setoid_rewrite <-fractional. Qed.
@@ -79,6 +83,7 @@ Section lft_contexts.
 
   Definition elctx_interp_0 (E : elctx) : iProp Σ :=
     ([∗ list] x ∈ E, elctx_elt_interp_0 x)%I.
+  Global Arguments elctx_interp_0 _%EL.
   Global Instance elctx_interp_0_persistent E:
     PersistentP (elctx_interp_0 E).
   Proof. apply _. Qed.
@@ -124,6 +129,7 @@ Section lft_contexts.
 
   Definition llctx_interp (L : llctx) (q : Qp) : iProp Σ :=
     ([∗ list] x ∈ L, llctx_elt_interp x q)%I.
+  Global Arguments llctx_interp _%LL _%Qp.
   Global Instance llctx_interp_fractional L:
     Fractional (llctx_interp L).
   Proof. intros ??. rewrite -big_sepL_sepL. by setoid_rewrite <-fractional. Qed.
@@ -137,6 +143,7 @@ Section lft_contexts.
 
   Definition llctx_interp_0 (L : llctx) : Prop :=
     ∀ x, x ∈ L → llctx_elt_interp_0 x.
+  Global Arguments llctx_interp_0 _%LL.
   Lemma llctx_interp_persist L q :
     llctx_interp L q -∗ ⌜llctx_interp_0 L⌝.
   Proof.
@@ -301,7 +308,7 @@ Section lft_contexts.
   Qed.
 
   Lemma elctx_sat_alive E' κ :
-    lctx_lft_alive κ → elctx_sat E' → elctx_sat ((☀κ) :: E').
+    lctx_lft_alive κ → elctx_sat E' → elctx_sat ((☀κ) :: E')%EL.
   Proof.
     iIntros (Hκ HE' qE qL F ?) "[HE1 HE2] [HL1 HL2]".
     iMod (Hκ with "HE1 HL1") as (q) "[Htok Hclose]". done.
@@ -315,7 +322,7 @@ Section lft_contexts.
   Qed.
 
   Lemma elctx_sat_lft_incl E' κ κ' :
-    lctx_lft_incl κ κ' → elctx_sat E' → elctx_sat ((κ ⊑ κ') :: E').
+    lctx_lft_incl κ κ' → elctx_sat E' → elctx_sat ((κ ⊑ κ') :: E')%EL.
   Proof.
     iIntros (Hκκ' HE' qE qL F ?) "HE HL".
     iAssert (κ ⊑ κ')%I with "[#]" as "#Hincl". iApply (Hκκ' with "[HE] [HL]").
@@ -326,6 +333,10 @@ Section lft_contexts.
   Qed.
 End lft_contexts.
 
+Arguments lctx_lft_incl {_ _ _} _%EL _%LL _ _.
+Arguments lctx_lft_eq {_ _ _} _%EL _%LL _ _.
+Arguments lctx_lft_alive {_ _ _} _%EL _%LL _.
+Arguments elctx_sat {_ _ _} _%EL _%LL _%EL.
 
 Section elctx_incl.
   (* External lifetime context inclusion, in a persistent context.
@@ -341,6 +352,7 @@ Section elctx_incl.
     ∀ qE1, elctx_interp E1 qE1 ={F}=∗ ∃ qE2, elctx_interp E2 qE2 ∗
        (elctx_interp E2 qE2 ={F}=∗ elctx_interp E1 qE1).
   Global Instance : RewriteRelation elctx_incl.
+  Arguments elctx_incl _%EL _%EL.
 
   Global Instance elctx_incl_preorder : PreOrder elctx_incl.
   Proof.
@@ -422,9 +434,11 @@ Section elctx_incl.
   Qed.
 End elctx_incl.
 
-Ltac solve_typing := by eauto 100 with lrust_typing.
+Arguments elctx_incl {_ _ _} _%EL _%LL _%EL _%EL.
 
-Hint Constructors Forall Forall2 : lrust_typing.
+Ltac solve_typing := eauto 100 with lrust_typing typeclass_instances || fail.
+
+Hint Constructors Forall Forall2 elem_of_list : lrust_typing.
 Hint Resolve
      lctx_lft_incl_relf lctx_lft_incl_static lctx_lft_incl_local'
      lctx_lft_incl_external'
@@ -432,13 +446,6 @@ Hint Resolve
      elctx_sat_nil elctx_sat_alive elctx_sat_lft_incl
      elctx_incl_refl elctx_incl_nil elctx_incl_lft_alive elctx_incl_lft_incl
   : lrust_typing.
-
-(* We declare these as hint extern, so that the [B] parameter of elem_of does
-   not have to be [list _] and can be an alias of this. *)
-Hint Extern 0 (@elem_of _ _ (@elem_of_list _) _ (_ :: _)) =>
-  eapply @elem_of_list_here : lrust_typing.
-Hint Extern 1 (@elem_of _ _ (@elem_of_list _) _ (_ :: _)) =>
-  eapply @elem_of_list_further : lrust_typing.
 
 Hint Resolve lctx_lft_alive_external' | 100 : lrust_typing.
 
