@@ -12,12 +12,13 @@ Section cont_context_def.
   Record cctx_elt : Type :=
     CCtx_iscont { cctxe_k : val; cctxe_L : llctx;
                   cctxe_n : nat; cctxe_T : vec val cctxe_n → tctx }.
-  Definition cctx := list cctx_elt.
 End cont_context_def.
 Add Printing Constructor cctx_elt.
 
+Notation cctx := (list cctx_elt).
+
 Delimit Scope lrust_cctx_scope with CC.
-Bind Scope lrust_cctx_scope with cctx cctx_elt.
+Bind Scope lrust_cctx_scope with cctx_elt.
 
 Notation "k ◁cont( L , T )" := (CCtx_iscont k L _ T%TC)
   (at level 70, format "k  ◁cont( L ,  T )") : lrust_cctx_scope.
@@ -37,6 +38,7 @@ Section cont_context.
          WP k (of_val <$> (args : list _)) {{ _, cont_postcondition }})%I.
   Definition cctx_interp (tid : thread_id) (C : cctx) : iProp Σ :=
     (∀ (x : cctx_elt), ⌜x ∈ C⌝ -∗ cctx_elt_interp tid x)%I.
+  Global Arguments cctx_interp _ _%CC.
 
   Global Instance cctx_interp_permut tid:
     Proper ((≡ₚ) ==> (⊣⊢)) (cctx_interp tid).
@@ -76,7 +78,8 @@ Section cont_context.
 
   Definition cctx_incl (E : elctx) (C1 C2 : cctx): Prop :=
     ∀ tid q, lft_ctx -∗ (elctx_interp E q -∗ cctx_interp tid C1) -∗
-                        (elctx_interp E q -∗ cctx_interp tid C2).
+                       (elctx_interp E q -∗ cctx_interp tid C2).
+  Global Arguments cctx_incl _%EL _%CC _%CC.
 
   Global Instance cctx_incl_preorder E : PreOrder (cctx_incl E).
   Proof.

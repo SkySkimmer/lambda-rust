@@ -42,3 +42,4 @@ theories/typing/borrow.v
 theories/typing/cont.v
 theories/typing/fixpoint.v
 theories/typing/type_sum.v
+theories/typing/tests/get_x.v

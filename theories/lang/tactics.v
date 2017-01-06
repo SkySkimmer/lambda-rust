@@ -200,14 +200,14 @@ Hint Extern 0 (language.atomic _) => solve_atomic : typeclass_instances.
 
 (** Substitution *)
 Ltac simpl_subst :=
-  simpl;
+  unfold subst_v; simpl;
   repeat match goal with
   | |- context [subst ?x ?er ?e] =>
       let er' := W.of_expr er in let e' := W.of_expr e in
       change (subst x er e) with (subst x (W.to_expr er') (W.to_expr e'));
       rewrite <-(W.to_expr_subst x); simpl (* ssr rewrite is slower *)
   end;
-  unfold W.to_expr.
+  unfold W.to_expr; simpl.
 Arguments W.to_expr : simpl never.
 Arguments subst : simpl never.
 
