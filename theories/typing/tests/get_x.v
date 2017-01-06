@@ -7,7 +7,7 @@ Section get_x.
   Context `{typeG Σ}.
 
   Definition get_x :=
-    (funrec: "get_x" ["p"] → "ret" :=
+    (funrec: <> ["p"] → "ret" :=
        let: "p'" := !"p" in
        letalloc: "r" := "p'" +ₗ #0 in
        delete [ #1; "p"] ;; "ret" ["r":expr])%E.
@@ -17,7 +17,7 @@ Section get_x.
         (fn (λ α, [☀α])%EL (λ α, [# own 1 (&uniq{α}Π[int; int])])
             (λ α, own 1 (&shr{α} int))).
   Proof.
-    apply type_fn; try apply _. intros α get_x ret args. inv_vec args=>p args.
+    apply type_fn; try apply _. move=> /= α ret args. inv_vec args=>p args.
     inv_vec args. simpl_subst.
 
     eapply type_let'.

@@ -244,11 +244,11 @@ Section typing.
       eapply type_call'; try done. constructor. done.
   Qed.
 
-  Lemma type_fn {A} E L E' fb kb (argsb : list binder) e
+  Lemma type_rec {A} E L E' fb kb (argsb : list binder) e
         (tys : A → vec type (length argsb)) ty
         T `{!CopyC T, !SendC T} :
     Closed (fb :b: kb :b: argsb +b+ []) e →
-    (∀ x (f : val) k (args : vec val _),
+    (∀ x (f : val) k (args : vec val (length argsb)),
         typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ ty x])]
                    ((f ◁ fn E' tys ty) ::
                       zip_with (TCtx_hasty ∘ of_val) args (tys x) ++ T)
@@ -264,6 +264,20 @@ Section typing.
     iApply (Hbody with "* HEAP LFT Htl HE HL HC").
     rewrite tctx_interp_cons tctx_interp_app. iFrame "HT' IH".
     by iApply sendc_change_tid.
+  Qed.
+
+  Lemma type_fn {A} E L E' kb (argsb : list binder) e
+        (tys : A → vec type (length argsb)) ty
+        T `{!CopyC T, !SendC T} :
+    Closed (kb :b: argsb +b+ []) e →
+    (∀ x k (args : vec val (length argsb)),
+        typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ ty x])]
+                   (zip_with (TCtx_hasty ∘ of_val) args (tys x) ++ T)
+                   (subst_v (kb :: argsb) (k ::: args) e)) →
+    typed_instruction_ty E L T (funrec: <> argsb → kb := e) (fn E' tys ty).
+  Proof.
+    intros. apply type_rec; try done. intros. rewrite -typed_body_mono //=.
+    eapply contains_tctx_incl. by constructor.
   Qed.
 End typing.
 
