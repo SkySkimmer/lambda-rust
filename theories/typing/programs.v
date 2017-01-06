@@ -130,7 +130,11 @@ Section typing_rules.
     tctx_extract_ctx E L T1 T T' →
     (typed_body E L C (T2 ++ T') e') →
     typed_body E L C T (e ;; e').
-  Proof. intros. by eapply type_let. Qed.
+  Proof.
+    intros ? Hinst ? Hbody. eapply type_let; [done| |done|].
+    (* FIXME: done divergese on the remaining goals. *)
+    exact Hinst. intros. exact Hbody.
+  Qed.
 
   Lemma typed_newlft E L C T κs e :
     Closed [] e →
@@ -265,6 +269,7 @@ Section typing_rules.
     typed_body E L C ((p1 ◁ ty1') :: (p2 ◁ ty2') :: T') e →
     typed_body E L C T (p1 <⋯ !{n}p2;; e).
   Proof.
-    intros. eapply type_seq; [done|by eapply type_memcpy_instr|done|by simpl].
+    intros ?? Hwr Hrd ??. eapply type_seq; [done|eapply type_memcpy_instr| |by simpl]; first done.
+    exact Hwr. exact Hrd. done.
   Qed.
 End typing_rules.

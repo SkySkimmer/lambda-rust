@@ -293,7 +293,7 @@ Section product_split.
     rewrite !tctx_extract_hasty_unfold=>?. apply (tctx_incl_frame_r _ [_] [_;_]).
     rewrite {1}copy_tctx_incl. apply (tctx_incl_frame_r _ [_] [_]).
     rewrite tctx_split_shr_prod2 -(contains_tctx_incl _ _ [p' ◁ ty]%TC) //.
-    apply contains_skip, contains_nil_l.
+    apply submseteq_skip, submseteq_nil_l.
   Qed.
 
   Lemma tctx_extract_split_own_prod E L p p' n ty tyl T T' :
@@ -319,7 +319,7 @@ Section product_split.
     rewrite !tctx_extract_hasty_unfold=>?. apply (tctx_incl_frame_r _ [_] [_;_]).
     rewrite {1}copy_tctx_incl. apply (tctx_incl_frame_r _ [_] [_]).
     rewrite tctx_split_shr_prod -(contains_tctx_incl _ _ [p' ◁ ty]%TC) //.
-    apply contains_skip, contains_nil_l.
+    apply submseteq_skip, submseteq_nil_l.
   Qed.
 
   (* Merging with [tctx_extract]. *)

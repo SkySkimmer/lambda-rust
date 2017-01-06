@@ -197,9 +197,9 @@ Section type_context.
       by iMod (H2 with "LFT HE HL H") as "($ & $ & $)".
   Qed.
 
-  Lemma contains_tctx_incl E L T1 T2 : T1 `contains` T2 → tctx_incl E L T2 T1.
+  Lemma contains_tctx_incl E L T1 T2 : T1 ⊆+ T2 → tctx_incl E L T2 T1.
   Proof.
-    rewrite /tctx_incl. iIntros (Hc ???) "_ $ $ H". by iApply big_sepL_contains.
+    rewrite /tctx_incl. iIntros (Hc ???) "_ $ $ H". by iApply big_sepL_submseteq.
   Qed.
 
   Global Instance tctx_incl_app E L :
@@ -234,7 +234,7 @@ Section type_context.
     remember (p ◁ ty)%TC. induction 1 as [|???? IH]; subst.
     - apply (tctx_incl_frame_r _ [_] [_;_]), copy_tctx_incl, _.
     - etrans. by apply (tctx_incl_frame_l [_]), IH, reflexivity.
-      apply contains_tctx_incl, contains_swap.
+      apply contains_tctx_incl, submseteq_swap.
   Qed.
 
   Lemma subtype_tctx_incl E L p ty1 ty2 :
@@ -258,7 +258,7 @@ Section type_context.
   Lemma tctx_extract_hasty_cons E L p ty T T' x :
     tctx_extract_hasty E L p ty T T' →
     tctx_extract_hasty E L p ty (x::T) (x::T').
-  Proof. unfold tctx_extract_hasty=>->. apply contains_tctx_incl, contains_swap. Qed.
+  Proof. unfold tctx_extract_hasty=>->. apply contains_tctx_incl, submseteq_swap. Qed.
   Lemma tctx_extract_hasty_here_copy E L p ty ty' T `{!Copy ty} :
     subtype E L ty ty' →
     tctx_extract_hasty E L p ty' ((p ◁ ty)::T) ((p ◁ ty)::T).
@@ -281,7 +281,7 @@ Section type_context.
     tctx_extract_blocked E L p κ ty (x::T) (x::T').
   Proof.
     move=> /(tctx_incl_frame_l [x]) /= Hincl. rewrite /tctx_extract_blocked.
-    etrans; first done. apply contains_tctx_incl, contains_swap.
+    etrans; first done. apply contains_tctx_incl, submseteq_swap.
   Qed.
   Lemma tctx_extract_blocked_here E L p κ ty T :
     tctx_extract_blocked E L p κ ty ((p ◁{κ} ty)::T) T.
@@ -309,7 +309,7 @@ Section type_context.
     tctx_incl E L T T'.
   Proof.
     unfold tctx_extract_ctx=>->.
-      by apply contains_tctx_incl, contains_inserts_r.
+      by apply contains_tctx_incl, submseteq_inserts_r.
   Qed.
 
   (* Unblocking a type context. *)

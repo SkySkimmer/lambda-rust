@@ -117,8 +117,8 @@ Section typing.
   Proof.
     intros tys1 tys2 Htys ty1 ty2 Hty. apply fn_subtype_ty.
     - intros. eapply Forall2_impl; first eapply Htys. intros ??.
-      eapply subtype_weaken; last done. by apply contains_inserts_r.
-    - intros. eapply subtype_weaken, Hty; last done. by apply contains_inserts_r.
+      eapply subtype_weaken; last done. by apply submseteq_inserts_r.
+    - intros. eapply subtype_weaken, Hty; last done. by apply submseteq_inserts_r.
   Qed.
 
   Global Instance fn_eqtype_ty' {A n} E0 L0 E :
