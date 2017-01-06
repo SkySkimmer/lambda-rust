@@ -18,6 +18,19 @@ Proof.
   by move=> /Some_pair_included [_] /Some_included_total /to_agree_included=>->.
 Qed.
 
+Lemma lft_init `{!lftPreG Σ} E :
+  ↑lftN ⊆ E → (|={E}=> ∃ _ : lftG Σ, lft_ctx)%I.
+Proof.
+  iIntros (?). rewrite /lft_ctx.
+  iMod (own_alloc (● ∅ : authR alftUR)) as (γa) "Ha"; first done.
+  iMod (own_alloc (● ∅ : authR ilftUR)) as (γi) "Hi"; first done.
+  set (HlftG := LftG _ _ _ γa _ γi _ _ _). iExists HlftG.
+  iMod (inv_alloc _ _ lfts_inv with "[Ha Hi]") as "$"; last done.
+  iModIntro. rewrite /lfts_inv /own_alft_auth /own_ilft_auth. iExists ∅, ∅.
+  rewrite /to_alftUR /to_ilftUR !fmap_empty. iFrame.
+  rewrite dom_empty_L big_sepS_empty. done.
+Qed.
+
 (** Ownership *)
 Lemma own_ilft_auth_agree (I : gmap lft lft_names) κ γs :
   own_ilft_auth I -∗

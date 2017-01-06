@@ -47,6 +47,17 @@ Class lftG Σ := LftG {
   lft_inh_inG :> inG Σ (authR inhUR);
 }.
 
+Class lftPreG Σ := LftPreG {
+  lft_preG_box :> boxG Σ;
+  alft_preG_inG :> inG Σ (authR alftUR);
+  ilft_preG_inG :> inG Σ (authR ilftUR);
+  lft_preG_bor_inG :> inG Σ (authR borUR);
+  lft_preG_cnt_inG :> inG Σ (authR natUR);
+  lft_preG_inh_inG :> inG Σ (authR inhUR);
+}.
+
+(* TODO: Write a Σ for lftPreG *)
+
 Module Type lifetime_sig.
   (** Definitions *)
   Parameter lft_ctx : ∀ `{invG, lftG Σ}, iProp Σ.
@@ -130,21 +141,17 @@ Module Type lifetime_sig.
   Parameter bor_unnest : ∀ E κ κ' P,
     ↑lftN ⊆ E → lft_ctx -∗ &{κ'} &{κ} P ={E, E∖↑lftN}▷=∗ &{κ ∪ κ'} P.
 
-  Parameter idx_bor_acc : ∀ E q κ i P,
-    ↑lftN ⊆ E →
+  Parameter idx_bor_acc : ∀ E q κ i P, ↑lftN ⊆ E →
     lft_ctx -∗ &{κ,i}P -∗ idx_bor_own 1 i -∗ q.[κ] ={E}=∗
       ▷ P ∗ (▷ P ={E}=∗ idx_bor_own 1 i ∗ q.[κ]).
-  Parameter idx_bor_atomic_acc : ∀ E q κ i P,
-    ↑lftN ⊆ E →
+  Parameter idx_bor_atomic_acc : ∀ E q κ i P, ↑lftN ⊆ E →
     lft_ctx -∗ &{κ,i}P -∗ idx_bor_own q i ={E,E∖↑lftN}=∗
       (▷ P ∗ (▷ P ={E∖↑lftN,E}=∗ idx_bor_own q i)) ∨
                 ([†κ] ∗ |={E∖↑lftN,E}=> idx_bor_own q i).
-  Parameter bor_acc_strong : ∀ E q κ P,
-    ↑lftN ⊆ E →
+  Parameter bor_acc_strong : ∀ E q κ P, ↑lftN ⊆ E →
     lft_ctx -∗ &{κ} P -∗ q.[κ] ={E}=∗ ∃ κ', κ ⊑ κ' ∗ ▷ P ∗
       ∀ Q, ▷ Q -∗ ▷(▷ Q -∗ [†κ'] ={⊤∖↑lftN}=∗ ▷ P) ={E}=∗ &{κ'} Q ∗ q.[κ].
-  Parameter bor_acc_atomic_strong : ∀ E κ P,
-    ↑lftN ⊆ E →
+  Parameter bor_acc_atomic_strong : ∀ E κ P, ↑lftN ⊆ E →
     lft_ctx -∗ &{κ} P ={E,E∖↑lftN}=∗
       (∃ κ', κ ⊑ κ' ∗ ▷ P ∗
          ∀ Q, ▷ Q -∗ ▷ (▷ Q -∗ [†κ'] ={⊤∖↑lftN}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ'} Q) ∨
@@ -177,4 +184,7 @@ Module Type lifetime_sig.
        (▷ P ∗ (▷ P ={E∖↑lftN,E}=∗ &{κ}P)) ∨ ([†κ] ∗ |={E∖↑lftN,E}=> True).
 
   End properties.
+
+  Parameter lft_init : ∀ `{invG Σ, !lftPreG Σ} E, ↑lftN ⊆ E →
+    True ={E}=∗ ∃ _ : lftG Σ, lft_ctx.
 End lifetime_sig.
