@@ -17,11 +17,19 @@ End bool.
 Section typing.
   Context `{typeG Σ}.
 
-  Lemma type_bool (b : Datatypes.bool) E L :
+  Lemma type_bool_instr (b : Datatypes.bool) E L :
     typed_instruction_ty E L [] #b bool.
   Proof.
     iIntros (tid qE) "_ _ $ $ $ _". wp_value.
     rewrite tctx_interp_singleton tctx_hasty_val. iExists _. done.
+  Qed.
+
+  Lemma typed_bool (b : Datatypes.bool) E L C T x e :
+    Closed (x :b: []) e →
+    (∀ (v : val), typed_body E L C ((v ◁ bool) :: T) (subst' x v e)) →
+    typed_body E L C T (let: x := #b in e).
+  Proof.
+    intros. eapply type_let; [done|apply type_bool_instr|solve_typing|done].
   Qed.
 
   Lemma type_if E L C T e1 e2 p:

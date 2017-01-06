@@ -16,14 +16,22 @@ End int.
 Section typing.
   Context `{typeG Σ}.
 
-  Lemma type_int (z : Z) E L :
+  Lemma type_int_instr (z : Z) E L :
     typed_instruction_ty E L [] #z int.
   Proof.
     iIntros (tid qE) "_ _ $ $ $ _". wp_value.
     rewrite tctx_interp_singleton tctx_hasty_val. iExists _. done.
   Qed.
 
-  Lemma type_plus E L p1 p2 :
+  Lemma typed_int (z : Z) E L C T x e :
+    Closed (x :b: []) e →
+    (∀ (v : val), typed_body E L C ((v ◁ int) :: T) (subst' x v e)) →
+    typed_body E L C T (let: x := #z in e).
+  Proof.
+    intros. eapply type_let; [done|apply type_int_instr|solve_typing|done].
+  Qed.
+
+  Lemma type_plus_instr E L p1 p2 :
     typed_instruction_ty E L [p1 ◁ int; p2 ◁ int] (p1 + p2) int.
   Proof.
     iIntros (tid qE) "_ _ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
@@ -36,7 +44,16 @@ Section typing.
     iExists _. done.
   Qed.
 
-  Lemma type_minus E L p1 p2 :
+  Lemma typed_plus E L C T T' p1 p2 x e :
+    Closed (x :b: []) e →
+    tctx_extract_ctx E L [p1 ◁ int; p2 ◁ int] T T' →
+    (∀ (v : val), typed_body E L C ((v ◁ int) :: T') (subst' x v e)) →
+    typed_body E L C T (let: x := p1 + p2 in e).
+  Proof.
+    intros. eapply type_let; [done|apply type_plus_instr|solve_typing|done].
+  Qed.
+
+  Lemma type_minus_instr E L p1 p2 :
     typed_instruction_ty E L [p1 ◁ int; p2 ◁ int] (p1 - p2) int.
   Proof.
     iIntros (tid qE) "_ _ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
@@ -49,7 +66,16 @@ Section typing.
     iExists _. done.
   Qed.
 
-  Lemma type_le E L p1 p2 :
+  Lemma typed_minus E L C T T' p1 p2 x e :
+    Closed (x :b: []) e →
+    tctx_extract_ctx E L [p1 ◁ int; p2 ◁ int] T T' →
+    (∀ (v : val), typed_body E L C ((v ◁ int) :: T') (subst' x v e)) →
+    typed_body E L C T (let: x := p1 - p2 in e).
+  Proof.
+    intros. eapply type_let; [done|apply type_minus_instr|solve_typing|done].
+  Qed.
+
+  Lemma type_le_instr E L p1 p2 :
     typed_instruction_ty E L [p1 ◁ int; p2 ◁ int] (p1 ≤ p2) bool.
   Proof.
     iIntros (tid qE) "_ _ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
@@ -62,4 +88,12 @@ Section typing.
       iExists _; done.
   Qed.
 
+  Lemma typed_le E L C T T' p1 p2 x e :
+    Closed (x :b: []) e →
+    tctx_extract_ctx E L [p1 ◁ int; p2 ◁ int] T T' →
+    (∀ (v : val), typed_body E L C ((v ◁ bool) :: T') (subst' x v e)) →
+    typed_body E L C T (let: x := p1 ≤ p2 in e).
+  Proof.
+    intros. eapply type_let; [done|apply type_le_instr|solve_typing|done].
+  Qed.
 End typing.
