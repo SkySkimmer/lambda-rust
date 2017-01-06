@@ -63,7 +63,6 @@ Section typing.
         ∃ (l : loc) vl, ⌜length vl = ty.(ty_size) ∧ v = #l⌝ ∗ l ↦∗ vl ∗
           (▷ l ↦∗: ty.(ty_own) tid ={F}=∗
             elctx_interp E qE ∗ llctx_interp L qL ∗ ty2.(ty_own) tid [v]))%I.
-            elctx_interp E qE ∗ llctx_interp L qL ∗ ty2.(ty_own) tid [v]).
   Global Arguments typed_write _%EL _%LL _%T _%T _%T.
 
   (* Technically speaking, we could remvoe the vl quantifiaction here and use
