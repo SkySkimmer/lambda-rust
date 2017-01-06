@@ -56,7 +56,16 @@ Class lftPreG Σ := LftPreG {
   lft_preG_inh_inG :> inG Σ (authR inhUR);
 }.
 
-(* TODO: Write a Σ for lftPreG *)
+Definition lftΣ : gFunctors :=
+  #[ boxΣ; GFunctor (authR alftUR); GFunctor (authR ilftUR);
+     GFunctor (authR borUR); GFunctor (authR natUR); GFunctor (authR inhUR) ].
+Instance subG_stsΣ Σ :
+  subG lftΣ Σ → lftPreG Σ.
+Proof.
+  intros [? [?%subG_inG [?%subG_inG [?%subG_inG [?%subG_inG
+             ?%subG_inG]%subG_inv]%subG_inv]%subG_inv]%subG_inv]%subG_inv.
+  split; first apply _; done.
+Qed.
 
 Module Type lifetime_sig.
   (** Definitions *)
