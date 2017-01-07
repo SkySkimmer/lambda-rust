@@ -255,7 +255,7 @@ Section type_context.
   Global Arguments tctx_extract_hasty _%EL _%LL _%E _%T _%TC _%TC.
   Definition tctx_extract_hasty_unfold :
     tctx_extract_hasty = λ E L p ty T T', tctx_incl E L T ((p ◁ ty)::T') := eq_refl.
-  Lemma tctx_extract_hasty_cons E L p ty T T' x :
+  Lemma tctx_extract_hasty_further E L p ty T T' x :
     tctx_extract_hasty E L p ty T T' →
     tctx_extract_hasty E L p ty (x::T) (x::T').
   Proof. unfold tctx_extract_hasty=>->. apply contains_tctx_incl, submseteq_swap. Qed.
@@ -272,6 +272,9 @@ Section type_context.
   Proof.
     intros. by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl.
   Qed.
+  Lemma tctx_extract_hasty_here_eq E L p ty T :
+    tctx_extract_hasty E L p ty ((p ◁ ty)::T) T.
+  Proof. by apply tctx_extract_hasty_here. Qed.
 
   Definition tctx_extract_blocked E L p κ ty T T' : Prop :=
     tctx_incl E L T ((p ◁{κ} ty)::T').
@@ -343,10 +346,22 @@ Section type_context.
 End type_context.
 
 Global Opaque tctx_extract_ctx tctx_extract_hasty tctx_extract_blocked.
-Hint Resolve tctx_extract_hasty_here_copy : lrust_typing.
-Hint Resolve tctx_extract_hasty_here | 50 : lrust_typing.
-Hint Resolve tctx_extract_hasty_cons | 100 : lrust_typing.
-Hint Extern 1 (Copy _) => typeclasses eauto : lrust_typing.
+Hint Resolve tctx_extract_hasty_here_copy 1 : lrust_typing.
+Hint Resolve tctx_extract_hasty_here | 20 : lrust_typing.
+Hint Resolve tctx_extract_hasty_further | 50 : lrust_typing.
 Hint Resolve tctx_extract_blocked_here tctx_extract_blocked_cons
              tctx_extract_ctx_nil tctx_extract_ctx_hasty
              tctx_extract_ctx_blocked tctx_extract_ctx_incl : lrust_typing.
+
+(* In general, we want reborrowing to be tried before subtyping, so
+   that we get the extraction. However, in the case the types match
+   exactly, we want to NOT use reborrowing. Therefore, we add
+   [tctx_extract_hasty_here_eq] as a hint with a very low cost.
+
+   However, we want this hint to be used after
+   [tctx_extract_hasty_here_copy], so that we keep the typing it in
+   the environment if the type is copy. But due to a bug in Coq, we
+   cannot enforce this using [Hint Resolve]. Cf:
+       https://coq.inria.fr/bugs/show_bug.cgi?id=5299 *)
+Hint Extern 2 (tctx_extract_hasty _ _ ?p _ ((?p ◁ _) :: _) _) =>
+  eapply tctx_extract_hasty_here_eq.

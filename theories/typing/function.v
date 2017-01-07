@@ -155,7 +155,6 @@ Section typing.
     rewrite /typed_body. iNext. iIntros "*". iApply "Hf".
   Qed.
 
-  (* TODO: Define some syntactic sugar for calling and letrec like we do on paper. *)
   Lemma type_call' {A} E L E' T p (ps : list path)
                          (tys : A → vec type (length ps)) ty k x :
     elctx_sat E L (E' x) →
@@ -245,37 +244,37 @@ Section typing.
       eapply type_call; try done. constructor. done.
   Qed.
 
-  Lemma type_rec {A} E L E' fb kb (argsb : list binder) e
+  Lemma type_rec {A} E L E' fb (argsb : list binder) e
         (tys : A → vec type (length argsb)) ty
         T `{!CopyC T, !SendC T} :
-    Closed (fb :b: kb :b: argsb +b+ []) e →
+    Closed (fb :b: "return" :b: argsb +b+ []) e →
     (∀ x (f : val) k (args : vec val (length argsb)),
         typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ ty x])]
                    ((f ◁ fn E' tys ty) ::
                       zip_with (TCtx_hasty ∘ of_val) args (tys x) ++ T)
-                   (subst_v (fb :: kb :: argsb) (f ::: k ::: args) e)) →
-    typed_instruction_ty E L T (funrec: fb argsb → kb := e) (fn E' tys ty).
+                   (subst_v (fb :: BNamed "return" :: argsb) (f ::: k ::: args) e)) →
+    typed_instruction_ty E L T (funrec: fb argsb := e) (fn E' tys ty).
   Proof.
     iIntros (Hc Hbody) "!# * #HEAP #LFT $ $ $ #HT". iApply wp_value.
-    { simpl. rewrite decide_left. done. }
+    { simpl. rewrite ->(decide_left Hc). done. }
     rewrite tctx_interp_singleton. iLöb as "IH". iExists _. iSplit.
     { simpl. rewrite decide_left. done. }
-    iExists fb, kb, argsb, e, _. iSplit. done. iSplit. done. iNext. clear qE.
+    iExists fb, _, argsb, e, _. iSplit. done. iSplit. done. iNext. clear qE.
     iIntros (x k args) "!#". iIntros (tid' qE) "_ _ Htl HE HL HC HT'".
     iApply (Hbody with "* HEAP LFT Htl HE HL HC").
     rewrite tctx_interp_cons tctx_interp_app. iFrame "HT' IH".
     by iApply sendc_change_tid.
   Qed.
 
-  Lemma type_fn {A} E L E' kb (argsb : list binder) e
+  Lemma type_fn {A} E L E' (argsb : list binder) e
         (tys : A → vec type (length argsb)) ty
         T `{!CopyC T, !SendC T} :
-    Closed (kb :b: argsb +b+ []) e →
+    Closed ("return" :b: argsb +b+ []) e →
     (∀ x k (args : vec val (length argsb)),
         typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ ty x])]
                    (zip_with (TCtx_hasty ∘ of_val) args (tys x) ++ T)
-                   (subst_v (kb :: argsb) (k ::: args) e)) →
-    typed_instruction_ty E L T (funrec: <> argsb → kb := e) (fn E' tys ty).
+                   (subst_v (BNamed "return" :: argsb) (k ::: args) e)) →
+    typed_instruction_ty E L T (funrec: <> argsb := e) (fn E' tys ty).
   Proof.
     intros. apply type_rec; try done. intros. rewrite -typed_body_mono //=.
     eapply contains_tctx_incl. by constructor.

@@ -58,9 +58,9 @@ Notation "λ: xl , e" := (Lam xl%RustB e%E)
   (at level 102, xl at level 1, e at level 200) : expr_scope.
 Notation "λ: xl , e" := (LamV xl%RustB e%E)
   (at level 102, xl at level 1, e at level 200) : val_scope.
-Notation "'funrec:' f xl → k := e" := (rec: f (k::xl) := e)%E
+Notation "'funrec:' f xl := e" := (rec: f ("return"::xl) := e)%E
   (only parsing, at level 102, f, xl at level 1, e at level 200) : expr_scope.
-Notation "'funrec:' f xl → k := e" := (rec: f (k::xl) := e)%V
+Notation "'funrec:' f xl := e" := (rec: f ("return"::xl) := e)%V
   (only parsing, at level 102, f, xl at level 1, e at level 200) : val_scope.
 
 Notation "'let:' x := e1 'in' e2" :=

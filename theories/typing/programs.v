@@ -130,13 +130,9 @@ Section typing_rules.
     tctx_extract_ctx E L T1 T T' →
     (typed_body E L C (T2 ++ T') e') →
     typed_body E L C T (e ;; e').
-  Proof.
-    intros ? Hinst ? Hbody. eapply type_let; [done| |done|].
-    (* FIXME: done divergese on the remaining goals. *)
-    exact Hinst. intros. exact Hbody.
-  Qed.
+  Proof. intros. by eapply (type_let E L T T' T1 (λ _, T2)). Qed.
 
-  Lemma typed_newlft E L C T κs e :
+  Lemma type_newlft {E L C T} κs e :
     Closed [] e →
     (∀ κ, typed_body E ((κ ⊑ κs) :: L) C T e) →
     typed_body E L C T (Newlft ;; e).
@@ -151,7 +147,7 @@ Section typing_rules.
 
   (* TODO: It should be possible to show this while taking only one step.
      Right now, we could take two. *)
-  Lemma typed_endlft E L C T1 T2 κ κs e :
+  Lemma type_endlft E L C T1 T2 κ κs e :
     Closed [] e → UnblockTctx κ T1 T2 →
     typed_body E L C T2 e → typed_body E ((κ ⊑ κs) :: L) C T1 (Endlft ;; e).
   Proof.
@@ -161,6 +157,23 @@ Section typing_rules.
     iApply (wp_fupd_step with "Hend"); try done. wp_seq.
     iIntros "!> #Hdead !>". wp_seq. iApply (He with "HEAP LFT Htl HE HL HC >").
     iApply (Hub with "[] HT"). simpl in *. subst κ. rewrite -lft_dead_or. auto.
+  Qed.
+
+  Lemma type_path_instr {E L} p ty :
+    typed_instruction_ty E L [p ◁ ty] p ty.
+  Proof.
+    iIntros "!# * _ _ $$$ ?". rewrite tctx_interp_singleton.
+    iApply (wp_hasty with "[-]"). done. iIntros (v) "_ Hv".
+    rewrite tctx_interp_singleton. iExists v. iFrame. by rewrite eval_path_of_val.
+  Qed.
+
+  Lemma type_letpath {E L} ty C T T' x p e :
+    Closed (x :b: []) e →
+    tctx_extract_hasty E L p ty T T' →
+    (∀ (v : val), typed_body E L C ((v ◁ ty) :: T') (subst' x v e)) →
+    typed_body E L C T (let: x := p in e).
+  Proof.
+    intros. eapply type_let; [done|by apply type_path_instr|solve_typing|by simpl].
   Qed.
 
   Lemma type_assign_instr {E L} ty ty1 ty1' p1 p2 :
@@ -182,7 +195,7 @@ Section typing_rules.
     rewrite tctx_interp_singleton tctx_hasty_val' //.
   Qed.
 
-  Lemma type_assign {E L} ty1 C T T' ty ty1' p1 p2 e:
+  Lemma type_assign {E L} ty1 ty ty1' C T T' p1 p2 e:
     Closed [] e →
     tctx_extract_ctx E L [p1 ◁ ty1; p2 ◁ ty] T T' →
     typed_write E L ty1 ty ty1' →
@@ -269,7 +282,6 @@ Section typing_rules.
     typed_body E L C ((p1 ◁ ty1') :: (p2 ◁ ty2') :: T') e →
     typed_body E L C T (p1 <⋯ !{n}p2;; e).
   Proof.
-    intros ?? Hwr Hrd ??. eapply type_seq; [done|eapply type_memcpy_instr| |by simpl]; first done.
-    exact Hwr. exact Hrd. done.
+    intros. by eapply type_seq; [|by eapply (type_memcpy_instr ty ty1 ty1')|..].
   Qed.
 End typing_rules.

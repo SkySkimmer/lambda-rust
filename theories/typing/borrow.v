@@ -25,12 +25,14 @@ Section borrow.
         by iMod ("Hext" with "H†") as "$".
   Qed.
 
-  Lemma tctx_extract_hasty_borrow E L p n ty κ T :
-    tctx_extract_hasty E L p (&uniq{κ}ty) ((p ◁ own n ty)::T)
+  Lemma tctx_extract_hasty_borrow E L p n ty ty' κ T :
+    subtype E L ty' ty →
+    tctx_extract_hasty E L p (&uniq{κ}ty) ((p ◁ own n ty')::T)
                        ((p ◁{κ} own n ty)::T).
   Proof.
-    rewrite tctx_extract_hasty_unfold.
-    apply (tctx_incl_frame_r _ [_] [_;_]), tctx_borrow.
+    rewrite tctx_extract_hasty_unfold=>Htyty'.
+    apply (tctx_incl_frame_r _ [_] [_;_]). rewrite subtype_tctx_incl.
+    by apply tctx_borrow. by f_equiv.
   Qed.
 
   (* See the comment above [tctx_extract_hasty_share] in [uniq_bor.v]. *)
@@ -139,5 +141,5 @@ Section borrow.
   Qed.
 End borrow.
 
-Hint Resolve tctx_extract_hasty_borrow
-     tctx_extract_hasty_borrow_share : lrust_typing.
+Hint Resolve tctx_extract_hasty_borrow tctx_extract_hasty_borrow_share
+               | 10 : lrust_typing.

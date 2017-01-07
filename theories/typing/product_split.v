@@ -388,18 +388,14 @@ Section product_split.
   Proof. auto using tctx_extract_merge_ptr_prod, tctx_merge_shr_prod. Qed.
 End product_split.
 
-(* We make sure that this is applied after [tctx_extract_hasty_here] but before
-   [tctx_extract_hasty_cons]. *)
+(* We make sure that splitting and merging are applied after everything else. *)
 Hint Resolve tctx_extract_split_own_prod2 tctx_extract_split_uniq_prod2
              tctx_extract_split_shr_prod2 tctx_extract_split_own_prod
              tctx_extract_split_uniq_prod tctx_extract_split_shr_prod
-     | 60 : lrust_typing.
-
-(* We make sure that this is applied after everything. *)
-Hint Resolve tctx_extract_merge_own_prod2 tctx_extract_merge_uniq_prod2
+             tctx_extract_merge_own_prod2 tctx_extract_merge_uniq_prod2
              tctx_extract_merge_shr_prod2 tctx_extract_merge_own_prod
              tctx_extract_merge_uniq_prod tctx_extract_merge_shr_prod
-     | 150 : lrust_typing.
+     | 100 : lrust_typing.
 
 Hint Extern 0
      (tctx_extract_hasty _ _ _ _ (hasty_ptr_offsets _ _ _ _) _) =>
