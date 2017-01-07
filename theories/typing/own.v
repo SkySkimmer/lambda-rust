@@ -235,9 +235,9 @@ Section typing.
   Qed.
 
   Lemma type_letalloc_1 {E L} ty C T T' (x : string) p e :
-    ty.(ty_size) = 1%nat →
     Closed [] p → Closed (x :b: []) e →
     tctx_extract_hasty E L p ty T T' →
+    ty.(ty_size) = 1%nat →
     (∀ (v : val), typed_body E L C ((v ◁ own 1 ty)::T') (subst x v e)) →
     typed_body E L C T (letalloc: x := p in e).
   Proof.

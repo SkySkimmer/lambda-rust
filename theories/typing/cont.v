@@ -8,7 +8,7 @@ Section typing.
   Context `{typeG Σ}.
 
   (** Jumping to and defining a continuation. *)
-  Lemma type_jump E L C T k args T' :
+  Lemma type_jump args E L C T k T' :
     (k ◁cont(L, T'))%CC ∈ C →
     tctx_incl E L T (T' (list_to_vec args)) →
     typed_body E L C T (k (of_val <$> args)).

@@ -23,6 +23,6 @@ Section get_x.
       intros p'; simpl_subst.
     eapply (type_letalloc_1 (&shr{α}int)); (try solve_typing)=>r. simpl_subst.
     eapply type_delete; try solve_typing.
-    eapply type_jump with (args := [r]); solve_typing.
+    eapply (type_jump [_]); solve_typing.
   Qed.
 End get_x.
