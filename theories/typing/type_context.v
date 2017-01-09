@@ -363,5 +363,5 @@ Hint Resolve tctx_extract_blocked_here tctx_extract_blocked_cons
    the environment if the type is copy. But due to a bug in Coq, we
    cannot enforce this using [Hint Resolve]. Cf:
        https://coq.inria.fr/bugs/show_bug.cgi?id=5299 *)
-Hint Extern 2 (tctx_extract_hasty _ _ ?p _ ((?p ◁ _) :: _) _) =>
+Hint Extern 2 (tctx_extract_hasty _ _ _ _ ((_ ◁ _) :: _) _) =>
   eapply tctx_extract_hasty_here_eq.
