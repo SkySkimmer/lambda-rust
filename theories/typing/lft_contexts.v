@@ -437,7 +437,16 @@ End elctx_incl.
 
 Arguments elctx_incl {_ _ _} _%EL _%LL _%EL _%EL.
 
-Ltac solve_typing := eauto 100 with lrust_typing typeclass_instances || fail.
+(* We first try to solve everything without the merging rules, and
+   then start from scratch with them.
+
+   The reason is that we want we want the search proof search for
+   [tctx_extract_hasty] to suceed even if the type is an evar, and
+   merging makes it diverge in this case. *)
+Ltac solve_typing :=
+  (eauto 100 with lrust_typing typeclass_instances; fail) ||
+  (eauto 100 with lrust_typing lrust_typing_merge typeclass_instances; fail).
+Create HintDb lrust_typing_merge.
 
 Hint Constructors Forall Forall2 elem_of_list : lrust_typing.
 Hint Resolve

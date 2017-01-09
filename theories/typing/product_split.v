@@ -388,14 +388,31 @@ Section product_split.
   Proof. auto using tctx_extract_merge_ptr_prod, tctx_merge_shr_prod. Qed.
 End product_split.
 
-(* We make sure that splitting and merging are applied after everything else. *)
+(* We make sure that splitting is tried before borrowing, so that not
+   the entire product is borrowed when only a part is needed. *)
 Hint Resolve tctx_extract_split_own_prod2 tctx_extract_split_uniq_prod2
              tctx_extract_split_shr_prod2 tctx_extract_split_own_prod
              tctx_extract_split_uniq_prod tctx_extract_split_shr_prod
-             tctx_extract_merge_own_prod2 tctx_extract_merge_uniq_prod2
-             tctx_extract_merge_shr_prod2 tctx_extract_merge_own_prod
-             tctx_extract_merge_uniq_prod tctx_extract_merge_shr_prod
-     | 100 : lrust_typing.
+    | 5 : lrust_typing.
+
+(* Merging is also tried after everything, except
+   [tctx_extract_hasty_further]. Moreover, it is placed in a
+   difference hint db. The reason is that it can make the proof search
+   diverge if the type is an evar. *)
+(* We declare them as [Hint Extern] instead of [Hint Resolve],
+   otherwise unification with unrelated goals takes forever to fail... *)
+Hint Extern 40 (tctx_extract_hasty _ _ _ (own _ (product2 _ _)) _ _) =>
+  eapply tctx_extract_merge_own_prod2 : lrust_typing_merge.
+Hint Extern 40 (tctx_extract_hasty _ _ _ (&uniq{_}product2 _ _) _ _) =>
+  eapply tctx_extract_merge_uniq_prod2 : lrust_typing_merge.
+Hint Extern 40 (tctx_extract_hasty _ _ _ (&shr{_}product2 _ _) _ _) =>
+  eapply tctx_extract_merge_shr_prod2 : lrust_typing_merge.
+Hint Extern 40 (tctx_extract_hasty _ _ _ (own _ (Π _)) _ _) =>
+  eapply tctx_extract_merge_own_prod : lrust_typing_merge.
+Hint Extern 40 (tctx_extract_hasty _ _ _ (&uniq{_}Π _) _ _) =>
+  eapply tctx_extract_merge_uniq_prod : lrust_typing_merge.
+Hint Extern 40 (tctx_extract_hasty _ _ _ (&shr{_}Π _) _ _) =>
+  eapply tctx_extract_merge_shr_prod : lrust_typing_merge.
 
 Hint Extern 0
      (tctx_extract_hasty _ _ _ _ (hasty_ptr_offsets _ _ _ _) _) =>
