@@ -401,4 +401,6 @@ Hint Extern 0
      (tctx_extract_hasty _ _ _ _ (hasty_ptr_offsets _ _ _ _) _) =>
         cbn[hasty_ptr_offsets].
 
+Hint Extern 0 (tctx_extract_hasty _ _ _ _ (_ ++ _) _) => cbn[app].
+
 Hint Unfold extract_tyl : lrust_typing.

@@ -210,6 +210,21 @@ Section typing.
     typed_body E L C T (let: x := new [ #n ] in e).
   Proof. intros. eapply type_let. done. by apply type_new_instr. solve_typing. done. Qed.
 
+  Lemma type_new_subtype ty E L C T x (n : Z) e :
+    Closed (x :b: []) e →
+    0 ≤ n →
+    let n' := Z.to_nat n in
+    subtype E L (uninit n') ty →
+    (∀ (v : val), typed_body E L C ((v ◁ own n' ty) :: T) (subst' x v e)) →
+    typed_body E L C T (let: x := new [ #n ] in e).
+  Proof.
+    intros ???? Htyp. eapply type_let. done. by apply type_new_instr. solve_typing.
+    iIntros (v). iApply typed_body_mono; [done| |done|].
+    (* FIXME : why can't we iApply Htyp? *)
+    2:by iDestruct (Htyp v) as "$".
+    by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl, own_mono.
+  Qed.
+
   Lemma type_delete_instr {E L} ty (n : Z) p :
     Z.of_nat (ty.(ty_size)) = n →
     typed_instruction E L [p ◁ own (ty.(ty_size)) ty] (delete [ #n; p])%E (λ _, []).

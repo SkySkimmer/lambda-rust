@@ -46,11 +46,12 @@ Section borrow.
     apply (tctx_incl_frame_r _ [_] [_;_]). rewrite ->tctx_share; solve_typing.
   Qed.
 
-  Lemma type_deref_uniq_own {E L} κ p n ty :
+  Lemma type_deref_uniq_own_instr {E L} κ p n ty :
     lctx_lft_alive E L κ →
     typed_instruction_ty E L [p ◁ &uniq{κ} own n ty] (!p) (&uniq{κ} ty).
   Proof.
-    iIntros (Hκ) "!#". iIntros (tid qE) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
+    iIntros (Hκ) "!#". iIntros (tid qE) "#HEAP #LFT $ HE HL Hp".
+    rewrite tctx_interp_singleton.
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
     iDestruct "Hown" as (l P) "[[Heq #HPiff] HP]". iDestruct "Heq" as %[=->].
@@ -69,11 +70,22 @@ Section borrow.
       rewrite -heap_mapsto_vec_singleton. iFrame. iExists _. by iFrame.
   Qed.
 
-  Lemma type_deref_shr_own {E L} κ p n ty :
+  Lemma type_deref_uniq_own {E L} κ x p e n ty C T T' :
+    Closed (x :b: []) e →
+    tctx_extract_hasty E L p (&uniq{κ} own n ty) T T' →
+    lctx_lft_alive E L κ →
+    (∀ (v:val), typed_body E L C ((v ◁ &uniq{κ} ty) :: T') (subst' x v e)) →
+    typed_body E L C T (let: x := !p in e).
+  Proof.
+    intros. eapply type_let; [done|by apply type_deref_uniq_own_instr|solve_typing|done].
+  Qed.
+
+  Lemma type_deref_shr_own_instr {E L} κ p n ty :
     lctx_lft_alive E L κ →
     typed_instruction_ty E L [p ◁ &shr{κ} own n ty] (!p) (&shr{κ} ty).
   Proof.
-    iIntros (Hκ) "!#". iIntros (tid qE) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
+    iIntros (Hκ) "!#". iIntros (tid qE) "#HEAP #LFT $ HE HL Hp".
+    rewrite tctx_interp_singleton.
     iMod (Hκ with "HE HL") as (q) "[[Htok1 Htok2] Hclose]"; first set_solver.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
     iDestruct "Hown" as (l) "[Heq #H↦]". iDestruct "Heq" as %[=->].
@@ -81,16 +93,28 @@ Section borrow.
     iMod (frac_bor_acc with "LFT H↦b Htok1") as (q''') "[>H↦ Hclose']". done.
     iApply (wp_fupd_step _ (_∖_) with "[Hown Htok2]"); try done.
     - iApply ("Hown" with "* [%] Htok2"). set_solver+.
-    - wp_read. iIntros "!>[#Hshr Htok2]". iMod ("Hclose'" with "[H↦]") as "Htok1"; first by auto.
+    - wp_read. iIntros "!>[#Hshr Htok2]".
+      iMod ("Hclose'" with "[H↦]") as "Htok1"; first by auto.
       iMod ("Hclose" with "[Htok1 Htok2]") as "($ & $)"; first by iFrame.
       rewrite tctx_interp_singleton tctx_hasty_val' //. iExists _. auto.
   Qed.
 
-  Lemma type_deref_uniq_uniq {E L} κ κ' p ty :
+  Lemma type_deref_shr_own {E L} κ x p e n ty C T T' :
+    Closed (x :b: []) e →
+    tctx_extract_hasty E L p (&shr{κ} own n ty) T T' →
+    lctx_lft_alive E L κ →
+    (∀ (v:val), typed_body E L C ((v ◁ &shr{κ} ty) :: T') (subst' x v e)) →
+    typed_body E L C T (let: x := !p in e).
+  Proof.
+    intros. eapply type_let; [done|by apply type_deref_shr_own_instr|solve_typing|done].
+  Qed.
+
+  Lemma type_deref_uniq_uniq_instr {E L} κ κ' p ty :
     lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
     typed_instruction_ty E L [p ◁ &uniq{κ} &uniq{κ'} ty] (!p) (&uniq{κ} ty).
   Proof.
-    iIntros (Hκ Hincl) "!#". iIntros (tid qE) "#HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
+    iIntros (Hκ Hincl) "!#". iIntros (tid qE) "#HEAP #LFT $ HE HL Hp".
+    rewrite tctx_interp_singleton.
     iPoseProof (Hincl with "[#] [#]") as "Hincl".
     { by iApply elctx_interp_persist. } { by iApply llctx_interp_persist. }
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
@@ -116,7 +140,17 @@ Section borrow.
     iApply (lft_incl_glb with "Hincl"). iApply lft_incl_refl.
   Qed.
 
-  Lemma type_deref_shr_uniq {E L} κ κ' p ty :
+  Lemma type_deref_uniq_uniq {E L} κ κ' x p e ty C T T' :
+    Closed (x :b: []) e →
+    tctx_extract_hasty E L p (&uniq{κ} &uniq{κ'} ty) T T' →
+    lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
+    (∀ (v:val), typed_body E L C ((v ◁ &uniq{κ} ty) :: T') (subst' x v e)) →
+    typed_body E L C T (let: x := !p in e).
+  Proof.
+    intros. eapply type_let; [done|by apply type_deref_uniq_uniq_instr|solve_typing|done].
+  Qed.
+
+  Lemma type_deref_shr_uniq_instr {E L} κ κ' p ty :
     lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
     typed_instruction_ty E L [p ◁ &shr{κ} &uniq{κ'} ty] (!p) (&shr{κ} ty).
   Proof.
@@ -138,6 +172,16 @@ Section borrow.
       iMod ("Hclose" with "[Htok1 Htok2]") as "($ & $)"; first by iFrame.
       rewrite tctx_interp_singleton tctx_hasty_val' //.
       iExists _. iSplitR. done. by iApply (ty_shr_mono with "LFT Hincl' Hshr").
+  Qed.
+
+  Lemma type_deref_shr_uniq {E L} κ κ' x p e ty C T T' :
+    Closed (x :b: []) e →
+    tctx_extract_hasty E L p (&shr{κ} &uniq{κ'} ty) T T' →
+    lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
+    (∀ (v:val), typed_body E L C ((v ◁ &shr{κ} ty) :: T') (subst' x v e)) →
+    typed_body E L C T (let: x := !p in e).
+  Proof.
+    intros. eapply type_let; [done|by apply type_deref_shr_uniq_instr|solve_typing|done].
   Qed.
 End borrow.
 
