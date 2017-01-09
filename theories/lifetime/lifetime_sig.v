@@ -61,11 +61,7 @@ Definition lftΣ : gFunctors :=
      GFunctor (authR borUR); GFunctor (authR natUR); GFunctor (authR inhUR) ].
 Instance subG_stsΣ Σ :
   subG lftΣ Σ → lftPreG Σ.
-Proof.
-  intros [? [?%subG_inG [?%subG_inG [?%subG_inG [?%subG_inG
-             ?%subG_inG]%subG_inv]%subG_inv]%subG_inv]%subG_inv]%subG_inv.
-  split; first apply _; done.
-Qed.
+Proof. solve_inG. Qed.
 
 Module Type lifetime_sig.
   (** Definitions *)

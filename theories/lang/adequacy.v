@@ -15,7 +15,7 @@ Definition heapΣ : gFunctors :=
     GFunctor (constRF (authR heapUR));
     GFunctor (constRF (authR heap_freeableUR))].
 Instance subG_heapPreG {Σ} : subG heapΣ Σ → heapPreG Σ.
-Proof. intros [? [?%subG_inG ?%subG_inG]%subG_inv]%subG_inv. split; apply _. Qed.
+Proof. solve_inG. Qed.
 
 Definition heap_adequacy Σ `{heapPreG Σ} e σ φ :
   (∀ `{heapG Σ}, {{ heap_ctx }} e {{ v, ⌜φ v⌝ }}) →
