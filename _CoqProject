@@ -45,3 +45,4 @@ theories/typing/fixpoint.v
 theories/typing/type_sum.v
 theories/typing/tests/get_x.v
 theories/typing/tests/rebor.v
+theories/typing/tests/unbox.v
