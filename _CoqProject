@@ -47,3 +47,4 @@ theories/typing/tests/get_x.v
 theories/typing/tests/rebor.v
 theories/typing/tests/unbox.v
 theories/typing/tests/init_prod.v
+theories/typing/unsafe/cell.v
