@@ -4,7 +4,7 @@ From lrust.typing Require Import programs product product_split own uniq_bor
                     shr_bor int function lft_contexts uninit cont borrow.
 Set Default Proof Using "Type".
 
-Section rebor.
+Section init_prod.
   Context `{typeG Σ}.
 
   Definition init_prod : val :=
@@ -29,4 +29,4 @@ Section rebor.
     eapply type_delete; [solve_typing..|].
     eapply (type_jump [_]); solve_typing.
   Qed.
-End rebor.
+End init_prod.
