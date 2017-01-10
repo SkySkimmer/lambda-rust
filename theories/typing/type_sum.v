@@ -244,7 +244,7 @@ Section case.
       - specialize (IHtyl i). intuition lia. }
     rewrite -(take_drop (ty.(ty_size)) vl1) heap_mapsto_vec_app.
     iDestruct "H↦vl1" as "[H↦vl1 H↦pad]".
-    iAssert (▷ ⌜length vl2 = ty.(ty_size)⌝)%I with "[#]" as ">%". by rewrite -ty_size_eq.
+    iDestruct (ty_size_eq with "Hty") as "#>%".
     iApply wp_fupd. iApply (wp_memcpy with "[$HEAP $H↦vl1 $H↦2]"); try done.
     { rewrite take_length. lia. }
     iNext; iIntros "[H↦vl1 H↦2]".

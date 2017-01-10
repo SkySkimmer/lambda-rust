@@ -120,10 +120,8 @@ Section product.
     destruct (Qp_lower_bound q1 q2) as (qq & q'1 & q'2 & -> & ->). iExists qq.
     iDestruct "H1" as (vl1) "[H↦1 H1]". iDestruct "H2" as (vl2) "[H↦2 H2]".
     rewrite !split_prod_mt.
-    iAssert (▷ ⌜length vl1 = ty1.(ty_size)⌝)%I with "[#]" as ">%".
-    { iNext. by iApply ty_size_eq. }
-    iAssert (▷ ⌜length vl2 = ty2.(ty_size)⌝)%I with "[#]" as ">%".
-    { iNext. by iApply ty_size_eq. }
+    iDestruct (ty_size_eq with "H1") as "#>%".
+    iDestruct (ty_size_eq with "H2") as "#>%".
     iDestruct "H↦1" as "[H↦1 H↦1f]". iDestruct "H↦2" as "[H↦2 H↦2f]".
     iIntros "!>". iSplitL "H↦1 H1 H↦2 H2".
     - iNext. iSplitL "H↦1 H1". iExists vl1. by iFrame. iExists vl2. by iFrame.

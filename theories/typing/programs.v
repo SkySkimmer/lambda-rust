@@ -249,8 +249,7 @@ Section typing_rules.
       as (l1 vl1) "([% %] & Hl1 & Hcl1)"; first done.
     iMod ("Hread" with "* [] LFT Htl HE2 HL2 Hown2")
       as (l2 vl2 q2) "(% & Hl2 & Hown2 & Hcl2)"; first done.
-    iAssert (▷⌜length vl2 = ty.(ty_size)⌝)%I with "[#]" as ">%".
-    { by iApply ty_size_eq. } subst v1 v2. iApply wp_fupd.
+    iDestruct (ty_size_eq with "Hown2") as "#>%". subst v1 v2. iApply wp_fupd.
     iApply (wp_memcpy with "[$HEAP $Hl1 $Hl2]"); first done; try congruence; [].
     iNext. iIntros "[Hl1 Hl2]". iApply ("HΦ" with ">"). rewrite !tctx_hasty_val' //.
     iMod ("Hcl1" with "[Hl1 Hown2]") as "($ & $ & $)".

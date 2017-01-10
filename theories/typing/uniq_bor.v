@@ -229,9 +229,8 @@ Section typing.
     iMod (bor_iff with "LFT [] H↦") as "H↦". set_solver. by eauto.
     iMod (bor_acc with "LFT H↦ Hκ") as "[H↦ Hclose']"; first set_solver.
     iDestruct "H↦" as (vl) "[>H↦ #Hown]".
-    iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
-     { by iApply ty.(ty_size_eq). }
-    iIntros "!>". iExists _, _, _. iSplit; first done. iFrame "∗#". iIntros "H↦".
+    iDestruct (ty_size_eq with "Hown") as "#>%". iIntros "!>".
+    iExists _, _, _. iSplit; first done. iFrame "∗#". iIntros "H↦".
     iMod ("Hclose'" with "[H↦]") as "[H↦ Htok]". by iExists _; iFrame.
     iMod ("Hclose" with "Htok") as "($ & $ & $)".
     iExists _, _. erewrite <-uPred.iff_refl. auto.
