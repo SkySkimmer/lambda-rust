@@ -10,11 +10,11 @@ Section rebor.
   Definition rebor :=
     (funrec: <> ["t1"; "t2"] :=
        Newlft;;
-       letalloc: "x" := "t1" in
+       letalloc: "x" <- "t1" in
        let: "x'" := !"x" in let: "y" := "x'" +ₗ #0 in
        "x" <- "t2";;
        let: "y'" := !"y" in
-       letalloc: "r" := "y'" in
+       letalloc: "r" <- "y'" in
        Endlft ;; delete [ #2; "t1"] ;; delete [ #2; "t2"] ;;
                  delete [ #1; "x"] ;; "return" ["r":expr])%E.
 

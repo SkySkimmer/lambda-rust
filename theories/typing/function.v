@@ -231,9 +231,6 @@ Section typing.
       + by eapply is_closed_weaken, list_subseteq_nil.
       + eapply Is_true_eq_left, forallb_forall, List.Forall_forall, Forall_impl=>//.
         intros. eapply Is_true_eq_true, is_closed_weaken=>//. set_solver+.
-    - intros k ret. inv_vec ret=>ret. rewrite /subst_v /=.
-      rewrite ->(is_closed_subst []), incl_cctx_incl; first done; try set_solver+.
-      apply subst'_is_closed; last done. apply is_closed_of_val.
     - intros.
       (* TODO : make [simpl_subst] work here. *)
       change (subst' "_k" k (p (Var "_k" :: ps))) with
@@ -242,6 +239,9 @@ Section typing.
       assert (map (subst "_k" k) ps = ps) as ->.
       { clear -Hpsc. induction Hpsc=>//=. rewrite is_closed_nil_subst //. congruence. }
       eapply type_call; try done. constructor. done.
+    - move=>/= k ret. inv_vec ret=>ret. rewrite /subst_v /=.
+      rewrite ->(is_closed_subst []), incl_cctx_incl; first done; try set_solver+.
+      apply subst'_is_closed; last done. apply is_closed_of_val.
   Qed.
 
   Lemma type_rec {A} E L E' fb (argsb : list binder) e

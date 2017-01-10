@@ -151,12 +151,12 @@ Section case.
     apply type_case_shr'; first done. eapply Forall2_impl; first done. auto.
   Qed.
 
-  Lemma type_sum_assign {E L} (i : nat) tyl ty1 ty2 ty p1 p2 :
-    tyl !! i = Some ty →
+  Lemma type_sum_assign_instr {E L} (i : nat) ty1 tyl ty ty2 p1 p2 :
     typed_write E L ty1 (sum tyl) ty2 →
+    tyl !! i = Some ty →
     typed_instruction E L [p1 ◁ ty1; p2 ◁ ty] (p1 <-{i} p2) (λ _, [p1 ◁ ty2]%TC).
   Proof.
-    iIntros (Hty Hw) "!# * #HEAP #LFT $ HE HL Hp".
+    iIntros (Hw Hty) "!# * #HEAP #LFT $ HE HL Hp".
     rewrite tctx_interp_cons tctx_interp_singleton.
     iDestruct "Hp" as "[Hp1 Hp2]". iDestruct (closed_hasty with "Hp1") as "%".
     iDestruct (closed_hasty with "Hp2") as "%". wp_bind p1.
@@ -178,7 +178,20 @@ Section case.
     iExists i, [_], _. rewrite -Hlen nth_lookup Hty. auto.
   Qed.
 
-  Lemma type_sum_assign_unit {E L} (i : nat) tyl ty1 ty2 p :
+  Lemma type_sum_assign {E L} tyl i ty1 ty ty1' C T T' p1 p2 e:
+    Closed [] e →
+    0 ≤ i →
+    tctx_extract_ctx E L [p1 ◁ ty1; p2 ◁ ty] T T' →
+    typed_write E L ty1 (sum tyl) ty1' →
+    tyl !! (Z.to_nat i) = Some ty →
+    typed_body E L C ((p1 ◁ ty1') :: T') e →
+    typed_body E L C T (p1 <-{i} p2 ;; e).
+  Proof.
+    intros. rewrite -(Z2Nat.id i) //.
+    eapply type_seq; [done|by eapply type_sum_assign_instr|done|done].
+  Qed.
+
+  Lemma type_sum_assign_unit_instr {E L} (i : nat) tyl ty1 ty2 p :
     tyl !! i = Some unit →
     typed_write E L ty1 (sum tyl) ty2 →
     typed_instruction E L [p ◁ ty1] (p <-{i} ☇) (λ _, [p ◁ ty2]%TC).
@@ -193,7 +206,20 @@ Section case.
     iExists i, [], _. rewrite -Hlen nth_lookup Hty. auto.
   Qed.
 
-  Lemma type_sum_memcpy {E L} (i : nat) tyl ty1 ty1' ty2 ty2' ty p1 p2 :
+  Lemma type_sum_assign_unit {E L} tyl i ty1 ty1' C T T' p e:
+    Closed [] e →
+    0 ≤ i →
+    tctx_extract_hasty E L p ty1 T T' →
+    typed_write E L ty1 (sum tyl) ty1' →
+    tyl !! (Z.to_nat i) = Some unit →
+    typed_body E L C ((p ◁ ty1') :: T') e →
+    typed_body E L C T (p <-{i} ☇ ;; e).
+  Proof.
+    intros. rewrite -(Z2Nat.id i) //.
+    eapply type_seq; [done|by eapply type_sum_assign_unit_instr|solve_typing|done].
+  Qed.
+
+  Lemma type_sum_memcpy_instr {E L} (i : nat) tyl ty1 ty1' ty2 ty2' ty p1 p2 :
     tyl !! i = Some ty →
     typed_write E L ty1 (sum tyl) ty1' →
     typed_read E L ty2 ty ty2' →
@@ -229,5 +255,20 @@ Section case.
     - rewrite (shift_loc_assoc_nat _ 1) take_length Nat.min_l; last lia.
       iExists _. iFrame. rewrite /= drop_length. iPureIntro. lia.
     - iExists _. iFrame.
+  Qed.
+
+  Lemma type_sum_assign_memcpy {E L} tyl i ty1 ty2 ty n ty1' ty2' C T T' p1 p2 e:
+    Closed [] e →
+    0 ≤ i →
+    tctx_extract_ctx E L [p1 ◁ ty1; p2 ◁ ty2] T T' →
+    typed_write E L ty1 (sum tyl) ty1' →
+    typed_read E L ty2 ty ty2' →
+    Z.of_nat (ty.(ty_size)) = n →
+    tyl !! (Z.to_nat i) = Some ty →
+    typed_body E L C ((p1 ◁ ty1') :: (p2 ◁ ty2') :: T') e →
+    typed_body E L C T (p1 <⋯{i} !{n}p2 ;; e).
+  Proof.
+    intros ???? Hr ???. subst. rewrite -(Z2Nat.id i) //.
+    by eapply type_seq; [done|eapply type_sum_memcpy_instr, Hr|done|done].
   Qed.
 End case.

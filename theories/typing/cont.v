@@ -19,14 +19,14 @@ Section typing.
     rewrite -{3}(vec_to_list_of_list args). iApply ("HC" with "* Htl HL HT").
   Qed.
 
-  Lemma type_cont argsb L1 T' E L2 C T  econt e2 kb :
+  Lemma type_cont argsb L1 (T' : vec val (length argsb) → _) E L2 C T econt e2 kb :
     Closed (kb :b: argsb +b+ []) econt → Closed (kb :b: []) e2 →
-    (∀ k args, typed_body E L1 (k ◁cont(L1, T') :: C) (T' args)
-                          (subst_v (kb::argsb) (k:::args) econt)) →
     (∀ k, typed_body E L2 (k ◁cont(L1, T') :: C) T (subst' kb k e2)) →
-    typed_body E L2 C T (letcont: kb argsb := econt in e2).
+    (∀ k (args : vec val (length argsb)),
+       typed_body E L1 (k ◁cont(L1, T') :: C) (T' args) (subst_v (kb::argsb) (k:::args) econt)) →
+    typed_body E L2 C T (e2 cont: kb argsb := econt).
   Proof.
-    iIntros (Hc1 Hc2 Hecont He2) "!#". iIntros (tid qE) "#HEAP #LFT Htl HE HL HC HT". iApply wp_let'.
+    iIntros (Hc1 Hc2 He2 Hecont) "!#". iIntros (tid qE) "#HEAP #LFT Htl HE HL HC HT". iApply wp_let'.
     { simpl. rewrite decide_left. done. }
     iModIntro. iApply (He2 with "* HEAP LFT Htl HE HL [HC] HT"). clear He2.
     iIntros "HE". iLöb as "IH". iIntros (x) "H".

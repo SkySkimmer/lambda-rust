@@ -10,7 +10,7 @@ Section get_x.
   Definition get_x :=
     (funrec: <> ["p"] :=
        let: "p'" := !"p" in
-       letalloc: "r" := "p'" +ₗ #0 in
+       letalloc: "r" <- "p'" +ₗ #0 in
        delete [ #1; "p"] ;; "return" ["r":expr])%E.
 
   Lemma get_x_type :
