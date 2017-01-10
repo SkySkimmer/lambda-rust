@@ -1,3 +1,4 @@
+From iris.algebra Require Import csum auth frac gmap agree gset.
 From iris.algebra Require Import csum auth frac agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
@@ -5,6 +6,57 @@ From lrust.lifetime Require Export lifetime_sig.
 Set Default Proof Using "Type".
 Import uPred.
 
+Inductive bor_state :=
+  | Bor_in
+  | Bor_open (q : frac)
+  | Bor_rebor (κ : lft).
+Instance bor_state_eq_dec : EqDecision bor_state.
+Proof. solve_decision. Defined.
+Canonical bor_stateC := leibnizC bor_state.
+
+Record lft_names := LftNames {
+  bor_name : gname;
+  cnt_name : gname;
+  inh_name : gname
+}.
+Instance lft_names_eq_dec : EqDecision lft_names.
+Proof. solve_decision. Defined.
+Canonical lft_namesC := leibnizC lft_names.
+
+Definition lft_stateR := csumR fracR unitR.
+Definition alftUR := gmapUR atomic_lft lft_stateR.
+Definition ilftUR := gmapUR lft (agreeR lft_namesC).
+Definition borUR := gmapUR slice_name (prodR fracR (agreeR bor_stateC)).
+Definition inhUR := gset_disjUR slice_name.
+
+Class lftG Σ := LftG {
+  lft_box :> boxG Σ;
+  alft_inG :> inG Σ (authR alftUR);
+  alft_name : gname;
+  ilft_inG :> inG Σ (authR ilftUR);
+  ilft_name : gname;
+  lft_bor_inG :> inG Σ (authR borUR);
+  lft_cnt_inG :> inG Σ (authR natUR);
+  lft_inh_inG :> inG Σ (authR inhUR);
+}.
+Definition lftG' := lftG.
+
+Class lftPreG Σ := LftPreG {
+  lft_preG_box :> boxG Σ;
+  alft_preG_inG :> inG Σ (authR alftUR);
+  ilft_preG_inG :> inG Σ (authR ilftUR);
+  lft_preG_bor_inG :> inG Σ (authR borUR);
+  lft_preG_cnt_inG :> inG Σ (authR natUR);
+  lft_preG_inh_inG :> inG Σ (authR inhUR);
+}.
+Definition lftPreG' := lftPreG.
+
+Definition lftΣ : gFunctors :=
+  #[ boxΣ; GFunctor (authR alftUR); GFunctor (authR ilftUR);
+     GFunctor (authR borUR); GFunctor (authR natUR); GFunctor (authR inhUR) ].
+Instance subG_lftΣ Σ :
+  subG lftΣ Σ → lftPreG Σ.
+Proof. solve_inG. Qed.
 
 Definition bor_filled (s : bor_state) : bool :=
   match s with Bor_in => true | _ => false end.

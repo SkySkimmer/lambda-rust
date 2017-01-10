@@ -104,4 +104,3 @@ Proof.
   - iIntros "Hst". by iDestruct (lft_dead_static with "Hst") as "[]".
 Qed.
 End derived.
-
