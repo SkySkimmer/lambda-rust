@@ -10,7 +10,7 @@ Section unbox.
   Definition unbox : val :=
     funrec: <> ["b"] :=
        let: "b'" := !"b" in let: "bx" := !"b'" in
-       letalloc: "r" := "bx" +ₗ #0 in
+       letalloc: "r" <- "bx" +ₗ #0 in
        delete [ #1; "b"] ;; "return" ["r"].
 
   Lemma ubox_type :

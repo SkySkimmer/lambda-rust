@@ -256,7 +256,7 @@ Section typing.
     tctx_extract_hasty E L p ty T T' →
     ty.(ty_size) = 1%nat →
     (∀ (v : val), typed_body E L C ((v ◁ own 1 ty)::T') (subst x v e)) →
-    typed_body E L C T (letalloc: x := p in e).
+    typed_body E L C T (letalloc: x <- p in e).
   Proof.
     intros. eapply type_new.
     - rewrite /Closed /=. rewrite !andb_True.
@@ -278,7 +278,7 @@ Section typing.
     tctx_extract_hasty E L p ty1 T T' →
     (∀ (v : val),
         typed_body E L C ((v ◁ own (ty.(ty_size)) ty)::(p ◁ ty2)::T') (subst x v e)) →
-    typed_body E L C T (letalloc: x :={ty.(ty_size)} !p in e).
+    typed_body E L C T (letalloc: x <⋯ !{ty.(ty_size)}p in e).
   Proof.
     intros. eapply type_new.
     - rewrite /Closed /=. rewrite !andb_True.
