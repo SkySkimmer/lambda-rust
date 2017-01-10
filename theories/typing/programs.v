@@ -185,8 +185,7 @@ Section typing_rules.
     wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "% Hown1".
     wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "_ Hown2".
     iMod (Hwrt with "* [] LFT HE HL Hown1") as (l vl) "([% %] & Hl & Hclose)"; first done.
-    subst v1. iAssert (⌜1%nat = ty_size ty⌝%I) with "[#]" as %Hsz.
-    { change (1%nat) with (length [v2]). by iApply ty_size_eq. }
+    subst v1. iDestruct (ty_size_eq with "Hown2") as "#Hsz". iDestruct "Hsz" as %Hsz.
     rewrite <-Hsz in *. destruct vl as [|v[|]]; try done.
     rewrite heap_mapsto_vec_singleton. wp_write.
     rewrite -heap_mapsto_vec_singleton.
@@ -212,8 +211,7 @@ Section typing_rules.
     iIntros (v) "% Hown".
     iMod (Hread with "* [] LFT Htl HE HL Hown") as
         (l vl q) "(% & Hl & Hown & Hclose)"; first done.
-    subst v. iAssert (▷⌜length vl = 1%nat⌝)%I with "[#]" as ">%".
-    { rewrite -Hsz. iApply ty_size_eq. done. }
+    subst v. iDestruct (ty_size_eq with "Hown") as "#>%". rewrite ->Hsz in *.
     destruct vl as [|v [|]]; try done.
     rewrite heap_mapsto_vec_singleton. wp_read.
     iMod ("Hclose" with "Hl") as "($ & $ & Hown2)".

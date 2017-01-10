@@ -119,12 +119,10 @@ Section product.
     - iNext. iSplitL "H↦1 H1". iExists vl1. by iFrame. iExists vl2. by iFrame.
     - iIntros "Htl [H1 H2]". iDestruct ("Htlclose" with "Htl") as "Htl".
       iDestruct "H1" as (vl1') "[H↦1 H1]". iDestruct "H2" as (vl2') "[H↦2 H2]".
-      iAssert (▷ ⌜length vl1' = ty1.(ty_size)⌝)%I with "[#]" as ">%".
-      { iNext. by iApply ty_size_eq. }
-      iAssert (▷ ⌜length vl2' = ty2.(ty_size)⌝)%I with "[#]" as ">%".
-      { iNext. by iApply ty_size_eq. }
+      iDestruct (ty_size_eq with "H1") as "#>%".
+      iDestruct (ty_size_eq with "H2") as "#>%".
       iCombine "H↦1" "H↦1f" as "H↦1". iCombine "H↦2" "H↦2f" as "H↦2".
-      rewrite !heap_mapsto_vec_op; try by congruence.
+      rewrite !heap_mapsto_vec_op; [|congruence..].
       iDestruct "H↦1" as "[_ H↦1]". iDestruct "H↦2" as "[_ H↦2]".
       iMod ("Hclose2" with "Htl [H2 H↦2]") as "[Htl $]". by iExists _; iFrame.
       iMod ("Hclose1" with "Htl [H1 H↦1]") as "[$$]". by iExists _; iFrame. done.

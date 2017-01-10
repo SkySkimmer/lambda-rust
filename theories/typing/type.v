@@ -444,7 +444,6 @@ Section weakening.
     - iDestruct "HL" as %HL. iPureIntro. intros ??. apply HL.
       rewrite HL12. set_solver.
   Qed.
-
 End weakening.
 
 Hint Resolve subtype_refl eqtype_refl : lrust_typing.

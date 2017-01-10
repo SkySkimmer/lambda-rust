@@ -34,9 +34,8 @@ Section cell.
     { iMod (na_bor_acc with "LFT Hshr Htok Htl") as "(Hown & Htl & Hclose)"; [solve_ndisj..|].
       iDestruct "Hown" as (vl) "[H↦ #Hown]".
       simpl. assert (F ∖ ∅ = F) as -> by set_solver+.
-      iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">EQ".
-      { iNext. by iApply ty_size_eq. }
-      rewrite Hsz. iDestruct "EQ" as %EQ. iMod ("Hclose" with "[H↦] Htl") as "[$ $]".
+      iDestruct (ty_size_eq with "Hown") as "#>%". rewrite ->Hsz in *.
+      iMod ("Hclose" with "[H↦] Htl") as "[$ $]".
       { iExists vl. by iFrame. }
       iModIntro. iSplitL "".
       { iNext. iExists vl. destruct vl; last done. iFrame "Hown".
@@ -52,7 +51,6 @@ Section cell.
   Global Instance cell_send :
     Send ty → Send (cell ty).
   Proof. intros. split. simpl. apply send_change_tid. Qed.
-
 End cell.
 
 Section typing.
