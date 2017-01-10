@@ -1,4 +1,4 @@
-From iris.algebra Require Import csum auth frac gmap agree gset.
+From iris.algebra Require Import frac.
 From iris.prelude Require Export gmultiset strings.
 From iris.base_logic.lib Require Export invariants.
 From iris.base_logic.lib Require Import boxes fractional.
@@ -13,57 +13,16 @@ Definition atomic_lft := positive.
 Notation lft := (gmultiset positive).
 Definition static : lft := ∅.
 
-Inductive bor_state :=
-  | Bor_in
-  | Bor_open (q : frac)
-  | Bor_rebor (κ : lft).
-Instance bor_state_eq_dec : EqDecision bor_state.
-Proof. solve_decision. Defined.
-Canonical bor_stateC := leibnizC bor_state.
-
-Record lft_names := LftNames {
-  bor_name : gname;
-  cnt_name : gname;
-  inh_name : gname
-}.
-Instance lft_names_eq_dec : EqDecision lft_names.
-Proof. solve_decision. Defined.
-Canonical lft_namesC := leibnizC lft_names.
-
-Definition lft_stateR := csumR fracR unitR.
-Definition alftUR := gmapUR atomic_lft lft_stateR.
-Definition ilftUR := gmapUR lft (agreeR lft_namesC).
-Definition borUR := gmapUR slice_name (prodR fracR (agreeR bor_stateC)).
-Definition inhUR := gset_disjUR slice_name.
-
-Class lftG Σ := LftG {
-  lft_box :> boxG Σ;
-  alft_inG :> inG Σ (authR alftUR);
-  alft_name : gname;
-  ilft_inG :> inG Σ (authR ilftUR);
-  ilft_name : gname;
-  lft_bor_inG :> inG Σ (authR borUR);
-  lft_cnt_inG :> inG Σ (authR natUR);
-  lft_inh_inG :> inG Σ (authR inhUR);
-}.
-
-Class lftPreG Σ := LftPreG {
-  lft_preG_box :> boxG Σ;
-  alft_preG_inG :> inG Σ (authR alftUR);
-  ilft_preG_inG :> inG Σ (authR ilftUR);
-  lft_preG_bor_inG :> inG Σ (authR borUR);
-  lft_preG_cnt_inG :> inG Σ (authR natUR);
-  lft_preG_inh_inG :> inG Σ (authR inhUR);
-}.
-
-Definition lftΣ : gFunctors :=
-  #[ boxΣ; GFunctor (authR alftUR); GFunctor (authR ilftUR);
-     GFunctor (authR borUR); GFunctor (authR natUR); GFunctor (authR inhUR) ].
-Instance subG_stsΣ Σ :
-  subG lftΣ Σ → lftPreG Σ.
-Proof. solve_inG. Qed.
-
 Module Type lifetime_sig.
+  (** CMRAs needed by the lifetime logic  *)
+  (* We can't instantie the module parameters with inductive types, so we have aliases here. *)
+  Parameter lftG' : gFunctors → Set.
+  Global Notation lftG := lftG'.
+  Existing Class lftG'.
+  Parameter lftPreG' : gFunctors → Set.
+  Global Notation lftPreG := lftPreG'.
+  Existing Class lftPreG'.
+
   (** Definitions *)
   Parameter lft_ctx : ∀ `{invG, lftG Σ}, iProp Σ.
 
@@ -76,7 +35,8 @@ Module Type lifetime_sig.
   Parameter bor_idx : Type.
   Parameter idx_bor_own : ∀ `{lftG Σ} (q : frac) (i : bor_idx), iProp Σ.
   Parameter idx_bor : ∀ `{invG, lftG Σ} (κ : lft) (i : bor_idx) (P : iProp Σ), iProp Σ.
-  
+
+  (** Notation *)
   Notation "q .[ κ ]" := (lft_tok q κ)
       (format "q .[ κ ]", at level 0) : uPred_scope.
   Notation "[† κ ]" := (lft_dead κ) (format "[† κ ]"): uPred_scope.
@@ -189,6 +149,9 @@ Module Type lifetime_sig.
        (▷ P ∗ (▷ P ={E∖↑lftN,E}=∗ &{κ}P)) ∨ ([†κ] ∗ |={E∖↑lftN,E}=> True).
 
   End properties.
+
+  Parameter lftΣ : gFunctors.
+  Global Declare Instance subG_lftΣ Σ : subG lftΣ Σ → lftPreG Σ.
 
   Parameter lft_init : ∀ `{invG Σ, !lftPreG Σ} E, ↑lftN ⊆ E →
     True ={E}=∗ ∃ _ : lftG Σ, lft_ctx.

@@ -95,6 +95,7 @@ Section product_split.
     iDestruct "H" as (vl1 vl2) "(>% & H1 & H2)". subst.
     rewrite heap_mapsto_vec_app -freeable_sz_split.
     iDestruct "H†" as "[H†1 H†2]". iDestruct "H↦" as "[H↦1 H↦2]".
+    (* FIXME: I found no way to use ty_size_eq_later here to avoid the assert. *)
     iAssert (▷ ⌜length vl1 = ty_size ty1⌝)%I with "[#]" as ">EQ".
     { iNext. by iApply ty_size_eq. }
     iDestruct "EQ" as %->. iSplitL "H↦1 H†1 H1".

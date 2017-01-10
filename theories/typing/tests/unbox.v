@@ -7,11 +7,11 @@ Set Default Proof Using "Type".
 Section unbox.
   Context `{typeG Σ}.
 
-  Definition unbox :=
-    (funrec: <> ["b"] :=
+  Definition unbox : val :=
+    funrec: <> ["b"] :=
        let: "b'" := !"b" in let: "bx" := !"b'" in
        letalloc: "r" <- "bx" +ₗ #0 in
-       delete [ #1; "b"] ;; "return" ["r":expr])%E.
+       delete [ #1; "b"] ;; "return" ["r":expr].
 
   Lemma ubox_type :
     typed_instruction_ty [] [] [] unbox

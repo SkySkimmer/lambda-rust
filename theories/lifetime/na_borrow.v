@@ -30,13 +30,13 @@ Section na_bor.
     iExists i. iFrame "#". iApply (na_inv_alloc tid E N with "[Hown]"). auto.
   Qed.
 
-  Lemma na_bor_acc q κ E :
-    ↑lftN ⊆ E → ↑N ⊆ E →
-    lft_ctx -∗ &na{κ,tid,N}P -∗ q.[κ] -∗ na_own tid E ={E}=∗
-            ▷P ∗ na_own tid (E ∖ ↑N) ∗
-            (▷P -∗ na_own tid (E ∖ ↑N) ={E}=∗ q.[κ] ∗ na_own tid E).
+  Lemma na_bor_acc q κ E F :
+    ↑lftN ⊆ E → ↑N ⊆ E → ↑N ⊆ F →
+    lft_ctx -∗ &na{κ,tid,N}P -∗ q.[κ] -∗ na_own tid F ={E}=∗
+            ▷P ∗ na_own tid (F ∖ ↑N) ∗
+            (▷P -∗ na_own tid (F ∖ ↑N) ={E}=∗ q.[κ] ∗ na_own tid F).
   Proof.
-    iIntros (??) "#LFT#HP Hκ Hnaown".
+    iIntros (???) "#LFT#HP Hκ Hnaown".
     iDestruct "HP" as (i) "(#Hpers&#Hinv)".
     iMod (na_inv_open with "Hinv Hnaown") as "(>Hown&Hnaown&Hclose)"; try done.
     iMod (idx_bor_acc with "LFT Hpers Hown Hκ") as "[HP Hclose']". done.

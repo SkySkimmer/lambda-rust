@@ -7,7 +7,6 @@ Set Default Proof Using "Type".
 
 Section uniq_bor.
   Context `{typeG Σ}.
-
   Local Hint Extern 1000 (_ ⊆ _) => set_solver : ndisj.
 
   Program Definition uniq_bor (κ:lft) (ty:type) :=
@@ -155,7 +154,7 @@ Section typing.
   Proof.
     iIntros (Hκ ???) "#LFT HE HL Huniq".
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; [try done..|].
-    rewrite /tctx_interp !big_sepL_singleton /=.
+    rewrite !tctx_interp_singleton /=.
     iDestruct "Huniq" as (v) "[% Huniq]".
     iDestruct "Huniq" as (l P) "[[% #HPiff] HP]".
     iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
@@ -172,7 +171,7 @@ Section typing.
     iDestruct (elctx_interp_persist with "HE") as "#HE'".
     iDestruct (llctx_interp_persist with "HL") as "#HL'". iFrame "HE HL".
     iDestruct (Hκκ' with "HE' HL'") as "Hκκ'".
-    rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
+    rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
     iDestruct "H" as (v) "[% Hown]". iDestruct "Hown" as (l P) "[[EQ #Hiff] Hb]".
     iDestruct "EQ" as %[=->]. iMod (bor_iff with "LFT [] Hb") as "Hb". done. by eauto.
     iMod (rebor with "LFT Hκκ' Hb") as "[Hb Hext]". done. iModIntro. iSplitL "Hb".
