@@ -6,13 +6,13 @@ Set Default Proof Using "Type".
 Section product.
   Context `{typeG Σ}.
 
-  Program Definition unit : type :=
+  Program Definition unit0 : type :=
     {| ty_size := 0; ty_own tid vl := ⌜vl = []⌝%I; ty_shr κ tid l := True%I |}.
   Next Obligation. iIntros (tid vl) "%". by subst. Qed.
   Next Obligation. by iIntros (??????) "_ _ $". Qed.
   Next Obligation. by iIntros (????) "_ _ $". Qed.
 
-  Global Instance unit_copy : Copy unit.
+  Global Instance unit0_copy : Copy unit0.
   Proof.
     split. by apply _. iIntros (????????) "_ _ Htok $".
     iDestruct (na_own_acc with "Htok") as "[$ Htok]"; first set_solver+.
@@ -21,10 +21,10 @@ Section product.
     iIntros "Htok2 _". iApply "Htok". done.
   Qed.
 
-  Global Instance unit_send : Send unit.
+  Global Instance unit0_send : Send unit0.
   Proof. iIntros (tid1 tid2 vl) "H". done. Qed.
 
-  Global Instance unit_sync : Sync unit.
+  Global Instance unit0_sync : Sync unit0.
   Proof. iIntros (????) "_". done. Qed.
 
   Lemma split_prod_mt tid ty1 ty2 q l :
@@ -141,7 +141,8 @@ Section product.
     iIntros (κ tid1 ti2 l) "[#Hshr1 #Hshr2]". iSplit; by iApply @sync_change_tid.
   Qed.
 
-  Definition product := foldr product2 unit.
+  Definition product := foldr product2 unit0.
+  Definition unit := product [].
 
   Global Instance product_ne n: Proper (dist n ==> dist n) product.
   Proof. intros ??. induction 1=>//=. by f_equiv. Qed.
@@ -167,10 +168,9 @@ Section product.
   Definition product_cons ty tyl :
     product (ty :: tyl) = product2 ty (product tyl) := eq_refl _.
   Definition product_nil :
-    product [] = unit := eq_refl _.
+    product [] = unit0 := eq_refl _.
 End product.
 
-Arguments product : simpl never.
 Notation Π := product.
 
 Section typing.
@@ -232,5 +232,6 @@ Section typing.
   Proof. by rewrite -prod_flatten_r -prod_flatten_l. Qed.
 End typing.
 
+Arguments product : simpl never.
+Hint Opaque product : lrust_typing lrust_typing_merge.
 Hint Resolve product_mono' product_proper' : lrust_typing.
-Hint Opaque product : lrust_typing typeclass_instances.

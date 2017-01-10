@@ -45,39 +45,51 @@ Section uninit.
     eqtype E L (uninit0 n) (uninit n).
   Proof. apply equiv_eqtype; (split; first split)=>//=. apply uninit0_sz. Qed.
 
-  (* TODO : these lemmas cannot be used by [solve_typing], because
-     unification cannot infer the [ns] parameter. *)
-  Lemma uninit_product_eqtype {E L} ns :
-    eqtype E L (uninit (foldr plus 0%nat ns)) (Π(uninit <$> ns)).
+  Lemma uninit_product_subtype_cons {E L} (ntot n : nat) tyl :
+    n ≤ ntot →
+    subtype E L (uninit (ntot-n)) (Π tyl) →
+    subtype E L (uninit ntot) (Π(uninit n :: tyl)).
   Proof.
-    rewrite -uninit_uninit0_eqtype. etrans; last first.
-    { apply product_proper. eapply Forall2_fmap, Forall_Forall2, Forall_forall.
-      intros. by rewrite -uninit_uninit0_eqtype. }
-    induction ns as [|n ns IH]=>//=. revert IH.
-    by rewrite /= /uninit0 replicate_plus prod_flatten_l -!prod_app=>->.
+    intros ?%Nat2Z.inj_le Htyl. rewrite (le_plus_minus n ntot) // -!uninit_uninit0_eqtype
+      /uninit0 replicate_plus prod_flatten_l -!prod_app. do 3 f_equiv.
+    by rewrite <-Htyl, <-uninit_uninit0_eqtype.
   Qed.
-  Lemma uninit_product_eqtype' {E L} ns :
-    eqtype E L (Π(uninit <$> ns)) (uninit (foldr plus 0%nat ns)).
-  Proof. symmetry; apply uninit_product_eqtype. Qed.
-  Lemma uninit_product_subtype {E L} ns :
-    subtype E L (uninit (foldr plus 0%nat ns)) (Π(uninit <$> ns)).
-  Proof. apply uninit_product_eqtype'. Qed.
-  Lemma uninit_product_subtype' {E L} ns :
-    subtype E L (Π(uninit <$> ns)) (uninit (foldr plus 0%nat ns)).
-  Proof. apply uninit_product_eqtype. Qed.
+  Lemma uninit_product_subtype_cons' {E L} (ntot n : nat) tyl :
+    n ≤ ntot →
+    subtype E L (Π tyl) (uninit (ntot-n)) →
+    subtype E L (Π(uninit n :: tyl)) (uninit ntot).
+  Proof.
+    intros ?%Nat2Z.inj_le Htyl. rewrite (le_plus_minus n ntot) // -!uninit_uninit0_eqtype
+      /uninit0 replicate_plus prod_flatten_l -!prod_app. do 3 f_equiv.
+    by rewrite ->Htyl, <-uninit_uninit0_eqtype.
+  Qed.
+  Lemma uninit_product_eqtype_cons {E L} (ntot n : nat) tyl :
+    n ≤ ntot →
+    eqtype E L (uninit (ntot-n)) (Π tyl) →
+    eqtype E L (uninit ntot) (Π(uninit n :: tyl)).
+  Proof.
+    intros ? []. split.
+    - by apply uninit_product_subtype_cons.
+    - by apply uninit_product_subtype_cons'.
+  Qed.
+  Lemma uninit_product_eqtype_cons' {E L} (ntot n : nat) tyl :
+    n ≤ ntot →
+    eqtype E L (Π tyl) (uninit (ntot-n)) →
+    eqtype E L (Π(uninit n :: tyl)) (uninit ntot).
+  Proof. symmetry. by apply uninit_product_eqtype_cons. Qed.
 
   Lemma uninit_unit_eqtype E L :
     eqtype E L (uninit 0) unit.
-  Proof. apply (uninit_product_eqtype []). Qed.
+  Proof. by rewrite -uninit_uninit0_eqtype. Qed.
   Lemma uninit_unit_eqtype' E L :
-    subtype E L unit (uninit 0).
-  Proof. apply (uninit_product_eqtype' []). Qed.
+    eqtype E L unit (uninit 0).
+  Proof. by rewrite -uninit_uninit0_eqtype. Qed.
   Lemma uninit_unit_subtype E L :
     subtype E L (uninit 0) unit.
-  Proof. apply (uninit_product_subtype []). Qed.
+  Proof. by rewrite -uninit_uninit0_eqtype. Qed.
   Lemma uninit_unit_subtype' E L :
     subtype E L unit (uninit 0).
-  Proof. apply (uninit_product_subtype []). Qed.
+  Proof. by rewrite -uninit_uninit0_eqtype. Qed.
 
   Lemma uninit_own n tid vl :
     (uninit n).(ty_own) tid vl ⊣⊢ ⌜length vl = n⌝.
@@ -92,7 +104,7 @@ Section uninit.
   Qed.
 End uninit.
 
-Hint Resolve uninit_product_eqtype uninit_product_eqtype'
-     uninit_product_subtype uninit_product_subtype'
-     uninit_unit_eqtype uninit_unit_eqtype'
-     uninit_unit_subtype uninit_unit_subtype' : lrust_typing.
+Hint Resolve uninit_product_eqtype_cons uninit_product_eqtype_cons'
+             uninit_product_subtype_cons uninit_product_subtype_cons'
+             uninit_unit_eqtype uninit_unit_eqtype'
+             uninit_unit_subtype uninit_unit_subtype' : lrust_typing.

@@ -25,8 +25,7 @@ Section lazy_lft.
   Proof.
     apply type_fn; try apply _. move=> /= [] ret p. inv_vec p. simpl_subst.
     eapply (type_newlft []); [solve_typing|]=>α.
-    eapply (type_new_subtype (Π[uninit 1;uninit 1])%T); [solve_typing..| |].
-      { apply (uninit_product_subtype [1;1]%nat). }
+    eapply (type_new_subtype (Π[uninit 1;uninit 1])); [solve_typing..|].
       intros t. simpl_subst.
     eapply type_new; [solve_typing..|]=>f. simpl_subst.
     eapply type_new; [solve_typing..|]=>g. simpl_subst.

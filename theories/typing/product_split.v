@@ -70,7 +70,7 @@ Section product_split.
     clear Hp. destruct tyl.
     { iDestruct (elctx_interp_persist with "HE") as "#HE'".
       iDestruct (llctx_interp_persist with "HL") as "#HL'". iFrame "HE HL". 
-      iClear "IH Htyl". simpl. iExists #l. rewrite product_nil. iSplitR; first done.
+      iClear "IH Htyl". iExists #l. rewrite product_nil. iSplitR; first done.
       assert (eqtype E L (ptr ty) (ptr (product2 ty unit))) as [Hincl _].
       { rewrite right_id. done. }
       iDestruct (Hincl with "LFT HE' HL'") as "#(_ & #Heq & _)". by iApply "Heq". }
@@ -330,7 +330,7 @@ End product_split.
 
 (* We do not want unification to try to unify the definition of these
    types with anything in order to try splitting or merging. *)
-Hint Opaque own uniq_bor shr_bor product tctx_extract_hasty : lrust_typing lrust_typing_merge.
+Hint Opaque own uniq_bor shr_bor tctx_extract_hasty : lrust_typing lrust_typing_merge.
 
 (* We make sure that splitting is tried before borrowing, so that not
    the entire product is borrowed when only a part is needed. *)

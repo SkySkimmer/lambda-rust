@@ -21,8 +21,7 @@ Section rebor.
     apply type_fn; try apply _. move=> /= [] ret p. inv_vec p=>x y. simpl_subst.
     eapply type_deref; [solve_typing..|apply read_own_move|done|]=>x'. simpl_subst.
     eapply type_deref; [solve_typing..|apply read_own_move|done|]=>y'. simpl_subst.
-    eapply (type_new_subtype (Π[uninit 1; uninit 1])); [apply _|done| |].
-      { apply (uninit_product_subtype [1;1]%nat). }
+    eapply (type_new_subtype (Π[uninit 1; uninit 1])); [solve_typing..|].
       intros r. simpl_subst. unfold Z.to_nat, Pos.to_nat; simpl.
     eapply (type_assign (own 2 (uninit 1))); [solve_typing..|by apply write_own|].
     eapply type_assign; [solve_typing..|by apply write_own|].
