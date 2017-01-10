@@ -24,7 +24,7 @@ Section unwrap_or.
       eapply (type_jump [_]); solve_typing.
     + left. eapply type_letalloc_n; [solve_typing..|by apply read_own_move|solve_typing|]=>r.
         simpl_subst.
-      eapply (type_delete (Π[_;_;_])); [solve_typing..|].
+      eapply (type_delete (Π[uninit _;uninit _;uninit _])); [solve_typing..|].
       eapply type_delete; [solve_typing..|].
       eapply (type_jump [_]); solve_typing.
   Qed.

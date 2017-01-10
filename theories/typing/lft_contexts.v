@@ -444,9 +444,10 @@ Arguments elctx_incl {_ _ _} _%EL _%LL _%EL _%EL.
    [tctx_extract_hasty] to suceed even if the type is an evar, and
    merging makes it diverge in this case. *)
 Ltac solve_typing :=
-  (eauto 100 with lrust_typing typeclass_instances; fail) ||
-  (eauto 100 with lrust_typing lrust_typing_merge typeclass_instances; fail).
-Create HintDb lrust_typing_merge.
+  (typeclasses eauto with lrust_typing typeclass_instances core; fail) ||
+  (typeclasses eauto with lrust_typing lrust_typing_merge typeclass_instances core; fail).
+Create HintDb lrust_typing discriminated.
+Create HintDb lrust_typing_merge discriminated.
 
 Hint Constructors Forall Forall2 elem_of_list : lrust_typing.
 Hint Resolve
@@ -456,8 +457,9 @@ Hint Resolve
      elctx_sat_nil elctx_sat_alive elctx_sat_lft_incl
      elctx_incl_refl elctx_incl_nil elctx_incl_lft_alive elctx_incl_lft_incl
   : lrust_typing.
-
 Hint Resolve lctx_lft_alive_external' | 100 : lrust_typing.
+
+Hint Opaque elctx_incl elctx_sat lctx_lft_alive lctx_lft_incl : lrust_typing.
 
 Lemma elctx_incl_lft_incl_alive `{invG Σ, lftG Σ} E L E1 E2 κ κ' :
   lctx_lft_incl (E ++ E1) L κ κ' → elctx_incl E L E1 E2 →

@@ -121,7 +121,7 @@ Section typing.
       - iExists _. iSplit; first done. iFrame. iExists _. iFrame.
         rewrite uninit_own. auto. }
     intros v. simpl_subst. clear v.
-    eapply (type_new_subtype unit); [solve_typing..|apply uninit_unit|].
+    eapply type_new; [solve_typing..|].
     intros r. simpl_subst.
     eapply type_delete; [solve_typing..|].
     eapply type_delete; [solve_typing..|].

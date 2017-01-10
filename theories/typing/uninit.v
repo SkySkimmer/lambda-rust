@@ -45,7 +45,9 @@ Section uninit.
     eqtype E L (uninit0 n) (uninit n).
   Proof. apply equiv_eqtype; (split; first split)=>//=. apply uninit0_sz. Qed.
 
-  Lemma uninit_product_eqtype E L ns :
+  (* TODO : these lemmas cannot be used by [solve_typing], because
+     unification cannot infer the [ns] parameter. *)
+  Lemma uninit_product_eqtype {E L} ns :
     eqtype E L (uninit (foldr plus 0%nat ns)) (Π(uninit <$> ns)).
   Proof.
     rewrite -uninit_uninit0_eqtype. etrans; last first.
@@ -54,19 +56,28 @@ Section uninit.
     induction ns as [|n ns IH]=>//=. revert IH.
     by rewrite /= /uninit0 replicate_plus prod_flatten_l -!prod_app=>->.
   Qed.
-  Lemma uninit_product_eqtype' E L ns :
+  Lemma uninit_product_eqtype' {E L} ns :
     eqtype E L (Π(uninit <$> ns)) (uninit (foldr plus 0%nat ns)).
   Proof. symmetry; apply uninit_product_eqtype. Qed.
-  Lemma uninit_product_subtype E L ns :
+  Lemma uninit_product_subtype {E L} ns :
     subtype E L (uninit (foldr plus 0%nat ns)) (Π(uninit <$> ns)).
   Proof. apply uninit_product_eqtype'. Qed.
-  Lemma uninit_product_subtype' E L ns :
+  Lemma uninit_product_subtype' {E L} ns :
     subtype E L (Π(uninit <$> ns)) (uninit (foldr plus 0%nat ns)).
   Proof. apply uninit_product_eqtype. Qed.
 
-  Lemma uninit_unit E L :
-    eqtype E L unit (uninit 0%nat).
-  Proof. apply (uninit_product_eqtype _ _ []). Qed.
+  Lemma uninit_unit_eqtype E L :
+    eqtype E L (uninit 0) unit.
+  Proof. apply (uninit_product_eqtype []). Qed.
+  Lemma uninit_unit_eqtype' E L :
+    subtype E L unit (uninit 0).
+  Proof. apply (uninit_product_eqtype' []). Qed.
+  Lemma uninit_unit_subtype E L :
+    subtype E L (uninit 0) unit.
+  Proof. apply (uninit_product_subtype []). Qed.
+  Lemma uninit_unit_subtype' E L :
+    subtype E L unit (uninit 0).
+  Proof. apply (uninit_product_subtype []). Qed.
 
   Lemma uninit_own n tid vl :
     (uninit n).(ty_own) tid vl ⊣⊢ ⌜length vl = n⌝.
@@ -82,4 +93,6 @@ Section uninit.
 End uninit.
 
 Hint Resolve uninit_product_eqtype uninit_product_eqtype'
-     uninit_product_subtype uninit_product_subtype' : lrust_typing.
+     uninit_product_subtype uninit_product_subtype'
+     uninit_unit_eqtype uninit_unit_eqtype'
+     uninit_unit_subtype uninit_unit_subtype' : lrust_typing.

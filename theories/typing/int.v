@@ -24,7 +24,7 @@ Section typing.
     rewrite tctx_interp_singleton tctx_hasty_val. iExists _. done.
   Qed.
 
-  Lemma typed_int (z : Z) E L C T x e :
+  Lemma type_int (z : Z) E L C T x e :
     Closed (x :b: []) e →
     (∀ (v : val), typed_body E L C ((v ◁ int) :: T) (subst' x v e)) →
     typed_body E L C T (let: x := #z in e).
@@ -45,7 +45,7 @@ Section typing.
     iExists _. done.
   Qed.
 
-  Lemma typed_plus E L C T T' p1 p2 x e :
+  Lemma type_plus E L C T T' p1 p2 x e :
     Closed (x :b: []) e →
     tctx_extract_ctx E L [p1 ◁ int; p2 ◁ int] T T' →
     (∀ (v : val), typed_body E L C ((v ◁ int) :: T') (subst' x v e)) →
@@ -67,7 +67,7 @@ Section typing.
     iExists _. done.
   Qed.
 
-  Lemma typed_minus E L C T T' p1 p2 x e :
+  Lemma type_minus E L C T T' p1 p2 x e :
     Closed (x :b: []) e →
     tctx_extract_ctx E L [p1 ◁ int; p2 ◁ int] T T' →
     (∀ (v : val), typed_body E L C ((v ◁ int) :: T') (subst' x v e)) →
@@ -89,7 +89,7 @@ Section typing.
       iExists _; done.
   Qed.
 
-  Lemma typed_le E L C T T' p1 p2 x e :
+  Lemma type_le E L C T T' p1 p2 x e :
     Closed (x :b: []) e →
     tctx_extract_ctx E L [p1 ◁ int; p2 ◁ int] T T' →
     (∀ (v : val), typed_body E L C ((v ◁ bool) :: T') (subst' x v e)) →

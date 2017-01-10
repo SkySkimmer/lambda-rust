@@ -389,6 +389,10 @@ Section product_split.
   Proof. auto using tctx_extract_merge_ptr_prod, tctx_merge_shr_prod. Qed.
 End product_split.
 
+(* We do not want unification to try to unify the definition of these
+   types with anything in order to try splitting or merging. *)
+Hint Opaque own uniq_bor shr_bor product product2 tctx_extract_hasty : lrust_typing lrust_typing_merge.
+
 (* We make sure that splitting is tried before borrowing, so that not
    the entire product is borrowed when only a part is needed. *)
 Hint Resolve tctx_extract_split_own_prod2 tctx_extract_split_uniq_prod2
@@ -399,26 +403,15 @@ Hint Resolve tctx_extract_split_own_prod2 tctx_extract_split_uniq_prod2
 (* Merging is also tried after everything, except
    [tctx_extract_hasty_further]. Moreover, it is placed in a
    difference hint db. The reason is that it can make the proof search
-   diverge if the type is an evar. *)
-(* We declare them as [Hint Extern] instead of [Hint Resolve],
-   otherwise unification with unrelated goals takes forever to fail... *)
-Hint Extern 40 (tctx_extract_hasty _ _ _ (own _ (product2 _ _)) _ _) =>
-  eapply tctx_extract_merge_own_prod2 : lrust_typing_merge.
-Hint Extern 40 (tctx_extract_hasty _ _ _ (&uniq{_}product2 _ _) _ _) =>
-  eapply tctx_extract_merge_uniq_prod2 : lrust_typing_merge.
-Hint Extern 40 (tctx_extract_hasty _ _ _ (&shr{_}product2 _ _) _ _) =>
-  eapply tctx_extract_merge_shr_prod2 : lrust_typing_merge.
-Hint Extern 40 (tctx_extract_hasty _ _ _ (own _ (Π _)) _ _) =>
-  eapply tctx_extract_merge_own_prod : lrust_typing_merge.
-Hint Extern 40 (tctx_extract_hasty _ _ _ (&uniq{_}Π _) _ _) =>
-  eapply tctx_extract_merge_uniq_prod : lrust_typing_merge.
-Hint Extern 40 (tctx_extract_hasty _ _ _ (&shr{_}Π _) _ _) =>
-  eapply tctx_extract_merge_shr_prod : lrust_typing_merge.
+   diverge if the type is an evar.
 
-Hint Extern 0
-     (tctx_extract_hasty _ _ _ _ (hasty_ptr_offsets _ _ _ _) _) =>
-        cbn[hasty_ptr_offsets].
-
-Hint Extern 0 (tctx_extract_hasty _ _ _ _ (_ ++ _) _) => cbn[app].
-
-Hint Unfold extract_tyl : lrust_typing.
+   Unfortunately, priorities are not taken into account accross hint
+   databases with [typeclasses eauto], so this is useless, and some
+   solve_typing get slow because of that. See:
+     https://coq.inria.fr/bugs/show_bug.cgi?id=5304
+*)
+Hint Resolve tctx_extract_merge_own_prod2 tctx_extract_merge_uniq_prod2
+             tctx_extract_merge_shr_prod2 tctx_extract_merge_own_prod
+             tctx_extract_merge_uniq_prod tctx_extract_merge_shr_prod
+    | 40 : lrust_typing_merge.
+Hint Unfold extract_tyl.

@@ -259,22 +259,22 @@ Section type_context.
     tctx_extract_hasty E L p ty T T' →
     tctx_extract_hasty E L p ty (x::T) (x::T').
   Proof. unfold tctx_extract_hasty=>->. apply contains_tctx_incl, submseteq_swap. Qed.
-  Lemma tctx_extract_hasty_here_copy E L p ty ty' T `{!Copy ty} :
-    subtype E L ty ty' →
-    tctx_extract_hasty E L p ty' ((p ◁ ty)::T) ((p ◁ ty)::T).
+  Lemma tctx_extract_hasty_here_copy E L p1 p2 ty ty' T :
+    p1 = p2 → Copy ty → subtype E L ty ty' →
+    tctx_extract_hasty E L p1 ty' ((p2 ◁ ty)::T) ((p2 ◁ ty)::T).
   Proof.
-    intros. apply (tctx_incl_frame_r _ [_] [_;_]).
+    intros -> ??. apply (tctx_incl_frame_r _ [_] [_;_]).
     etrans; first by apply copy_tctx_incl, _.
     by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl.
   Qed.
-  Lemma tctx_extract_hasty_here E L p ty ty' T :
-    subtype E L ty ty' → tctx_extract_hasty E L p ty' ((p ◁ ty)::T) T.
+  Lemma tctx_extract_hasty_here E L p1 p2 ty ty' T :
+    p1 = p2 → subtype E L ty ty' → tctx_extract_hasty E L p1 ty' ((p2 ◁ ty)::T) T.
   Proof.
-    intros. by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl.
+    intros -> ?. by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl.
   Qed.
-  Lemma tctx_extract_hasty_here_eq E L p ty T :
-    tctx_extract_hasty E L p ty ((p ◁ ty)::T) T.
-  Proof. by apply tctx_extract_hasty_here. Qed.
+  Lemma tctx_extract_hasty_here_eq E L p1 p2 ty T :
+    p1 = p2 → tctx_extract_hasty E L p1 ty ((p2 ◁ ty)::T) T.
+  Proof. intros ->. by apply tctx_extract_hasty_here. Qed.
 
   Definition tctx_extract_blocked E L p κ ty T T' : Prop :=
     tctx_incl E L T ((p ◁{κ} ty)::T').
@@ -345,24 +345,17 @@ Section type_context.
   Qed.
 End type_context.
 
-Global Opaque tctx_extract_ctx tctx_extract_hasty tctx_extract_blocked.
-Hint Resolve tctx_extract_hasty_here_copy 1 : lrust_typing.
+Hint Resolve tctx_extract_hasty_here_copy | 1 : lrust_typing.
 Hint Resolve tctx_extract_hasty_here | 20 : lrust_typing.
 Hint Resolve tctx_extract_hasty_further | 50 : lrust_typing.
 Hint Resolve tctx_extract_blocked_here tctx_extract_blocked_cons
              tctx_extract_ctx_nil tctx_extract_ctx_hasty
              tctx_extract_ctx_blocked tctx_extract_ctx_incl : lrust_typing.
+Hint Opaque tctx_extract_ctx tctx_extract_hasty tctx_extract_blocked
+            tctx_incl : lrust_typing.
 
 (* In general, we want reborrowing to be tried before subtyping, so
    that we get the extraction. However, in the case the types match
    exactly, we want to NOT use reborrowing. Therefore, we add
-   [tctx_extract_hasty_here_eq] as a hint with a very low cost.
-
-   However, we want this hint to be used after
-   [tctx_extract_hasty_here_copy], so that we keep the typing it in
-   the environment if the type is copy. But due to a bug in Coq, we
-   cannot enforce this using [Hint Resolve]. Cf:
-       https://coq.inria.fr/bugs/show_bug.cgi?id=5299 *)
-Hint Extern 2 (tctx_extract_hasty _ _ ?p1 _ ((?p2 ◁ _) :: _) _) =>
-  unify p1 p2;
-  eapply tctx_extract_hasty_here_eq : lrust_typing.
+   [tctx_extract_hasty_here_eq] as a hint with a very low cost. *)
+Hint Resolve tctx_extract_hasty_here_eq | 2 : lrust_typing.

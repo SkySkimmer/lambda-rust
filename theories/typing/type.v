@@ -452,3 +452,4 @@ Section weakening.
 End weakening.
 
 Hint Resolve subtype_refl eqtype_refl : lrust_typing.
+Hint Opaque subtype eqtype : lrust_typing.

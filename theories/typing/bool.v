@@ -25,7 +25,7 @@ Section typing.
     rewrite tctx_interp_singleton tctx_hasty_val. iExists _. done.
   Qed.
 
-  Lemma typed_bool (b : Datatypes.bool) E L C T x e :
+  Lemma type_bool (b : Datatypes.bool) E L C T x e :
     Closed (x :b: []) e →
     (∀ (v : val), typed_body E L C ((v ◁ bool) :: T) (subst' x v e)) →
     typed_body E L C T (let: x := #b in e).
