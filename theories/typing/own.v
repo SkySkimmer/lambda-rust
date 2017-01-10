@@ -240,7 +240,7 @@ Section typing.
     rewrite freeable_sz_full. by iFrame.
   Qed.
 
-  Lemma type_delete E L C T T' (n' : nat) ty (n : Z)  p e :
+  Lemma type_delete {E L} ty C T T' (n' : nat) (n : Z)  p e :
     Closed [] e →
     tctx_extract_hasty E L p (own n' ty) T T' →
     n = n' → Z.of_nat (ty.(ty_size)) = n →
@@ -307,3 +307,7 @@ Section typing.
 End typing.
 
 Hint Resolve own_mono' own_proper' : lrust_typing.
+
+Hint Extern 100 (_ ≤ _) => simpl; lia : lrust_typing.
+Hint Extern 100 (@eq Z _ _) => simpl; lia : lrust_typing.
+Hint Extern 100 (@eq nat _ _) => simpl; lia : lrust_typing.

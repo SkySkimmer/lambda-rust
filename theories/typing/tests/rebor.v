@@ -20,22 +20,21 @@ Section rebor.
 
   Lemma rebor_type :
     typed_instruction_ty [] [] [] rebor
-        (fn (λ _, []) (λ _, [# own 2 (Π[int; int]); own 2 (Π[int; int])])
-            (λ (_ : ()), own 1 int)).
+        (fn (λ _, []) (λ _, [# box (Π[int; int]); box (Π[int; int])])
+            (λ (_ : ()), box int)).
   Proof.
     apply type_fn; try apply _. move=> /= [] ret p. inv_vec p=>t1 t2. simpl_subst.
     eapply (type_newlft []). apply _. move=> α.
-    eapply (type_letalloc_1 (&uniq{α}Π[int; int])); (try solve_typing)=>x. simpl_subst.
-    eapply type_deref; try solve_typing; [apply read_own_move|done|]=>x'. simpl_subst.
-    eapply (type_letpath (&uniq{α}int)); (try solve_typing)=>y. simpl_subst.
-    eapply (type_assign _ (&uniq{α}Π [int; int])); try solve_typing. by apply write_own.
-    eapply type_deref; try solve_typing; [apply: read_uniq; solve_typing|done|]=>y'.
-      simpl_subst.
-    eapply type_letalloc_1; (try solve_typing)=>r. simpl_subst.
-    eapply type_endlft; try solve_typing.
-    eapply type_delete; try solve_typing.
-    eapply type_delete; try solve_typing.
-    eapply type_delete; try solve_typing.
+    eapply (type_letalloc_1 (&uniq{α}Π[int; int])); [solve_typing..|]=>x. simpl_subst.
+    eapply type_deref; [solve_typing..|apply read_own_move|done|]=>x'. simpl_subst.
+    eapply (type_letpath (&uniq{α}int)); [solve_typing..|]=>y. simpl_subst.
+    eapply (type_assign _ (&uniq{α}Π [int; int])); [solve_typing..|by apply write_own|].
+    eapply type_deref; [solve_typing..|apply: read_uniq; solve_typing|done|]=>y'. simpl_subst.
+    eapply type_letalloc_1; [solve_typing..|]=>r. simpl_subst.
+    eapply type_endlft; [solve_typing..|].
+    eapply type_delete; [solve_typing..|].
+    eapply type_delete; [solve_typing..|].
+    eapply type_delete; [solve_typing..|].
     eapply (type_jump [_]); solve_typing.
   Qed.
 End rebor.

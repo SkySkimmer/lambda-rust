@@ -77,7 +77,7 @@ Section typing.
   Lemma read_cell E L κ ty :
     Copy ty → lctx_lft_alive E L κ →
     typed_read E L (&shr{κ} cell ty) ty (&shr{κ} cell ty).
-  Proof. intros ??. exact: read_shr. Qed. 
+  Proof. intros ??. exact: read_shr. Qed.
 
   (* Writing actually needs code; typed_write can't have thread tokens. *)
   Definition cell_write ty : val :=
@@ -93,7 +93,7 @@ Section typing.
             (λ α, box unit)).
   Proof.
     apply type_fn; try apply _. move=> /= α ret arg. inv_vec arg=>c x. simpl_subst.
-    eapply type_deref; try solve_typing. by apply read_own_move. done.
+    eapply type_deref; [solve_typing..|by apply read_own_move|done|].
     intros c'. simpl_subst.
     eapply type_let with (T1 := [c' ◁ _; x ◁ _]%TC)
                          (T2 := λ _, [c' ◁ &shr{α} cell ty;
@@ -121,8 +121,7 @@ Section typing.
       - iExists _. iSplit; first done. iFrame. iExists _. iFrame.
         rewrite uninit_own. auto. }
     intros v. simpl_subst. clear v.
-    eapply (type_new_subtype unit); try solve_typing. try done.
-    { apply uninit_unit. }
+    eapply (type_new_subtype unit); [solve_typing..|apply uninit_unit|].
     intros r. simpl_subst.
     eapply type_delete; [solve_typing..|].
     eapply type_delete; [solve_typing..|].

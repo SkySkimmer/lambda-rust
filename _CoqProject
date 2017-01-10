@@ -48,4 +48,5 @@ theories/typing/tests/rebor.v
 theories/typing/tests/unbox.v
 theories/typing/tests/init_prod.v
 theories/typing/tests/option_as_mut.v
+theories/typing/tests/unwrap_or.v
 theories/typing/unsafe/cell.v
