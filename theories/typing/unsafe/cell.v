@@ -107,10 +107,8 @@ Section typing.
       iDestruct "Hown" as (vl') "[>H↦' Hown']".
       iMod (na_bor_acc with "LFT Hshr HE Htl") as "(Hown & Htl & Hclose)"; [solve_ndisj..|].
       iDestruct "Hown" as (vl) "[>H↦ Hown]".
-      iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
-      { iNext. by iApply ty_size_eq. }
-      iAssert (▷ ⌜length vl' = ty_size ty⌝)%I with "[#]" as ">%".
-      { iNext. by iApply ty_size_eq. }
+      iDestruct (ty_size_eq with "Hown") as "#>%".
+      iDestruct (ty_size_eq with "Hown'") as "#>%".
       iApply wp_fupd. iApply (wp_memcpy with "[$HEAP $H↦ $H↦']"); [done..|].
       iNext. iIntros "[H↦ H↦']". rewrite {1}/elctx_interp big_opL_singleton /=.
       iMod ("Hclose" with "[H↦ Hown'] Htl") as "[$ $]".
@@ -128,5 +126,5 @@ Section typing.
     eapply (type_jump [_]); solve_typing.
   Qed.
 
-  (* TODO: potentially more operations? *)
+  (* TODO: get_mut *)
 End typing.

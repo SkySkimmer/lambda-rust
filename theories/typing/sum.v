@@ -54,16 +54,15 @@ Section sum.
     iSplit; iIntros "H".
     - iDestruct "H" as (vl) "[Hmt Hown]". iDestruct "Hown" as (i vl' vl'') "(% & % & Hown)".
       subst. iExists i. iDestruct (heap_mapsto_vec_cons with "Hmt") as "[$ Hmt]".
-      iAssert (⌜length vl' = (nth i tyl ∅).(ty_size)⌝%I) as %Hvl'.
-      { iApply ty_size_eq. done. }
+      iDestruct (ty_size_eq with "Hown") as "#EQ". iDestruct "EQ" as %Hvl'.
       iDestruct (heap_mapsto_vec_app with "Hmt") as "[Hmt Htail]". iSplitL "Htail".
       + iExists vl''. rewrite (shift_loc_assoc_nat _ 1) Hvl'. iFrame. iPureIntro.
         rewrite -Hvl'. simpl in *. rewrite -app_length. congruence.
       + iExists vl'. by iFrame.
     - iDestruct "H" as (i) "[[Hmt1 Htail] Hown]".
       iDestruct "Hown" as (vl') "[Hmt2 Hown]". iDestruct "Htail" as (vl'') "[Hmt3 %]".
-      iAssert (⌜length vl' = (nth i tyl ∅).(ty_size)⌝%I) as %Hvl'.
-      { iApply ty_size_eq. done. } iExists (#i::vl'++vl'').
+      iDestruct (ty_size_eq with "Hown") as "#EQ". iDestruct "EQ" as %Hvl'.
+      iExists (#i::vl'++vl'').
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_app (shift_loc_assoc_nat _ 1) Hvl'.
       iFrame. iExists i, vl', vl''. iSplit; first done. iFrame. iPureIntro.
       simpl. f_equal. by rewrite app_length Hvl'.

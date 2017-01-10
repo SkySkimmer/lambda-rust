@@ -162,12 +162,9 @@ Section typing.
   Proof.
     iIntros (Hsz) "!#". iIntros (p tid F qE qL ?) "_ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
-    (* This turns out to be the fastest way to apply a lemma below ▷ -- at
-    least if we're fine throwing away the premise even though the result
-    is persistent, which in this case, we are. *)
-    rewrite ty'.(ty_size_eq). iDestruct "Hown" as ">%". iModIntro.
+    iDestruct (ty_size_eq with "Hown") as "#>%".  iModIntro.
     iExists _, _. iFrame "H↦".
-    iSplit; first by rewrite Hsz. iIntros "Hown !>".
+    iSplit; first by rewrite Hsz. iIntros "Hown' !>".
     iExists _. iSplit; first done. rewrite Hsz. iFrame.
   Qed.
 
@@ -185,8 +182,7 @@ Section typing.
   Proof.
     iAlways. iIntros (p tid F qE qL ?) "_ $ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
-    iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
-    { by iApply ty_size_eq. }
+    iDestruct (ty_size_eq with "Hown") as "#>%".
     iModIntro. iExists l, vl, _. iSplit; first done. iFrame "∗#". iIntros "Hl !>".
     iExists _. iSplit; first done. iFrame "H†". iExists _. iFrame.
     iApply uninit_own. auto.
@@ -235,7 +231,7 @@ Section typing.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
     iDestruct "Hown" as (l) "(Hv & H↦∗: & >H†)". iDestruct "Hv" as %[=->].
     iDestruct "H↦∗:" as (vl) "[>H↦ Hown]". rewrite tctx_interp_nil.
-    rewrite ty_size_eq. iDestruct "Hown" as ">Hown". iDestruct "Hown" as %<-.
+    iDestruct (ty_size_eq with "Hown") as "#>EQ". iDestruct "EQ" as %<-.
     iApply (wp_delete with "[-]"); try (by auto); [].
     rewrite freeable_sz_full. by iFrame.
   Qed.

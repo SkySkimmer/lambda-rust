@@ -50,10 +50,6 @@ Section type.
     }.
   Global Existing Instances ty_shr_persistent.
 
-  Lemma ty_size_eq_later (ty : type) tid vl :
-    ▷ ty.(ty_own) tid vl -∗ ▷ ⌜length vl = ty.(ty_size)⌝.
-  Proof. iIntros "Hown". iApply ty_size_eq. done. Qed.
-
   (** Copy types *)
   Fixpoint shr_locsE (l : loc) (n : nat) : coPset :=
     match n with

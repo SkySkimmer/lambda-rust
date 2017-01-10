@@ -95,9 +95,7 @@ Section product_split.
     iDestruct "H" as (vl1 vl2) "(>% & H1 & H2)". subst.
     rewrite heap_mapsto_vec_app -freeable_sz_split.
     iDestruct "H†" as "[H†1 H†2]". iDestruct "H↦" as "[H↦1 H↦2]".
-    (* FIXME: I found no way to use ty_size_eq_later here to avoid the assert. *)
-    iAssert (▷ ⌜length vl1 = ty_size ty1⌝)%I with "[#]" as ">EQ".
-    { iNext. by iApply ty_size_eq. }
+    iDestruct (ty_size_eq with "H1") as "#>EQ".
     iDestruct "EQ" as %->. iSplitL "H↦1 H†1 H1".
     + iExists _. iSplitR. done. iExists _. iFrame. iSplitL ""; first done.
       iExists _. iFrame. done.
@@ -119,8 +117,7 @@ Section product_split.
     iSplitR; first done. rewrite -freeable_sz_split. iFrame.
     iDestruct "H↦1" as (vl1) "[H↦1 H1]". iDestruct "H↦2" as (vl2) "[H↦2 H2]".
     iExists (vl1 ++ vl2). rewrite heap_mapsto_vec_app. iFrame.
-    iAssert (▷ ⌜length vl1 = ty_size ty1⌝)%I with "[#]" as ">EQ".
-    { iNext. by iApply ty_size_eq. }
+    iDestruct (ty_size_eq with "H1") as "#>EQ".
     iDestruct "EQ" as %->. iFrame. iExists vl1, vl2. iFrame. auto.
   Qed.
 
