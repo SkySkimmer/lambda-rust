@@ -7,8 +7,8 @@ Set Default Proof Using "Type".
 Section rebor.
   Context `{typeG Σ}.
 
-  Definition rebor :=
-    (funrec: <> ["t1"; "t2"] :=
+  Definition rebor : val :=
+    funrec: <> ["t1"; "t2"] :=
        Newlft;;
        letalloc: "x" := "t1" in
        let: "x'" := !"x" in let: "y" := "x'" +ₗ #0 in
@@ -16,7 +16,7 @@ Section rebor.
        let: "y'" := !"y" in
        letalloc: "r" := "y'" in
        Endlft ;; delete [ #2; "t1"] ;; delete [ #2; "t2"] ;;
-                 delete [ #1; "x"] ;; "return" ["r":expr])%E.
+                 delete [ #1; "x"] ;; "return" ["r":expr].
 
   Lemma rebor_type :
     typed_instruction_ty [] [] [] rebor

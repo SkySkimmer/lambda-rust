@@ -7,11 +7,11 @@ Set Default Proof Using "Type".
 Section get_x.
   Context `{typeG Σ}.
 
-  Definition get_x :=
-    (funrec: <> ["p"] :=
+  Definition get_x : val :=
+    funrec: <> ["p"] :=
        let: "p'" := !"p" in
        letalloc: "r" := "p'" +ₗ #0 in
-       delete [ #1; "p"] ;; "return" ["r":expr])%E.
+       delete [ #1; "p"] ;; "return" ["r":expr].
 
   Lemma get_x_type :
     typed_instruction_ty [] [] [] get_x
