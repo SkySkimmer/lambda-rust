@@ -56,7 +56,7 @@ Section case.
             own n (uninit (list_max (map ty_size tyl) - ty_size ty))) :: T') e ∨
       typed_body E L C ((p ◁ own n (sum tyl)) :: T') e) tyl el →
     typed_body E L C T (case: !p of el).
-  Proof. rewrite tctx_extract_hasty_unfold=>->. apply type_case_own'. Qed.
+  Proof. unfold tctx_extract_hasty=>->. apply type_case_own'. Qed.
 
   Lemma type_case_uniq' E L C T p κ tyl el :
     lctx_lft_alive E L κ →
@@ -113,7 +113,7 @@ Section case.
       typed_body E L C ((p +ₗ #1 ◁ &uniq{κ}ty) :: T') e ∨
       typed_body E L C ((p ◁ &uniq{κ}sum tyl) :: T') e) tyl el →
     typed_body E L C T (case: !p of el).
-  Proof. rewrite tctx_extract_hasty_unfold=>->. apply type_case_uniq'. Qed.
+  Proof. unfold tctx_extract_hasty=>->. apply type_case_uniq'. Qed.
 
   Lemma type_case_shr' E L C T p κ tyl el:
     lctx_lft_alive E L κ →

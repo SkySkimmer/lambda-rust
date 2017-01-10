@@ -85,10 +85,10 @@ Section uninit.
     iSplit.
     - rewrite ty_size_eq. auto.
     - iInduction vl as [|v vl] "IH" forall (n).
-      + iIntros "%". destruct n; done.
+      + iIntros "%". by destruct n; simpl.
       + iIntros (Heq). destruct n; first done. simpl.
         iExists [v], vl. iSplit; first done. iSplit; first done.
-        iApply "IH". by inversion Heq.
+        unfold uninit0, product. iApply "IH". by inversion Heq.
   Qed.
 End uninit.
 

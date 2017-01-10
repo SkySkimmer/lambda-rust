@@ -30,8 +30,7 @@ Section borrow.
     tctx_extract_hasty E L p (&uniq{κ}ty) ((p ◁ own n ty')::T)
                        ((p ◁{κ} own n ty)::T).
   Proof.
-    rewrite tctx_extract_hasty_unfold=>Htyty'.
-    apply (tctx_incl_frame_r _ [_] [_;_]). rewrite subtype_tctx_incl.
+    intros. apply (tctx_incl_frame_r _ [_] [_;_]). rewrite subtype_tctx_incl.
     by apply tctx_borrow. by f_equiv.
   Qed.
 
@@ -41,8 +40,7 @@ Section borrow.
     tctx_extract_hasty E L p (&shr{κ}ty) ((p ◁ own n ty')::T)
                        ((p ◁ &shr{κ}ty')::(p ◁{κ} own n ty')::T).
   Proof.
-    rewrite tctx_extract_hasty_unfold=>??.
-    apply (tctx_incl_frame_r _ [_] [_;_;_]). rewrite ->tctx_borrow.
+    intros. apply (tctx_incl_frame_r _ [_] [_;_;_]). rewrite ->tctx_borrow.
     apply (tctx_incl_frame_r _ [_] [_;_]). rewrite ->tctx_share; solve_typing.
   Qed.
 

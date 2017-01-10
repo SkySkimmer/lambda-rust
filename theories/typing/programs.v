@@ -122,7 +122,7 @@ Section typing_rules.
     tctx_extract_ctx E L T1 T T' →
     (∀ v : val, typed_body E L C (T2 v ++ T') (subst' xb v e')) →
     typed_body E L C T (let: xb := e in e').
-  Proof. rewrite tctx_extract_ctx_unfold. intros ?? -> ?. by eapply type_let'. Qed.
+  Proof. unfold tctx_extract_ctx. intros ?? -> ?. by eapply type_let'. Qed.
 
   Lemma type_seq E L T T' T1 T2 C e e' :
     Closed [] e' →

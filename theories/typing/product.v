@@ -91,17 +91,9 @@ Section product.
       + by iApply "Hs1".
       + rewrite -(_ : ty_size ty11 = ty_size ty12) //. by iApply "Hs2".
   Qed.
-  Lemma product2_mono' E L ty11 ty12 ty21 ty22 :
-    subtype E L ty11 ty12 → subtype E L ty21 ty22 →
-    subtype E L (product2 ty11 ty21) (product2 ty12 ty22).
-  Proof. by intros; apply product2_mono. Qed.
   Global Instance product2_proper E L:
     Proper (eqtype E L ==> eqtype E L ==> eqtype E L) product2.
   Proof. by intros ??[]??[]; split; apply product2_mono. Qed.
-  Lemma product2_proper' E L ty11 ty12 ty21 ty22 :
-    eqtype E L ty11 ty12 → eqtype E L ty21 ty22 →
-    eqtype E L (product2 ty11 ty21) (product2 ty12 ty22).
-  Proof. by intros; apply product2_proper. Qed.
 
   Global Instance product2_copy `{!Copy ty1} `{!Copy ty2} :
     Copy (product2 ty1 ty2).
@@ -243,5 +235,4 @@ Section typing.
 End typing.
 
 Hint Resolve product_mono' product_proper' : lrust_typing.
-Hint Resolve product2_mono' product2_proper' | 100 : lrust_typing.
-Hint Opaque product : lrust_typing.
+Hint Opaque product : lrust_typing typeclass_instances.

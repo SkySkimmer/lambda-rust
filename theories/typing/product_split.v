@@ -265,89 +265,31 @@ Section product_split.
   (* We do not state the extraction lemmas directly, because we want the
      automation system to be able to perform e.g., borrowing or splitting after
      splitting. *)
-  Lemma tctx_extract_split_own_prod2 E L p p' n ty ty1 ty2 T T' :
-    tctx_extract_hasty E L p' ty [p ◁ own n ty1; p +ₗ #ty1.(ty_size) ◁ own n ty2] T' →
-    tctx_extract_hasty E L p' ty ((p ◁ own n $ product2 ty1 ty2) :: T) (T' ++ T) .
-  Proof.
-    rewrite !tctx_extract_hasty_unfold. intros ?. apply (tctx_incl_frame_r T [_] (_::_)).
-    by rewrite tctx_split_own_prod2.
-  Qed.
-
-  Lemma tctx_extract_split_uniq_prod2 E L p p' κ ty ty1 ty2 T T' :
-    tctx_extract_hasty E L p' ty
-            [p ◁ &uniq{κ}ty1; p +ₗ #ty1.(ty_size) ◁ &uniq{κ}ty2] T' →
-    tctx_extract_hasty E L p' ty ((p ◁ &uniq{κ} product2 ty1 ty2) :: T) (T' ++ T) .
-  Proof.
-    rewrite !tctx_extract_hasty_unfold=>?. apply (tctx_incl_frame_r T [_] (_::_)).
-    by rewrite tctx_split_uniq_prod2.
-  Qed.
-
-  Lemma tctx_extract_split_shr_prod2 E L p p' κ ty ty1 ty2 T T' :
-    tctx_extract_hasty E L p' ty
-                  [p ◁ &shr{κ}ty1; p +ₗ #ty1.(ty_size) ◁ &shr{κ}ty2] T' →
-    tctx_extract_hasty E L p' ty ((p ◁ &shr{κ} product2 ty1 ty2) :: T)
-                                 ((p ◁ &shr{κ} product2 ty1 ty2) :: T).
-  Proof.
-    rewrite !tctx_extract_hasty_unfold=>?. apply (tctx_incl_frame_r _ [_] [_;_]).
-    rewrite {1}copy_tctx_incl. apply (tctx_incl_frame_r _ [_] [_]).
-    rewrite tctx_split_shr_prod2 -(contains_tctx_incl _ _ [p' ◁ ty]%TC) //.
-    apply submseteq_skip, submseteq_nil_l.
-  Qed.
-
   Lemma tctx_extract_split_own_prod E L p p' n ty tyl T T' :
     tctx_extract_hasty E L p' ty (hasty_ptr_offsets p (own n) tyl 0) T' →
     tctx_extract_hasty E L p' ty ((p ◁ own n $ Π tyl) :: T) (T' ++ T).
   Proof.
-    rewrite !tctx_extract_hasty_unfold=>?. apply (tctx_incl_frame_r T [_] (_::_)).
-    by rewrite tctx_split_own_prod.
+    intros. apply (tctx_incl_frame_r T [_] (_::_)). by rewrite tctx_split_own_prod.
   Qed.
 
   Lemma tctx_extract_split_uniq_prod E L p p' κ ty tyl T T' :
     tctx_extract_hasty E L p' ty (hasty_ptr_offsets p (uniq_bor κ) tyl 0) T' →
     tctx_extract_hasty E L p' ty ((p ◁ &uniq{κ} Π tyl) :: T) (T' ++ T).
   Proof.
-    rewrite !tctx_extract_hasty_unfold=>?. apply (tctx_incl_frame_r T [_] (_::_)).
-    by rewrite tctx_split_uniq_prod.
+    intros. apply (tctx_incl_frame_r T [_] (_::_)). by rewrite tctx_split_uniq_prod.
   Qed.
 
   Lemma tctx_extract_split_shr_prod E L p p' κ ty tyl T T' :
     tctx_extract_hasty E L p' ty (hasty_ptr_offsets p (shr_bor κ) tyl 0) T' →
     tctx_extract_hasty E L p' ty ((p ◁ &shr{κ} Π tyl) :: T) ((p ◁ &shr{κ} Π tyl) :: T).
   Proof.
-    rewrite !tctx_extract_hasty_unfold=>?. apply (tctx_incl_frame_r _ [_] [_;_]).
+    intros. apply (tctx_incl_frame_r _ [_] [_;_]).
     rewrite {1}copy_tctx_incl. apply (tctx_incl_frame_r _ [_] [_]).
     rewrite tctx_split_shr_prod -(contains_tctx_incl _ _ [p' ◁ ty]%TC) //.
     apply submseteq_skip, submseteq_nil_l.
   Qed.
 
   (* Merging with [tctx_extract]. *)
-
-  Lemma tctx_extract_merge_own_prod2 E L p n ty1 ty2 T1 T2 T3 :
-    tctx_extract_hasty E L p (own n ty1) T1 T2 →
-    tctx_extract_hasty E L (p +ₗ #ty1.(ty_size)) (own n ty2) T2 T3 →
-    tctx_extract_hasty E L p (own n (product2 ty1 ty2)) T1 T3.
-  Proof.
-    rewrite !tctx_extract_hasty_unfold=>->->.
-    apply (tctx_incl_frame_r _ [_;_] [_]), tctx_merge_own_prod2.
-  Qed.
-
-  Lemma tctx_extract_merge_uniq_prod2 E L p κ ty1 ty2 T1 T2 T3 :
-    tctx_extract_hasty E L p (&uniq{κ}ty1) T1 T2 →
-    tctx_extract_hasty E L (p +ₗ #ty1.(ty_size)) (&uniq{κ}ty2) T2 T3 →
-    tctx_extract_hasty E L p (&uniq{κ}product2 ty1 ty2) T1 T3.
-  Proof.
-    rewrite !tctx_extract_hasty_unfold=>->->.
-    apply (tctx_incl_frame_r _ [_;_] [_]), tctx_merge_uniq_prod2.
-  Qed.
-
-  Lemma tctx_extract_merge_shr_prod2 E L p κ ty1 ty2 T1 T2 T3 :
-    tctx_extract_hasty E L p (&shr{κ}ty1) T1 T2 →
-    tctx_extract_hasty E L (p +ₗ #ty1.(ty_size)) (&shr{κ}ty2) T2 T3 →
-    tctx_extract_hasty E L p (&shr{κ}product2 ty1 ty2) T1 T3.
-  Proof.
-    rewrite !tctx_extract_hasty_unfold=>->->.
-    apply (tctx_incl_frame_r _ [_;_] [_]), tctx_merge_shr_prod2.
-  Qed.
 
   Fixpoint extract_tyl E L p (ptr: type → type) tyl (off : nat) T T' : Prop :=
     match tyl with
@@ -362,8 +304,8 @@ Section product_split.
     extract_tyl E L p ptr tyl 0 T T' →
     tctx_extract_hasty E L p (ptr (Π tyl)) T T'.
   Proof.
-    rewrite /extract_tyl !tctx_extract_hasty_unfold=>Hi Htyl.
-    etrans. 2:by eapply (tctx_incl_frame_r T' _ [_]). revert T Htyl. clear.
+    rewrite /extract_tyl /tctx_extract_hasty=>Hi Htyl.
+    etrans; last by eapply (tctx_incl_frame_r T' _ [_]). revert T Htyl. clear.
     generalize 0%nat. induction tyl=>[T n /= -> //|T n /= [T'' [-> Htyl]]]. f_equiv. auto.
   Qed.
 
@@ -388,13 +330,11 @@ End product_split.
 
 (* We do not want unification to try to unify the definition of these
    types with anything in order to try splitting or merging. *)
-Hint Opaque own uniq_bor shr_bor product product2 tctx_extract_hasty : lrust_typing lrust_typing_merge.
+Hint Opaque own uniq_bor shr_bor product tctx_extract_hasty : lrust_typing lrust_typing_merge.
 
 (* We make sure that splitting is tried before borrowing, so that not
    the entire product is borrowed when only a part is needed. *)
-Hint Resolve tctx_extract_split_own_prod2 tctx_extract_split_uniq_prod2
-             tctx_extract_split_shr_prod2 tctx_extract_split_own_prod
-             tctx_extract_split_uniq_prod tctx_extract_split_shr_prod
+Hint Resolve tctx_extract_split_own_prod tctx_extract_split_uniq_prod tctx_extract_split_shr_prod
     | 5 : lrust_typing.
 
 (* Merging is also tried after everything, except
@@ -407,8 +347,6 @@ Hint Resolve tctx_extract_split_own_prod2 tctx_extract_split_uniq_prod2
    solve_typing get slow because of that. See:
      https://coq.inria.fr/bugs/show_bug.cgi?id=5304
 *)
-Hint Resolve tctx_extract_merge_own_prod2 tctx_extract_merge_uniq_prod2
-             tctx_extract_merge_shr_prod2 tctx_extract_merge_own_prod
-             tctx_extract_merge_uniq_prod tctx_extract_merge_shr_prod
+Hint Resolve tctx_extract_merge_own_prod tctx_extract_merge_uniq_prod tctx_extract_merge_shr_prod
     | 40 : lrust_typing_merge.
-Hint Unfold extract_tyl.
+Hint Unfold extract_tyl : lrust_typing.
