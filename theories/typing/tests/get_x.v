@@ -11,7 +11,7 @@ Section get_x.
     funrec: <> ["p"] :=
        let: "p'" := !"p" in
        letalloc: "r" := "p'" +ₗ #0 in
-       delete [ #1; "p"] ;; "return" ["r":expr].
+       delete [ #1; "p"] ;; "return" ["r"].
 
   Lemma get_x_type :
     typed_instruction_ty [] [] [] get_x

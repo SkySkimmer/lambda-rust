@@ -7,7 +7,7 @@ Set Default Proof Using "Type".
 Definition shr_bor `{invG Σ, lftG Σ} κ (P : iProp Σ) :=
   (∃ i, &{κ,i}P ∗ inv lftN (∃ q, idx_bor_own q i))%I.
 Notation "&shr{ κ } P" := (shr_bor κ P)
-  (format "&shr{ κ } P", at level 20, right associativity) : uPred_scope.
+  (format "&shr{ κ }  P", at level 20, right associativity) : uPred_scope.
 
 Section shared_bors.
   Context `{invG Σ, lftG Σ} (P : iProp Σ).

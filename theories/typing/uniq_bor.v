@@ -136,7 +136,7 @@ Section uniq_bor.
 End uniq_bor.
 
 Notation "&uniq{ κ } ty" := (uniq_bor κ ty)
-  (format "&uniq{ κ } ty", at level 20, right associativity) : lrust_type_scope.
+  (format "&uniq{ κ }  ty", at level 20, right associativity) : lrust_type_scope.
 
 Section typing.
   Context `{typeG Σ}.

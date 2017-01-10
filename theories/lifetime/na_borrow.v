@@ -8,7 +8,7 @@ Definition na_bor `{invG Σ, lftG Σ, na_invG Σ}
   (∃ i, &{κ,i}P ∗ na_inv tid N (idx_bor_own 1 i))%I.
 
 Notation "&na{ κ , tid , N } P" := (na_bor κ tid N P)
-  (format "&na{ κ , tid , N } P", at level 20, right associativity) : uPred_scope.
+  (format "&na{ κ , tid , N }  P", at level 20, right associativity) : uPred_scope.
 
 Section na_bor.
   Context `{invG Σ, lftG Σ, na_invG Σ}

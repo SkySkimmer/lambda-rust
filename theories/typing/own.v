@@ -151,6 +151,8 @@ Section own.
   Qed.
 End own.
 
+Notation box ty := (own ty.(ty_size) ty).
+
 Section typing.
   Context `{typeG Σ}.
 
@@ -206,7 +208,7 @@ Section typing.
     Closed (x :b: []) e →
     0 ≤ n →
     (∀ (v : val) (n' := Z.to_nat n),
-        typed_body E L C ((v ◁ own n' (uninit n')) :: T) (subst' x v e)) →
+        typed_body E L C ((v ◁ box (uninit n')) :: T) (subst' x v e)) →
     typed_body E L C T (let: x := new [ #n ] in e).
   Proof. intros. eapply type_let. done. by apply type_new_instr. solve_typing. done. Qed.
 
@@ -227,7 +229,7 @@ Section typing.
 
   Lemma type_delete_instr {E L} ty (n : Z) p :
     Z.of_nat (ty.(ty_size)) = n →
-    typed_instruction E L [p ◁ own (ty.(ty_size)) ty] (delete [ #n; p])%E (λ _, []).
+    typed_instruction E L [p ◁ box ty] (delete [ #n; p])%E (λ _, []).
   Proof.
     iIntros (<-) "!#". iIntros (tid eq) "#HEAP #LFT $ $ $ Hp". rewrite tctx_interp_singleton.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".

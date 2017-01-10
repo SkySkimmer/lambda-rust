@@ -47,7 +47,7 @@ Section shr_bor.
 End shr_bor.
 
 Notation "&shr{ κ } ty" := (shr_bor κ ty)
-  (format "&shr{ κ } ty", at level 20, right associativity) : lrust_type_scope.
+  (format "&shr{ κ }  ty", at level 20, right associativity) : lrust_type_scope.
 
 Section typing.
   Context `{typeG Σ}.

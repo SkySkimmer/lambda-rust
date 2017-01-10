@@ -64,6 +64,10 @@ Section uninit.
     subtype E L (Π(uninit <$> ns)) (uninit (foldr plus 0%nat ns)).
   Proof. apply uninit_product_eqtype. Qed.
 
+  Lemma uninit_unit E L :
+    eqtype E L unit (uninit 0%nat).
+  Proof. apply (uninit_product_eqtype _ _ []). Qed.
+
   Lemma uninit_own n tid vl :
     (uninit n).(ty_own) tid vl ⊣⊢ ⌜length vl = n⌝.
   Proof.

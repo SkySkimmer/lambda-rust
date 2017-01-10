@@ -1,7 +1,9 @@
 From iris.proofmode Require Import tactics.
+From iris.base_logic Require Import big_op.
+From lrust.lang Require Import memcpy.
 From lrust.lifetime Require Import na_borrow.
 From lrust.typing Require Export type.
-From lrust.typing Require Import type_context programs.
+From lrust.typing Require Import type_context programs shr_bor own function product uninit cont.
 Set Default Proof Using "Type".
 
 Section cell.
@@ -56,6 +58,8 @@ End cell.
 Section typing.
   Context `{typeG Σ}.
 
+  (* All of these are of course actual code in Rust, but somehow this is more fun. *)
+
   (* Constructing a cell is a coercion. *)
   Lemma tctx_mk_cell E L ty p :
     tctx_incl E L [p ◁ ty] [p ◁ cell ty].
@@ -69,6 +73,61 @@ Section typing.
   Proof.
     iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
-  
-  (* TODO: get, set; potentially more operations? *)
+
+  Lemma read_cell E L κ ty :
+    Copy ty → lctx_lft_alive E L κ →
+    typed_read E L (&shr{κ} cell ty) ty (&shr{κ} cell ty).
+  Proof. intros ??. exact: read_shr. Qed. 
+
+  (* Writing actually needs code; typed_write can't have thread tokens. *)
+  Definition cell_write ty : val :=
+    funrec: <> ["c"; "x"] :=
+       let: "c'" := !"c" in
+       "c'" <⋯ !{ty.(ty_size)} "x";;
+       let: "r" := new [ #0 ] in
+       delete [ #1; "c"] ;; delete [ #ty.(ty_size); "x"] ;; "return" ["r"].
+
+  Lemma cell_write_type ty :
+    typed_instruction_ty [] [] [] (cell_write ty)
+        (fn (λ α, [☀α])%EL (λ α, [# box (&shr{α} cell ty); box ty])
+            (λ α, box unit)).
+  Proof.
+    apply type_fn; try apply _. move=> /= α ret arg. inv_vec arg=>c x. simpl_subst.
+    eapply type_deref; try solve_typing. by apply read_own_move. done.
+    intros c'. simpl_subst.
+    eapply type_let with (T1 := [c' ◁ _; x ◁ _]%TC)
+                         (T2 := λ _, [c' ◁ &shr{α} cell ty;
+                                      x ◁ box (uninit ty.(ty_size))]%TC); try solve_typing; [|].
+    { (* The core of the proof: Showing that the assignment is safe. *)
+      iAlways. iIntros (tid qE) "#HEAP #LFT Htl HE $".
+      rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
+      iIntros "[Hc' Hx]". rewrite {1}/elctx_interp big_opL_singleton /=.
+      iDestruct "Hc'" as (l) "[EQ #Hshr]". iDestruct "EQ" as %[=->].
+      iDestruct "Hx" as (l') "[EQ [Hown >H†]]". iDestruct "EQ" as %[=->].
+      iDestruct "Hown" as (vl') "[>H↦' Hown']".
+      iMod (na_bor_acc with "LFT Hshr HE Htl") as "(Hown & Htl & Hclose)"; [solve_ndisj..|].
+      iDestruct "Hown" as (vl) "[>H↦ Hown]".
+      iAssert (▷ ⌜length vl = ty_size ty⌝)%I with "[#]" as ">%".
+      { iNext. by iApply ty_size_eq. }
+      iAssert (▷ ⌜length vl' = ty_size ty⌝)%I with "[#]" as ">%".
+      { iNext. by iApply ty_size_eq. }
+      iApply wp_fupd. iApply (wp_memcpy with "[$HEAP $H↦ $H↦']"); [done..|].
+      iNext. iIntros "[H↦ H↦']". rewrite {1}/elctx_interp big_opL_singleton /=.
+      iMod ("Hclose" with "[H↦ Hown'] Htl") as "[$ $]".
+      { iExists vl'. by iFrame. }
+      rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //.
+      iSplitR; iModIntro.
+      - iExists _. iSplit; done.
+      - iExists _. iSplit; first done. iFrame. iExists _. iFrame.
+        rewrite uninit_own. auto. }
+    intros v. simpl_subst. clear v.
+    eapply (type_new_subtype unit); try solve_typing. try done.
+    { apply uninit_unit. }
+    intros r. simpl_subst.
+    eapply type_delete; [solve_typing..|].
+    eapply type_delete; [solve_typing..|].
+    eapply (type_jump [_]); solve_typing.
+  Qed.
+
+  (* TODO: potentially more operations? *)
 End typing.

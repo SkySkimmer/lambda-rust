@@ -16,7 +16,7 @@ Section rebor.
        let: "y'" := !"y" in
        letalloc: "r" := "y'" in
        Endlft ;; delete [ #2; "t1"] ;; delete [ #2; "t2"] ;;
-                 delete [ #1; "x"] ;; "return" ["r":expr].
+                 delete [ #1; "x"] ;; "return" ["r"].
 
   Lemma rebor_type :
     typed_instruction_ty [] [] [] rebor
