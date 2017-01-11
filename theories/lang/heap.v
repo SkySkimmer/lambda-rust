@@ -43,10 +43,10 @@ Section definitions.
 
   Definition heap_mapsto_def (l : loc) (q : Qp) (v: val) : iProp Σ :=
     heap_mapsto_st (RSt 0) l q v.
-  Definition heap_mapsto_aux : { x | x = @heap_mapsto_def }. by eexists. Qed.
-  Definition heap_mapsto := proj1_sig heap_mapsto_aux.
+  Definition heap_mapsto_aux : seal (@heap_mapsto_def). by eexists. Qed.
+  Definition heap_mapsto := unseal heap_mapsto_aux.
   Definition heap_mapsto_eq : @heap_mapsto = @heap_mapsto_def :=
-    proj2_sig heap_mapsto_aux.
+    seal_eq heap_mapsto_aux.
 
   Definition heap_mapsto_vec (l : loc) (q : Qp) (vl : list val) : iProp Σ :=
     ([∗ list] i ↦ v ∈ vl, heap_mapsto (shift_loc l i) q v)%I.
@@ -56,10 +56,10 @@ Section definitions.
 
   Definition heap_freeable_def (l : loc) (q : Qp) (n: nat) : iProp Σ :=
     own heap_freeable_name (◯ {[ l.1 := (q, inter (l.2) n) ]}).
-  Definition heap_freeable_aux : { x | x = @heap_freeable_def }. by eexists. Qed.
-  Definition heap_freeable := proj1_sig heap_freeable_aux.
+  Definition heap_freeable_aux : seal (@heap_freeable_def). by eexists. Qed.
+  Definition heap_freeable := unseal heap_freeable_aux.
   Definition heap_freeable_eq : @heap_freeable = @heap_freeable_def :=
-    proj2_sig heap_freeable_aux.
+    seal_eq heap_freeable_aux.
 
   Definition heap_inv : iProp Σ :=
     (∃ (σ:state) hF, ownP σ ∗ own heap_name (● to_heap σ)
