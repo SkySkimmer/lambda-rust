@@ -18,13 +18,7 @@ Class typePreG Σ := PreTypeG {
 Definition typeΣ : gFunctors :=
   #[heapΣ; lftΣ; na_invΣ; GFunctor (constRF fracR)].
 Instance subG_typePreG {Σ} : subG typeΣ Σ → typePreG Σ.
-Proof.
-  split.
-  - apply subG_heapPreG. solve_inG.
-  - apply subG_lftPreG. solve_inG.
-  - solve_inG.
-  - solve_inG.
-Qed.
+Proof. solve_inG. Qed.
 
 Section type_soundness.
   Definition exit_cont : val := λ: [<>], #().
