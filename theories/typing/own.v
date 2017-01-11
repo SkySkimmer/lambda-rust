@@ -41,7 +41,7 @@ Section own.
       rewrite /= -Qcmult_plus_distr_l -Z2Qc_inj_add /Z.add. do 3 f_equal. lia.
   Qed.
 
-  Program Definition own (n : nat) (ty : type) :=
+  Program Definition own_ptr (n : nat) (ty : type) :=
     {| ty_size := 1;
        ty_own tid vl :=
          (* We put a later in front of the †{q}, because we cannot use
@@ -96,7 +96,7 @@ Section own.
   Qed.
 
   Global Instance own_mono E L n :
-    Proper (subtype E L ==> subtype E L) (own n).
+    Proper (subtype E L ==> subtype E L) (own_ptr n).
   Proof.
     intros ty1 ty2 Hincl. iIntros. iSplit; first done.
     iDestruct (Hincl with "* [] [] []") as "(_ & #Ho & #Hs)"; [done..|clear Hincl].
@@ -113,27 +113,27 @@ Section own.
       iMod "Hvs'" as "[Hshr $]". iApply ("Hs" with "Hshr").
   Qed.
   Lemma own_mono' E L n ty1 ty2 :
-    subtype E L ty1 ty2 → subtype E L (own n ty1) (own n ty2).
+    subtype E L ty1 ty2 → subtype E L (own_ptr n ty1) (own_ptr n ty2).
   Proof. apply own_mono. Qed.
   Global Instance own_proper E L n :
-    Proper (eqtype E L ==> eqtype E L) (own n).
+    Proper (eqtype E L ==> eqtype E L) (own_ptr n).
   Proof. intros ?? Heq. split; f_equiv; apply Heq. Qed.
   Lemma own_proper' E L n ty1 ty2 :
-    eqtype E L ty1 ty2 → eqtype E L (own n ty1) (own n ty2).
+    eqtype E L ty1 ty2 → eqtype E L (own_ptr n ty1) (own_ptr n ty2).
   Proof. apply own_proper. Qed.
 
-  Global Instance own_contractive n : Contractive (own n).
+  Global Instance own_contractive n : Contractive (own_ptr n).
   Proof.
     intros m ?? EQ. split; [split|]; simpl.
     - done.
     - destruct m=>// tid vl /=. repeat (apply EQ || f_contractive || f_equiv).
     - intros κ tid l. repeat (apply EQ || f_contractive || f_equiv).
   Qed.
-  Global Instance own_ne n m : Proper (dist m ==> dist m) (own n).
+  Global Instance own_ne n m : Proper (dist m ==> dist m) (own_ptr n).
   Proof. apply contractive_ne, _. Qed.
 
   Global Instance own_send n ty :
-    Send ty → Send (own n ty).
+    Send ty → Send (own_ptr n ty).
   Proof.
     iIntros (Hsend tid1 tid2 vl) "H". iDestruct "H" as (l) "[% [Hm H†]]". subst vl.
     iExists _. iSplit; first done. iFrame "H†". iNext.
@@ -141,7 +141,7 @@ Section own.
   Qed.
 
   Global Instance own_sync n ty :
-    Sync ty → Sync (own n ty).
+    Sync ty → Sync (own_ptr n ty).
   Proof.
     iIntros (Hsync κ tid1 tid2 l) "H". iDestruct "H" as (l') "[Hm #Hshr]".
     iExists _. iFrame "Hm". iAlways. iIntros (F q) "% Htok".
@@ -151,14 +151,14 @@ Section own.
   Qed.
 End own.
 
-Notation box ty := (own ty.(ty_size) ty).
+Notation box ty := (own_ptr ty.(ty_size) ty).
 
 Section typing.
   Context `{typeG Σ}.
 
   (** Typing *)
   Lemma write_own {E L} ty ty' n :
-    ty.(ty_size) = ty'.(ty_size) → typed_write E L (own n ty') ty (own n ty).
+    ty.(ty_size) = ty'.(ty_size) → typed_write E L (own_ptr n ty') ty (own_ptr n ty).
   Proof.
     iIntros (Hsz) "!#". iIntros (p tid F qE qL ?) "_ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
@@ -169,7 +169,7 @@ Section typing.
   Qed.
 
   Lemma read_own_copy E L ty n :
-    Copy ty → typed_read E L (own n ty) ty (own n ty).
+    Copy ty → typed_read E L (own_ptr n ty) ty (own_ptr n ty).
   Proof.
     iIntros (Hsz) "!#". iIntros (p tid F qE qL ?) "_ $ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ #Hown]". iModIntro.
@@ -178,7 +178,7 @@ Section typing.
   Qed.
 
   Lemma read_own_move E L ty n :
-    typed_read E L (own n ty) ty (own n $ uninit ty.(ty_size)).
+    typed_read E L (own_ptr n ty) ty (own_ptr n $ uninit ty.(ty_size)).
   Proof.
     iAlways. iIntros (p tid F qE qL ?) "_ $ $ $ Hown". iDestruct "Hown" as (l) "(Heq & H↦ & H†)".
     iDestruct "Heq" as %[= ->]. iDestruct "H↦" as (vl) "[>H↦ Hown]".
@@ -191,7 +191,7 @@ Section typing.
   Lemma type_new_instr {E L} (n : Z) :
     0 ≤ n →
     let n' := Z.to_nat n in
-    typed_instruction_ty E L [] (new [ #n ]%E) (own n' (uninit n')).
+    typed_instruction_ty E L [] (new [ #n ]%E) (own_ptr n' (uninit n')).
   Proof.
     intros. iAlways. iIntros (tid q) "#HEAP #LFT $ $ $ _".
     iApply (wp_new with "HEAP"); try done. iModIntro.
@@ -213,7 +213,7 @@ Section typing.
     0 ≤ n →
     let n' := Z.to_nat n in
     subtype E L (uninit n') ty →
-    (∀ (v : val), typed_body E L C ((v ◁ own n' ty) :: T) (subst' x v e)) →
+    (∀ (v : val), typed_body E L C ((v ◁ own_ptr n' ty) :: T) (subst' x v e)) →
     typed_body E L C T (let: x := new [ #n ] in e).
   Proof.
     intros ???? Htyp. eapply type_let. done. by apply type_new_instr. solve_typing.
@@ -238,7 +238,7 @@ Section typing.
 
   Lemma type_delete {E L} ty C T T' (n' : nat) (n : Z)  p e :
     Closed [] e →
-    tctx_extract_hasty E L p (own n' ty) T T' →
+    tctx_extract_hasty E L p (own_ptr n' ty) T T' →
     n = n' → Z.of_nat (ty.(ty_size)) = n →
     typed_body E L C T' e →
     typed_body E L C T (delete [ #n; p ] ;; e).
@@ -251,7 +251,7 @@ Section typing.
     Closed [] p → Closed (x :b: []) e →
     tctx_extract_hasty E L p ty T T' →
     ty.(ty_size) = 1%nat →
-    (∀ (v : val), typed_body E L C ((v ◁ own 1 ty)::T') (subst x v e)) →
+    (∀ (v : val), typed_body E L C ((v ◁ own_ptr 1 ty)::T') (subst x v e)) →
     typed_body E L C T (letalloc: x <- p in e).
   Proof.
     intros. eapply type_new.
@@ -273,7 +273,7 @@ Section typing.
     typed_read E L ty1 ty ty2 →
     tctx_extract_hasty E L p ty1 T T' →
     (∀ (v : val),
-        typed_body E L C ((v ◁ own (ty.(ty_size)) ty)::(p ◁ ty2)::T') (subst x v e)) →
+        typed_body E L C ((v ◁ own_ptr (ty.(ty_size)) ty)::(p ◁ ty2)::T') (subst x v e)) →
     typed_body E L C T (letalloc: x <⋯ !{ty.(ty_size)}p in e).
   Proof.
     intros. eapply type_new.

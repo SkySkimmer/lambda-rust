@@ -1,7 +1,4 @@
-From lrust.lifetime Require Import definitions.
-From lrust.lang Require Import new_delete.
-From lrust.typing Require Import programs product product_split own uniq_bor
-                    shr_bor int function lft_contexts uninit cont borrow type_sum.
+From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
 Section option_as_mut.

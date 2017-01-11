@@ -1,3 +1,4 @@
+From lrust.lang Require Import proofmode.
 From lrust.typing Require Export lft_contexts type bool.
 Set Default Proof Using "Type".
 

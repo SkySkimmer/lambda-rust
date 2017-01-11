@@ -240,7 +240,7 @@ Ltac reshape_val e tac :=
   | of_val ?v => v
   | Lit ?l => constr:(LitV l)
   | Rec ?f ?xl ?e => constr:(RecV f xl e)
-  end in let v := go e in first [tac v | fail 2].
+  end in let v := go e in tac v.
 
 Ltac reshape_expr e tac :=
   let rec go_fun K f vs es :=

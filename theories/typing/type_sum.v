@@ -1,6 +1,6 @@
 From iris.proofmode Require Import tactics.
-From lrust.lang Require Import heap memcpy.
-From lrust.typing Require Export uninit uniq_bor shr_bor own sum.
+From lrust.lang Require Import memcpy.
+From lrust.typing Require Import uninit uniq_bor shr_bor own sum.
 From lrust.typing Require Import lft_contexts type_context programs product.
 Set Default Proof Using "Type".
 
@@ -9,11 +9,11 @@ Section case.
 
   Lemma type_case_own' E L C T p n tyl el :
     Forall2 (λ ty e,
-      typed_body E L C ((p +ₗ #0 ◁ own n (uninit 1)) :: (p +ₗ #1 ◁ own n ty) ::
+      typed_body E L C ((p +ₗ #0 ◁ own_ptr n (uninit 1)) :: (p +ₗ #1 ◁ own_ptr n ty) ::
          (p +ₗ #(S (ty.(ty_size))) ◁
-            own n (uninit (list_max (map ty_size tyl) - ty_size ty))) :: T) e ∨
-      typed_body E L C ((p ◁ own n (sum tyl)) :: T) e) tyl el →
-    typed_body E L C ((p ◁ own n (sum tyl)) :: T) (case: !p of el).
+            own_ptr n (uninit (list_max (map ty_size tyl) - ty_size ty))) :: T) e ∨
+      typed_body E L C ((p ◁ own_ptr n (sum tyl)) :: T) e) tyl el →
+    typed_body E L C ((p ◁ own_ptr n (sum tyl)) :: T) (case: !p of el).
   Proof.
     iIntros (Hel) "!#". iIntros (tid qE) "#HEAP #LFT Hna HE HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
@@ -49,12 +49,12 @@ Section case.
   Qed.
 
   Lemma type_case_own E L C T T' p n tyl el :
-    tctx_extract_hasty E L p (own n (sum tyl)) T T' →
+    tctx_extract_hasty E L p (own_ptr n (sum tyl)) T T' →
     Forall2 (λ ty e,
-      typed_body E L C ((p +ₗ #0 ◁ own n (uninit 1)) :: (p +ₗ #1 ◁ own n ty) ::
+      typed_body E L C ((p +ₗ #0 ◁ own_ptr n (uninit 1)) :: (p +ₗ #1 ◁ own_ptr n ty) ::
          (p +ₗ #(S (ty.(ty_size))) ◁
-            own n (uninit (list_max (map ty_size tyl) - ty_size ty))) :: T') e ∨
-      typed_body E L C ((p ◁ own n (sum tyl)) :: T') e) tyl el →
+            own_ptr n (uninit (list_max (map ty_size tyl) - ty_size ty))) :: T') e ∨
+      typed_body E L C ((p ◁ own_ptr n (sum tyl)) :: T') e) tyl el →
     typed_body E L C T (case: !p of el).
   Proof. unfold tctx_extract_hasty=>->. apply type_case_own'. Qed.
 

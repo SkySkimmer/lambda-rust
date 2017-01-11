@@ -151,7 +151,7 @@ Module Type lifetime_sig.
   End properties.
 
   Parameter lftΣ : gFunctors.
-  Global Declare Instance subG_lftΣ Σ : subG lftΣ Σ → lftPreG Σ.
+  Global Declare Instance subG_lftPreG Σ : subG lftΣ Σ → lftPreG Σ.
 
   Parameter lft_init : ∀ `{invG Σ, !lftPreG Σ} E, ↑lftN ⊆ E →
     True ={E}=∗ ∃ _ : lftG Σ, lft_ctx.

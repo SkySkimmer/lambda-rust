@@ -3,7 +3,7 @@ From iris.base_logic Require Import big_op.
 From lrust.lang Require Import memcpy.
 From lrust.lifetime Require Import na_borrow.
 From lrust.typing Require Export type.
-From lrust.typing Require Import type_context programs shr_bor own function product uninit cont.
+From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
 Section cell.

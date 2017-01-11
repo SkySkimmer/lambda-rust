@@ -9,7 +9,7 @@ Class typeG Σ := TypeG {
   type_heapG :> heapG Σ;
   type_lftG :> lftG Σ;
   type_na_invG :> na_invG Σ;
-  type_frac_borrowG Σ :> frac_borG Σ
+  type_frac_borrowG :> frac_borG Σ
 }.
 
 Definition lftE := ↑lftN.

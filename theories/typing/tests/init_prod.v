@@ -1,7 +1,4 @@
-From lrust.lifetime Require Import definitions.
-From lrust.lang Require Import new_delete.
-From lrust.typing Require Import programs product product_split own uniq_bor
-                    shr_bor int function lft_contexts uninit cont borrow.
+From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
 Section init_prod.
@@ -23,7 +20,7 @@ Section init_prod.
     eapply type_deref; [solve_typing..|apply read_own_move|done|]=>y'. simpl_subst.
     eapply (type_new_subtype (Π[uninit 1; uninit 1])); [solve_typing..|].
       intros r. simpl_subst. unfold Z.to_nat, Pos.to_nat; simpl.
-    eapply (type_assign (own 2 (uninit 1))); [solve_typing..|by apply write_own|].
+    eapply (type_assign (own_ptr 2 (uninit 1))); [solve_typing..|by apply write_own|].
     eapply type_assign; [solve_typing..|by apply write_own|].
     eapply type_delete; [solve_typing..|].
     eapply type_delete; [solve_typing..|].

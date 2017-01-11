@@ -54,7 +54,7 @@ Definition lftPreG' := lftPreG.
 Definition lftΣ : gFunctors :=
   #[ boxΣ; GFunctor (authR alftUR); GFunctor (authR ilftUR);
      GFunctor (authR borUR); GFunctor (authR natUR); GFunctor (authR inhUR) ].
-Instance subG_lftΣ Σ :
+Instance subG_lftPreG Σ :
   subG lftΣ Σ → lftPreG Σ.
 Proof. solve_inG. Qed.
 

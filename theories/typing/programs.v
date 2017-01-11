@@ -1,5 +1,4 @@
 From iris.base_logic Require Import big_op.
-From lrust.lang Require Export notation.
 From lrust.lang Require Import proofmode memcpy.
 From lrust.typing Require Export type lft_contexts type_context cont_context.
 Set Default Proof Using "Type".

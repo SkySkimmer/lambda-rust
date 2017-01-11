@@ -85,8 +85,8 @@ Section product_split.
 
   (** Owned pointers *)
   Lemma tctx_split_own_prod2 E L p n ty1 ty2 :
-    tctx_incl E L [p ◁ own n $ product2 ty1 ty2]
-                  [p ◁ own n ty1; p +ₗ #ty1.(ty_size) ◁ own n ty2].
+    tctx_incl E L [p ◁ own_ptr n $ product2 ty1 ty2]
+                  [p ◁ own_ptr n ty1; p +ₗ #ty1.(ty_size) ◁ own_ptr n ty2].
   Proof.
     iIntros (tid q1 q2) "#LFT $ $ H".
     rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
@@ -104,8 +104,8 @@ Section product_split.
   Qed.
 
   Lemma tctx_merge_own_prod2 E L p n ty1 ty2 :
-    tctx_incl E L [p ◁ own n ty1; p +ₗ #ty1.(ty_size) ◁ own n ty2]
-                  [p ◁ own n $ product2 ty1 ty2].
+    tctx_incl E L [p ◁ own_ptr n ty1; p +ₗ #ty1.(ty_size) ◁ own_ptr n ty2]
+                  [p ◁ own_ptr n $ product2 ty1 ty2].
   Proof.
     iIntros (tid q1 q2) "#LFT $ $ H".
     rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
@@ -122,13 +122,13 @@ Section product_split.
   Qed.
 
   Lemma own_is_ptr n ty tid (vl : list val) :
-    ty_own (own n ty) tid vl -∗ ⌜∃ l : loc, vl = [(#l) : val]⌝.
+    ty_own (own_ptr n ty) tid vl -∗ ⌜∃ l : loc, vl = [(#l) : val]⌝.
   Proof.
     iIntros "H". iDestruct "H" as (l) "[% _]". iExists l. done.
   Qed.
 
   Lemma tctx_split_own_prod E L n tyl p :
-    tctx_incl E L [p ◁ own n $ product tyl] (hasty_ptr_offsets p (own n) tyl 0).
+    tctx_incl E L [p ◁ own_ptr n $ product tyl] (hasty_ptr_offsets p (own_ptr n) tyl 0).
   Proof.
     apply tctx_split_ptr_prod.
     - intros. apply tctx_split_own_prod2.
@@ -137,8 +137,8 @@ Section product_split.
 
   Lemma tctx_merge_own_prod E L n tyl :
     tyl ≠ [] →
-    ∀ p, tctx_incl E L (hasty_ptr_offsets p (own n) tyl 0)
-                   [p ◁ own n $ product tyl].
+    ∀ p, tctx_incl E L (hasty_ptr_offsets p (own_ptr n) tyl 0)
+                   [p ◁ own_ptr n $ product tyl].
   Proof.
     intros. apply tctx_merge_ptr_prod; try done.
     - apply _.
@@ -266,8 +266,8 @@ Section product_split.
      automation system to be able to perform e.g., borrowing or splitting after
      splitting. *)
   Lemma tctx_extract_split_own_prod E L p p' n ty tyl T T' :
-    tctx_extract_hasty E L p' ty (hasty_ptr_offsets p (own n) tyl 0) T' →
-    tctx_extract_hasty E L p' ty ((p ◁ own n $ Π tyl) :: T) (T' ++ T).
+    tctx_extract_hasty E L p' ty (hasty_ptr_offsets p (own_ptr n) tyl 0) T' →
+    tctx_extract_hasty E L p' ty ((p ◁ own_ptr n $ Π tyl) :: T) (T' ++ T).
   Proof.
     intros. apply (tctx_incl_frame_r T [_] (_::_)). by rewrite tctx_split_own_prod.
   Qed.
@@ -311,8 +311,8 @@ Section product_split.
 
   Lemma tctx_extract_merge_own_prod E L p n tyl T T' :
     tyl ≠ [] →
-    extract_tyl E L p (own n) tyl 0 T T' →
-    tctx_extract_hasty E L p (own n (Π tyl)) T T'.
+    extract_tyl E L p (own_ptr n) tyl 0 T T' →
+    tctx_extract_hasty E L p (own_ptr n (Π tyl)) T T'.
   Proof. auto using tctx_extract_merge_ptr_prod, tctx_merge_own_prod. Qed.
 
   Lemma tctx_extract_merge_uniq_prod E L p κ tyl T T' :
@@ -330,7 +330,7 @@ End product_split.
 
 (* We do not want unification to try to unify the definition of these
    types with anything in order to try splitting or merging. *)
-Hint Opaque own uniq_bor shr_bor tctx_extract_hasty : lrust_typing lrust_typing_merge.
+Hint Opaque own_ptr uniq_bor shr_bor tctx_extract_hasty : lrust_typing lrust_typing_merge.
 
 (* We make sure that splitting is tried before borrowing, so that not
    the entire product is borrowed when only a part is needed. *)

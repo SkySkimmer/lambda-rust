@@ -1,6 +1,6 @@
 From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
-From lrust.lang Require Import heap.
+From lrust.lang Require Import proofmode.
 From lrust.typing Require Export uniq_bor shr_bor own.
 From lrust.typing Require Import lft_contexts type_context programs.
 Set Default Proof Using "Type".
@@ -13,7 +13,7 @@ Section borrow.
   Context `{typeG Σ}.
 
   Lemma tctx_borrow E L p n ty κ :
-    tctx_incl E L [p ◁ own n ty] [p ◁ &uniq{κ}ty; p ◁{κ} own n ty].
+    tctx_incl E L [p ◁ own_ptr n ty] [p ◁ &uniq{κ}ty; p ◁{κ} own_ptr n ty].
   Proof.
     iIntros (tid ??) "#LFT $ $ H".
     rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
@@ -27,8 +27,8 @@ Section borrow.
 
   Lemma tctx_extract_hasty_borrow E L p n ty ty' κ T :
     subtype E L ty' ty →
-    tctx_extract_hasty E L p (&uniq{κ}ty) ((p ◁ own n ty')::T)
-                       ((p ◁{κ} own n ty)::T).
+    tctx_extract_hasty E L p (&uniq{κ}ty) ((p ◁ own_ptr n ty')::T)
+                       ((p ◁{κ} own_ptr n ty)::T).
   Proof.
     intros. apply (tctx_incl_frame_r _ [_] [_;_]). rewrite subtype_tctx_incl.
     by apply tctx_borrow. by f_equiv.
@@ -37,8 +37,8 @@ Section borrow.
   (* See the comment above [tctx_extract_hasty_share] in [uniq_bor.v]. *)
   Lemma tctx_extract_hasty_borrow_share E L p ty ty' κ n T :
     lctx_lft_alive E L κ → subtype E L ty' ty →
-    tctx_extract_hasty E L p (&shr{κ}ty) ((p ◁ own n ty')::T)
-                       ((p ◁ &shr{κ}ty')::(p ◁{κ} own n ty')::T).
+    tctx_extract_hasty E L p (&shr{κ}ty) ((p ◁ own_ptr n ty')::T)
+                       ((p ◁ &shr{κ}ty')::(p ◁{κ} own_ptr n ty')::T).
   Proof.
     intros. apply (tctx_incl_frame_r _ [_] [_;_;_]). rewrite ->tctx_borrow.
     apply (tctx_incl_frame_r _ [_] [_;_]). rewrite ->tctx_share; solve_typing.
@@ -46,7 +46,7 @@ Section borrow.
 
   Lemma type_deref_uniq_own_instr {E L} κ p n ty :
     lctx_lft_alive E L κ →
-    typed_instruction_ty E L [p ◁ &uniq{κ} own n ty] (!p) (&uniq{κ} ty).
+    typed_instruction_ty E L [p ◁ &uniq{κ} own_ptr n ty] (!p) (&uniq{κ} ty).
   Proof.
     iIntros (Hκ) "!#". iIntros (tid qE) "#HEAP #LFT $ HE HL Hp".
     rewrite tctx_interp_singleton.
@@ -70,7 +70,7 @@ Section borrow.
 
   Lemma type_deref_uniq_own {E L} κ x p e n ty C T T' :
     Closed (x :b: []) e →
-    tctx_extract_hasty E L p (&uniq{κ} own n ty) T T' →
+    tctx_extract_hasty E L p (&uniq{κ} own_ptr n ty) T T' →
     lctx_lft_alive E L κ →
     (∀ (v:val), typed_body E L C ((v ◁ &uniq{κ} ty) :: T') (subst' x v e)) →
     typed_body E L C T (let: x := !p in e).
@@ -80,7 +80,7 @@ Section borrow.
 
   Lemma type_deref_shr_own_instr {E L} κ p n ty :
     lctx_lft_alive E L κ →
-    typed_instruction_ty E L [p ◁ &shr{κ} own n ty] (!p) (&shr{κ} ty).
+    typed_instruction_ty E L [p ◁ &shr{κ} own_ptr n ty] (!p) (&shr{κ} ty).
   Proof.
     iIntros (Hκ) "!#". iIntros (tid qE) "#HEAP #LFT $ HE HL Hp".
     rewrite tctx_interp_singleton.
@@ -99,7 +99,7 @@ Section borrow.
 
   Lemma type_deref_shr_own {E L} κ x p e n ty C T T' :
     Closed (x :b: []) e →
-    tctx_extract_hasty E L p (&shr{κ} own n ty) T T' →
+    tctx_extract_hasty E L p (&shr{κ} own_ptr n ty) T T' →
     lctx_lft_alive E L κ →
     (∀ (v:val), typed_body E L C ((v ◁ &shr{κ} ty) :: T') (subst' x v e)) →
     typed_body E L C T (let: x := !p in e).
