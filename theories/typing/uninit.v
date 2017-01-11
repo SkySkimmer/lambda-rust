@@ -45,51 +45,59 @@ Section uninit.
     eqtype E L (uninit0 n) (uninit n).
   Proof. apply equiv_eqtype; (split; first split)=>//=. apply uninit0_sz. Qed.
 
-  Lemma uninit_product_subtype_cons {E L} (ntot n : nat) tyl :
-    n ≤ ntot →
-    subtype E L (uninit (ntot-n)) (Π tyl) →
-    subtype E L (uninit ntot) (Π(uninit n :: tyl)).
+  Lemma uninit_product_subtype_cons {E L} (n : nat) ty tyl :
+    ty.(ty_size) ≤ n →
+    subtype E L (uninit ty.(ty_size)) ty →
+    subtype E L (uninit (n-ty.(ty_size))) (Π tyl) →
+    subtype E L (uninit n) (Π(ty :: tyl)).
   Proof.
-    intros ?%Nat2Z.inj_le Htyl. rewrite (le_plus_minus n ntot) // -!uninit_uninit0_eqtype
-      /uninit0 replicate_plus prod_flatten_l -!prod_app. do 3 f_equiv.
-    by rewrite <-Htyl, <-uninit_uninit0_eqtype.
+    intros ?%Nat2Z.inj_le. rewrite -!uninit_uninit0_eqtype /uninit0=>Hty Htyl.
+    rewrite (le_plus_minus ty.(ty_size) n) // replicate_plus
+           -(prod_flatten_r _ _ [_]) /= -prod_app. repeat (done || f_equiv).
   Qed.
-  Lemma uninit_product_subtype_cons' {E L} (ntot n : nat) tyl :
-    n ≤ ntot →
-    subtype E L (Π tyl) (uninit (ntot-n)) →
-    subtype E L (Π(uninit n :: tyl)) (uninit ntot).
+  Lemma uninit_product_subtype_cons' {E L} (n : nat) ty tyl :
+    ty.(ty_size) ≤ n →
+    subtype E L ty (uninit ty.(ty_size)) →
+    subtype E L (Π tyl) (uninit (n-ty.(ty_size))) →
+    subtype E L (Π(ty :: tyl)) (uninit n).
   Proof.
-    intros ?%Nat2Z.inj_le Htyl. rewrite (le_plus_minus n ntot) // -!uninit_uninit0_eqtype
-      /uninit0 replicate_plus prod_flatten_l -!prod_app. do 3 f_equiv.
-    by rewrite ->Htyl, <-uninit_uninit0_eqtype.
+    intros ?%Nat2Z.inj_le. rewrite -!uninit_uninit0_eqtype /uninit0=>Hty Htyl.
+    rewrite (le_plus_minus ty.(ty_size) n) // replicate_plus
+           -(prod_flatten_r _ _ [_]) /= -prod_app. repeat (done || f_equiv).
   Qed.
-  Lemma uninit_product_eqtype_cons {E L} (ntot n : nat) tyl :
-    n ≤ ntot →
-    eqtype E L (uninit (ntot-n)) (Π tyl) →
-    eqtype E L (uninit ntot) (Π(uninit n :: tyl)).
+  Lemma uninit_product_eqtype_cons {E L} (n : nat) ty tyl :
+    ty.(ty_size) ≤ n →
+    eqtype E L (uninit ty.(ty_size)) ty →
+    eqtype E L (uninit (n-ty.(ty_size))) (Π tyl) →
+    eqtype E L (uninit n) (Π(ty :: tyl)).
   Proof.
-    intros ? []. split.
+    intros ? [] []. split.
     - by apply uninit_product_subtype_cons.
     - by apply uninit_product_subtype_cons'.
   Qed.
-  Lemma uninit_product_eqtype_cons' {E L} (ntot n : nat) tyl :
-    n ≤ ntot →
-    eqtype E L (Π tyl) (uninit (ntot-n)) →
-    eqtype E L (Π(uninit n :: tyl)) (uninit ntot).
+  Lemma uninit_product_eqtype_cons' {E L} (n : nat) ty tyl :
+    ty.(ty_size) ≤ n →
+    eqtype E L ty (uninit ty.(ty_size)) →
+    eqtype E L (Π tyl) (uninit (n-ty.(ty_size))) →
+    eqtype E L (Π(ty :: tyl)) (uninit n).
   Proof. symmetry. by apply uninit_product_eqtype_cons. Qed.
 
-  Lemma uninit_unit_eqtype E L :
-    eqtype E L (uninit 0) unit.
-  Proof. by rewrite -uninit_uninit0_eqtype. Qed.
-  Lemma uninit_unit_eqtype' E L :
-    eqtype E L unit (uninit 0).
-  Proof. by rewrite -uninit_uninit0_eqtype. Qed.
-  Lemma uninit_unit_subtype E L :
-    subtype E L (uninit 0) unit.
-  Proof. by rewrite -uninit_uninit0_eqtype. Qed.
-  Lemma uninit_unit_subtype' E L :
-    subtype E L unit (uninit 0).
-  Proof. by rewrite -uninit_uninit0_eqtype. Qed.
+  Lemma uninit_unit_eqtype E L n :
+    n = 0%nat →
+    eqtype E L (uninit n) unit.
+  Proof. rewrite -uninit_uninit0_eqtype=>->//. Qed.
+  Lemma uninit_unit_eqtype' E L n :
+    n = 0%nat →
+    eqtype E L unit (uninit n).
+  Proof. rewrite -uninit_uninit0_eqtype=>->//. Qed.
+  Lemma uninit_unit_subtype E L n :
+    n = 0%nat →
+    subtype E L (uninit n) unit.
+  Proof. rewrite -uninit_uninit0_eqtype=>->//. Qed.
+  Lemma uninit_unit_subtype' E L n :
+    n = 0%nat →
+    subtype E L unit (uninit n).
+  Proof. rewrite -uninit_uninit0_eqtype=>->//. Qed.
 
   Lemma uninit_own n tid vl :
     (uninit n).(ty_own) tid vl ⊣⊢ ⌜length vl = n⌝.
