@@ -44,17 +44,15 @@ Section type_soundness.
     { by rewrite /elctx_interp big_sepL_nil. }
     { by rewrite /llctx_interp big_sepL_nil. }
     { by rewrite tctx_interp_nil. }
-    clear Hrtc Hmain main. iIntros (main) "(Htl & _ & _ & Hmain)".
+    clear Hrtc Hmain main. iIntros (main) "(Htl & HE & HL & Hmain)".
     rewrite tctx_interp_singleton. iDestruct "Hmain" as (?) "[EQ Hmain]".
     rewrite eval_path_of_val. iDestruct "EQ" as %[= <-].
     iDestruct "Hmain" as (f k x e ?) "(EQ & % & Hmain)". iDestruct "EQ" as %[= ->].
     destruct x; try done.
     iApply (wp_rec _ _ _ _ _ _ [exit_cont]%E); [done| |by simpl_subst|iNext].
     { repeat econstructor. apply to_of_val. }
-    iApply ("Hmain" $! () exit_cont [#] tid 1%Qp with "HEAP LFT Htl [] [] []");
+    iApply ("Hmain" $! () exit_cont [#] tid 1%Qp with "HEAP LFT Htl HE HL []");
       last by rewrite tctx_interp_nil.
-    { by rewrite /elctx_interp big_sepL_nil. }
-    { by rewrite /llctx_interp big_sepL_nil. }
     iIntros "_". rewrite cctx_interp_singleton. simpl. iIntros (args) "_ _".
     inv_vec args. iIntros (x) "_". by wp_seq.
   Qed.
