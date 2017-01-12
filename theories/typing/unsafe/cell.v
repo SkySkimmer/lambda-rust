@@ -24,7 +24,7 @@ Section cell.
 
   (* TODO: non-expansiveness, proper wrt. eqtype *)
 
-  Global Instance cell_type :
+  Global Instance cell_copy :
     Copy ty → Copy (cell ty).
   Proof.
     intros ty Hcopy. split; first by intros; simpl; apply _.
