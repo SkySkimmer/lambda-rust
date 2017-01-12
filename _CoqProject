@@ -44,7 +44,7 @@ theories/typing/cont.v
 theories/typing/fixpoint.v
 theories/typing/type_sum.v
 theories/typing/typing.v
-theories/typing/adequacy.v
+theories/typing/soundness.v
 theories/typing/tests/get_x.v
 theories/typing/tests/rebor.v
 theories/typing/tests/unbox.v
