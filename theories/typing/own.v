@@ -274,15 +274,15 @@ Section typing.
     tctx_extract_hasty E L p ty1 T T' →
     (∀ (v : val),
         typed_body E L C ((v ◁ own_ptr (ty.(ty_size)) ty)::(p ◁ ty2)::T') (subst x v e)) →
-    typed_body E L C T (letalloc: x <⋯ !{ty.(ty_size)}p in e).
+    typed_body E L C T (letalloc: x <-{ty.(ty_size)} !p in e).
   Proof.
     intros. eapply type_new.
     - rewrite /Closed /=. rewrite !andb_True.
       eauto 100 using is_closed_weaken with set_solver.
     - lia.
     - move=>xv /=.
-      assert (subst x xv (x <⋯ !{ty.(ty_size)}p ;; e)%E =
-              (xv <⋯ !{ty.(ty_size)}p ;; subst x xv e)%E) as ->.
+      assert (subst x xv (x <-{ty.(ty_size)} !p ;; e)%E =
+              (xv <-{ty.(ty_size)} !p ;; subst x xv e)%E) as ->.
       { (* TODO : simpl_subst should be able to do this. *)
         unfold subst=>/=. repeat f_equal.
         - eapply (is_closed_subst []). done. set_solver.

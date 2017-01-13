@@ -8,7 +8,7 @@ Section unwrap_or.
     funrec: <> ["o"; "def"] :=
       case: !"o" of
       [ delete [ #(S τ.(ty_size)); "o"];; "return" ["def"];
-        letalloc: "r" <⋯ !{τ.(ty_size)}("o" +ₗ #1) in
+        letalloc: "r" <-{τ.(ty_size)} !("o" +ₗ #1) in
         delete [ #(S τ.(ty_size)); "o"];; delete [ #τ.(ty_size); "def"];; "return" ["r"]].
 
   Lemma unwrap_or_type τ :

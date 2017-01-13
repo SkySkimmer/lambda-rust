@@ -7,8 +7,8 @@ Section option_as_mut.
   Definition option_as_mut : val :=
     funrec: <> ["o"] :=
       let: "o'" := !"o" in case: !"o'" of
-        [ let: "r" := new [ #2 ] in "r" <-{0} ☇;; "k" ["r"];
-          let: "r" := new [ #2 ] in "r" <-{1} "o'" +ₗ #1;; "k" ["r"] ]
+        [ let: "r" := new [ #2 ] in "r" <-{Σ 0} ();; "k" ["r"];
+          let: "r" := new [ #2 ] in "r" <-{Σ 1} "o'" +ₗ #1;; "k" ["r"] ]
       cont: "k" ["r"] :=
         delete [ #1; "o"];; "return" ["r"].
 

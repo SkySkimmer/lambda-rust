@@ -81,7 +81,7 @@ Section typing.
   Definition cell_write ty : val :=
     funrec: <> ["c"; "x"] :=
        let: "c'" := !"c" in
-       "c'" <⋯ !{ty.(ty_size)} "x";;
+       "c'" <-{ty.(ty_size)} !"x";;
        let: "r" := new [ #0 ] in
        delete [ #1; "c"] ;; delete [ #ty.(ty_size); "x"] ;; "return" ["r"].
 

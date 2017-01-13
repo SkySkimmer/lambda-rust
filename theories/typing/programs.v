@@ -234,7 +234,7 @@ Section typing_rules.
     typed_write E L ty1 ty ty1' -∗ typed_read E L ty2 ty ty2' -∗
     {{{ heap_ctx ∗ lft_ctx ∗ na_own tid ⊤ ∗ elctx_interp E qE ∗ llctx_interp L qL ∗
         tctx_elt_interp tid (p1 ◁ ty1) ∗ tctx_elt_interp tid (p2 ◁ ty2) }}}
-      (p1 <⋯ !{n}p2)
+      (p1 <-{n} !p2)
     {{{ RET #(); na_own tid ⊤ ∗ elctx_interp E qE ∗ llctx_interp L qL ∗
                  tctx_elt_interp tid (p1 ◁ ty1') ∗ tctx_elt_interp tid (p2 ◁ ty2') }}}.
   Proof.
@@ -257,7 +257,7 @@ Section typing_rules.
   Lemma type_memcpy_instr {E L} ty ty1 ty1' ty2 ty2' (n : Z) p1 p2 :
     Z.of_nat (ty.(ty_size)) = n →
     typed_write E L ty1 ty ty1' → typed_read E L ty2 ty ty2' →
-    typed_instruction E L [p1 ◁ ty1; p2 ◁ ty2] (p1 <⋯ !{n}p2)
+    typed_instruction E L [p1 ◁ ty1; p2 ◁ ty2] (p1 <-{n} !p2)
                       (λ _, [p1 ◁ ty1'; p2 ◁ ty2']%TC).
   Proof.
     iIntros (Hsz Hwrt Hread) "!#". iIntros (tid qE) "#HEAP #LFT Htl HE HL HT".
@@ -276,7 +276,7 @@ Section typing_rules.
     typed_read E L ty2 ty ty2' →
     Z.of_nat (ty.(ty_size)) = n →
     typed_body E L C ((p1 ◁ ty1') :: (p2 ◁ ty2') :: T') e →
-    typed_body E L C T (p1 <⋯ !{n}p2;; e).
+    typed_body E L C T (p1 <-{n} !p2;; e).
   Proof.
     intros. by eapply type_seq; [|by eapply (type_memcpy_instr ty ty1 ty1')|..].
   Qed.

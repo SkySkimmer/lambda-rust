@@ -154,7 +154,7 @@ Section case.
   Lemma type_sum_assign_instr {E L} (i : nat) ty1 tyl ty ty2 p1 p2 :
     typed_write E L ty1 (sum tyl) ty2 →
     tyl !! i = Some ty →
-    typed_instruction E L [p1 ◁ ty1; p2 ◁ ty] (p1 <-{i} p2) (λ _, [p1 ◁ ty2]%TC).
+    typed_instruction E L [p1 ◁ ty1; p2 ◁ ty] (p1 <-{Σ i} p2) (λ _, [p1 ◁ ty2]%TC).
   Proof.
     iIntros (Hw Hty) "!# * #HEAP #LFT $ HE HL Hp".
     rewrite tctx_interp_cons tctx_interp_singleton.
@@ -185,7 +185,7 @@ Section case.
     typed_write E L ty1 (sum tyl) ty1' →
     tyl !! (Z.to_nat i) = Some ty →
     typed_body E L C ((p1 ◁ ty1') :: T') e →
-    typed_body E L C T (p1 <-{i} p2 ;; e).
+    typed_body E L C T (p1 <-{Σ i} p2 ;; e).
   Proof.
     intros. rewrite -(Z2Nat.id i) //.
     eapply type_seq; [done|by eapply type_sum_assign_instr|done|done].
@@ -194,7 +194,7 @@ Section case.
   Lemma type_sum_assign_unit_instr {E L} (i : nat) tyl ty1 ty2 p :
     tyl !! i = Some unit →
     typed_write E L ty1 (sum tyl) ty2 →
-    typed_instruction E L [p ◁ ty1] (p <-{i} ☇) (λ _, [p ◁ ty2]%TC).
+    typed_instruction E L [p ◁ ty1] (p <-{Σ i} ()) (λ _, [p ◁ ty2]%TC).
   Proof.
     iIntros (Hty Hw) "!# * #HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v Hv) "Hty".
@@ -213,7 +213,7 @@ Section case.
     typed_write E L ty1 (sum tyl) ty1' →
     tyl !! (Z.to_nat i) = Some unit →
     typed_body E L C ((p ◁ ty1') :: T') e →
-    typed_body E L C T (p <-{i} ☇ ;; e).
+    typed_body E L C T (p <-{Σ i} () ;; e).
   Proof.
     intros. rewrite -(Z2Nat.id i) //.
     eapply type_seq; [done|by eapply type_sum_assign_unit_instr|solve_typing|done].
@@ -224,7 +224,7 @@ Section case.
     typed_write E L ty1 (sum tyl) ty1' →
     typed_read E L ty2 ty ty2' →
     typed_instruction E L [p1 ◁ ty1; p2 ◁ ty2]
-               (p1 <⋯{i} !{ty.(ty_size)}p2) (λ _, [p1 ◁ ty1'; p2 ◁ ty2']%TC).
+               (p1 <-{ty.(ty_size),Σ i} !p2) (λ _, [p1 ◁ ty1'; p2 ◁ ty2']%TC).
   Proof.
     iIntros (Hty Hw Hr) "!# * #HEAP #LFT Htl [HE1 HE2] [HL1 HL2] Hp".
     rewrite tctx_interp_cons tctx_interp_singleton.
@@ -266,7 +266,7 @@ Section case.
     Z.of_nat (ty.(ty_size)) = n →
     tyl !! (Z.to_nat i) = Some ty →
     typed_body E L C ((p1 ◁ ty1') :: (p2 ◁ ty2') :: T') e →
-    typed_body E L C T (p1 <⋯{i} !{n}p2 ;; e).
+    typed_body E L C T (p1 <-{n,Σ i} !p2 ;; e).
   Proof.
     intros ???? Hr ???. subst. rewrite -(Z2Nat.id i) //.
     by eapply type_seq; [done|eapply type_sum_memcpy_instr, Hr|done|done].
