@@ -24,7 +24,7 @@ Section fn.
   Global Instance fn_send E tys ty : Send (fn E tys ty).
   Proof. iIntros (tid1 tid2 vl). done. Qed.
 
-  Global Instance fn_contractive n' E :
+  Instance fn_contractive n' E :
     Proper (pointwise_relation A (dist_later n') ==>
             pointwise_relation A (dist_later n') ==> dist n') (fn E).
   Proof.
@@ -50,6 +50,7 @@ Section fn.
         * iIntros "H". by iApply "H".
         * iIntros "H * #EQ". by iDestruct "EQ" as %[=->].
   Qed.
+  Global Existing Instance fn_contractive.
 
   Global Instance fn_ne n' E :
     Proper (pointwise_relation A (dist n') ==>
