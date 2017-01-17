@@ -24,7 +24,7 @@ Section fn.
   Global Instance fn_send E tys ty : Send (fn E tys ty).
   Proof. iIntros (tid1 tid2 vl). done. Qed.
 
-  Instance fn_contractive n' E :
+  Lemma fn_contractive n' E :
     Proper (pointwise_relation A (dist_later n') ==>
             pointwise_relation A (dist_later n') ==> dist n') (fn E).
   Proof.
