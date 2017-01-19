@@ -67,7 +67,7 @@ Section typing.
 
   (* Same for the other direction *)
   Lemma tctx_unmk_cell E L ty p :
-    tctx_incl E L [p ◁ ty] [p ◁ cell ty].
+    tctx_incl E L [p ◁ cell ty] [p ◁ ty].
   Proof.
     iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
