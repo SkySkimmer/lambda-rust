@@ -55,7 +55,6 @@ Section na_bor.
     iIntros (?) "#LFT#H†". iApply (bor_na with ">"). done.
     by iApply (bor_fake with "LFT H†").
   Qed.
-
 End na_bor.
 
 Typeclasses Opaque na_bor.
