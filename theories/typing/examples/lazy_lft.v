@@ -18,7 +18,7 @@ Section lazy_lft.
 
   Lemma lazy_lft_type :
     typed_instruction_ty [] [] [] lazy_lft
-        (fn (λ _, [])%EL (λ _, [#]) (λ _:(), box unit)).
+        (fn (λ _, [])%EL (λ _, [#]) (λ _:(), unit)).
   Proof.
     apply type_fn; try apply _. move=> /= [] ret p. inv_vec p. simpl_subst.
     eapply (type_newlft []); [solve_typing|]=>α.

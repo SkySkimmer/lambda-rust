@@ -2,7 +2,7 @@ From iris.base_logic Require Import big_op.
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import vector.
 From lrust.typing Require Export type.
-From lrust.typing Require Import programs cont.
+From lrust.typing Require Import own programs cont.
 Set Default Proof Using "Type".
 
 Section fn.
@@ -14,8 +14,9 @@ Section fn.
          ⌜vl = [@RecV fb (kb::xb) e H]⌝ ∗ ⌜length xb = n⌝ ∗
          ▷ ∀ (x : A) (k : val) (xl : vec val (length xb)),
             typed_body (E x) []
-                       [k◁cont([], λ v : vec _ 1, [v!!!0 ◁ ty x])]
-                       (zip_with (TCtx_hasty ∘ of_val) xl (tys x))
+                       [k◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
+                       (zip_with (TCtx_hasty ∘ of_val) xl
+                                 ((λ ty, box ty) <$> (vec_to_list (tys x))))
                        (subst_v (fb::kb::xb) (RecV fb (kb::xb) e:::k:::xl) e))%I |}.
   Next Obligation.
     iIntros (E tys ty tid vl) "H". iDestruct "H" as (fb kb xb e ?) "[% _]". by subst.
@@ -32,11 +33,13 @@ Section fn.
     f_contractive=>tid vl. unfold typed_body.
     do 12 f_equiv. f_contractive. do 18 f_equiv.
     - rewrite !cctx_interp_singleton /=. do 5 f_equiv.
-      rewrite !tctx_interp_singleton /tctx_elt_interp. do 3 f_equiv. apply Hty.
+      rewrite !tctx_interp_singleton /tctx_elt_interp /=. repeat f_equiv. apply Hty.
+      by rewrite (ty_size_proper_d _ _ _ (Hty _)).
     - rewrite /tctx_interp !big_sepL_zip_with /=. do 3 f_equiv.
-      assert (Hprop : ∀ n tid p i, Proper (dist (S n) ==> dist n)
-        (λ (l : list _), ∀ ty, ⌜l !! i = Some ty⌝ → tctx_elt_interp tid (p ◁ ty))%I);
-        last by apply Hprop, Htys.
+      cut (∀ n tid p i, Proper (dist (S n) ==> dist n)
+        (λ (l : list _), ∀ ty, ⌜l !! i = Some ty⌝ → tctx_elt_interp tid (p ◁ ty))%I).
+      { intros Hprop. apply Hprop, list_fmap_ne, Htys. intros ty1 ty2 Hty12.
+        rewrite (ty_size_proper_d _ _ _ Hty12). by rewrite Hty12. }
       clear. intros n tid p i x y. rewrite list_dist_lookup=>Hxy.
       specialize (Hxy i). destruct (x !! i) as [tyx|], (y !! i) as [tyy|];
         inversion_clear Hxy; last done.
@@ -86,7 +89,9 @@ Section typing.
       { by apply elem_of_list_singleton. }
       rewrite /tctx_interp !big_sepL_singleton /=.
       iDestruct "HT" as (v) "[HP Hown]". iExists v. iFrame "HP".
-      iDestruct (Hty x with "LFT [HE0 HEp] HL0") as "(_ & #Hty & _)".
+      assert (Hst : subtype (E0 ++ E x) L0 (box (ty x)) (box (ty' x)))
+        by by rewrite ->Hty.
+      iDestruct (Hst with "LFT [HE0 HEp] HL0") as "(_ & Hty & _)".
       { rewrite /elctx_interp_0 big_sepL_app. by iSplit. }
       by iApply "Hty".
     - rewrite /tctx_interp
@@ -100,9 +105,11 @@ Section typing.
       iDestruct "Hzip" as %(? & ? & ([? ?] & (? & Hty'1 &
         (? & Hty'2 & [=->->])%bind_Some)%bind_Some & [=->->->])%bind_Some)%bind_Some.
       specialize (Htys x). eapply Forall2_lookup_lr in Htys; try done.
-      iDestruct (Htys with "* [] [] []") as "(_ & #Ho & _)"; [done| |done|].
-      + rewrite /elctx_interp_0 big_sepL_app. by iSplit.
-      + by iApply "Ho".
+      assert (Hst : subtype (E0 ++ E x) L0 (box ty2') (box ty1'))
+        by by rewrite ->Htys.
+      iDestruct (Hst with "* [] [] []") as "(_ & #Ho & _)"; [done| |done|].
+      { rewrite /elctx_interp_0 big_sepL_app. by iSplit. }
+      by iApply "Ho".
   Qed.
 
   Lemma fn_subtype_ty {A n} E0 L0 E (tys1 tys2 : A → vec type n) ty1 ty2 :
@@ -159,19 +166,21 @@ Section typing.
   Lemma type_call' {A} E L E' T p (ps : list path)
                          (tys : A → vec type (length ps)) ty k x :
     elctx_sat E L (E' x) →
-    typed_body E L [k ◁cont(L, λ v : vec _ 1, (v!!!0 ◁ ty x) :: T)]
-               ((p ◁ fn E' tys ty) :: zip_with TCtx_hasty ps (tys x) ++ T)
+    typed_body E L [k ◁cont(L, λ v : vec _ 1, (v!!!0 ◁ box (ty x)) :: T)]
+               ((p ◁ fn E' tys ty) ::
+                zip_with TCtx_hasty ps ((λ ty, box ty) <$> (vec_to_list (tys x))) ++
+                T)
                (call: p ps → k).
   Proof.
     iIntros (HE) "!# * #HEAP #LFT Htl HE HL HC".
     rewrite tctx_interp_cons tctx_interp_app. iIntros "(Hf & Hargs & HT)".
     wp_bind p. iApply (wp_hasty with "Hf"). iIntros (v) "% Hf".
     iApply (wp_app_vec _ _ (_::_) ((λ v, ⌜v = k⌝):::
-               vmap (λ ty (v : val), tctx_elt_interp tid (v ◁ ty)) (tys x))%I
+               vmap (λ ty (v : val), tctx_elt_interp tid (v ◁ box ty)) (tys x))%I
             with "* [Hargs]"); first wp_done.
     - rewrite /= big_sepL_cons. iSplitR "Hargs"; first by iApply wp_value'.
       clear dependent ty k p.
-      rewrite /tctx_interp vec_to_list_map zip_with_fmap_r
+      rewrite /tctx_interp vec_to_list_map !zip_with_fmap_r
               (zip_with_zip (λ e ty, (e, _))) zip_with_zip !big_sepL_fmap.
       iApply (big_sepL_mono' with "Hargs"). iIntros (i [p ty]) "HT/=".
       iApply (wp_hasty with "HT"). setoid_rewrite tctx_hasty_val. iIntros (?) "? $".
@@ -192,7 +201,7 @@ Section typing.
         iSpecialize ("HC" with "* []"); first by (iPureIntro; apply elem_of_list_singleton).
         iApply ("HC" $! args with "Htl HL").
         rewrite tctx_interp_singleton tctx_interp_cons. iFrame.
-      + rewrite /tctx_interp vec_to_list_map zip_with_fmap_r
+      + rewrite /tctx_interp vec_to_list_map !zip_with_fmap_r
                 (zip_with_zip (λ v ty, (v, _))) zip_with_zip !big_sepL_fmap.
         iApply (big_sepL_mono' with "Hvl"). by iIntros (i [v ty']).
   Qed.
@@ -201,9 +210,10 @@ Section typing.
                         (tys : A → vec type (length ps)) ty k :
     (p ◁ fn E' tys ty)%TC ∈ T →
     elctx_sat E L (E' x) →
-    tctx_extract_ctx E L (zip_with TCtx_hasty ps (tys x)) T T' →
+    tctx_extract_ctx E L (zip_with TCtx_hasty ps
+                                   ((λ ty, box ty) <$> vec_to_list (tys x))) T T' →
     (k ◁cont(L, T''))%CC ∈ C →
-    (∀ ret : val, tctx_incl E L ((ret ◁ ty x)::T') (T'' [# ret])) →
+    (∀ ret : val, tctx_incl E L ((ret ◁ box (ty x))::T') (T'' [# ret])) →
     typed_body E L C T (call: p ps → k).
   Proof.
     intros Hfn HE HTT' HC HT'T''.
@@ -219,11 +229,12 @@ Section typing.
     Closed (b :b: []) e → Closed [] p → Forall (Closed []) ps →
     (p ◁ fn E' tys ty)%TC ∈ T →
     elctx_sat E L (E' x) →
-    tctx_extract_ctx E L (zip_with TCtx_hasty ps (tys x)) T T' →
-    (∀ ret : val, typed_body E L C ((ret ◁ ty x)::T') (subst' b ret e)) →
+    tctx_extract_ctx E L (zip_with TCtx_hasty ps
+                                   ((λ ty, box ty) <$> vec_to_list (tys x))) T T' →
+    (∀ ret : val, typed_body E L C ((ret ◁ box (ty x))::T') (subst' b ret e)) →
     typed_body E L C T (letcall: b := p ps in e).
   Proof.
-    intros ?? Hpsc ????. eapply (type_cont [_] _ (λ r, (r!!!0 ◁ ty x) :: T')%TC).
+    intros ?? Hpsc ????. eapply (type_cont [_] _ (λ r, (r!!!0 ◁ box (ty x)) :: T')%TC).
     - (* TODO : make [solve_closed] work here. *)
       eapply is_closed_weaken; first done. set_solver+.
     - (* TODO : make [solve_closed] work here. *)
@@ -249,9 +260,10 @@ Section typing.
         T `{!CopyC T, !SendC T} :
     Closed (fb :b: "return" :b: argsb +b+ []) e →
     (∀ x (f : val) k (args : vec val (length argsb)),
-        typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ ty x])]
+        typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
                    ((f ◁ fn E' tys ty) ::
-                      zip_with (TCtx_hasty ∘ of_val) args (tys x) ++ T)
+                      zip_with (TCtx_hasty ∘ of_val) args
+                               ((λ ty, box ty) <$> vec_to_list (tys x)) ++ T)
                    (subst_v (fb :: BNamed "return" :: argsb) (f ::: k ::: args) e)) →
     typed_instruction_ty E L T (funrec: fb argsb := e) (fn E' tys ty).
   Proof.
@@ -271,8 +283,9 @@ Section typing.
         T `{!CopyC T, !SendC T} :
     Closed ("return" :b: argsb +b+ []) e →
     (∀ x k (args : vec val (length argsb)),
-        typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ ty x])]
-                   (zip_with (TCtx_hasty ∘ of_val) args (tys x) ++ T)
+        typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
+                   (zip_with (TCtx_hasty ∘ of_val) args
+                             ((λ ty, box ty) <$> vec_to_list (tys x)) ++ T)
                    (subst_v (BNamed "return" :: argsb) (k ::: args) e)) →
     typed_instruction_ty E L T (funrec: <> argsb := e) (fn E' tys ty).
   Proof.

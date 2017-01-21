@@ -13,7 +13,7 @@ Section unwrap_or.
 
   Lemma unwrap_or_type τ :
     typed_instruction_ty [] [] [] (unwrap_or τ)
-        (fn (λ _, [])%EL (λ _, [# box (Σ[unit; τ]); box τ]) (λ _:(), box τ)).
+        (fn (λ _, [])%EL (λ _, [# Σ[unit; τ]; τ])%T (λ _:(), τ)).
   Proof.
     apply type_fn; try apply _. move=> /= [] ret p. inv_vec p=>o def. simpl_subst.
     eapply type_case_own; [solve_typing..|]. constructor; last constructor; last constructor.

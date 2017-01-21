@@ -87,7 +87,7 @@ Section typing.
 
   Lemma cell_new_type ty :
     typed_instruction_ty [] [] [] cell_new
-        (fn (λ _, [])%EL (λ _, [# box ty]) (λ _:(), box (cell ty))).
+        (fn (λ _, [])%EL (λ _, [# ty]) (λ _:(), cell ty)).
   Proof.
     apply type_fn; [apply _..|]. move=>/= _ ret arg. inv_vec arg=>x. simpl_subst.
     eapply (type_jump [_]); first solve_typing.
@@ -100,7 +100,7 @@ Section typing.
 
   Lemma cell_into_inner_type ty :
     typed_instruction_ty [] [] [] cell_into_inner
-        (fn (λ _, [])%EL (λ _, [# box (cell ty)]) (λ _:(), box ty)).
+        (fn (λ _, [])%EL (λ _, [# cell ty]) (λ _:(), ty)).
   Proof.
     apply type_fn; [apply _..|]. move=>/= _ ret arg. inv_vec arg=>x. simpl_subst.
     eapply (type_jump [_]); first solve_typing.
@@ -116,7 +116,7 @@ Section typing.
 
   Lemma cell_get_type `(!Copy ty) :
     typed_instruction_ty [] [] [] (cell_get ty)
-        (fn (λ α, [☀α])%EL (λ α, [# box (&shr{α} (cell ty))])%T (λ _, box ty)).
+        (fn (λ α, [☀α])%EL (λ α, [# &shr{α} (cell ty)])%T (λ _, ty)).
   Proof.
     apply type_fn; [apply _..|]. move=>/= α ret arg. inv_vec arg=>x. simpl_subst.
     eapply type_deref; [solve_typing..|apply read_own_move|done|]=>x'. simpl_subst.
@@ -136,8 +136,7 @@ Section typing.
 
   Lemma cell_set_type ty :
     typed_instruction_ty [] [] [] (cell_set ty)
-        (fn (λ α, [☀α])%EL (λ α, [# box (&shr{α} cell ty); box ty])
-            (λ α, box unit)).
+        (fn (λ α, [☀α])%EL (λ α, [# &shr{α} cell ty; ty]%T) (λ α, unit)).
   Proof.
     apply type_fn; try apply _. move=> /= α ret arg. inv_vec arg=>c x. simpl_subst.
     eapply type_deref; [solve_typing..|by apply read_own_move|done|].
@@ -180,8 +179,7 @@ Section typing.
 
   Lemma cell_get_mut_type `(!Copy ty) :
     typed_instruction_ty [] [] [] cell_get_mut
-      (fn (λ α, [☀α])%EL (λ α, [# box (&uniq{α} (cell ty))])%T
-          (λ α, box (&uniq{α} ty))%T).
+      (fn (λ α, [☀α])%EL (λ α, [# &uniq{α} (cell ty)])%T (λ α, &uniq{α} ty)%T).
   Proof.
     apply type_fn; [apply _..|]. move=>/= α ret arg. inv_vec arg=>x. simpl_subst.
     eapply (type_jump [_]). solve_typing. rewrite /tctx_incl /=.

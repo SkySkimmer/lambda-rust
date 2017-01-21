@@ -17,8 +17,7 @@ Section rebor.
 
   Lemma rebor_type :
     typed_instruction_ty [] [] [] rebor
-        (fn (λ _, []) (λ _, [# box (Π[int; int]); box (Π[int; int])])
-            (λ (_ : ()), box int)).
+        (fn (λ _, []) (λ _, [# Π[int; int]; Π[int; int]]) (λ (_ : ()), int)).
   Proof.
     apply type_fn; try apply _. move=> /= [] ret p. inv_vec p=>t1 t2. simpl_subst.
     eapply (type_newlft []). apply _. move=> α.

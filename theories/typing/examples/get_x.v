@@ -12,7 +12,7 @@ Section get_x.
 
   Lemma get_x_type :
     typed_instruction_ty [] [] [] get_x
-        (fn (λ α, [☀α])%EL (λ α, [# box (&uniq{α}Π[int; int])]) (λ α, box (&shr{α} int))).
+        (fn (λ α, [☀α])%EL (λ α, [# &uniq{α}Π[int; int]]%T) (λ α, &shr{α} int)%T).
   Proof.
     apply type_fn; try apply _. move=> /= α ret p. inv_vec p=>p. simpl_subst.
     eapply type_deref; [solve_typing..|by apply read_own_move|done|].

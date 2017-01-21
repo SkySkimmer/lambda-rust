@@ -12,7 +12,7 @@ Section unbox.
 
   Lemma ubox_type :
     typed_instruction_ty [] [] [] unbox
-        (fn (λ α, [☀α])%EL (λ α, [# box (&uniq{α}box (Π[int; int]))]) (λ α, box (&uniq{α} int))).
+        (fn (λ α, [☀α])%EL (λ α, [# &uniq{α}box (Π[int; int])]%T) (λ α, &uniq{α} int)%T).
   Proof.
     apply type_fn; try apply _. move=> /= α ret b. inv_vec b=>b. simpl_subst.
     eapply type_deref; [solve_typing..|by apply read_own_move|done|].

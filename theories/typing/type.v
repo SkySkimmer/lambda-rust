@@ -352,15 +352,12 @@ Section subtyping.
   Context (E : elctx) (L : llctx).
 
   Definition subtype (ty1 ty2 : type) : Prop :=
-    lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
-            type_incl ty1 ty2.
+    lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗ type_incl ty1 ty2.
+  Definition ctx_eq {A} (x1 x2 : A) : Prop :=
+    lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗ ⌜x1 = x2⌝.
 
   Lemma subtype_refl ty : subtype ty ty.
   Proof. iIntros. iApply type_incl_refl. Qed.
-
-  Lemma equiv_subtype ty1 ty2 : ty1 ≡ ty2 → subtype ty1 ty2.
-  Proof. unfold subtype, type_incl=>EQ. setoid_rewrite EQ. apply subtype_refl. Qed.
-
   Global Instance subtype_preorder : PreOrder subtype.
   Proof.
     split; first by intros ?; apply subtype_refl.
@@ -369,6 +366,31 @@ Section subtyping.
     - iApply (H12 with "[] []"); done.
     - iApply (H23 with "[] []"); done.
   Qed.
+
+  Lemma ctx_eq_refl {A} (x : A) : ctx_eq x x.
+  Proof. by iIntros "_ _ _". Qed.
+  Global Instance ctx_eq_equivalent {A} : Equivalence (@ctx_eq A).
+  Proof.
+    split.
+    - by iIntros (?) "_ _ _".
+    - iIntros (x y Hxy) "LFT HE HL". by iDestruct (Hxy with "LFT HE HL") as %->.
+    - iIntros (x y z Hxy Hyz) "LFT HE HL".
+      iDestruct (Hxy with "LFT HE HL") as %->. by iApply (Hyz with "LFT HE HL").
+  Qed.
+
+  Lemma equiv_subtype ty1 ty2 : ty1 ≡ ty2 → subtype ty1 ty2.
+  Proof. unfold subtype, type_incl=>EQ. setoid_rewrite EQ. apply subtype_refl. Qed.
+
+  Global Instance ty_size_proper : Proper (subtype ==> ctx_eq) ty_size.
+  Proof. iIntros (?? Hst) "LFT HE HL". iDestruct (Hst with "LFT HE HL") as "[$ ?]". Qed.
+  Global Instance ty_size_proper_flip : Proper (flip subtype ==> ctx_eq) ty_size.
+  Proof. by intros ?? ->. Qed.
+  Lemma ty_size_proper' ty1 ty2 :
+    subtype ty1 ty2 → ctx_eq (ty_size ty1) (ty_size ty2).
+  Proof. apply ty_size_proper. Qed.
+  Lemma ty_size_proper_flip' ty1 ty2 :
+    subtype ty2 ty1 → ctx_eq (ty_size ty1) (ty_size ty2).
+  Proof. apply ty_size_proper_flip. Qed.
 
   (* TODO: The prelude should have a symmetric closure. *)
   Definition eqtype (ty1 ty2 : type) : Prop :=
@@ -417,6 +439,9 @@ Section subtyping.
     - intros ??? H1 H2. split; etrans; (apply H1 || apply H2).
   Qed.
 
+  Global Instance ty_size_proper_eq : Proper (eqtype ==> ctx_eq) ty_size.
+  Proof. by intros ?? [-> _]. Qed.
+
   Lemma subtype_simple_type (st1 st2 : simple_type) :
     (∀ tid vl, lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
                  st1.(st_own) tid vl -∗ st2.(st_own) tid vl) →
@@ -446,5 +471,6 @@ Section weakening.
   Qed.
 End weakening.
 
-Hint Resolve subtype_refl eqtype_refl : lrust_typing.
-Hint Opaque subtype eqtype : lrust_typing.
+Hint Resolve subtype_refl eqtype_refl ctx_eq_refl ty_size_proper'
+             ty_size_proper_flip': lrust_typing.
+Hint Opaque ctx_eq subtype eqtype : lrust_typing.

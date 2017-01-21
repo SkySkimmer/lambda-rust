@@ -13,7 +13,7 @@ Section init_prod.
 
   Lemma init_prod_type :
     typed_instruction_ty [] [] [] init_prod
-        (fn (λ _, []) (λ _, [# box int; box int]) (λ (_ : ()), box (Π[int;int]))).
+        (fn (λ _, []) (λ _, [# int; int]) (λ (_ : ()), Π[int;int])).
   Proof.
     apply type_fn; try apply _. move=> /= [] ret p. inv_vec p=>x y. simpl_subst.
     eapply type_deref; [solve_typing..|apply read_own_move|done|]=>x'. simpl_subst.

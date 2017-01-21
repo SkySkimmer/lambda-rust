@@ -95,32 +95,35 @@ Section own.
     by iApply (ty.(ty_shr_mono) with "LFT Hκ").
   Qed.
 
-  Global Instance own_mono E L n :
-    Proper (subtype E L ==> subtype E L) (own_ptr n).
+  Global Instance own_mono E L :
+    Proper (ctx_eq E L ==> subtype E L ==> subtype E L) own_ptr.
   Proof.
-    intros ty1 ty2 Hincl. iIntros. iSplit; first done.
+    intros n1 n2 Hn12 ty1 ty2 Hincl. iIntros. iSplit; first done.
     iDestruct (Hincl with "* [] [] []") as "(_ & #Ho & #Hs)"; [done..|clear Hincl].
     iSplit; iAlways.
     - iIntros (??) "H". iDestruct "H" as (l) "(%&Hmt&H†)". subst.
       iExists _. iSplit. done. iDestruct "Hmt" as (vl') "[Hmt Hown]". iNext.
       iDestruct (ty_size_eq with "Hown") as %<-.
       iDestruct ("Ho" with "* Hown") as "Hown".
-      iDestruct (ty_size_eq with "Hown") as %<-. iFrame.
+      iDestruct (ty_size_eq with "Hown") as %<-.
+      iDestruct (Hn12 with "[] [] []") as %->; [done..|]. iFrame.
       iExists _. by iFrame.
     - iIntros (???) "H". iDestruct "H" as (l') "[Hfb #Hvs]".
       iExists l'. iFrame. iIntros "!#". iIntros (F' q) "% Htok".
       iMod ("Hvs" with "* [%] Htok") as "Hvs'". done. iModIntro. iNext.
       iMod "Hvs'" as "[Hshr $]". iApply ("Hs" with "Hshr").
   Qed.
-  Lemma own_mono' E L n ty1 ty2 :
-    subtype E L ty1 ty2 → subtype E L (own_ptr n ty1) (own_ptr n ty2).
-  Proof. apply own_mono. Qed.
-  Global Instance own_proper E L n :
-    Proper (eqtype E L ==> eqtype E L) (own_ptr n).
-  Proof. intros ?? Heq. split; f_equiv; apply Heq. Qed.
-  Lemma own_proper' E L n ty1 ty2 :
-    eqtype E L ty1 ty2 → eqtype E L (own_ptr n ty1) (own_ptr n ty2).
-  Proof. apply own_proper. Qed.
+  Lemma own_mono' E L n1 n2 ty1 ty2 :
+    ctx_eq E L n1 n2 → subtype E L ty1 ty2 →
+    subtype E L (own_ptr n1 ty1) (own_ptr n2 ty2).
+  Proof. intros. by apply own_mono. Qed.
+  Global Instance own_proper E L :
+    Proper (ctx_eq E L ==> eqtype E L ==> eqtype E L) own_ptr.
+  Proof. intros ?? ??? Heq. split; f_equiv; try done; apply Heq. Qed.
+  Lemma own_proper' E L n1 n2 ty1 ty2 :
+    ctx_eq E L n1 n2 → eqtype E L ty1 ty2 →
+    eqtype E L (own_ptr n1 ty1) (own_ptr n2 ty2).
+  Proof. intros. by apply own_proper. Qed.
 
   Global Instance own_contractive n : Contractive (own_ptr n).
   Proof.
