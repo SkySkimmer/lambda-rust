@@ -8,11 +8,16 @@ Section bool.
   Context `{typeG Σ}.
 
   Program Definition bool : type :=
-    {| st_own tid vl := (∃ z:bool, ⌜vl = [ #z ]⌝)%I |}.
-  Next Obligation. iIntros (tid vl) "H". iDestruct "H" as (z) "%". by subst. Qed.
+    {| st_own tid vl :=
+         match vl return _ with
+         | [ #(LitInt (0|1))] => True
+         | _ => False
+         end%I |}.
+  Next Obligation. intros ? [|[[| |[|[]|]]|] []]; try iIntros "[]"; auto. Qed.
+  Next Obligation. intros ? [|[[| |[|[]|]]|] []]; apply _. Qed.
 
   Global Instance bool_send : Send bool.
-  Proof. iIntros (tid1 tid2 vl). done. Qed.
+  Proof. done. Qed.
 End bool.
 
 Section typing.
@@ -22,7 +27,7 @@ Section typing.
     typed_instruction_ty E L [] #b bool.
   Proof.
     iAlways. iIntros (tid qE) "_ _ $ $ $ _". wp_value.
-    rewrite tctx_interp_singleton tctx_hasty_val. iExists _. done.
+    rewrite tctx_interp_singleton tctx_hasty_val. by destruct b.
   Qed.
 
   Lemma type_bool (b : Datatypes.bool) E L C T x e :
@@ -40,10 +45,10 @@ Section typing.
   Proof.
     iIntros (Hp He1 He2) "!#". iIntros (tid qE) "#HEAP #LFT Htl HE HL HC HT".
     iDestruct (big_sepL_elem_of _ _ _ Hp with "HT") as "#Hp".
-    wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v) "_ Hown".
-    iDestruct "Hown" as (b) "Hv". iDestruct "Hv" as %[=->].
-    destruct b; wp_if.
-    - iApply (He1 with "HEAP LFT Htl HE HL HC HT").
+    wp_bind p. iApply (wp_hasty with "Hp").
+    iIntros ([[| |[|[]|]]|]) "_ H1"; try iDestruct "H1" as "[]";
+      (iApply wp_case; [done..|iNext]).
     - iApply (He2 with "HEAP LFT Htl HE HL HC HT").
+    - iApply (He1 with "HEAP LFT Htl HE HL HC HT").
   Qed.
 End typing.

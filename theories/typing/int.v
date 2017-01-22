@@ -7,11 +7,16 @@ Section int.
   Context `{typeG Σ}.
 
   Program Definition int : type :=
-    {| st_own tid vl := (∃ z:Z, ⌜vl = [ #z ]⌝)%I |}.
-  Next Obligation. iIntros (tid vl) "H". iDestruct "H" as (z) "%". by subst. Qed.
+    {| st_own tid vl :=
+         match vl return _ with
+         | [ #(LitInt z)] => True
+         | _ => False
+         end%I |}.
+  Next Obligation. intros ? [|[[]|] []]; try iIntros "[]". auto. Qed.
+  Next Obligation. intros ? [|[[]|] []]; apply _. Qed.
 
   Global Instance int_send : Send int.
-  Proof. iIntros (tid1 tid2 vl). done. Qed.
+  Proof. done. Qed.
 End int.
 
 Section typing.
@@ -21,7 +26,7 @@ Section typing.
     typed_instruction_ty E L [] #z int.
   Proof.
     iAlways. iIntros (tid qE) "_ _ $ $ $ _". wp_value.
-    rewrite tctx_interp_singleton tctx_hasty_val. iExists _. done.
+    by rewrite tctx_interp_singleton tctx_hasty_val.
   Qed.
 
   Lemma type_int (z : Z) E L C T x e :
@@ -37,12 +42,11 @@ Section typing.
   Proof.
     iAlways. iIntros (tid qE) "_ _ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
-    wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "_ Hown1".
-    wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "_ Hown2".
-    iDestruct "Hown1" as (z1) "EQ". iDestruct "EQ" as %[=->].
-    iDestruct "Hown2" as (z2) "EQ". iDestruct "EQ" as %[=->].
-    wp_op. rewrite tctx_interp_singleton tctx_hasty_val' //.
-    iExists _. done.
+    wp_bind p1. iApply (wp_hasty with "Hp1").
+    iIntros ([[]|]) "_ H1"; try iDestruct "H1" as "[]".
+    wp_bind p2. iApply (wp_hasty with "Hp2").
+    iIntros ([[]|]) "_ H2"; try iDestruct "H2" as "[]".
+    wp_op. by rewrite tctx_interp_singleton tctx_hasty_val' //.
   Qed.
 
   Lemma type_plus E L C T T' p1 p2 x e :
@@ -59,12 +63,11 @@ Section typing.
   Proof.
     iAlways. iIntros (tid qE) "_ _ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
-    wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "_ Hown1".
-    wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "_ Hown2".
-    iDestruct "Hown1" as (z1) "EQ". iDestruct "EQ" as %[=->].
-    iDestruct "Hown2" as (z2) "EQ". iDestruct "EQ" as %[=->].
-    wp_op. rewrite tctx_interp_singleton tctx_hasty_val' //.
-    iExists _. done.
+    wp_bind p1. iApply (wp_hasty with "Hp1").
+    iIntros ([[]|]) "_ H1"; try iDestruct "H1" as "[]".
+    wp_bind p2. iApply (wp_hasty with "Hp2").
+    iIntros ([[]|]) "_ H2"; try iDestruct "H2" as "[]".
+    wp_op. by rewrite tctx_interp_singleton tctx_hasty_val' //.
   Qed.
 
   Lemma type_minus E L C T T' p1 p2 x e :
@@ -81,12 +84,11 @@ Section typing.
   Proof.
     iAlways. iIntros (tid qE) "_ _ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
-    wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "_ Hown1".
-    wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "_ Hown2".
-    iDestruct "Hown1" as (z1) "EQ". iDestruct "EQ" as %[=->].
-    iDestruct "Hown2" as (z2) "EQ". iDestruct "EQ" as %[=->].
-    wp_op; intros _; rewrite tctx_interp_singleton tctx_hasty_val' //;
-      iExists _; done.
+    wp_bind p1. iApply (wp_hasty with "Hp1").
+    iIntros ([[]|]) "_ H1"; try iDestruct "H1" as "[]".
+    wp_bind p2. iApply (wp_hasty with "Hp2").
+    iIntros ([[]|]) "_ H2"; try iDestruct "H2" as "[]".
+    wp_op; intros _; by rewrite tctx_interp_singleton tctx_hasty_val' //.
   Qed.
 
   Lemma type_le E L C T T' p1 p2 x e :

@@ -129,10 +129,10 @@ Section typing.
   (* Writing to a cell *)
   Definition cell_set ty : val :=
     funrec: <> ["c"; "x"] :=
-       let: "c'" := !"c" in
-       "c'" <-{ty.(ty_size)} !"x";;
-       let: "r" := new [ #0 ] in
-       delete [ #1; "c"] ;; delete [ #ty.(ty_size); "x"] ;; "return" ["r"].
+      let: "c'" := !"c" in
+      "c'" <-{ty.(ty_size)} !"x";;
+      let: "r" := new [ #0 ] in
+      delete [ #1; "c"] ;; delete [ #ty.(ty_size); "x"] ;; "return" ["r"].
 
   Lemma cell_set_type ty :
     typed_instruction_ty [] [] [] (cell_set ty)
@@ -140,17 +140,16 @@ Section typing.
   Proof.
     apply type_fn; try apply _. move=> /= α ret arg. inv_vec arg=>c x. simpl_subst.
     eapply type_deref; [solve_typing..|by apply read_own_move|done|].
-    intros c'. simpl_subst.
-    eapply type_let with (T1 := [c' ◁ _; x ◁ _]%TC)
-                         (T2 := λ _, [c' ◁ &shr{α} cell ty;
+    intros d. simpl_subst.
+    eapply type_let with (T1 := [d ◁ _; x ◁ _]%TC)
+                         (T2 := λ _, [d ◁ &shr{α} cell ty;
                                       x ◁ box (uninit ty.(ty_size))]%TC); try solve_typing; [|].
     { (* The core of the proof: Showing that the assignment is safe. *)
       iAlways. iIntros (tid qE) "#HEAP #LFT Htl HE $".
       rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-      iIntros "[Hc' Hx]". rewrite {1}/elctx_interp big_opL_singleton /=.
-      iDestruct "Hc'" as (l) "[EQ #Hshr]". iDestruct "EQ" as %[=->].
-      iDestruct "Hshr" as (P) "[#HP #Hshr]".
-      iDestruct "Hx" as (l') "[EQ [Hown >H†]]". iDestruct "EQ" as %[=->].
+      iIntros "[Hd Hx]". rewrite {1}/elctx_interp big_opL_singleton /=.
+      destruct d as [[]|]; try iDestruct "Hd" as "[]". iDestruct "Hd" as (P) "[#HP #Hshr]".
+      destruct x as [[]|]; try iDestruct "Hx" as "[]". iDestruct "Hx" as "[Hown >H†]".
       iDestruct "Hown" as (vl') "[>H↦' Hown']".
       iMod (na_bor_acc with "LFT Hshr HE Htl") as "(Hown & Htl & Hclose)"; [solve_ndisj..|].
       iDestruct ("HP" with "Hown") as (vl) "[>H↦ Hown]".
@@ -163,8 +162,7 @@ Section typing.
       rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //.
       iSplitR; iModIntro.
       - iExists _. simpl. eauto.
-      - iExists _. iSplit; first done. iFrame. iExists _. iFrame.
-        rewrite uninit_own. auto. }
+      - iFrame. iExists _. iFrame. rewrite uninit_own. auto. }
     intros v. simpl_subst. clear v.
     eapply type_new; [solve_typing..|].
     intros r. simpl_subst.

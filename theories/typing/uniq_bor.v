@@ -19,25 +19,28 @@ Section uniq_bor.
           The trouble with this definition is that bor_unnest as proven is too
           weak. The original unnesting with open borrows was strong enough. *)
        ty_own tid vl :=
-         (∃ (l:loc) P, (⌜vl = [ #l ]⌝ ∗ ▷ □ (P ↔ l ↦∗: ty.(ty_own) tid)) ∗ &{κ} P)%I;
+         match vl return _ with
+         | [ #(LitLoc l) ] =>
+           ∃ P, ▷ □ (P ↔ l ↦∗: ty.(ty_own) tid) ∗ &{κ} P
+         | _ => False
+         end%I;
        ty_shr κ' tid l :=
          (∃ l':loc, &frac{κ'}(λ q', l ↦{q'} #l') ∗
             □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ∪κ']
                 ={F, F∖↑shrN∖↑lftN}▷=∗ ty.(ty_shr) (κ∪κ') tid l' ∗ q.[κ∪κ'])%I
     |}.
   Next Obligation.
-    iIntros (q ty tid vl) "H". iDestruct "H" as (l P) "[[% _] _]". by subst.
+    iIntros (q ty tid [|[[]|][]]) "H"; try iDestruct "H" as "[]". done.
   Qed.
   Next Obligation.
     move=> κ ty N κ' l tid ??/=. iIntros "#LFT Hshr Htok".
-    iMod (bor_exists with "LFT Hshr") as (vl) "Hb". set_solver.
-    iMod (bor_sep with "LFT Hb") as "[Hb1 Hb2]". set_solver.
-    iMod (bor_exists with "LFT Hb2") as (l') "Hb2". set_solver.
+    iMod (bor_exists with "LFT Hshr") as ([|[[|l'|]|][]]) "Hb"; first set_solver;
+      (iMod (bor_sep with "LFT Hb") as "[Hb1 Hb2]"; first set_solver);
+      try (iMod (bor_persistent_tok with "LFT Hb2 Htok") as "[>[] _]"; set_solver).
     iMod (bor_exists with "LFT Hb2") as (P) "Hb2". set_solver.
     iMod (bor_sep with "LFT Hb2") as "[H Hb2]". set_solver.
-    iMod (bor_persistent_tok with "LFT H Htok") as "[[>% #HPiff] Htok]". set_solver.
-    iFrame "Htok". iExists l'.
-    subst. rewrite heap_mapsto_vec_singleton.
+    iMod (bor_persistent_tok with "LFT H Htok") as "[#HPiff $]". set_solver.
+    iExists l'. subst. rewrite heap_mapsto_vec_singleton.
     iMod (bor_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "$". set_solver.
     rewrite {1}bor_unfold_idx. iDestruct "Hb2" as (i) "[#Hpb Hpbown]".
     iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty (κ∪κ') tid l')%I
@@ -78,13 +81,12 @@ Section uniq_bor.
     iDestruct (Hty2 with "* [] [] []") as "(_ & #Ho2 & #Hs2)"; [done..|clear Hty2].
     iDestruct (Hκ with "[] []") as "#Hκ"; [done..|].
     iSplit; iAlways.
-    - iIntros (??) "H". iDestruct "H" as (l P) "[[% #HPiff] Hown]". subst.
-      iExists _, _. iSplitR; last by iApply (bor_shorten with "Hκ"). iSplit. done.
-      iNext. iIntros "!#". iSplit; iIntros "H".
-      + iDestruct ("HPiff" with "H") as (vl) "[??]". iExists vl. iFrame.
-        by iApply "Ho1".
-      + iDestruct "H" as (vl) "[??]". iApply "HPiff". iExists vl. iFrame.
-        by iApply "Ho2".
+    - iIntros (? [|[[]|][]]) "H"; try iDestruct "H" as "[]".
+      iDestruct "H" as (P) "[#HPiff Hown]". iExists _.
+      iSplitR; last by iApply (bor_shorten with "Hκ"). iNext.
+      iIntros "!#". iSplit; iIntros "H".
+      + iDestruct ("HPiff" with "H") as (vl) "[??]". iExists vl. iFrame. by iApply "Ho1".
+      + iDestruct "H" as (vl) "[??]". iApply "HPiff". iExists vl. iFrame. by iApply "Ho2".
     - iIntros (κ ??) "H". iAssert (κ2 ∪ κ ⊑ κ1 ∪ κ)%I as "#Hincl'".
       { iApply (lft_incl_glb with "[] []").
         - iApply (lft_incl_trans with "[] Hκ"). iApply lft_le_incl.
@@ -116,13 +118,12 @@ Section uniq_bor.
   Global Instance uniq_send κ ty :
     Send ty → Send (uniq_bor κ ty).
   Proof.
-    iIntros (Hsend tid1 tid2 vl) "H". iDestruct "H" as (l P) "[[% #HPiff] H]".
-    iExists _, _. iFrame "H". iSplit; first done. iNext. iAlways. iSplit.
+    iIntros (Hsend tid1 tid2 [|[[]|][]]) "H"; try iDestruct "H" as "[]".
+    iDestruct "H" as (P) "[#HPiff H]". iExists _. iFrame. iNext. iAlways. iSplit.
     - iIntros "HP". iApply (heap_mapsto_pred_wand with "[HP]").
-      { by iApply "HPiff". }
-      clear dependent vl. iIntros (vl) "?". by iApply Hsend.
+      { by iApply "HPiff". } { iIntros (vl). by iApply Hsend. }
     - iIntros "HP". iApply "HPiff". iApply (heap_mapsto_pred_wand with "HP").
-      clear dependent vl. iIntros (vl) "?". by iApply Hsend.
+      iIntros (vl). by iApply Hsend.
   Qed.
 
   Global Instance uniq_sync κ ty :
@@ -155,12 +156,11 @@ Section typing.
     iIntros (Hκ ???) "#LFT HE HL Huniq".
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; [try done..|].
     rewrite !tctx_interp_singleton /=.
-    iDestruct "Huniq" as (v) "[% Huniq]".
-    iDestruct "Huniq" as (l P) "[[% #HPiff] HP]".
+    iDestruct "Huniq" as ([[]|]) "[% Huniq]"; try iDestruct "Huniq" as "[]".
+    iDestruct "Huniq" as (P) "[#HPiff HP]".
     iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
     iMod (ty.(ty_share) with "LFT H↦ Htok") as "[Hown Htok]"; [solve_ndisj|].
-    iMod ("Hclose" with "Htok") as "[$ $]". iExists _. iFrame "%".
-    iIntros "!>/=". eauto.
+    iMod ("Hclose" with "Htok") as "[$ $]". iExists _. by iFrame "%∗".
   Qed.
 
   Lemma tctx_reborrow_uniq E L p ty κ κ' :
@@ -172,12 +172,13 @@ Section typing.
     iDestruct (llctx_interp_persist with "HL") as "#HL'". iFrame "HE HL".
     iDestruct (Hκκ' with "HE' HL'") as "Hκκ'".
     rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
-    iDestruct "H" as (v) "[% Hown]". iDestruct "Hown" as (l P) "[[EQ #Hiff] Hb]".
-    iDestruct "EQ" as %[=->]. iMod (bor_iff with "LFT [] Hb") as "Hb". done. by eauto.
+    iDestruct "H" as ([[]|]) "[% Hown]"; try iDestruct "Hown" as "[]".
+    iDestruct "Hown" as (P) "[#Hiff Hb]".
+    iMod (bor_iff with "LFT [] Hb") as "Hb". done. by eauto.
     iMod (rebor with "LFT Hκκ' Hb") as "[Hb Hext]". done. iModIntro. iSplitL "Hb".
-    - iExists _. iSplit. done. iExists _, _. erewrite <-uPred.iff_refl. eauto.
+    - iExists _. iSplit. done. iExists _. erewrite <-uPred.iff_refl. eauto.
     - iExists _. iSplit. done. iIntros "#H†". iMod ("Hext" with "H†") as "Hb".
-      iExists _, _. erewrite <-uPred.iff_refl. eauto.
+      iExists _. erewrite <-uPred.iff_refl. eauto.
   Qed.
 
   (* When sharing during extraction, we do the (arbitrary) choice of
@@ -222,9 +223,9 @@ Section typing.
   Lemma read_uniq E L κ ty :
     Copy ty → lctx_lft_alive E L κ → typed_read E L (&uniq{κ}ty) ty (&uniq{κ}ty).
   Proof.
-    iIntros (Hcopy Halive) "!#". iIntros (v tid F qE qL ?) "#LFT Htl HE HL Hown".
+    iIntros (Hcopy Halive) "!#". iIntros ([[]|] tid F qE qL ?) "#LFT Htl HE HL Hown";
+      try iDestruct "Hown" as "[]". iDestruct "Hown" as (P) "[#HP H↦]".
     iMod (Halive with "HE HL") as (q) "[Hκ Hclose]"; first set_solver.
-    iDestruct "Hown" as (l P) "[[EQ #HP] H↦]". iDestruct "EQ" as %[=->].
     iMod (bor_iff with "LFT [] H↦") as "H↦". set_solver. by eauto.
     iMod (bor_acc with "LFT H↦ Hκ") as "[H↦ Hclose']"; first set_solver.
     iDestruct "H↦" as (vl) "[>H↦ #Hown]".
@@ -232,15 +233,15 @@ Section typing.
     iExists _, _, _. iSplit; first done. iFrame "∗#". iIntros "H↦".
     iMod ("Hclose'" with "[H↦]") as "[H↦ Htok]". by iExists _; iFrame.
     iMod ("Hclose" with "Htok") as "($ & $ & $)".
-    iExists _, _. erewrite <-uPred.iff_refl. auto.
+    iExists _. erewrite <-uPred.iff_refl. auto.
   Qed.
 
   Lemma write_uniq E L κ ty :
     lctx_lft_alive E L κ → typed_write E L (&uniq{κ}ty) ty (&uniq{κ}ty).
   Proof.
-    iIntros (Halive) "!#". iIntros (p tid F qE qL ?) "#LFT HE HL Hown".
+    iIntros (Halive) "!#". iIntros ([[]|] tid F qE qL ?) "#LFT HE HL Hown";
+      try iDestruct "Hown" as "[]". iDestruct "Hown" as (P) "[#HP H↦]".
     iMod (Halive with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
-    iDestruct "Hown" as (l P) "[[EQ #HP] H↦]". iDestruct "EQ" as %[=->].
     iMod (bor_iff with "LFT [] H↦") as "H↦". set_solver. by eauto.
     iMod (bor_acc with "LFT H↦ Htok") as "[H↦ Hclose']". set_solver.
     iDestruct "H↦" as (vl) "[>H↦ Hown]". rewrite ty.(ty_size_eq).
@@ -248,7 +249,7 @@ Section typing.
     iFrame. iIntros "Hown". iDestruct "Hown" as (vl') "[H↦ Hown]".
     iMod ("Hclose'" with "[H↦ Hown]") as "[Hbor Htok]". by iExists _; iFrame.
     iMod ("Hclose" with "Htok") as "($ & $ & $)".
-    iExists _, _. erewrite <-uPred.iff_refl. auto.
+    iExists _. erewrite <-uPred.iff_refl. auto.
   Qed.
 End typing.
 

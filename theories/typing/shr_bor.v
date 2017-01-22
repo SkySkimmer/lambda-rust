@@ -8,18 +8,22 @@ Section shr_bor.
   Context `{typeG Σ}.
 
   Program Definition shr_bor (κ : lft) (ty : type) : type :=
-    {| st_own tid vl := (∃ (l:loc), ⌜vl = [ #l ]⌝ ∗ ty.(ty_shr) κ tid l)%I |}.
+    {| st_own tid vl :=
+         match vl return _ with
+         | [ #(LitLoc l) ] => ty.(ty_shr) κ tid l
+         | _ => False
+         end%I |}.
   Next Obligation.
-    iIntros (κ ty tid vl) "H". iDestruct "H" as (l) "[% _]". by subst.
+    iIntros (κ ty tid [|[[]|][]]) "H"; try iDestruct "H" as "[]". done.
   Qed.
+  Next Obligation. intros κ ty tid [|[[]|][]]; apply _. Qed.
 
   Global Instance shr_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> subtype E L ==> subtype E L) shr_bor.
   Proof.
     intros κ1 κ2 Hκ ty1 ty2 Hty. apply subtype_simple_type.
-    iIntros (??) "#LFT #HE #HL H". iDestruct (Hκ with "HE HL") as "#Hκ".
-    iDestruct "H" as (l) "(% & H)". subst. iExists _. iSplit. done.
-    iApply (ty2.(ty_shr_mono) with "LFT Hκ").
+    iIntros (? [|[[]|][]]) "#LFT #HE #HL H"; try iDestruct "H" as "[]".
+    iDestruct (Hκ with "HE HL") as "#Hκ". iApply (ty2.(ty_shr_mono) with "LFT Hκ").
     iDestruct (Hty with "* [] [] []") as "(_ & _ & #Hs1)"; [done..|clear Hty].
     by iApply "Hs1".
   Qed.
@@ -41,8 +45,7 @@ Section shr_bor.
   Global Instance shr_send κ ty :
     Sync ty → Send (shr_bor κ ty).
   Proof.
-    iIntros (Hsync tid1 tid2 vl) "H". iDestruct "H" as (l) "[% Hshr]".
-    iExists _. iSplit; first done. by iApply Hsync.
+    iIntros (Hsync tid1 tid2 [|[[]|][]]) "H"; try iDestruct "H" as "[]". by iApply Hsync.
   Qed.
 End shr_bor.
 
@@ -69,28 +72,25 @@ Section typing.
     iDestruct (llctx_interp_persist with "HL") as "#HL'". iFrame "HE HL".
     iDestruct (Hκκ' with "HE' HL'") as "Hκκ'".
     rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
-    iDestruct "H" as (v) "[% #H]". iDestruct "H" as (l) "[EQ Hshr]".
-    iDestruct "EQ" as %[=->]. simpl. iModIntro. iSplit.
-    - iExists _. iSplit. done. iExists _. iSplit. done.
-      by iApply (ty_shr_mono with "LFT Hκκ' Hshr").
-    - iExists _. iSplit. done. iIntros "_". iIntros "!>".
-      iExists _. auto.
+    iDestruct "H" as ([[]|]) "[% #Hshr]"; try iDestruct "Hshr" as "[]".
+    iModIntro. iSplit.
+    - iExists _. iSplit. done. by iApply (ty_shr_mono with "LFT Hκκ' Hshr").
+    - iExists _. auto.
   Qed.
 
   Lemma read_shr E L κ ty :
     Copy ty → lctx_lft_alive E L κ → typed_read E L (&shr{κ}ty) ty (&shr{κ}ty).
   Proof.
-    iIntros (Hcopy Halive) "!#". iIntros (v tid F qE qL ?) "#LFT Htl HE HL Hown".
+    iIntros (Hcopy Halive) "!#". iIntros ([[]|] tid F qE qL ?) "#LFT Htl HE HL #Hshr";
+      try iDestruct "Hshr" as "[]".
     iMod (Halive with "HE HL") as (q) "[Hκ Hclose]"; first set_solver.
-    iDestruct "Hown" as (l) "[EQ #Hshr]". iDestruct "EQ" as %[=->].
-     assert (↑shrN ⊆ (↑lrustN : coPset)) by solve_ndisj. (* set_solver needs some help. *)
+    assert (↑shrN ⊆ (↑lrustN : coPset)) by solve_ndisj. (* set_solver needs some help. *)
     iMod (copy_shr_acc with "LFT Hshr Htl Hκ") as (q') "(Htl & H↦ & Hcl)".
     { set_solver. } { rewrite ->shr_locsE_shrN. set_solver. }
     iDestruct "H↦" as (vl) "[>Hmt #Hown]". iModIntro. iExists _, _, _.
-    iSplit; first done. iFrame "∗#". iIntros "Hmt".
-    iMod ("Hcl" with "Htl [Hmt]") as "[$ Hκ]".
-    { iExists _. iFrame "∗#". }
-    iMod ("Hclose" with "Hκ") as "[$ $]". iExists _. auto.
+    iFrame "∗#". iSplit; first done. iIntros "Hmt".
+    iMod ("Hcl" with "Htl [Hmt]") as "[$ Hκ]"; first by iExists _; iFrame.
+    iApply ("Hclose" with "Hκ").
   Qed.
 End typing.
 

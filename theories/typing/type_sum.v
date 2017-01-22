@@ -17,8 +17,8 @@ Section case.
   Proof.
     iIntros (Hel) "!#". iIntros (tid qE) "#HEAP #LFT Hna HE HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
-    iApply (wp_hasty with "Hp"). iIntros (v Hv) "Hp".
-    iDestruct "Hp" as (l) "[EQ [H↦ Hf]]". iDestruct "EQ" as %[=->].
+    iApply (wp_hasty with "Hp"). iIntros ([[]|] Hv) "Hp";
+      try iDestruct "Hp" as "[]". iDestruct "Hp" as "[H↦ Hf]".
     iDestruct "H↦" as (vl) "[H↦ Hown]".
     iDestruct "Hown" as (i vl' vl'') "(>% & >EQlen & Hown)". subst.
     simpl ty_size. iDestruct "EQlen" as %[=EQlen]. rewrite -EQlen. simpl length.
@@ -34,14 +34,12 @@ Section case.
       rewrite !tctx_interp_cons !tctx_hasty_val' /= ?Hv //; iFrame "HT".
     - iDestruct (ty.(ty_size_eq) with "Hown") as %<-.
       iSplitL "H↦i Hfi"; last iSplitR "H↦vl'' Hfvl''".
-      + rewrite shift_loc_0. iExists _. iFrame. iSplit. done. iExists [ #i].
-        rewrite heap_mapsto_vec_singleton.
+      + rewrite shift_loc_0. iFrame. iExists [ #i]. rewrite heap_mapsto_vec_singleton.
         iFrame. iExists [_], []. auto.
-      + iExists _. iFrame. iSplit. done. iExists _. iFrame.
+      + iFrame. iExists _. iFrame.
       + rewrite -EQlen app_length minus_plus -(shift_loc_assoc_nat _ 1).
-        iExists _. iFrame. iSplit. done. iExists _. iFrame. rewrite uninit_own. auto.
-    - iExists _. iSplit. done.
-      assert (EQf:=freeable_sz_split n 1). simpl in EQf. rewrite -EQf. clear EQf.
+        iFrame. iExists _. iFrame. rewrite uninit_own. auto.
+    - assert (EQf:=freeable_sz_split n 1). simpl in EQf. rewrite -EQf. clear EQf.
       rewrite -EQlen app_length -freeable_sz_split. iFrame.
       iExists (#i :: vl' ++ vl''). iNext.
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_app.
@@ -67,9 +65,8 @@ Section case.
   Proof.
     iIntros (Halive Hel) "!#". iIntros (tid qE) "#HEAP #LFT Hna HE HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
-    iApply (wp_hasty with "Hp"). iIntros (v Hv) "Hp".
-    iDestruct "Hp" as (l P) "[[EQ HP] Hb]". iDestruct "EQ" as %[=->].
-    iMod (bor_iff with "LFT HP Hb") as "Hb". done.
+    iApply (wp_hasty with "Hp"). iIntros ([[]|] Hv) "Hp"; try iDestruct "Hp" as "[]".
+    iDestruct "Hp" as (P) "[HP Hb]". iMod (bor_iff with "LFT HP Hb") as "Hb". done.
     iMod (Halive with "HE HL") as (q) "[Htok Hclose]". done.
     iMod (bor_acc_cons with "LFT Hb Htok") as "[H↦ Hclose']". done.
     iDestruct "H↦" as (vl) "[H↦ Hown]".
@@ -94,7 +91,7 @@ Section case.
       iMod ("Hclose" with "Htok") as "[HE HL]".
       iApply (Hety with "HEAP LFT Hna HE HL HC").
       rewrite !tctx_interp_cons !tctx_hasty_val' /= ?Hv //. iFrame "HT".
-      iExists _, _. iFrame. iSplit. done. iSplit; iIntros "!>!#$".
+      iExists _. erewrite <-uPred.iff_refl. auto.
     - iMod ("Hclose'" with "* [H↦i H↦vl' H↦vl'' Hown] []") as "[Hb Htok]";
         [|by iIntros "!>$"|].
       { iExists (#i::vl'++vl'').
@@ -103,7 +100,7 @@ Section case.
       iMod ("Hclose" with "Htok") as "[HE HL]".
       iApply (Hety with "HEAP LFT Hna HE HL HC").
       rewrite !tctx_interp_cons !tctx_hasty_val' /= ?Hv //. iFrame "HT".
-      iExists _, _. iFrame. iSplit. done. iSplit; iIntros "!>!#$".
+      iExists _. erewrite <-uPred.iff_refl. auto.
   Qed.
 
   Lemma type_case_uniq E L C T T' p κ tyl el :
@@ -124,9 +121,8 @@ Section case.
   Proof.
     iIntros (Halive Hel) "!#". iIntros (tid qE) "#HEAP #LFT Hna HE HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
-    iApply (wp_hasty with "Hp"). iIntros (v Hv) "Hp".
-    iDestruct "Hp" as (l) "[EQ Hl]". iDestruct "EQ" as %[=->].
-    iDestruct "Hl" as (i) "[#Hb Hshr]".
+    iApply (wp_hasty with "Hp"). iIntros ([[]|] Hv) "Hp"; try iDestruct "Hp" as "[]".
+    iDestruct "Hp" as (i) "[#Hb Hshr]".
     iMod (Halive with "HE HL") as (q) "[Htok Hclose]". done.
     iMod (frac_bor_acc with "LFT Hb Htok") as (q') "[[H↦i H↦vl''] Hclose']". done.
     rewrite nth_lookup.
@@ -136,9 +132,8 @@ Section case.
     iMod ("Hclose'" with "[$H↦i $H↦vl'']") as "Htok".
     iMod ("Hclose" with "Htok") as "[HE HL]".
     destruct Hety as [Hety|Hety]; iApply (Hety with "HEAP LFT Hna HE HL HC");
-      rewrite !tctx_interp_cons !tctx_hasty_val' /= ?Hv //; iFrame "HT".
-    - iExists _. auto.
-    - iExists _. iSplit. done. iExists i. rewrite nth_lookup EQty /=. auto.
+      rewrite !tctx_interp_cons !tctx_hasty_val' /= ?Hv //; iFrame.
+    iExists _. rewrite ->nth_lookup, EQty. auto.
   Qed.
 
   Lemma type_case_shr E L C T p κ tyl el :
@@ -237,8 +232,8 @@ Section case.
     iApply wp_seq. done. iNext. wp_bind p1.
     iApply (wp_wand with "[]"); first by iApply (wp_eval_path). iIntros (? ->).
     wp_op. wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2 Hv2) "Hty2".
-    iMod (Hr with "* [] LFT Htl HE2 HL2 Hty2") as (l2 vl2 q) "(% & H↦2 & Hty & Hr)"=>//=. subst.
-    assert (ty.(ty_size) ≤ length vl1).
+    iMod (Hr with "* [] LFT Htl HE2 HL2 Hty2") as (l2 vl2 q) "(% & H↦2 & Hty & Hr)"=>//=.
+    subst. assert (ty.(ty_size) ≤ length vl1).
     { revert i Hty. rewrite Hlen. clear. induction tyl=>//= -[|i] /=.
       - intros [= ->]. lia.
       - specialize (IHtyl i). intuition lia. }
