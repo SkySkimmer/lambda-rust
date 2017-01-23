@@ -340,7 +340,7 @@ Proof.
   - rewrite -lft_dead_or. iIntros "[H†|H†]". by iApply "H1†". by iApply "H2†".
 Qed.
 
-Lemma lft_incl_mono κ1 κ1' κ2 κ2' :
+Lemma lft_glb_mono κ1 κ1' κ2 κ2' :
   κ1 ⊑ κ1' -∗ κ2 ⊑ κ2' -∗ κ1 ∪ κ2 ⊑ κ1' ∪ κ2'.
 Proof.
   iIntros "#H1 #H2". iApply (lft_incl_glb with "[]").

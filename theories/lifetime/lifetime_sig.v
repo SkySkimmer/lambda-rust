@@ -130,7 +130,7 @@ Module Type lifetime_sig.
   Parameter lft_incl_refl : ∀ κ, (κ ⊑ κ)%I.
   Parameter lft_incl_trans : ∀ κ κ' κ'', κ ⊑ κ' -∗ κ' ⊑ κ'' -∗ κ ⊑ κ''.
   Parameter lft_incl_glb : ∀ κ κ' κ'', κ ⊑ κ' -∗ κ ⊑ κ'' -∗ κ ⊑ κ' ∪ κ''.
-  Parameter lft_incl_mono : ∀ κ1 κ1' κ2 κ2',
+  Parameter lft_glb_mono : ∀ κ1 κ1' κ2 κ2',
     κ1 ⊑ κ1' -∗ κ2 ⊑ κ2' -∗ κ1 ∪ κ2 ⊑ κ1' ∪ κ2'.
   Parameter lft_incl_acc : ∀ E κ κ' q,
     ↑lftN ⊆ E → κ ⊑ κ' -∗ q.[κ] ={E}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={E}=∗ q.[κ]).

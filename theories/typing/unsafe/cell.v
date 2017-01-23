@@ -34,7 +34,7 @@ Section cell.
     iDestruct (EQ with "LFT HE HL") as "(% & #Hown & #Hshr)".
     iSplit; [done|iSplit; iIntros "!# * H"].
     - iApply ("Hown" with "H").
-    - iApply (na_bor_iff_proper with "[] H"). iSplit; iIntros "!>!# H";
+    - iApply na_bor_iff_proper; last done. iSplit; iIntros "!>!# H";
       iDestruct "H" as (vl) "[??]"; iExists vl; iFrame; by iApply "Hown".
   Qed.
   Lemma cell_mono' E L ty1 ty2 : eqtype E L ty1 ty2 → subtype E L (cell ty1) (cell ty2).

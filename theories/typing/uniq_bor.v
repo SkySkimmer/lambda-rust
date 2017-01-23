@@ -67,19 +67,16 @@ Section uniq_bor.
     iDestruct (Hty with "* [] [] []") as "(_ & #Ho & #Hs)"; [done..|clear Hty].
     iDestruct (Hκ with "[] []") as "#Hκ"; [done..|]. iSplit; iAlways.
     - iIntros (? [|[[]|][]]) "H"; try iDestruct "H" as "[]".
-      iApply (bor_shorten with "Hκ"). iApply (bor_iff_proper with "[] H").
+      iApply (bor_shorten with "Hκ"). iApply bor_iff_proper; last done.
       iSplit; iIntros "!>!# H"; iDestruct "H" as (vl) "[??]";
       iExists vl; iFrame; by iApply "Ho".
     - iIntros (κ ??) "H". iAssert (κ2 ∪ κ ⊑ κ1 ∪ κ)%I as "#Hincl'".
-      { iApply (lft_incl_glb with "[] []").
-        - iApply (lft_incl_trans with "[] Hκ"). iApply lft_le_incl.
-          apply gmultiset_union_subseteq_l.
-        - iApply lft_le_incl. apply gmultiset_union_subseteq_r. }
+      { iApply lft_glb_mono. done. iApply lft_incl_refl. }
       iDestruct "H" as (l') "[Hbor #Hupd]". iExists l'. iIntros "{$Hbor}!# %%% Htok".
       iMod (lft_incl_acc with "Hincl' Htok") as (q') "[Htok Hclose]"; first set_solver.
       iMod ("Hupd" with "* [%] Htok") as "Hupd'"; try done. iModIntro. iNext.
       iMod "Hupd'" as "[H Htok]". iMod ("Hclose" with "Htok") as "$".
-      iApply (ty_shr_mono with "[] Hincl'"); [done..|]. by iApply "Hs".
+      iApply ty_shr_mono; [done..|]. by iApply "Hs".
   Qed.
   Global Instance uniq_mono_flip E L :
     Proper (lctx_lft_incl E L ==> eqtype E L ==> flip (subtype E L)) uniq_bor.
@@ -102,7 +99,7 @@ Section uniq_bor.
     Send ty → Send (uniq_bor κ ty).
   Proof.
     iIntros (Hsend tid1 tid2 [|[[]|][]]) "H"; try iDestruct "H" as "[]".
-    iApply (bor_iff_proper with "[] H"). iNext. iAlways. iApply uPred.equiv_iff.
+    iApply bor_iff_proper; last done. iNext. iAlways. iApply uPred.equiv_iff.
     do 3 f_equiv. iSplit; iIntros "."; by iApply Hsend.
   Qed.
 

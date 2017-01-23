@@ -68,7 +68,7 @@ Proof.
     iNext. iMod "Hclose" as "_".
     iApply (bor_fake with "LFT >"); first done.
     iApply (lft_incl_dead with "[] H†"); first done.
-    by iApply (lft_incl_mono with "Hκ⊑"). }
+    by iApply (lft_glb_mono with "Hκ⊑"). }
   rewrite {1}/raw_bor /idx_bor_own /=; iDestruct "Hκ" as (i) "[Hi #Hislice]".
   iDestruct "Hislice" as (P') "[#HPP' Hislice]".
   rewrite lft_inv_alive_unfold;
@@ -100,6 +100,6 @@ Proof.
     iFrame. rewrite /lft_inv lft_inv_alive_unfold. iLeft.
     iFrame "%". iExists Pb'', Pi. iFrame. }
   iModIntro. rewrite /bor. iExists κ''. iFrame. subst κ''.
-  by iApply (lft_incl_mono with "Hκ⊑").
+  by iApply (lft_glb_mono with "Hκ⊑").
 Qed.
 End reborrow.
