@@ -47,10 +47,7 @@ Section uniq_bor.
   Next Obligation.
     intros κ0 ty κ κ' tid l. iIntros "#LFT #Hκ #H".
     iDestruct "H" as (l') "[Hfb Hvs]". iAssert (κ0∪κ' ⊑ κ0∪κ)%I as "#Hκ0".
-    { iApply (lft_incl_glb with "[] []").
-      - iApply lft_le_incl. apply gmultiset_union_subseteq_l.
-      - iApply (lft_incl_trans with "[] Hκ").
-        iApply lft_le_incl. apply gmultiset_union_subseteq_r. }
+    { iApply lft_glb_mono. iApply lft_incl_refl. done. }
     iExists l'. iSplit. by iApply (frac_bor_shorten with "[]").
     iIntros "!# * % Htok".
     iApply (step_fupd_mask_mono F _ _ (F∖↑shrN∖↑lftN)); try set_solver.
