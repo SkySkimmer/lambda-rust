@@ -18,6 +18,12 @@ Section shared_bors.
   Proof. solve_contractive. Qed.
   Global Instance shr_bor_proper : Proper ((⊣⊢) ==> (⊣⊢)) (shr_bor κ).
   Proof. solve_proper. Qed.
+  Lemma shr_bor_iff_proper κ P' : ▷ □ (P ↔ P') -∗ &shr{κ} P -∗ &shr{κ} P'.
+  Proof.
+    iIntros "HPP' H". iDestruct "H" as (i) "[HP ?]". iExists i. iFrame.
+    iApply (idx_bor_iff_proper with "HPP' HP").
+  Qed.
+
   Global Instance shr_bor_persistent : PersistentP (&shr{κ} P) := _.
 
   Lemma bor_share E κ : ↑lftN ⊆ E → &{κ}P ={E}=∗ &shr{κ}P.

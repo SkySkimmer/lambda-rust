@@ -13,16 +13,13 @@ Section cell.
   Program Definition cell (ty : type) :=
     {| ty_size := ty.(ty_size);
        ty_own := ty.(ty_own);
-       ty_shr κ tid l :=
-         (∃ P, ▷ □ (P ↔ l ↦∗: ty.(ty_own) tid) ∗ &na{κ, tid, shrN.@l}P)%I |}.
+       ty_shr κ tid l := (&na{κ, tid, shrN.@l}l ↦∗: ty.(ty_own) tid)%I |}.
   Next Obligation. apply ty_size_eq. Qed.
   Next Obligation.
-    iIntros (ty E κ l tid q ?) "#LFT Hown $". iExists _.
-    iMod (bor_na with "Hown") as "$". set_solver. iIntros "!>!>!#". iSplit; auto.
+    iIntros (ty E κ l tid q ?) "#LFT Hown $". by iApply (bor_na with "Hown").
   Qed.
   Next Obligation.
-    iIntros (ty ?? tid l) "#LFT #H⊑ H". iDestruct "H" as (P) "[??]".
-    iExists _. iFrame. by iApply (na_bor_shorten with "H⊑").
+    iIntros (ty ?? tid l) "#LFT #H⊑ H". by iApply (na_bor_shorten with "H⊑").
   Qed.
 
   Global Instance cell_ne n : Proper (dist n ==> dist n) cell.
@@ -37,9 +34,8 @@ Section cell.
     iDestruct (EQ with "LFT HE HL") as "(% & #Hown & #Hshr)".
     iSplit; [done|iSplit; iIntros "!# * H"].
     - iApply ("Hown" with "H").
-    - iDestruct "H" as (P) "[#HP H]". iExists P. iFrame. iSplit; iNext; iIntros "!# H".
-      + iDestruct ("HP" with "H") as (vl) "[??]". iExists vl. iFrame. by iApply "Hown".
-      + iApply "HP". iDestruct "H" as (vl) "[??]". iExists vl. iFrame. by iApply "Hown".
+    - iApply (na_bor_iff_proper with "[] H"). iSplit; iIntros "!>!# H";
+      iDestruct "H" as (vl) "[??]"; iExists vl; iFrame; by iApply "Hown".
   Qed.
   Lemma cell_mono' E L ty1 ty2 : eqtype E L ty1 ty2 → subtype E L (cell ty1) (cell ty2).
   Proof. eapply cell_mono. Qed.
@@ -53,25 +49,23 @@ Section cell.
   Proof.
     intros ty Hcopy. split; first by intros; simpl; apply _.
     iIntros (κ tid E F l q ??) "#LFT #Hshr Htl Htok". iExists 1%Qp. simpl in *.
-    iDestruct "Hshr" as (P) "[HP Hshr]".
     (* Size 0 needs a special case as we can't keep the thread-local invariant open. *)
     destruct (ty_size ty) as [|sz] eqn:Hsz.
     { iMod (na_bor_acc with "LFT Hshr Htok Htl") as "(Hown & Htl & Hclose)"; [solve_ndisj..|].
-      iDestruct ("HP" with "Hown") as (vl) "[H↦ #Hown]".
+      iDestruct "Hown" as (vl) "[H↦ #Hown]".
       simpl. assert (F ∖ ∅ = F) as -> by set_solver+.
       iDestruct (ty_size_eq with "Hown") as "#>%". rewrite ->Hsz in *.
       iMod ("Hclose" with "[H↦] Htl") as "[$ $]".
-      { iApply "HP". iExists vl. by iFrame. }
+      { iExists vl. by iFrame. }
       iModIntro. iSplitL "".
       { iNext. iExists vl. destruct vl; last done. iFrame "Hown".
         by iApply heap_mapsto_vec_nil. }
       by iIntros "$ _". }
     (* Now we are in the non-0 case. *)
-    iMod (na_bor_acc with "LFT Hshr Htok Htl") as "(H & Htl & Hclose)"; [solve_ndisj..|].
-    iDestruct ("HP" with "H") as "$".
+    iMod (na_bor_acc with "LFT Hshr Htok Htl") as "($ & Htl & Hclose)"; [solve_ndisj..|].
     iDestruct (na_own_acc with "Htl") as "($ & Hclose')"; first by set_solver.
     iIntros "!> Htl Hown". iPoseProof ("Hclose'" with "Htl") as "Htl".
-    iMod ("Hclose" with "[Hown] Htl") as "[$ $]"; last done. by iApply "HP".
+    by iMod ("Hclose" with "Hown Htl") as "[$ $]".
   Qed.
 
   Global Instance cell_send :
@@ -147,22 +141,20 @@ Section typing.
     { (* The core of the proof: Showing that the assignment is safe. *)
       iAlways. iIntros (tid qE) "#HEAP #LFT Htl HE $".
       rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-      iIntros "[Hd Hx]". rewrite {1}/elctx_interp big_opL_singleton /=.
-      destruct d as [[]|]; try iDestruct "Hd" as "[]". iDestruct "Hd" as (P) "[#HP #Hshr]".
+      iIntros "[#Hshr Hx]". rewrite {1}/elctx_interp big_opL_singleton /=.
+      destruct d as [[]|]; try iDestruct "Hshr" as "[]".
       destruct x as [[]|]; try iDestruct "Hx" as "[]". iDestruct "Hx" as "[Hown >H†]".
       iDestruct "Hown" as (vl') "[>H↦' Hown']".
       iMod (na_bor_acc with "LFT Hshr HE Htl") as "(Hown & Htl & Hclose)"; [solve_ndisj..|].
-      iDestruct ("HP" with "Hown") as (vl) "[>H↦ Hown]".
+      iDestruct ("Hown") as (vl) "[>H↦ Hown]".
       iDestruct (ty_size_eq with "Hown") as "#>%".
       iDestruct (ty_size_eq with "Hown'") as "#>%".
       iApply wp_fupd. iApply (wp_memcpy with "[$HEAP $H↦ $H↦']"); [done..|].
       iNext. iIntros "[H↦ H↦']". rewrite {1}/elctx_interp big_opL_singleton /=.
       iMod ("Hclose" with "[H↦ Hown'] Htl") as "[$ $]".
-      { iApply "HP". iExists vl'. by iFrame. }
+      { iExists vl'. by iFrame. }
       rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //.
-      iSplitR; iModIntro.
-      - iExists _. simpl. eauto.
-      - iFrame. iExists _. iFrame. rewrite uninit_own. auto. }
+      iFrame "∗#". iExists _. iFrame. rewrite uninit_own. auto. }
     intros v. simpl_subst. clear v.
     eapply type_new; [solve_typing..|].
     intros r. simpl_subst.
