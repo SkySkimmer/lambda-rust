@@ -44,7 +44,8 @@ Proof.
     iMod ("Hclose" with "[HA HI Hclose']") as "_"; [by iExists _, _; iFrame|].
     iSplitL "HB◯ HsliceB".
     + rewrite /bor /raw_bor /idx_bor_own. iExists κ; simpl.
-      iModIntro. iSplit; first by iApply lft_incl_refl. iExists γB. by iFrame.
+      iModIntro. iSplit; first by iApply lft_incl_refl. iExists γB. iFrame.
+      iExists P. rewrite -uPred.iff_refl. auto.
     + clear -HE. iIntros "!> H†".
       iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
       iDestruct ("HIlookup" with "* HI") as %Hκ.
@@ -74,6 +75,7 @@ Proof.
   iIntros (HE) "#LFT Hbor". iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
   rewrite {1}/bor. iDestruct "Hbor" as (κ') "[#Hκκ' Hbor]".
   rewrite /raw_bor /idx_bor_own. iDestruct "Hbor" as (s) "[Hbor Hslice]".
+  iDestruct "Hslice" as (P') "[#HPP' Hslice]".
   iDestruct (own_bor_auth with "HI Hbor") as %Hκ'.
   rewrite big_sepS_later big_sepS_elem_of_acc ?elem_of_dom //
           /lfts_inv /lft_inv /lft_inv_dead /lft_alive_in. simpl.
@@ -83,9 +85,16 @@ Proof.
     iDestruct "H" as (B) "(Hbox & >Hown & HB)".
     iDestruct (own_bor_valid_2 with "Hown Hbor")
         as %[EQB%to_borUR_included _]%auth_valid_discrete_2.
-    iMod (slice_split _ _ true with "Hslice Hbox")
-      as (γ1 γ2) "(% & % & % & Hs1 & Hs2 & Hbox)"; first solve_ndisj.
+    iMod (slice_iff _ _ true with "HPP' Hslice Hbox")
+      as (s' Pb') "(% & #HPbPb' & Hslice & Hbox)"; first solve_ndisj.
     { by rewrite lookup_fmap EQB. }
+    iAssert (▷ lft_vs κ' Pb' Pi)%I with "[Hvs]" as "Hvs".
+    { iNext. iApply (lft_vs_cons false with "[] Hvs"). iIntros "[$ ?]!>".
+      by iApply "HPbPb'". }
+    iMod (slice_split _ _ true with "Hslice Hbox")
+      as (γ1 γ2) "(Hγ1 & Hγ2 & % & Hs1 & Hs2 & Hbox)"; first solve_ndisj.
+    { by rewrite lookup_insert. }
+    rewrite delete_insert //. iDestruct "Hγ1" as %Hγ1. iDestruct "Hγ2" as %Hγ2.
     iMod (own_bor_update_2 with "Hown Hbor") as "Hbor".
     { etrans; last etrans.
       - apply auth_update_dealloc. by apply delete_singleton_local_update, _.
@@ -100,11 +109,13 @@ Proof.
                 -fmap_None -lookup_fmap fmap_delete //. }
     rewrite !own_bor_op. iDestruct "Hbor" as "[[H● H◯2] H◯1]".
     iAssert (&{κ}P)%I with "[H◯1 Hs1]" as "$".
-    { rewrite /bor /raw_bor /idx_bor_own. iExists κ'. iFrame "#". iExists γ1. iFrame. }
+    { rewrite /bor /raw_bor /idx_bor_own. iExists κ'. iFrame "#". iExists γ1.
+      iFrame. iExists P. rewrite -uPred.iff_refl. auto. }
     iAssert (&{κ}Q)%I with "[H◯2 Hs2]" as "$".
-    { rewrite /bor /raw_bor /idx_bor_own. iExists κ'. iFrame "#". iExists γ2. iFrame. }
+    { rewrite /bor /raw_bor /idx_bor_own. iExists κ'. iFrame "#". iExists γ2.
+      iFrame. iExists Q. rewrite -uPred.iff_refl. auto. }
     iApply "Hclose". iExists A, I. iFrame. rewrite big_sepS_later.
-    iApply "Hclose'". iLeft. iFrame "%". iExists Pb, Pi. iFrame. iExists _.
+    iApply "Hclose'". iLeft. iFrame "%". iExists Pb', Pi. iFrame. iExists _.
     rewrite /to_borUR -!fmap_delete -!fmap_insert. iFrame "Hbox H●".
     rewrite !big_sepM_insert /=.
     + by rewrite left_id -(big_sepM_delete _ _ _ _ EQB).
@@ -131,6 +142,8 @@ Proof.
     done. by apply gmultiset_union_subseteq_r.
   iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose". unfold raw_bor, idx_bor_own.
   iDestruct "Hbor1" as (j1) "[Hbor1 Hslice1]". iDestruct "Hbor2" as (j2) "[Hbor2 Hslice2]".
+  iDestruct "Hslice1" as (P') "[#HPP' Hslice1]".
+  iDestruct "Hslice2" as (Q') "[#HQQ' Hslice2]".
   iDestruct (own_bor_auth with "HI Hbor1") as %Hκ'.
   rewrite big_sepS_later big_sepS_elem_of_acc ?elem_of_dom //
           /lfts_inv /lft_inv /lft_inv_dead /lft_alive_in. simpl.
@@ -166,7 +179,8 @@ Proof.
     iAssert (&{κ}(P ∗ Q))%I with "[H◯ Hslice]" as "$".
     { rewrite /bor /raw_bor /idx_bor_own. iExists (κ1 ∪ κ2).
       iSplit; first by iApply (lft_incl_glb with "Hκ1 Hκ2").
-      iExists γ. iFrame. }
+      iExists γ. iFrame. iExists _. iFrame. iNext. iAlways.
+      by iSplit; iIntros "[HP HQ]"; iSplitL "HP"; (iApply "HPP'" || iApply "HQQ'"). }
     iApply "Hclose". iExists A, I. iFrame. rewrite big_sepS_later.
     iApply "Hclose'". iLeft. iFrame "%". iExists Pb, Pi. iFrame. iExists _.
     rewrite /to_borUR -!fmap_delete -!fmap_insert. iFrame "Hbox H●".
@@ -182,5 +196,4 @@ Proof.
       iRight. iSplit; last by auto. iExists _. iFrame. }
     unfold bor. iExists _. iFrame. iApply (lft_incl_glb with "Hκ1 Hκ2").
 Qed.
-
 End borrow.

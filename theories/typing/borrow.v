@@ -20,8 +20,8 @@ Section borrow.
     iDestruct "H" as ([[]|]) "[% Hown]"; try iDestruct "Hown" as "[]".
     iDestruct "Hown" as "[Hmt ?]". iMod (bor_create with "LFT Hmt") as "[Hbor Hext]". done.
     iModIntro. iSplitL "Hbor".
-    - iExists _. iSplit. done. iExists _. erewrite <-uPred.iff_refl. eauto.
-    - iExists _. iSplit. done. iIntros "H†". by iMod ("Hext" with "H†") as "$".
+    - iExists _. auto.
+    - iExists _. iSplit. done. by iFrame.
   Qed.
 
   Lemma tctx_extract_hasty_borrow E L p n ty ty' κ T :
@@ -51,18 +51,17 @@ Section borrow.
     rewrite tctx_interp_singleton.
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown";
-      (try iDestruct "Hown" as "[]"). iDestruct "Hown" as (P) "[#HPiff HP]".
-    iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
-    iMod (bor_acc_cons with "LFT H↦ Htok") as "[H↦ Hclose']". done.
+      (try iDestruct "Hown" as "[]").
+    iMod (bor_acc_cons with "LFT Hown Htok") as "[H↦ Hclose']". done.
     iDestruct "H↦" as ([|[[|l'|]|][]]) "[>H↦ Hown]"; try iDestruct "Hown" as ">[]".
       iDestruct "Hown" as "[Hown H†]". rewrite heap_mapsto_vec_singleton. wp_read.
-    iMod ("Hclose'" with "*[H↦ Hown H†][]") as "[Hbor Htok]"; last 1 first.
+    iMod ("Hclose'" $! (l↦#l' ∗ freeable_sz n (ty_size ty) l' ∗ _)%I
+          with "*[H↦ Hown H†][]") as "[Hbor Htok]"; last 1 first.
     - iMod (bor_sep with "LFT Hbor") as "[_ Hbor]". done.
-      iMod (bor_sep _ _ _ (l' ↦∗: ty_own ty tid) with "LFT Hbor") as "[_ Hbor]". done.
+      iMod (bor_sep with "LFT Hbor") as "[_ Hbor]". done.
       iMod ("Hclose" with "Htok") as "($ & $)".
-      rewrite tctx_interp_singleton tctx_hasty_val' //. iExists _.
-      erewrite <-uPred.iff_refl. auto.
-    - iFrame "H↦ H† Hown".
+      by rewrite tctx_interp_singleton tctx_hasty_val' //=.
+    - iFrame.
     - iIntros "!>(?&?&?)!>". iNext. iExists _.
       rewrite -heap_mapsto_vec_singleton. iFrame. by iFrame.
   Qed.
@@ -115,15 +114,11 @@ Section borrow.
     { by iApply elctx_interp_persist. } { by iApply llctx_interp_persist. }
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown";
-      try iDestruct "Hown" as "[]". iDestruct "Hown" as (P) "[#HPiff HP]".
-    iMod (bor_iff with "LFT [] HP") as "H↦". set_solver. by eauto.
-    iMod (bor_exists with "LFT H↦") as (vl) "Hbor". done.
+      try iDestruct "Hown" as "[]".
+    iMod (bor_exists with "LFT Hown") as (vl) "Hbor". done.
     iMod (bor_sep with "LFT Hbor") as "[H↦ Hbor]". done.
     destruct vl as [|[[]|][]];
       try by iMod (bor_persistent_tok with "LFT Hbor Htok") as "[>[] _]".
-    iMod (bor_exists with "LFT Hbor") as (P') "Hbor". done.
-    iMod (bor_sep with "LFT Hbor") as "[H Hbor]". done.
-    iMod (bor_persistent_tok with "LFT H Htok") as "[#HP'iff Htok]". done.
     iMod (bor_acc with "LFT H↦ Htok") as "[>H↦ Hclose']". done.
     rewrite heap_mapsto_vec_singleton.
     iApply (wp_fupd_step  _ (⊤∖↑lftN) with "[Hbor]"); try done.
@@ -132,7 +127,7 @@ Section borrow.
     iMod ("Hclose'" with "[H↦]") as "[H↦ Htok]"; first by auto.
     iMod ("Hclose" with "Htok") as "($ & $)".
     rewrite tctx_interp_singleton tctx_hasty_val' //.
-    iExists _. iSplitR; first by auto. iApply (bor_shorten with "[] Hbor").
+    iApply (bor_shorten with "[] Hbor").
     iApply (lft_incl_glb with "Hincl"). iApply lft_incl_refl.
   Qed.
 

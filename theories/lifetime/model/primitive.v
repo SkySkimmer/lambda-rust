@@ -373,6 +373,21 @@ Lemma lft_incl_intro κ κ' :
 Proof. reflexivity. Qed.
 
 (** Basic rules about borrows *)
+Lemma raw_bor_iff_proper i P P' : ▷ □ (P ↔ P') -∗ raw_bor i P -∗ raw_bor i P'.
+Proof.
+  iIntros "#HPP' HP". unfold raw_bor. iDestruct "HP" as (s) "[HiP HP]".
+  iExists s. iFrame. iDestruct "HP" as (P0) "[#Hiff ?]". iExists P0. iFrame.
+  iNext. iAlways. iSplit; iIntros.
+  by iApply "HPP'"; iApply "Hiff". by iApply "Hiff"; iApply "HPP'".
+Qed.
+
+Lemma idx_bor_iff_proper κ i P P' : ▷ □ (P ↔ P') -∗ &{κ,i}P -∗ &{κ,i}P'.
+Proof.
+  unfold idx_bor. iIntros "#HPP' [$ HP]". iDestruct "HP" as (P0) "[#HP0P Hs]".
+  iExists P0. iFrame. iNext. iAlways. iSplit; iIntros.
+  by iApply "HPP'"; iApply "HP0P". by iApply "HP0P"; iApply "HPP'".
+Qed.
+
 Lemma bor_unfold_idx κ P : &{κ}P ⊣⊢ ∃ i, &{κ,i}P ∗ idx_bor_own 1 i.
 Proof.
   rewrite /bor /raw_bor /idx_bor /bor_idx. iSplit.
@@ -380,6 +395,12 @@ Proof.
     iExists (κ', s). by iFrame.
   - iDestruct 1 as ([κ' s]) "[[??]?]".
     iExists κ'. iFrame. iExists s. by iFrame.
+Qed.
+
+Lemma bor_iff_proper κ P P' : ▷ □ (P ↔ P') -∗ &{κ}P -∗ &{κ}P'.
+Proof.
+  rewrite !bor_unfold_idx. iIntros "#HPP' HP". iDestruct "HP" as (i) "[??]".
+  iExists i. iFrame. by iApply (idx_bor_iff_proper with "HPP'").
 Qed.
 
 Lemma bor_shorten κ κ' P : κ ⊑ κ' -∗ &{κ'}P -∗ &{κ}P.

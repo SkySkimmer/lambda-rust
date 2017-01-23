@@ -90,7 +90,7 @@ Proof.
     by do 2 eapply lookup_to_gmap_None. }
   rewrite /bor /raw_bor /idx_bor_own /=. iModIntro. iSplitR "H◯".
   - iExists ({[γ]} ∪ B), (P ∗ Pinh)%I. rewrite !to_gmap_union_singleton. by iFrame.
-  - iExists γ. by iFrame.
+  - iExists γ. iFrame. iExists P. rewrite -uPred.iff_refl. eauto.
 Qed.
 
 Lemma raw_bor_fake' E κ P :

@@ -67,9 +67,11 @@ Module Type lifetime_sig.
   Global Declare Instance bor_ne κ n : Proper (dist n ==> dist n) (bor κ).
   Global Declare Instance bor_contractive κ : Contractive (bor κ).
   Global Declare Instance bor_proper κ : Proper ((≡) ==> (≡)) (bor κ).
+  Parameter bor_iff_proper : ∀ κ P P', ▷ □ (P ↔ P') -∗ &{κ}P -∗ &{κ}P'.
   Global Declare Instance idx_bor_ne κ i n : Proper (dist n ==> dist n) (idx_bor κ i).
   Global Declare Instance idx_bor_contractive κ i : Contractive (idx_bor κ i).
   Global Declare Instance idx_bor_proper κ i : Proper ((≡) ==> (≡)) (idx_bor κ i).
+  Parameter idx_bor_iff_proper : ∀ κ i P P', ▷ □ (P ↔ P') -∗ &{κ,i}P -∗ &{κ,i}P'.
 
   Global Declare Instance lft_tok_fractional κ : Fractional (λ q, q.[κ])%I.
   Global Declare Instance lft_tok_as_fractional κ q :

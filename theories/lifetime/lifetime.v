@@ -67,17 +67,6 @@ Proof.
   iModIntro. iNext. iApply ("Hclose" with "* HP []"). by iIntros "!> $".
 Qed.
 
-Lemma bor_iff (P Q : iProp Σ) E κ :
-  ↑lftN ⊆ E →
-  lft_ctx -∗ ▷ □ (P ↔ Q) -∗ &{κ}P ={E}=∗ &{κ}Q.
-Proof.
-  iIntros (?) "#LFT #Heq Hb".
-  iMod (bor_acc_atomic_cons with "LFT Hb") as "[[HP Hclose]|[H† Hclose]]". done.
-  - iApply ("Hclose" with "[HP] []").
-      by iApply "Heq". by iIntros "!>HQ!>"; iApply "Heq".
-  - iMod "Hclose". by iApply (bor_fake with "LFT").
-Qed.
-
 Lemma bor_persistent P `{!PersistentP P} E κ :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ}P ={E}=∗ ▷ P ∨ [†κ].

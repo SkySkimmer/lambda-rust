@@ -35,7 +35,7 @@ Proof.
     by iApply (lft_incl_trans with "H⊑").
   - iIntros "Hκ†". iMod ("Hclose" with "[Hκ†]") as "Hκ''".
     { iApply lft_dead_or; auto. }
-    iModIntro. rewrite /bor. eauto. 
+    iModIntro. rewrite /bor. eauto.
 Qed.
 
 Lemma bor_unnest E κ κ' P :
@@ -70,13 +70,16 @@ Proof.
     iApply (lft_incl_dead with "[] H†"); first done.
     by iApply (lft_incl_mono with "Hκ⊑"). }
   rewrite {1}/raw_bor /idx_bor_own /=; iDestruct "Hκ" as (i) "[Hi #Hislice]".
+  iDestruct "Hislice" as (P') "[#HPP' Hislice]".
   rewrite lft_inv_alive_unfold;
     iDestruct "Hinv'" as (Pb Pi) "(Halive & Hvs & Hinh)".
   rewrite /lft_bor_alive; iDestruct "Halive" as (B) "(Hbox & >HB● & HB)".
   iDestruct (own_bor_valid_2 with "HB● Hi")
     as %[HB%to_borUR_included _]%auth_valid_discrete_2.
-  iMod (slice_delete_full _ _ true with "Hislice Hbox") as (Pb') "(HP & #EQ & Hbox)"; first solve_ndisj.
-  {  by rewrite lookup_fmap HB. }
+  iMod (slice_delete_full _ _ true with "Hislice Hbox")
+    as (Pb') "(HP & #EQ & Hbox)"; first solve_ndisj.
+  { by rewrite lookup_fmap HB. }
+  iDestruct ("HPP'" with "HP") as "HP".
   iMod (own_bor_update_2 with "HB● Hi") as "HB●".
   { apply auth_update_dealloc, delete_singleton_local_update. apply _. }
   iMod (fupd_intro_mask') as "Hclose'"; last iModIntro; first solve_ndisj.
@@ -90,7 +93,7 @@ Proof.
     [solve_ndisj|exact: gmultiset_union_subseteq_l|done| |].
   { (* TODO: Use iRewrite supporting contractive rewriting. *)
     iApply (lft_vs_cons with "[]"); last done.
-     iIntros "[$ Hbor]". iModIntro. iNext. by iRewrite "EQ". }
+    iIntros "[$ [Hbor HPb']]". iModIntro. iNext. iRewrite "EQ". iFrame. by iApply "HPP'". }
   iMod ("Hclose" with "[-HP]") as "_".
   { iNext. simpl. rewrite /lfts_inv. iExists A, I. iFrame.
     rewrite (big_sepS_delete _ (dom _ I) κ''); last by apply elem_of_dom.
@@ -99,5 +102,4 @@ Proof.
   iModIntro. rewrite /bor. iExists κ''. iFrame. subst κ''.
   by iApply (lft_incl_mono with "Hκ⊑").
 Qed.
-
 End reborrow.

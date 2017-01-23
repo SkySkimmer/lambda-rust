@@ -158,7 +158,8 @@ Section lft_contexts.
   Proof.
     iIntros "#LFT Hκ". rewrite /llctx_elt_interp /=. (* TODO: Why is this unfold necessary? *)
     iDestruct "Hκ" as (κ) "(% & Hκ & _)".
-    iMod (bor_create _ κ2 with "LFT [Hκ]") as "[Hκ _]"; first done; first by iFrame.
+    iMod (bor_create _ κ2 (qL).[κ] with "LFT [Hκ]") as "[Hκ _]";
+      first done; first by iFrame.
     iMod (bor_fracture (λ q, (qL * q).[_])%I with "LFT [Hκ]") as "#Hκ"; first done.
     { rewrite Qp_mult_1_r. done. }
     iModIntro. subst κ1. iSplit.

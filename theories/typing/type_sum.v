@@ -66,9 +66,8 @@ Section case.
     iIntros (Halive Hel) "!#". iIntros (tid qE) "#HEAP #LFT Hna HE HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
     iApply (wp_hasty with "Hp"). iIntros ([[]|] Hv) "Hp"; try iDestruct "Hp" as "[]".
-    iDestruct "Hp" as (P) "[HP Hb]". iMod (bor_iff with "LFT HP Hb") as "Hb". done.
     iMod (Halive with "HE HL") as (q) "[Htok Hclose]". done.
-    iMod (bor_acc_cons with "LFT Hb Htok") as "[H↦ Hclose']". done.
+    iMod (bor_acc_cons with "LFT Hp Htok") as "[H↦ Hclose']". done.
     iDestruct "H↦" as (vl) "[H↦ Hown]".
     iDestruct "Hown" as (i vl' vl'') "(>% & >EQlen & Hown)". subst.
     iDestruct "EQlen" as %[=EQlen].
@@ -90,8 +89,7 @@ Section case.
         rewrite /= -EQlen !app_length EQlenvl' EQlenvl'2 nth_lookup EQty /=. auto. }
       iMod ("Hclose" with "Htok") as "[HE HL]".
       iApply (Hety with "HEAP LFT Hna HE HL HC").
-      rewrite !tctx_interp_cons !tctx_hasty_val' /= ?Hv //. iFrame "HT".
-      iExists _. erewrite <-uPred.iff_refl. auto.
+      rewrite !tctx_interp_cons !tctx_hasty_val' /= ?Hv //. iFrame.
     - iMod ("Hclose'" with "* [H↦i H↦vl' H↦vl'' Hown] []") as "[Hb Htok]";
         [|by iIntros "!>$"|].
       { iExists (#i::vl'++vl'').
@@ -99,8 +97,7 @@ Section case.
         iExists i, vl', vl''. rewrite nth_lookup EQty. auto. }
       iMod ("Hclose" with "Htok") as "[HE HL]".
       iApply (Hety with "HEAP LFT Hna HE HL HC").
-      rewrite !tctx_interp_cons !tctx_hasty_val' /= ?Hv //. iFrame "HT".
-      iExists _. erewrite <-uPred.iff_refl. auto.
+      rewrite !tctx_interp_cons !tctx_hasty_val' /= ?Hv //. iFrame.
   Qed.
 
   Lemma type_case_uniq E L C T T' p κ tyl el :
