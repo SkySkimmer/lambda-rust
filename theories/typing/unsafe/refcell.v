@@ -23,7 +23,10 @@ Definition reading_st (q : frac) (κ : lft) : refcell_stR :=
   Some (Cinr (to_agree (κ : leibnizC lft), q, xH)).
 Definition writing_st (q : frac) : refcell_stR := Some (Cinl (Excl ())).
 
-Section refcell.
+Definition refcellN := nroot .@ "refcell".
+Definition refcell_invN := refcellN .@ "inv".
+
+Section refcell_inv.
   Context `{typeG Σ, refcellG Σ}.
 
   Definition refcell_inv tid (l : loc) (γ : gname) (α : lft) ty : iProp Σ :=
@@ -67,6 +70,10 @@ Section refcell.
       by iApply lft_glb_mono; [iApply Hα|iApply lft_incl_refl].
     - iIntros "?". iApply ("Hb" with ">"). by iApply "H†".
   Qed.
+End refcell_inv.
+
+Section refcell.
+  Context `{typeG Σ, refcellG Σ}.
 
   Program Definition refcell (ty : type) :=
     {| ty_size := S ty.(ty_size);
@@ -76,7 +83,7 @@ Section refcell.
          | _ => False
          end%I;
        ty_shr κ tid l :=
-         (∃ α γ, κ ⊑ α ∗ &na{α, tid, lrustN}(refcell_inv tid l γ α ty))%I |}.
+         (∃ α γ, κ ⊑ α ∗ &na{α, tid, refcell_invN}(refcell_inv tid l γ α ty))%I |}.
   Next Obligation.
     iIntros (??[|[[]|]]); try iIntros "[]". rewrite ty_size_eq.
     iIntros "[_ %]!%/=". congruence.
@@ -164,4 +171,108 @@ Section refcell.
   Proof. move=>????[|[[]|]]//=??. iIntros "[$?]". by iApply send_change_tid. Qed.
 End refcell.
 
-Hint Resolve refcell_mono' refcell_proper' : lrust_typing.
+Definition refcell_refN := refcellN .@ "ref".
+
+Section ref.
+  Context `{typeG Σ, refcellG Σ}.
+
+  Program Definition ref (α : lft) (ty : type) :=
+    {| ty_size := 2;
+       ty_own tid vl :=
+         match vl return _ with
+         | [ #(LitLoc lv);  #(LitLoc lrc) ] =>
+           ∃ ν q γ β ty', ty.(ty_shr) (α ∪ ν) tid lv ∗
+             α ⊑ β ∗ &na{β, tid, refcell_invN}(refcell_inv tid lrc γ β ty') ∗
+             q.[ν] ∗ own γ (◯ reading_st q ν)
+         | _ => False
+         end;
+       ty_shr κ tid l :=
+         ▷ ∃ ν q γ β ty' (lv lrc : loc),
+           κ ⊑ ν ∗ &frac{κ} (λ q, l↦∗{q} [ #lv; #lrc]) ∗
+           ty.(ty_shr) (α ∪ ν) tid lv ∗
+           α ⊑ β ∗ &na{β, tid, refcell_invN}(refcell_inv tid lrc γ β ty') ∗
+           &na{κ, tid, refcell_refN}(own γ (◯ reading_st q ν)) |}%I.
+  Next Obligation.
+    iIntros (???[|[[]|][|[[]|][]]]); try iIntros "[]". by iIntros "_".
+  Qed.
+  Next Obligation.
+    iIntros (α ty E κ l tid q ?) "#LFT Hb Htok".
+    iMod (bor_exists with "LFT Hb") as (vl) "Hb". done.
+    iMod (bor_sep with "LFT Hb") as "[H↦ Hb]". done.
+    iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦". done.
+    destruct vl as [|[[|lv|]|][|[[|lrc|]|][]]];
+      try by iMod (bor_persistent_tok with "LFT Hb Htok") as "[>[] _]".
+    iMod (bor_exists with "LFT Hb") as (ν) "Hb". done.
+    iMod (bor_exists with "LFT Hb") as (q') "Hb". done.
+    iMod (bor_exists with "LFT Hb") as (γ) "Hb". done.
+    iMod (bor_exists with "LFT Hb") as (β) "Hb". done.
+    iMod (bor_exists with "LFT Hb") as (ty') "Hb". done.
+    iMod (bor_sep with "LFT Hb") as "[Hshr Hb]". done.
+    iMod (bor_persistent_tok with "LFT Hshr Htok") as "[#Hshr Htok]". done.
+    iMod (bor_sep with "LFT Hb") as "[Hαβ Hb]". done.
+    iMod (bor_persistent_tok with "LFT Hαβ Htok") as "[#Hαβ Htok]". done.
+    iMod (bor_sep with "LFT Hb") as "[Hinv Hb]". done.
+    iMod (bor_persistent_tok with "LFT Hinv Htok") as "[#Hinv $]". done.
+    iMod (bor_sep with "LFT Hb") as "[Hκν Hb]". done.
+    (* FIXME : I cannot write #Hκν directly. *)
+    iDestruct (frac_bor_lft_incl with "LFT >[Hκν]") as "Hκν";
+      last iDestruct "Hκν" as "#Hκν".
+    { iApply bor_fracture; try done. by rewrite Qp_mult_1_r. }
+    iMod (bor_na with "Hb") as "#Hb". done. eauto 20.
+  Qed.
+  Next Obligation.
+    iIntros (??????) "#? #? H". iDestruct "H" as (ν q γ β ty' lv lrc) "H".
+    iExists _, _, _, _, _, _, _. iDestruct "H" as "#(? & ? & $ & $ & $ & ?)".
+    iNext. iSplit; last iSplit.
+    - by iApply lft_incl_trans.
+    - by iApply frac_bor_shorten.
+    - by iApply na_bor_shorten.
+  Qed.
+
+  Global Instance ref_contractive α : Contractive (ref α).
+  Proof.
+    intros n ?? EQ. unfold ref. split; [split|]=>//=.
+    - f_contractive=>tid vl. repeat (f_contractive || f_equiv). apply EQ.
+    - intros κ tid l. f_contractive. repeat f_equiv. apply EQ.
+  Qed.
+  Global Instance ref_ne n α : Proper (dist n ==> dist n) (ref α).
+  Proof. apply contractive_ne, _. Qed.
+
+  Global Instance ref_mono E L :
+    Proper (flip (lctx_lft_incl E L) ==> eqtype E L ==> subtype E L) ref.
+  Proof.
+    iIntros (α1 α2 Hα ty1 ty2 Hty) "#LFT #HE #HL".
+    pose proof Hty as Hty'%eqtype_unfold.
+    iDestruct (Hty' with "LFT HE HL") as "(%&#Ho&#Hs)".
+    iDestruct (Hα with "HE HL") as "Hα1α2".
+    iSplit; [|iSplit; iAlways].
+    - done.
+    - iIntros (tid [|[[]|][|[[]|][]]]); try iIntros "[]". iIntros "H".
+      iDestruct "H" as (ν q γ β ty') "(#Hshr & #H⊑ & #Hinv & Htok & Hown)".
+      iExists ν, q, γ, β, ty'. iFrame "∗#". iSplit.
+      + iApply ty_shr_mono; last by iApply "Hs". done.
+        iApply lft_glb_mono. done. iApply lft_incl_refl.
+      + by iApply lft_incl_trans.
+    - iIntros (κ tid l) "H". iNext. iDestruct "H" as (ν q γ β ty' lv lrc) "H".
+      iExists ν, q, γ, β, ty', lv, lrc. iDestruct "H" as "#($&$&?&?&$&$)". iSplit.
+      + iApply ty_shr_mono; last by iApply "Hs". done.
+        iApply lft_glb_mono. done. iApply lft_incl_refl.
+      + by iApply lft_incl_trans.
+  Qed.
+  Global Instance ref_mono_flip E L :
+    Proper (lctx_lft_incl E L ==> flip (eqtype E L) ==> flip (subtype E L)) ref.
+  Proof. intros ??????. by apply ref_mono. Qed.
+  Lemma ref_mono' E L α1 α2 ty1 ty2 :
+    lctx_lft_incl E L α2 α1 → eqtype E L ty1 ty2 →
+    subtype E L (ref α1 ty1) (ref α2 ty2).
+  Proof. intros. by eapply ref_mono. Qed.
+  Global Instance ref_proper E L :
+    Proper (lctx_lft_eq E L ==> eqtype E L ==> eqtype E L) ref.
+  Proof. intros ??[]???. split; by apply ref_mono'. Qed.
+  Lemma ref_proper' E L α1 α2 ty1 ty2 :
+    lctx_lft_eq E L α1 α2 → eqtype E L ty1 ty2 →
+    eqtype E L (ref α1 ty1) (ref α2 ty2).
+  Proof. intros. by eapply ref_proper. Qed.
+End ref.
+
+Hint Resolve refcell_mono' refcell_proper' ref_mono' ref_proper' : lrust_typing.
