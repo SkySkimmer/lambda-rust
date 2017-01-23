@@ -70,7 +70,7 @@ Section cell.
 
   Global Instance cell_send :
     Send ty → Send (cell ty).
-  Proof. intros. split. simpl. apply send_change_tid. Qed.
+  Proof. by unfold cell, Send. Qed.
 End cell.
 
 Section typing.
