@@ -395,46 +395,73 @@ Hint Resolve refcell_mono' refcell_proper' ref_mono' ref_proper'
 Section refcell_functions.
   Context `{typeG Σ, refcellG Σ}.
 
-  (* Constructing a cell. *)
+  (* Constructing a refcell. *)
   Definition refcell_new ty : val :=
     funrec: <> ["x"] :=
       let: "r" := new [ #(S ty.(ty_size))] in
       "r" +ₗ #0 <- #0;;
       "r" +ₗ #1 <-{ty.(ty_size)} !"x";;
-      "k" ["r"]
-      cont: "k" ["r"] :=
-        delete [ #ty.(ty_size) ; "x"];; "return" ["r"].
+       delete [ #ty.(ty_size) ; "x"];; "return" ["r"].
 
   Lemma refcell_new_type ty :
     typed_instruction_ty [] [] [] (refcell_new ty)
         (fn (λ _, [])%EL (λ _, [# ty]) (λ _:(), refcell ty)).
   Proof.
     apply type_fn; [apply _..|]. move=>/= _ ret arg. inv_vec arg=>x. simpl_subst.
-    eapply (type_cont [_] []
-         (λ r, [x ◁ box (uninit ty.(ty_size)); r!!!0 ◁ box (refcell ty)])%TC);
-      [solve_typing..| |]; last first.
-    { simpl. intros k arg. inv_vec arg=>r. simpl_subst.
-      eapply type_delete; [solve_typing..|].
-      eapply (type_jump [_]); solve_typing. }
-    intros k. simpl_subst. eapply type_new; [solve_typing..|].
+    eapply type_new; [solve_typing..|].
     iIntros (r) "!# * #HEAP #LFT Hna HE HL Hk HT". simpl_subst.
     rewrite (Nat2Z.id (S ty.(ty_size))) tctx_interp_cons
             tctx_interp_singleton !tctx_hasty_val.
-    rewrite cctx_interp_cons cctx_interp_singleton.
-    iDestruct ("Hk" with "HE") as "[Hk _]". iDestruct "HT" as "[Hr Hx]".
+    rewrite cctx_interp_singleton. iDestruct ("Hk" with "HE") as "Hret".
+    iDestruct "HT" as "[Hr Hx]".
     destruct x as [[]|]; try iDestruct "Hx" as "[]". iDestruct "Hx" as "[Hx Hx†]".
     iDestruct "Hx" as (vl) "[Hx↦ Hx]".
     destruct r as [[]|]; try iDestruct "Hr" as "[]". iDestruct "Hr" as "[Hr Hr†]".
     iDestruct "Hr" as (vl') "Hr". rewrite uninit_own. iDestruct "Hr" as "[Hr↦ >SZ]".
     destruct vl' as [|]; iDestruct "SZ" as %[=]. rewrite heap_mapsto_vec_cons.
     iDestruct "Hr↦" as "[Hr↦0 Hr↦1]". wp_op. rewrite shift_loc_0. wp_write. wp_op.
-    iDestruct (ty.(ty_size_eq) with "Hx") as %?.
+    iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
     wp_bind (_ <-{_} !_)%E. iApply (wp_memcpy with "[$HEAP $Hr↦1 $Hx↦]"); [done..|].
-    iIntros "!> [Hr↦1 Hx↦]". wp_seq.
-    iApply ("Hk" $! [# #_] with "Hna HL").
-    rewrite tctx_interp_cons tctx_interp_singleton /= !tctx_hasty_val' //=. iFrame.
-    iSplitL "Hx↦".
-    - iExists vl. iFrame. rewrite uninit_own. auto.
-    - iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame "Hr↦0 ∗". auto.
+    iIntros "!> [Hr↦1 Hx↦]". wp_seq. wp_bind (delete _).
+    rewrite freeable_sz_full. iApply (wp_delete with "[$HEAP $Hx↦ Hx†]"); [by auto..| |].
+    { by rewrite Hsz. }
+    iIntros "!>_". wp_seq. iApply ("Hret" $! [# #_] with "Hna HL").
+    rewrite tctx_interp_singleton !tctx_hasty_val' //=. iFrame.
+    iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame "Hr↦0 ∗". auto.
   Qed.
+
+  (* The other direction. *)
+  Definition refcell_into_inner ty : val :=
+    funrec: <> ["x"] :=
+      let: "r" := new [ #ty.(ty_size)] in
+      "r" <-{ty.(ty_size)} !"x" +ₗ #1;;
+       delete [ #(S ty.(ty_size)) ; "x"];; "return" ["r"].
+
+  Lemma refcell_into_inner_type ty :
+    typed_instruction_ty [] [] [] (refcell_into_inner ty)
+        (fn (λ _, [])%EL (λ _, [# refcell ty]) (λ _:(), ty)).
+  Proof.
+    apply type_fn; [apply _..|]. move=>/= _ ret arg. inv_vec arg=>x. simpl_subst.
+    eapply type_new; [solve_typing..|].
+    iIntros (r) "!# * #HEAP #LFT Hna HE HL Hk HT". simpl_subst.
+    rewrite (Nat2Z.id (ty.(ty_size))) tctx_interp_cons
+            tctx_interp_singleton !tctx_hasty_val.
+    rewrite cctx_interp_singleton. iDestruct ("Hk" with "HE") as "Hret".
+    iDestruct "HT" as "[Hr Hx]". destruct x as [[]|]; try iDestruct "Hx" as "[]".
+    iDestruct "Hx" as "[Hx Hx†]". rewrite freeable_sz_full.
+    iDestruct "Hx" as ([|[[]|]vl]) "[Hx↦ Hx]"; try iDestruct "Hx" as ">[]".
+    destruct r as [[]|]; try iDestruct "Hr" as "[]". iDestruct "Hr" as "[Hr Hr†]".
+    iDestruct "Hr" as (vl') "Hr". rewrite freeable_sz_full uninit_own heap_mapsto_vec_cons.
+    iDestruct "Hr" as "[Hr↦ >%]". iDestruct "Hx↦" as "[Hx↦0 Hx↦1]". wp_op.
+    iDestruct "Hx" as "[% Hx]". iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
+    wp_bind (_ <-{_} !_)%E. iApply (wp_memcpy with "[$HEAP $Hr↦ $Hx↦1]"); [done..|].
+    iIntros "!> [Hr↦ Hx↦1]". wp_seq. wp_bind (delete _).
+    iApply (wp_delete _ _ _ (_::_) with "[$HEAP Hx↦0 Hx↦1 Hx†]").
+    done. { by rewrite -Hsz. } { rewrite heap_mapsto_vec_cons -Hsz. iFrame. }
+    iIntros "!>_". wp_seq. iApply ("Hret" $! [# #_] with "Hna HL").
+    rewrite tctx_interp_singleton !tctx_hasty_val' //=. rewrite /= freeable_sz_full.
+    iFrame. iExists _. iFrame.
+  Qed.
+
+
 End refcell_functions.
