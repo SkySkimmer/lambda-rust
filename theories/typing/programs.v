@@ -154,7 +154,7 @@ Section typing_rules.
     iIntros "[Hκ HL] HC HT". iDestruct "Hκ" as (Λ) "(% & Htok & #Hend)".
     iSpecialize ("Hend" with "Htok"). wp_bind Endlft.
     iApply (wp_fupd_step with "Hend"); try done. wp_seq.
-    iIntros "!> #Hdead !>". wp_seq. iApply (He with "HEAP LFT Htl HE HL HC >").
+    iIntros "#Hdead !>". wp_seq. iApply (He with "HEAP LFT Htl HE HL HC >").
     iApply (Hub with "[] HT"). simpl in *. subst κ. rewrite -lft_dead_or. auto.
   Qed.
 
@@ -186,7 +186,7 @@ Section typing_rules.
     iMod (Hwrt with "* [] LFT HE HL Hown1") as (l vl) "([% %] & Hl & Hclose)"; first done.
     subst v1. iDestruct (ty_size_eq with "Hown2") as "#Hsz". iDestruct "Hsz" as %Hsz.
     rewrite <-Hsz in *. destruct vl as [|v[|]]; try done.
-    rewrite heap_mapsto_vec_singleton. wp_write.
+    rewrite heap_mapsto_vec_singleton. iApply wp_fupd. wp_write.
     rewrite -heap_mapsto_vec_singleton.
     iMod ("Hclose" with "* [Hl Hown2]") as "($ & $ & Hown)".
     { iExists _. iFrame. }
@@ -212,7 +212,7 @@ Section typing_rules.
         (l vl q) "(% & Hl & Hown & Hclose)"; first done.
     subst v. iDestruct (ty_size_eq with "Hown") as "#>%". rewrite ->Hsz in *.
     destruct vl as [|v [|]]; try done.
-    rewrite heap_mapsto_vec_singleton. wp_read.
+    rewrite heap_mapsto_vec_singleton. iApply wp_fupd. wp_read.
     iMod ("Hclose" with "Hl") as "($ & $ & Hown2)".
     rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
     by iFrame.

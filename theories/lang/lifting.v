@@ -144,7 +144,7 @@ Proof.
 Qed.
 
 Lemma wp_rec E e f xl erec erec' el Φ :
-  e = Rec f xl erec → (* to avoids recursive calls being unfolded *)
+  e = Rec f xl erec →
   Forall (λ ei, is_Some (to_val ei)) el →
   Closed (f :b: xl +b+ []) erec →
   subst_l (f::xl) (e::el) erec = Some erec' →

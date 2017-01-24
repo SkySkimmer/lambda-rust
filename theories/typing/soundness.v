@@ -54,7 +54,7 @@ Section type_soundness.
     iApply ("Hmain" $! () exit_cont [#] tid 1%Qp with "HEAP LFT Htl HE HL []");
       last by rewrite tctx_interp_nil.
     iIntros "_". rewrite cctx_interp_singleton. simpl. iIntros (args) "_ _".
-    inv_vec args. iIntros (x) "_". by wp_seq.
+    inv_vec args. iIntros (x) "_ /=". by wp_lam.
   Qed.
 End type_soundness.
 

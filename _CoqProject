@@ -23,7 +23,6 @@ theories/lang/notation.v
 theories/lang/proofmode.v
 theories/lang/races.v
 theories/lang/tactics.v
-theories/lang/wp_tactics.v
 theories/typing/type.v
 theories/typing/lft_contexts.v
 theories/typing/type_context.v

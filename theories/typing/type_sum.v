@@ -156,15 +156,14 @@ Section case.
     iMod (Hw with "* [] LFT HE HL Hty1") as (l vl) "(H & H↦ & Hw)"=>//=.
     destruct vl as [|? vl]; iDestruct "H" as %[[= Hlen] ->].
     rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[H↦0 H↦vl]".
-    wp_write. iApply wp_seq. done. iNext. wp_bind p1.
-    iApply (wp_wand with "[]"); first by iApply (wp_eval_path).
+    wp_write. wp_bind p1. iApply (wp_wand with "[]"); first by iApply (wp_eval_path).
     iIntros (? ->). wp_op. wp_bind p2. iApply (wp_hasty with "Hp2").
     iIntros (v2 Hv2) "Hty2". iDestruct (ty_size_eq with "Hty2") as %Hlenty.
     destruct vl as [|? vl].
     { exfalso. revert i Hty. clear - Hlen Hlenty. induction tyl=>//= -[|i] /=.
       - intros [= ->]. simpl in *. lia.
       - apply IHtyl. simpl in *. lia. }
-    rewrite heap_mapsto_vec_cons. iDestruct "H↦vl" as "[H↦ H↦vl]". wp_write.
+    rewrite heap_mapsto_vec_cons -wp_fupd. iDestruct "H↦vl" as "[H↦ H↦vl]". wp_write.
     rewrite tctx_interp_singleton tctx_hasty_val' //. iApply "Hw". iNext.
     iExists (_::_::_). rewrite !heap_mapsto_vec_cons. iFrame.
     iExists i, [_], _. rewrite -Hlen nth_lookup Hty. auto.
@@ -192,7 +191,7 @@ Section case.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v Hv) "Hty".
     iMod (Hw with "* [] LFT HE HL Hty") as (l vl) "(H & H↦ & Hw)". done.
     simpl. destruct vl as [|? vl]; iDestruct "H" as %[[= Hlen] ->].
-    rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[H↦0 H↦vl]".
+    rewrite heap_mapsto_vec_cons -wp_fupd. iDestruct "H↦" as "[H↦0 H↦vl]".
     wp_write. rewrite tctx_interp_singleton tctx_hasty_val' //.
     iApply "Hw". iModIntro. iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame.
     iExists i, [], _. rewrite -Hlen nth_lookup Hty. auto.
@@ -225,9 +224,8 @@ Section case.
     iApply (wp_hasty with "Hp1"). iIntros (v1 Hv1) "Hty1".
     iMod (Hw with "* [] LFT HE1 HL1 Hty1") as (l1 vl1) "(H & H↦ & Hw)"=>//=.
     destruct vl1 as [|? vl1]; iDestruct "H" as %[[= Hlen] ->].
-    rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[H↦0 H↦vl1]". wp_write.
-    iApply wp_seq. done. iNext. wp_bind p1.
-    iApply (wp_wand with "[]"); first by iApply (wp_eval_path). iIntros (? ->).
+    rewrite heap_mapsto_vec_cons -wp_fupd. iDestruct "H↦" as "[H↦0 H↦vl1]". wp_write.
+    wp_bind p1. iApply (wp_wand with "[]"); first by iApply (wp_eval_path). iIntros (? ->).
     wp_op. wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2 Hv2) "Hty2".
     iMod (Hr with "* [] LFT Htl HE2 HL2 Hty2") as (l2 vl2 q) "(% & H↦2 & Hty & Hr)"=>//=.
     subst. assert (ty.(ty_size) ≤ length vl1).

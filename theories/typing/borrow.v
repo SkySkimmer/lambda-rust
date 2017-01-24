@@ -54,7 +54,7 @@ Section borrow.
       (try iDestruct "Hown" as "[]").
     iMod (bor_acc_cons with "LFT Hown Htok") as "[H↦ Hclose']". done.
     iDestruct "H↦" as ([|[[|l'|]|][]]) "[>H↦ Hown]"; try iDestruct "Hown" as ">[]".
-      iDestruct "Hown" as "[Hown H†]". rewrite heap_mapsto_vec_singleton. wp_read.
+      iDestruct "Hown" as "[Hown H†]". rewrite heap_mapsto_vec_singleton -wp_fupd. wp_read.
     iMod ("Hclose'" $! (l↦#l' ∗ freeable_sz n (ty_size ty) l' ∗ _)%I
           with "*[H↦ Hown H†][]") as "[Hbor Htok]"; last 1 first.
     - iMod (bor_sep with "LFT Hbor") as "[_ Hbor]". done.
@@ -88,7 +88,7 @@ Section borrow.
     iMod (frac_bor_acc with "LFT H↦b Htok1") as (q''') "[>H↦ Hclose']". done.
     iApply (wp_fupd_step _ (_∖_) with "[Hown Htok2]"); try done.
     - iApply ("Hown" with "* [%] Htok2"). set_solver+.
-    - wp_read. iIntros "!>[#Hshr Htok2]".
+    - iApply wp_fupd. wp_read. iIntros "!>[#Hshr Htok2]".
       iMod ("Hclose'" with "[H↦]") as "Htok1"; first by auto.
       iMod ("Hclose" with "[Htok1 Htok2]") as "($ & $)"; first by iFrame.
       rewrite tctx_interp_singleton tctx_hasty_val' //. auto.
@@ -123,7 +123,7 @@ Section borrow.
     rewrite heap_mapsto_vec_singleton.
     iApply (wp_fupd_step  _ (⊤∖↑lftN) with "[Hbor]"); try done.
       by iApply (bor_unnest with "LFT Hbor").
-    wp_read. iIntros "!> Hbor".
+    iApply wp_fupd. wp_read. iIntros "!> Hbor".
     iMod ("Hclose'" with "[H↦]") as "[H↦ Htok]"; first by auto.
     iMod ("Hclose" with "Htok") as "($ & $)".
     rewrite tctx_interp_singleton tctx_hasty_val' //.
@@ -157,7 +157,8 @@ Section borrow.
     iMod (lft_incl_acc with "Hincl' Htok2") as (q2) "[Htok2 Hclose'']". solve_ndisj.
     iApply (wp_fupd_step _ (_∖_) with "[Hown Htok2]"); try done.
     - iApply ("Hown" with "* [%] Htok2"). set_solver+.
-    - wp_read. iIntros "!>[#Hshr Htok2]". iMod ("Hclose''" with "Htok2") as "Htok2".
+    - iApply wp_fupd. wp_read. iIntros "!>[#Hshr Htok2]".
+      iMod ("Hclose''" with "Htok2") as "Htok2".
       iMod ("Hclose'" with "[H↦]") as "Htok1"; first by auto.
       iMod ("Hclose" with "[Htok1 Htok2]") as "($ & $)"; first by iFrame.
       rewrite tctx_interp_singleton tctx_hasty_val' //.

@@ -67,13 +67,14 @@ Proof.
 Qed.
 
 (** Proof rules for the sugar *)
-Lemma wp_lam E xl e e' el Φ :
+Lemma wp_lam E xl e eb e' el Φ :
+  e = Lam xl eb →
   Forall (λ ei, is_Some (to_val ei)) el →
-  Closed (xl +b+ []) e →
-  subst_l xl el e = Some e' →
-  ▷ WP e' @ E {{ Φ }} -∗ WP App (Lam xl e) el @ E {{ Φ }}.
+  Closed (xl +b+ []) eb →
+  subst_l xl el eb = Some e' →
+  ▷ WP e' @ E {{ Φ }} -∗ WP App e el @ E {{ Φ }}.
 Proof.
-  iIntros (???) "?". iApply (wp_rec _ _ BAnon)=>//.
+  iIntros (-> ???) "?". iApply (wp_rec _ _ BAnon)=>//.
     by rewrite /= option_fmap_id.
 Qed.
 
@@ -99,8 +100,8 @@ Lemma wp_skip E Φ : ▷ Φ (LitV LitUnit) -∗ WP Skip @ E {{ Φ }}.
 Proof. iIntros. iApply wp_seq. done. iNext. by iApply wp_value. Qed.
 
 Lemma wp_le E (n1 n2 : Z) P Φ :
-  (n1 ≤ n2 → P -∗ ▷ |={E}=> Φ (LitV true)) →
-  (n2 < n1 → P -∗ ▷ |={E}=> Φ (LitV false)) →
+  (n1 ≤ n2 → P -∗ ▷ Φ (LitV true)) →
+  (n2 < n1 → P -∗ ▷ Φ (LitV false)) →
   P -∗ WP BinOp LeOp (Lit (LitInt n1)) (Lit (LitInt n2)) @ E {{ Φ }}.
 Proof.
   iIntros (Hl Hg) "HP". iApply wp_fupd.
@@ -110,7 +111,7 @@ Proof.
 Qed.
 
 Lemma wp_offset E l z Φ :
-  ▷ (|={E}=> Φ (LitV $ LitLoc $ shift_loc l z)) -∗
+  ▷ Φ (LitV $ LitLoc $ shift_loc l z) -∗
     WP BinOp OffsetOp (Lit $ LitLoc l) (Lit $ LitInt z) @ E {{ Φ }}.
 Proof.
   iIntros "HP". iApply wp_fupd. iApply wp_bin_op_pure; first by econstructor.
@@ -118,7 +119,7 @@ Proof.
 Qed.
 
 Lemma wp_plus E z1 z2 Φ :
-  ▷ (|={E}=> Φ (LitV $ LitInt $ z1 + z2)) -∗
+  ▷ Φ (LitV $ LitInt $ z1 + z2) -∗
     WP BinOp PlusOp (Lit $ LitInt z1) (Lit $ LitInt z2) @ E {{ Φ }}.
 Proof.
   iIntros "HP". iApply wp_fupd. iApply wp_bin_op_pure; first by econstructor.
@@ -126,7 +127,7 @@ Proof.
 Qed.
 
 Lemma wp_minus E z1 z2 Φ :
-  ▷ (|={E}=> Φ (LitV $ LitInt $ z1 - z2)) -∗
+  ▷ Φ (LitV $ LitInt $ z1 - z2) -∗
     WP BinOp MinusOp (Lit $ LitInt z1) (Lit $ LitInt z2) @ E {{ Φ }}.
 Proof.
   iIntros "HP". iApply wp_fupd. iApply wp_bin_op_pure; first by econstructor.
