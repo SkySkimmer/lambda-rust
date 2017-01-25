@@ -256,8 +256,8 @@ Section lft_contexts.
       iInduction Hκs as [|κ κs Hκ ?] "IH" forall (qE qL').
       - iExists 1%Qp. iFrame. iSplitR; last by auto. iApply lft_tok_static.
       - iDestruct "HL1" as "[HL1 HL2]". iDestruct "HE" as "[HE1 HE2]".
-        iMod (Hκ with "* HE1 HL1") as (q') "[Htok' Hclose]". done.
-        iMod ("IH" with "* HE2 HL2") as (q'') "[Htok'' Hclose']".
+        iMod (Hκ with "HE1 HL1") as (q') "[Htok' Hclose]". done.
+        iMod ("IH" with "HE2 HL2") as (q'') "[Htok'' Hclose']".
         destruct (Qp_lower_bound q' q'') as (q0 & q'2 & q''2 & -> & ->).
         iExists q0. rewrite -lft_tok_sep. iDestruct "Htok'" as "[$ Hr']".
         iDestruct "Htok''" as "[$ Hr'']". iIntros "!>[Hκ Hfold]".
@@ -361,8 +361,8 @@ Section elctx_incl.
     split.
     - iIntros (???) "_ _ * ?". iExists _. iFrame. eauto.
     - iIntros (x y z Hxy Hyz ??) "#HE #HL * HE1".
-      iMod (Hxy with "HE HL * HE1") as (qy) "[HE1 Hclose1]"; first done.
-      iMod (Hyz with "HE HL * HE1") as (qz) "[HE1 Hclose2]"; first done.
+      iMod (Hxy with "HE HL HE1") as (qy) "[HE1 Hclose1]"; first done.
+      iMod (Hyz with "HE HL HE1") as (qz) "[HE1 Hclose2]"; first done.
       iModIntro. iExists qz. iFrame "HE1". iIntros "HE1".
       iApply ("Hclose1" with ">"). iApply "Hclose2". done.
   Qed.
@@ -381,8 +381,8 @@ Section elctx_incl.
   Proof.
     iIntros (?? HE1 ?? HE2 ??) "#HE #HL *". rewrite {1}/elctx_interp big_sepL_app.
     iIntros "[HE1 HE2]".
-    iMod (HE1 with "HE HL * HE1") as (q1) "[HE1 Hclose1]"; first done.
-    iMod (HE2 with "HE HL * HE2") as (q2) "[HE2 Hclose2]"; first done.
+    iMod (HE1 with "HE HL HE1") as (q1) "[HE1 Hclose1]"; first done.
+    iMod (HE2 with "HE HL HE2") as (q2) "[HE2 Hclose2]"; first done.
     destruct (Qp_lower_bound q1 q2) as (q & ? & ? & -> & ->).
     iModIntro. iExists q. rewrite /elctx_interp !big_sepL_app.
     iDestruct "HE1" as "[$ HE1]". iDestruct "HE2" as "[$ HE2]".
@@ -430,7 +430,7 @@ Section elctx_incl.
     iDestruct (elctx_interp_persist with "HE1") as "#HE1'".
     iDestruct (Hκκ' with "[HE HE1'] HL") as "#Hκκ'".
     { rewrite /elctx_interp_0 big_sepL_app. auto. }
-    iMod (HE2 with "HE HL * HE1") as (qE2) "[HE2 Hclose']". done.
+    iMod (HE2 with "HE HL HE1") as (qE2) "[HE2 Hclose']". done.
     iExists qE2. rewrite /elctx_interp big_sepL_cons /=. iFrame "∗#".
     iIntros "!> [_ HE2']". by iApply "Hclose'".
   Qed.

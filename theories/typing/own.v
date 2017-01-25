@@ -41,6 +41,8 @@ Section own.
       rewrite /= -Qcmult_plus_distr_l -Z2Qc_inj_add /Z.add. do 3 f_equal. lia.
   Qed.
 
+  Global Opaque freeable_sz.
+
   Program Definition own_ptr (n : nat) (ty : type) :=
     {| ty_size := 1;
        ty_own tid vl :=
@@ -90,7 +92,7 @@ Section own.
     iExists l'. iSplit. by iApply (frac_bor_shorten with "[]"). iIntros "!# *% Htok".
     iApply (step_fupd_mask_mono F _ _ (F∖↑shrN∖↑lftN)). set_solver. set_solver.
     iMod (lft_incl_acc with "Hκ Htok") as (q') "[Htok Hclose]"; first set_solver.
-    iMod ("Hvs" with "* [%] Htok") as "Hvs'". set_solver. iModIntro. iNext.
+    iMod ("Hvs" with "[%] Htok") as "Hvs'". set_solver. iModIntro. iNext.
     iMod "Hvs'" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
     by iApply (ty.(ty_shr_mono) with "LFT Hκ").
   Qed.
@@ -99,18 +101,18 @@ Section own.
     Proper (ctx_eq E L ==> subtype E L ==> subtype E L) own_ptr.
   Proof.
     intros n1 n2 Hn12 ty1 ty2 Hincl. iIntros. iSplit; first done.
-    iDestruct (Hincl with "* [] [] []") as "(_ & #Ho & #Hs)"; [done..|clear Hincl].
+    iDestruct (Hincl with "[] [] []") as "(_ & #Ho & #Hs)"; [done..|clear Hincl].
     iSplit; iAlways.
     - iIntros (?[|[[| |]|][]]) "H"; try iDestruct "H" as "[]". simpl.
       iDestruct "H" as "[Hmt H†]". iDestruct "Hmt" as (vl') "[Hmt Hown]". iNext.
       iDestruct (ty_size_eq with "Hown") as %<-.
-      iDestruct ("Ho" with "* Hown") as "Hown".
+      iDestruct ("Ho" with "Hown") as "Hown".
       iDestruct (ty_size_eq with "Hown") as %<-.
       iDestruct (Hn12 with "[] [] []") as %->; [done..|]. iFrame.
       iExists _. by iFrame.
     - iIntros (???) "H". iDestruct "H" as (l') "[Hfb #Hvs]".
       iExists l'. iFrame. iIntros "!#". iIntros (F' q) "% Htok".
-      iMod ("Hvs" with "* [%] Htok") as "Hvs'". done. iModIntro. iNext.
+      iMod ("Hvs" with "[%] Htok") as "Hvs'". done. iModIntro. iNext.
       iMod "Hvs'" as "[Hshr $]". iApply ("Hs" with "Hshr").
   Qed.
   Lemma own_mono' E L n1 n2 ty1 ty2 :
@@ -148,7 +150,7 @@ Section own.
   Proof.
     iIntros (Hsync κ tid1 tid2 l) "H". iDestruct "H" as (l') "[Hm #Hshr]".
     iExists _. iFrame "Hm". iAlways. iIntros (F q) "% Htok".
-    iMod ("Hshr" with "* [] Htok") as "Hfin"; first done. iModIntro. iNext.
+    iMod ("Hshr" with "[] Htok") as "Hfin"; first done. iModIntro. iNext.
     iClear "Hshr". (* FIXME: Using "{HShr} [HShr $]" for the intro pattern in the following line doesn't work. *)
     iMod "Hfin" as "[Hshr $]". by iApply Hsync.
   Qed.

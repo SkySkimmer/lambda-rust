@@ -80,8 +80,8 @@ Section product.
     Proper (subtype E L ==> subtype E L ==> subtype E L) product2.
   Proof.
     iIntros (ty11 ty12 H1 ty21 ty22 H2). iIntros.
-    iDestruct (H1 with "* [] [] []") as "(% & #Ho1 & #Hs1)"; [done..|]. clear H1.
-    iDestruct (H2 with "* [] [] []") as "(% & #Ho2 & #Hs2)"; [done..|]. clear H2.
+    iDestruct (H1 with "[] [] []") as "(% & #Ho1 & #Hs1)"; [done..|]. clear H1.
+    iDestruct (H2 with "[] [] []") as "(% & #Ho2 & #Hs2)"; [done..|]. clear H2.
     iSplit; first by (iPureIntro; simpl; f_equal). iSplit; iAlways.
     - iIntros (??) "H". iDestruct "H" as (vl1 vl2) "(% & Hown1 & Hown2)".
       iExists _, _. iSplit. done. iSplitL "Hown1".

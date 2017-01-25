@@ -379,7 +379,7 @@ Section heap.
     - iNext. iExists σ', _. subst σ'. iFrame. iPureIntro.
       rewrite HvlLen Nat2Z.id. auto using heap_freeable_rel_init_mem.
     - rewrite heap_freeable_eq /heap_freeable_def. iApply "HΦ".
-      iSplit; first auto. iFrame. by rewrite heap_mapsto_vec_combine.
+      iSplitR; first auto. iFrame. by rewrite heap_mapsto_vec_combine.
   Qed.
 
   Lemma heap_free_vs l vl σ :

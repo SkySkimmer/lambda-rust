@@ -65,7 +65,7 @@ Proof.
   iApply fupd_mask_mono; last iMod ("HvsQ" with "HQ H†") as "HP". solve_ndisj.
   iModIntro. iAssert (▷ Pb)%I with "[HPb HP]" as "HPb".
   { iNext. iRewrite "HEQ". iFrame. }
-  iApply ("Hvs" with "* Hinv HPb H†").
+  iApply ("Hvs" with "Hinv HPb H†").
 Qed.
 
 (** Indexed borrow *)
@@ -276,7 +276,7 @@ Proof.
   iIntros (?) "#LFT HP".
   iMod (bor_acc_atomic_strong with "LFT HP") as "[H|[??]]"; first done.
   - iLeft. iDestruct "H" as (κ') "(#Hκκ' & $ & Hclose)". iIntros "!>*HQ HPQ".
-    iMod ("Hclose" with "* HQ [HPQ]") as "Hb".
+    iMod ("Hclose" with "HQ [HPQ]") as "Hb".
     + iNext. iIntros "? _". by iApply "HPQ".
     + iApply (bor_shorten with "Hκκ' Hb").
   - iRight. by iFrame.
@@ -289,7 +289,7 @@ Lemma bor_acc_atomic E κ P :
 Proof.
   iIntros (?) "#LFT HP".
   iMod (bor_acc_atomic_cons with "LFT HP") as "[[HP Hclose]|[? ?]]"; first done.
-  - iLeft. iIntros "!> {$HP} HP". iMod ("Hclose" with "* HP []"); auto.
+  - iLeft. iIntros "!> {$HP} HP". iMod ("Hclose" with "HP []"); auto.
   - iRight. by iFrame.
 Qed.
 End accessors.

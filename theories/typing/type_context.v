@@ -112,7 +112,7 @@ Section type_context.
   Proof.
     iIntros "Hty HΦ". iDestruct "Hty" as (v) "[% Hown]".
     iApply (wp_wand with "[]"). { iApply wp_eval_path. done. }
-    iIntros (v') "%". subst v'. iApply ("HΦ" with "* [] Hown"). by auto.
+    iIntros (v') "%". subst v'. iApply ("HΦ" with "[] Hown"). by auto.
   Qed.
 
   Lemma closed_hasty tid p ty : tctx_elt_interp tid (p ◁ ty) -∗ ⌜Closed [] p⌝.
@@ -243,8 +243,7 @@ Section type_context.
     iDestruct (elctx_interp_persist with "HE") as "#HE'".
     iDestruct (llctx_interp_persist with "HL") as "#HL'".
     iFrame "HE HL". iDestruct "H" as (v) "[% H]". iExists _. iFrame "%".
-    iDestruct (Hst with "* [] [] []") as "(_ & #Ho & _)"; [done..|].
-    iApply ("Ho" with "*"). done.
+    iDestruct (Hst with "[] [] []") as "(_ & #Ho & _)"; [done..|by iApply "Ho"].
   Qed.
 
   (* Extracting from a type context. *)

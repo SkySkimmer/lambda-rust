@@ -27,7 +27,7 @@ Notation "# l" := (Lit l%Z%V) (at level 8, format "# l") : expr_scope.
 Notation "'case:' e0 'of' el" := (Case e0%E el%E)
   (at level 102, e0, el at level 150) : expr_scope.
 Notation "'if:' e1 'then' e2 'else' e3" := (If e1%E e2%E e3%E)
-  (only parsing, at level 200, e1, e2, e3 at level 150) : expr_scope.
+  (only parsing, at level 102, e1, e2, e3 at level 150) : expr_scope.
 Notation "()" := LitUnit : val_scope.
 Notation "! e" := (Read Na1Ord e%E) (at level 9, format "! e") : expr_scope.
 Notation "!ˢᶜ e" := (Read ScOrd e%E) (at level 9, format "!ˢᶜ e") : expr_scope.
@@ -36,6 +36,8 @@ Notation "e1 + e2" := (BinOp PlusOp e1%E e2%E)
 Notation "e1 - e2" := (BinOp MinusOp e1%E e2%E)
   (at level 50, left associativity) : expr_scope.
 Notation "e1 ≤ e2" := (BinOp LeOp e1%E e2%E)
+  (at level 70) : expr_scope.
+Notation "e1 = e2" := (BinOp EqOp e1%E e2%E)
   (at level 70) : expr_scope.
 (* The unicode ← is already part of the notation "_ ← _; _" for bind. *)
 Notation "e1 <-ˢᶜ e2" := (Write ScOrd e1%E e2%E)

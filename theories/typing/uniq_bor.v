@@ -52,7 +52,7 @@ Section uniq_bor.
     iIntros "!# * % Htok".
     iApply (step_fupd_mask_mono F _ _ (F∖↑shrN∖↑lftN)); try set_solver.
     iMod (lft_incl_acc with "Hκ0 Htok") as (q') "[Htok Hclose]"; first set_solver.
-    iMod ("Hvs" with "* [%] Htok") as "Hvs'". set_solver. iModIntro. iNext.
+    iMod ("Hvs" with "[%] Htok") as "Hvs'". set_solver. iModIntro. iNext.
     iMod "Hvs'" as "[#Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
     by iApply (ty_shr_mono with "LFT Hκ0").
   Qed.
@@ -61,7 +61,7 @@ Section uniq_bor.
     Proper (flip (lctx_lft_incl E L) ==> eqtype E L ==> subtype E L) uniq_bor.
   Proof.
     intros κ1 κ2 Hκ ty1 ty2 Hty%eqtype_unfold. iIntros. iSplit; first done.
-    iDestruct (Hty with "* [] [] []") as "(_ & #Ho & #Hs)"; [done..|clear Hty].
+    iDestruct (Hty with "[] [] []") as "(_ & #Ho & #Hs)"; [done..|clear Hty].
     iDestruct (Hκ with "[] []") as "#Hκ"; [done..|]. iSplit; iAlways.
     - iIntros (? [|[[]|][]]) "H"; try iDestruct "H" as "[]".
       iApply (bor_shorten with "Hκ"). iApply bor_iff_proper; last done.
@@ -71,7 +71,7 @@ Section uniq_bor.
       { iApply lft_glb_mono. done. iApply lft_incl_refl. }
       iDestruct "H" as (l') "[Hbor #Hupd]". iExists l'. iIntros "{$Hbor}!# %%% Htok".
       iMod (lft_incl_acc with "Hincl' Htok") as (q') "[Htok Hclose]"; first set_solver.
-      iMod ("Hupd" with "* [%] Htok") as "Hupd'"; try done. iModIntro. iNext.
+      iMod ("Hupd" with "[%] Htok") as "Hupd'"; try done. iModIntro. iNext.
       iMod "Hupd'" as "[H Htok]". iMod ("Hclose" with "Htok") as "$".
       iApply ty_shr_mono; [done..|]. by iApply "Hs".
   Qed.
@@ -105,7 +105,7 @@ Section uniq_bor.
   Proof.
     iIntros (Hsync κ' tid1 tid2 l) "H". iDestruct "H" as (l') "[Hm #Hshr]".
     iExists l'. iFrame "Hm". iAlways. iIntros (F q) "% Htok".
-    iMod ("Hshr" with "* [] Htok") as "Hfin"; first done. iClear "Hshr".
+    iMod ("Hshr" with "[] Htok") as "Hfin"; first done. iClear "Hshr".
     iModIntro. iNext. iMod "Hfin" as "[Hshr $]". iApply Hsync. done.
   Qed.
 End uniq_bor.

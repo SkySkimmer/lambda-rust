@@ -131,7 +131,7 @@ Section sum.
           by erewrite <-Forall2_length. }
         edestruct @Forall2_lookup_l as (ty2 & Hl2 & Hty2); [done..|].
         rewrite (nth_lookup_Some tyl2 _ _ ty2) //.
-        by iApply (Hty2 with "* [] []"). }
+        by iApply (Hty2 with "[] []"). }
     clear -Hleq. iSplit; last iSplit.
     - simpl. by rewrite Hleq.
     - iAlways. iIntros (tid vl) "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)".

@@ -48,7 +48,7 @@ Proof.
       iExists P. rewrite -uPred.iff_refl. auto.
     + clear -HE. iIntros "!> H†".
       iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
-      iDestruct ("HIlookup" with "* HI") as %Hκ.
+      iDestruct ("HIlookup" with "HI") as %Hκ.
       iDestruct (big_sepS_elem_of_acc _ _ κ with "Hinv") as "[Hinv Hclose']".
       { by apply elem_of_dom. }
       rewrite /lft_dead; iDestruct "H†" as (Λ) "[% #H†]".

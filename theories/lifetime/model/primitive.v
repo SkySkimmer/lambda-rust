@@ -303,6 +303,28 @@ Global Instance idx_bor_own_as_fractional i q :
 Proof. split. done. apply _. Qed.
 
 (** Lifetime inclusion *)
+Lemma lft_incl_acc E κ κ' q :
+  ↑lftN ⊆ E →
+  κ ⊑ κ' -∗ q.[κ] ={E}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={E}=∗ q.[κ]).
+Proof.
+  rewrite /lft_incl.
+  iIntros (?) "#[H _] Hq". iApply fupd_mask_mono; first done.
+  iMod ("H" with "Hq") as (q') "[Hq' Hclose]". iExists q'.
+  iIntros "{$Hq'} !> Hq". iApply fupd_mask_mono; first done. by iApply "Hclose".
+Qed.
+
+Lemma lft_incl_dead E κ κ' : ↑lftN ⊆ E → κ ⊑ κ' -∗ [†κ'] ={E}=∗ [†κ].
+Proof.
+  rewrite /lft_incl.
+  iIntros (?) "#[_ H] Hq". iApply fupd_mask_mono; first done. by iApply "H".
+Qed.
+
+Lemma lft_incl_intro κ κ' :
+  □ ((∀ q, lft_tok q κ ={↑lftN}=∗ ∃ q',
+               lft_tok q' κ' ∗ (lft_tok q' κ' ={↑lftN}=∗ lft_tok q κ)) ∗
+      (lft_dead κ' ={↑lftN}=∗ lft_dead κ)) -∗ κ ⊑ κ'.
+Proof. reflexivity. Qed.
+
 Lemma lft_le_incl κ κ' : κ' ⊆ κ → (κ ⊑ κ')%I.
 Proof.
   iIntros (->%gmultiset_union_difference) "!#". iSplitR.
@@ -318,25 +340,32 @@ Lemma lft_incl_trans κ κ' κ'': κ ⊑ κ' -∗ κ' ⊑ κ'' -∗ κ ⊑ κ''.
 Proof.
   rewrite /lft_incl. iIntros "#[H1 H1†] #[H2 H2†] !#". iSplitR.
   - iIntros (q) "Hκ".
-    iMod ("H1" with "*Hκ") as (q') "[Hκ' Hclose]".
-    iMod ("H2" with "*Hκ'") as (q'') "[Hκ'' Hclose']".
+    iMod ("H1" with "Hκ") as (q') "[Hκ' Hclose]".
+    iMod ("H2" with "Hκ'") as (q'') "[Hκ'' Hclose']".
     iExists q''. iIntros "{$Hκ''} !> Hκ''".
     iMod ("Hclose'" with "Hκ''") as "Hκ'". by iApply "Hclose".
   - iIntros "H†". iMod ("H2†" with "H†"). by iApply "H1†".
+Qed.
+
+Lemma lft_glb_acc κ κ' q q' :
+  q.[κ] -∗ q'.[κ'] -∗ ∃ q'', q''.[κ ∪ κ'] ∗ (q''.[κ ∪ κ'] -∗ q.[κ] ∗ q'.[κ']).
+Proof.
+  iIntros "Hκ Hκ'".
+  destruct (Qp_lower_bound q q') as (qq & q0 & q'0 & -> & ->).
+  iExists qq. rewrite -lft_tok_sep.
+  iDestruct "Hκ" as "[$$]". iDestruct "Hκ'" as "[$$]". auto.
 Qed.
 
 Lemma lft_incl_glb κ κ' κ'' : κ ⊑ κ' -∗ κ ⊑ κ'' -∗ κ ⊑ κ' ∪ κ''.
 Proof.
   rewrite /lft_incl. iIntros "#[H1 H1†] #[H2 H2†]!#". iSplitR.
   - iIntros (q) "[Hκ'1 Hκ'2]".
-    iMod ("H1" with "*Hκ'1") as (q') "[Hκ' Hclose']".
-    iMod ("H2" with "*Hκ'2") as (q'') "[Hκ'' Hclose'']".
-    destruct (Qp_lower_bound q' q'') as (qq & q'0 & q''0 & -> & ->).
-    iExists qq. rewrite -lft_tok_sep.
-    iDestruct "Hκ'" as "[$ Hκ']". iDestruct "Hκ''" as "[$ Hκ'']".
-    iIntros "!> [Hκ'0 Hκ''0]".
-    iMod ("Hclose'" with "[$Hκ' $Hκ'0]") as "$".
-    iApply "Hclose''". iFrame.
+    iMod ("H1" with "Hκ'1") as (q') "[Hκ' Hclose']".
+    iMod ("H2" with "Hκ'2") as (q'') "[Hκ'' Hclose'']".
+    iDestruct (lft_glb_acc with "Hκ' Hκ''") as (qq) "[Hqq Hclose]".
+    iExists qq. iFrame. iIntros "!> Hqq".
+    iDestruct ("Hclose" with "Hqq") as "[Hκ' Hκ'']".
+    iMod ("Hclose'" with "Hκ'") as "$". by iApply "Hclose''".
   - rewrite -lft_dead_or. iIntros "[H†|H†]". by iApply "H1†". by iApply "H2†".
 Qed.
 
@@ -349,28 +378,6 @@ Proof.
   - iApply (lft_incl_trans with "[] H2").
     iApply lft_le_incl. apply gmultiset_union_subseteq_r.
 Qed.
-
-Lemma lft_incl_acc E κ κ' q :
-  ↑lftN ⊆ E →
-  κ ⊑ κ' -∗ q.[κ] ={E}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={E}=∗ q.[κ]).
-Proof.
-  rewrite /lft_incl.
-  iIntros (?) "#[H _] Hq". iApply fupd_mask_mono; first done.
-  iMod ("H" with "* Hq") as (q') "[Hq' Hclose]". iExists q'.
-  iIntros "{$Hq'} !> Hq". iApply fupd_mask_mono; first done. by iApply "Hclose".
-Qed.
-
-Lemma lft_incl_dead E κ κ' : ↑lftN ⊆ E → κ ⊑ κ' -∗ [†κ'] ={E}=∗ [†κ].
-Proof.
-  rewrite /lft_incl.
-  iIntros (?) "#[_ H] Hq". iApply fupd_mask_mono; first done. by iApply "H".
-Qed.
-
-Lemma lft_incl_intro κ κ' :
-  □ ((∀ q, lft_tok q κ ={↑lftN}=∗ ∃ q',
-               lft_tok q' κ' ∗ (lft_tok q' κ' ={↑lftN}=∗ lft_tok q κ)) ∗
-      (lft_dead κ' ={↑lftN}=∗ lft_dead κ)) -∗ κ ⊑ κ'.
-Proof. reflexivity. Qed.
 
 (** Basic rules about borrows *)
 Lemma raw_bor_iff_proper i P P' : ▷ □ (P ↔ P') -∗ raw_bor i P -∗ raw_bor i P'.

@@ -40,7 +40,7 @@ Section type_soundness.
     iIntros "!# #HEAP". iMod lft_init as (?) "#LFT". done.
     iMod na_alloc as (tid) "Htl". set (Htype := TypeG _ _ _ _ _).
     wp_bind (of_val main). iApply (wp_wand with "[Htl]").
-    iApply (Hmain _ $! tid 1%Qp with "* HEAP LFT Htl [] [] []").
+    iApply (Hmain _ $! tid 1%Qp with "HEAP LFT Htl [] [] []").
     { by rewrite /elctx_interp big_sepL_nil. }
     { by rewrite /llctx_interp big_sepL_nil. }
     { by rewrite tctx_interp_nil. }

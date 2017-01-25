@@ -46,7 +46,7 @@ Section product_split.
     iDestruct (Hloc with "Hty") as %[l [=->]].
     iAssert (tctx_elt_interp tid (p +ₗ #0 ◁ ptr ty)) with "[Hty]" as "$".
     { iExists #l. iSplit; last done. simpl; by rewrite Hp shift_loc_0. }
-    iMod ("IH" with "* HE HL [Htyl]") as "($ & $ & Htyl)".
+    iMod ("IH" with "HE HL [Htyl]") as "($ & $ & Htyl)".
     { rewrite tctx_interp_singleton //. }
     iClear "IH". rewrite (hasty_ptr_offsets_offset l) // -plus_n_O //.
   Qed.
@@ -74,7 +74,7 @@ Section product_split.
       assert (eqtype E L (ptr ty) (ptr (product2 ty unit))) as [Hincl _].
       { rewrite right_id. done. }
       iDestruct (Hincl with "LFT HE' HL'") as "#(_ & #Heq & _)". by iApply "Heq". }
-    iMod ("IH" with "* [] HE HL [Htyl]") as "(HE & HL & Htyl)"; first done.
+    iMod ("IH" with "[] HE HL [Htyl]") as "(HE & HL & Htyl)"; first done.
     { change (ty_size ty) with (0+ty_size ty)%nat at 1.
       rewrite plus_comm -hasty_ptr_offsets_offset //. }
     iClear "IH". iMod (Hmerge with "LFT HE HL [Hty Htyl]") as "($ & $ & ?)";

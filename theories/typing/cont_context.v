@@ -73,7 +73,7 @@ Section cont_context.
   Proof.
     rewrite /cctx_interp. iIntros "H". iIntros ([k L n T]) "%".
     iIntros (args) "HL HT". iMod "H".
-    by iApply ("H" $! (k ◁cont(L, T)%CC) with "[%] * HL HT").
+    by iApply ("H" $! (k ◁cont(L, T)%CC) with "[%] HL HT").
   Qed.
 
   Definition cctx_incl (E : elctx) (C1 C2 : cctx): Prop :=
@@ -92,7 +92,7 @@ Section cont_context.
   Lemma incl_cctx_incl E C1 C2 : C1 ⊆ C2 → cctx_incl E C2 C1.
   Proof.
     rewrite /cctx_incl /cctx_interp. iIntros (HC1C2 tid ?) "_ H HE * %".
-    iApply ("H" with "HE * [%]"). by apply HC1C2.
+    iApply ("H" with "HE [%]"). by apply HC1C2.
   Qed.
 
   Lemma cctx_incl_cons_match E k L n (T1 T2 : vec val n → tctx) C1 C2 :
@@ -104,11 +104,11 @@ Section cont_context.
     - iIntros (args) "Htl HL HT".
       iMod (HT1T2 with "LFT HE HL HT") as "(HE & HL & HT)".
       iSpecialize ("H" with "HE").
-      iApply ("H" $! (_ ◁cont(_, _))%CC with "[%] * Htl HL HT").
+      iApply ("H" $! (_ ◁cont(_, _))%CC with "[%] Htl HL HT").
       constructor.
-    - iApply (HC1C2 with "LFT [H] HE * [%]"); last done.
+    - iApply (HC1C2 with "LFT [H] HE [%]"); last done.
       iIntros "HE". iIntros (x') "%".
-      iApply ("H" with "HE * [%]"). by apply elem_of_cons; auto.
+      iApply ("H" with "HE [%]"). by apply elem_of_cons; auto.
   Qed.
 
   Lemma cctx_incl_nil E C : cctx_incl E C [].

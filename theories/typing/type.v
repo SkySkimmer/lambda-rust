@@ -448,10 +448,10 @@ Section subtyping.
     subtype st1 st2.
   Proof.
     intros Hst. iIntros. iSplit; first done. iSplit; iAlways.
-    - iIntros. iApply (Hst with "* [] [] []"); done.
+    - iIntros. iApply (Hst with "[] [] []"); done.
     - iIntros (???) "H".
       iDestruct "H" as (vl) "[Hf Hown]". iExists vl. iFrame "Hf".
-      by iApply (Hst with "* [] [] []").
+      by iApply (Hst with "[] [] []").
   Qed.
 End subtyping.
 

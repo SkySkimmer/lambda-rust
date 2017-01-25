@@ -91,6 +91,7 @@ Tactic Notation "wp_op" :=
   | |- _ ⊢ wp ?E ?e ?Q => reshape_expr e ltac:(fun K e' =>
     match eval hnf in e' with
     | BinOp LeOp _ _ => wp_bind_core K; apply wp_le; wp_finish
+    | BinOp EqOp _ _ => wp_bind_core K; apply wp_eq_int; wp_finish
     | BinOp OffsetOp _ _ =>
        wp_bind_core K; etrans; [|eapply wp_offset; try fast_done]; wp_finish
     | BinOp PlusOp _ _ =>

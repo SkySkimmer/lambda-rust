@@ -88,8 +88,7 @@ Section typing.
     iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
 
-  (* Same for the other direction.
-     FIXME : this does not exist in Rust.*)
+  (* The other direction: getting ownership out of a cell. *)
   Definition cell_into_inner : val := funrec: <> ["x"] := "return" ["x"].
 
   Lemma cell_into_inner_type ty :
@@ -99,6 +98,19 @@ Section typing.
     apply type_fn; [apply _..|]. move=>/= _ ret arg. inv_vec arg=>x. simpl_subst.
     eapply (type_jump [_]); first solve_typing.
     iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
+  Qed.
+
+  Definition cell_get_mut : val :=
+    funrec: <> ["x"] := "return" ["x"].
+
+  Lemma cell_get_mut_type `(!Copy ty) :
+    typed_instruction_ty [] [] [] cell_get_mut
+      (fn (λ α, [☀α])%EL (λ α, [# &uniq{α} (cell ty)])%T (λ α, &uniq{α} ty)%T).
+  Proof.
+    apply type_fn; [apply _..|]. move=>/= α ret arg. inv_vec arg=>x. simpl_subst.
+    eapply (type_jump [_]). solve_typing. rewrite /tctx_incl /=.
+    iIntros (???) "_ $$". rewrite !tctx_interp_singleton /tctx_elt_interp /=.
+    by iIntros "$".
   Qed.
 
   (* Reading from a cell *)
@@ -161,20 +173,6 @@ Section typing.
     eapply type_delete; [solve_typing..|].
     eapply type_delete; [solve_typing..|].
     eapply (type_jump [_]); solve_typing.
-  Qed.
-
-  (* Reading from a cell *)
-  Definition cell_get_mut : val :=
-    funrec: <> ["x"] := "return" ["x"].
-
-  Lemma cell_get_mut_type `(!Copy ty) :
-    typed_instruction_ty [] [] [] cell_get_mut
-      (fn (λ α, [☀α])%EL (λ α, [# &uniq{α} (cell ty)])%T (λ α, &uniq{α} ty)%T).
-  Proof.
-    apply type_fn; [apply _..|]. move=>/= α ret arg. inv_vec arg=>x. simpl_subst.
-    eapply (type_jump [_]). solve_typing. rewrite /tctx_incl /=.
-    iIntros (???) "_ $$". rewrite !tctx_interp_singleton /tctx_elt_interp /=.
-    by iIntros "$".
   Qed.
 End typing.
 

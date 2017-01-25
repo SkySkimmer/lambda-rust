@@ -39,10 +39,8 @@ Section case.
       + iFrame. iExists _. iFrame.
       + rewrite -EQlen app_length minus_plus -(shift_loc_assoc_nat _ 1).
         iFrame. iExists _. iFrame. rewrite uninit_own. auto.
-    - assert (EQf:=freeable_sz_split n 1). simpl in EQf. rewrite -EQf. clear EQf.
-      rewrite -EQlen app_length -freeable_sz_split. iFrame.
-      iExists (#i :: vl' ++ vl''). iNext.
-      rewrite heap_mapsto_vec_cons heap_mapsto_vec_app.
+    - rewrite -EQlen app_length -(Nat.add_1_l (_+_)) -!freeable_sz_split. iFrame.
+      iExists (#i :: vl' ++ vl''). iNext. rewrite heap_mapsto_vec_cons heap_mapsto_vec_app.
       iFrame. iExists i, vl', vl''. rewrite /= app_length nth_lookup EQty. auto.
   Qed.
 
@@ -90,7 +88,7 @@ Section case.
       iMod ("Hclose" with "Htok") as "[HE HL]".
       iApply (Hety with "HEAP LFT Hna HE HL HC").
       rewrite !tctx_interp_cons !tctx_hasty_val' /= ?Hv //. iFrame.
-    - iMod ("Hclose'" with "* [H↦i H↦vl' H↦vl'' Hown] []") as "[Hb Htok]";
+    - iMod ("Hclose'" with "[H↦i H↦vl' H↦vl'' Hown] []") as "[Hb Htok]";
         [|by iIntros "!>$"|].
       { iExists (#i::vl'++vl'').
         rewrite heap_mapsto_vec_cons heap_mapsto_vec_app -EQlen. iFrame. iNext.
@@ -153,7 +151,7 @@ Section case.
     iDestruct "Hp" as "[Hp1 Hp2]". iDestruct (closed_hasty with "Hp1") as "%".
     iDestruct (closed_hasty with "Hp2") as "%". wp_bind p1.
     iApply (wp_hasty with "Hp1"). iIntros (v1 Hv1) "Hty1".
-    iMod (Hw with "* [] LFT HE HL Hty1") as (l vl) "(H & H↦ & Hw)"=>//=.
+    iMod (Hw with "[] LFT HE HL Hty1") as (l vl) "(H & H↦ & Hw)"=>//=.
     destruct vl as [|? vl]; iDestruct "H" as %[[= Hlen] ->].
     rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[H↦0 H↦vl]".
     wp_write. wp_bind p1. iApply (wp_wand with "[]"); first by iApply (wp_eval_path).
@@ -189,7 +187,7 @@ Section case.
   Proof.
     iIntros (Hty Hw) "!# * #HEAP #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v Hv) "Hty".
-    iMod (Hw with "* [] LFT HE HL Hty") as (l vl) "(H & H↦ & Hw)". done.
+    iMod (Hw with "[] LFT HE HL Hty") as (l vl) "(H & H↦ & Hw)". done.
     simpl. destruct vl as [|? vl]; iDestruct "H" as %[[= Hlen] ->].
     rewrite heap_mapsto_vec_cons -wp_fupd. iDestruct "H↦" as "[H↦0 H↦vl]".
     wp_write. rewrite tctx_interp_singleton tctx_hasty_val' //.
@@ -222,12 +220,12 @@ Section case.
     iDestruct "Hp" as "[Hp1 Hp2]". iDestruct (closed_hasty with "Hp1") as "%".
     iDestruct (closed_hasty with "Hp2") as "%". wp_bind p1.
     iApply (wp_hasty with "Hp1"). iIntros (v1 Hv1) "Hty1".
-    iMod (Hw with "* [] LFT HE1 HL1 Hty1") as (l1 vl1) "(H & H↦ & Hw)"=>//=.
+    iMod (Hw with "[] LFT HE1 HL1 Hty1") as (l1 vl1) "(H & H↦ & Hw)"=>//=.
     destruct vl1 as [|? vl1]; iDestruct "H" as %[[= Hlen] ->].
     rewrite heap_mapsto_vec_cons -wp_fupd. iDestruct "H↦" as "[H↦0 H↦vl1]". wp_write.
     wp_bind p1. iApply (wp_wand with "[]"); first by iApply (wp_eval_path). iIntros (? ->).
     wp_op. wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2 Hv2) "Hty2".
-    iMod (Hr with "* [] LFT Htl HE2 HL2 Hty2") as (l2 vl2 q) "(% & H↦2 & Hty & Hr)"=>//=.
+    iMod (Hr with "[] LFT Htl HE2 HL2 Hty2") as (l2 vl2 q) "(% & H↦2 & Hty & Hr)"=>//=.
     subst. assert (ty.(ty_size) ≤ length vl1).
     { revert i Hty. rewrite Hlen. clear. induction tyl=>//= -[|i] /=.
       - intros [= ->]. lia.
@@ -247,7 +245,7 @@ Section case.
     - iExists _. iFrame.
   Qed.
 
-  Lemma type_sum_assign_memcpy {E L} tyl i ty1 ty2 ty n ty1' ty2' C T T' p1 p2 e:
+  Lemma type_sum_memcpy {E L} tyl i ty1 ty2 ty n ty1' ty2' C T T' p1 p2 e:
     Closed [] e →
     0 ≤ i →
     tctx_extract_ctx E L [p1 ◁ ty1; p2 ◁ ty2] T T' →

@@ -126,6 +126,8 @@ Module Type lifetime_sig.
 
   (* Because Coq's module system is horrible, we have to repeat properties of lft_incl here
      unless we want to prove them twice (both here and in model.primitive) *)
+  Parameter lft_glb_acc : ∀ κ κ' q q', q.[κ] -∗ q'.[κ'] -∗
+    ∃ q'', q''.[κ ∪ κ'] ∗ (q''.[κ ∪ κ'] -∗ q.[κ] ∗ q'.[κ']).
   Parameter lft_le_incl : ∀ κ κ', κ' ⊆ κ → (κ ⊑ κ')%I.
   Parameter lft_incl_refl : ∀ κ, (κ ⊑ κ)%I.
   Parameter lft_incl_trans : ∀ κ κ' κ'', κ ⊑ κ' -∗ κ' ⊑ κ'' -∗ κ ⊑ κ''.

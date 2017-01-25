@@ -181,7 +181,7 @@ Proof.
     iFrame. }
   clear dependent A I Pb Pb' Pi. iModIntro. iIntros "H†".
   iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
-  iDestruct ("HIlookup" with "* HI") as %Hκ'.
+  iDestruct ("HIlookup" with "HI") as %Hκ'.
   iDestruct (big_sepS_delete _ _ κ' with "Hinv") as "[Hκinv' Hinv]";
     first by apply elem_of_dom.
   rewrite {1}/lft_inv; iDestruct "Hκinv'" as "[[Halive >%]|[Hdead >%]]".

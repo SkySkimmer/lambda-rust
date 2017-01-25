@@ -104,17 +104,33 @@ Lemma wp_le E (n1 n2 : Z) P Φ :
   (n2 < n1 → P -∗ ▷ Φ (LitV false)) →
   P -∗ WP BinOp LeOp (Lit (LitInt n1)) (Lit (LitInt n2)) @ E {{ Φ }}.
 Proof.
-  iIntros (Hl Hg) "HP". iApply wp_fupd.
+  iIntros (Hl Hg) "HP".
   destruct (bool_decide_reflect (n1 ≤ n2)); [rewrite Hl //|rewrite Hg; last omega];
     clear Hl Hg; (iApply wp_bin_op_pure; first by econstructor); iNext; iIntros (?? Heval);
     inversion_clear Heval; [rewrite bool_decide_true //|rewrite bool_decide_false //].
 Qed.
 
+Lemma wp_eq_int E (n1 n2 : Z) P Φ :
+  (n1 = n2 → P -∗ ▷ Φ (LitV true)) →
+  (n1 ≠ n2 → P -∗ ▷ Φ (LitV false)) →
+  P -∗ WP BinOp EqOp (Lit (LitInt n1)) (Lit (LitInt n2)) @ E {{ Φ }}.
+Proof.
+  iIntros (Hl Hg) "HP".
+  destruct (bool_decide_reflect (n1 = n2)); [rewrite Hl //|rewrite Hg //];
+    clear Hl Hg; iApply wp_bin_op_pure; subst.
+  - intros. apply BinOpEqTrue. constructor.
+  - iNext; iIntros (?? Heval). inversion_clear Heval. done. by inversion H.
+  - intros. apply BinOpEqFalse. by constructor.
+  - iNext; iIntros (?? Heval). inversion_clear Heval. by inversion H. done.
+Qed.
+
+(* TODO : wp_eq for locations, if needed. *)
+
 Lemma wp_offset E l z Φ :
   ▷ Φ (LitV $ LitLoc $ shift_loc l z) -∗
     WP BinOp OffsetOp (Lit $ LitLoc l) (Lit $ LitInt z) @ E {{ Φ }}.
 Proof.
-  iIntros "HP". iApply wp_fupd. iApply wp_bin_op_pure; first by econstructor.
+  iIntros "HP". iApply wp_bin_op_pure; first by econstructor.
   iNext. iIntros (?? Heval). inversion_clear Heval. done.
 Qed.
 
@@ -122,7 +138,7 @@ Lemma wp_plus E z1 z2 Φ :
   ▷ Φ (LitV $ LitInt $ z1 + z2) -∗
     WP BinOp PlusOp (Lit $ LitInt z1) (Lit $ LitInt z2) @ E {{ Φ }}.
 Proof.
-  iIntros "HP". iApply wp_fupd. iApply wp_bin_op_pure; first by econstructor.
+  iIntros "HP". iApply wp_bin_op_pure; first by econstructor.
   iNext. iIntros (?? Heval). inversion_clear Heval. done.
 Qed.
 
@@ -130,7 +146,7 @@ Lemma wp_minus E z1 z2 Φ :
   ▷ Φ (LitV $ LitInt $ z1 - z2) -∗
     WP BinOp MinusOp (Lit $ LitInt z1) (Lit $ LitInt z2) @ E {{ Φ }}.
 Proof.
-  iIntros "HP". iApply wp_fupd. iApply wp_bin_op_pure; first by econstructor.
+  iIntros "HP". iApply wp_bin_op_pure; first by econstructor.
   iNext. iIntros (?? Heval). inversion_clear Heval. done.
 Qed.
 

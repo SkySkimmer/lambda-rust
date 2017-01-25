@@ -102,8 +102,6 @@ Lemma next_access_head_reducible_state e σ a l :
   | (FreeAcc, _) => ∃ v ls, σ !! l = Some (ls, v)
   end.
 Proof.
-(*  assert (Hrefl : ∀ l, ~lit_neq σ l l).
-    { intros ? Hneq. inversion Hneq; done. } *)
   intros Ha (e'&σ'&ef&Hstep) Hrednonstuck. destruct Ha; inv_head_step; eauto.
   - destruct n; first by eexists. exfalso. eapply Hrednonstuck; last done.
     eapply CasStuckS; done.

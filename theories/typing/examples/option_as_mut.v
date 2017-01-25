@@ -6,9 +6,11 @@ Section option_as_mut.
 
   Definition option_as_mut : val :=
     funrec: <> ["o"] :=
-      let: "o'" := !"o" in case: !"o'" of
-        [ let: "r" := new [ #2 ] in "r" <-{Σ 0} ();; "k" ["r"];
-          let: "r" := new [ #2 ] in "r" <-{Σ 1} "o'" +ₗ #1;; "k" ["r"] ]
+      let: "o'" := !"o" in
+      let: "r" := new [ #2 ] in
+      case: !"o'" of
+        [ "r" <-{Σ 0} ();; "k" ["r"];
+          "r" <-{Σ 1} "o'" +ₗ #1;; "k" ["r"] ]
       cont: "k" ["r"] :=
         delete [ #1; "o"];; "return" ["r"].
 
@@ -20,12 +22,12 @@ Section option_as_mut.
     eapply (type_cont [_] [] (λ r, [o ◁ _; r!!!0 ◁ _])%TC) ; [solve_typing..| |].
     - intros k. simpl_subst.
       eapply type_deref; [solve_typing..|apply read_own_move|done|]=>o'. simpl_subst.
-      eapply type_case_uniq; [solve_typing..|]. constructor; last constructor; last constructor.
-      + left. eapply type_new; [solve_typing..|]. intros r. simpl_subst.
-        eapply (type_sum_assign_unit [unit; &uniq{α}τ]%T); [solve_typing..|by apply write_own|done|].
+      eapply type_new; [solve_typing..|]. intros r. simpl_subst.
+      eapply type_case_uniq; [solve_typing..|].
+        constructor; last constructor; last constructor; left.
+      + eapply (type_sum_assign_unit [unit; &uniq{α}τ]%T); [solve_typing..|by apply write_own|done|].
         eapply (type_jump [_]); solve_typing.
-      + left. eapply type_new; [solve_typing..|]. intros r. simpl_subst.
-        eapply (type_sum_assign [unit; &uniq{α}τ]%T); [solve_typing..|by apply write_own|done|].
+      + eapply (type_sum_assign [unit; &uniq{α}τ]%T); [solve_typing..|by apply write_own|done|].
         eapply (type_jump [_]); solve_typing.
     - move=>/= k r. inv_vec r=>r. simpl_subst.
       eapply type_delete; [solve_typing..|].

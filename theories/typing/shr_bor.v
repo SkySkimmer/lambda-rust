@@ -24,7 +24,7 @@ Section shr_bor.
     intros κ1 κ2 Hκ ty1 ty2 Hty. apply subtype_simple_type.
     iIntros (? [|[[]|][]]) "#LFT #HE #HL H"; try iDestruct "H" as "[]".
     iDestruct (Hκ with "HE HL") as "#Hκ". iApply (ty2.(ty_shr_mono) with "LFT Hκ").
-    iDestruct (Hty with "* [] [] []") as "(_ & _ & #Hs1)"; [done..|clear Hty].
+    iDestruct (Hty with "[] [] []") as "(_ & _ & #Hs1)"; [done..|clear Hty].
     by iApply "Hs1".
   Qed.
   Global Instance shr_mono_flip E L :

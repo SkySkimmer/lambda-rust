@@ -183,12 +183,12 @@ Section typing_rules.
     rewrite tctx_interp_cons tctx_interp_singleton. iIntros "[Hp1 Hp2]".
     wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "% Hown1".
     wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "_ Hown2".
-    iMod (Hwrt with "* [] LFT HE HL Hown1") as (l vl) "([% %] & Hl & Hclose)"; first done.
+    iMod (Hwrt with "[] LFT HE HL Hown1") as (l vl) "([% %] & Hl & Hclose)"; first done.
     subst v1. iDestruct (ty_size_eq with "Hown2") as "#Hsz". iDestruct "Hsz" as %Hsz.
     rewrite <-Hsz in *. destruct vl as [|v[|]]; try done.
     rewrite heap_mapsto_vec_singleton. iApply wp_fupd. wp_write.
     rewrite -heap_mapsto_vec_singleton.
-    iMod ("Hclose" with "* [Hl Hown2]") as "($ & $ & Hown)".
+    iMod ("Hclose" with "[Hl Hown2]") as "($ & $ & Hown)".
     { iExists _. iFrame. }
     rewrite tctx_interp_singleton tctx_hasty_val' //.
   Qed.
@@ -208,7 +208,7 @@ Section typing_rules.
     iIntros (Hsz Hread) "!#". iIntros (tid qE) "#HEAP #LFT Htl HE HL Hp".
     rewrite tctx_interp_singleton. wp_bind p. iApply (wp_hasty with "Hp").
     iIntros (v) "% Hown".
-    iMod (Hread with "* [] LFT Htl HE HL Hown") as
+    iMod (Hread with "[] LFT Htl HE HL Hown") as
         (l vl q) "(% & Hl & Hown & Hclose)"; first done.
     subst v. iDestruct (ty_size_eq with "Hown") as "#>%". rewrite ->Hsz in *.
     destruct vl as [|v [|]]; try done.
@@ -242,9 +242,9 @@ Section typing_rules.
     iIntros (Φ) "(#HEAP & #LFT & Htl & [HE1 HE2] & [HL1 HL2] & [Hp1 Hp2]) HΦ".
     wp_bind p1. iApply (wp_hasty with "Hp1"). iIntros (v1) "% Hown1".
     wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2) "% Hown2".
-    iMod ("Hwrt" with "* [] LFT HE1 HL1 Hown1")
+    iMod ("Hwrt" with "[] LFT HE1 HL1 Hown1")
       as (l1 vl1) "([% %] & Hl1 & Hcl1)"; first done.
-    iMod ("Hread" with "* [] LFT Htl HE2 HL2 Hown2")
+    iMod ("Hread" with "[] LFT Htl HE2 HL2 Hown2")
       as (l2 vl2 q2) "(% & Hl2 & Hown2 & Hcl2)"; first done.
     iDestruct (ty_size_eq with "Hown2") as "#>%". subst v1 v2. iApply wp_fupd.
     iApply (wp_memcpy with "[$HEAP $Hl1 $Hl2]"); first done; try congruence; [].
@@ -261,7 +261,7 @@ Section typing_rules.
                       (λ _, [p1 ◁ ty1'; p2 ◁ ty2']%TC).
   Proof.
     iIntros (Hsz Hwrt Hread) "!#". iIntros (tid qE) "#HEAP #LFT Htl HE HL HT".
-    iApply (type_memcpy_iris with "[] [] * [$HEAP $LFT $Htl $HE $HL HT]"); try done.
+    iApply (type_memcpy_iris with "[] [] [$HEAP $LFT $Htl $HE $HL HT]"); try done.
     (* TODO: This is kind of silly, why can't I iApply the assumptions directly? *)
     { iPoseProof Hwrt as "Hwrt". done. }
     { iPoseProof Hread as "Hread". done. }

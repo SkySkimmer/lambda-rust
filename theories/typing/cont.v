@@ -15,8 +15,8 @@ Section typing.
   Proof.
     iIntros (HC Hincl) "!#". iIntros (tid qE) "#HEAP #LFT Htl HE HL HC HT".
     iMod (Hincl with "LFT HE HL HT") as "(HE & HL & HT)".
-    iSpecialize ("HC" with "HE * []"); first done.
-    rewrite -{3}(vec_to_list_of_list args). iApply ("HC" with "* Htl HL HT").
+    iSpecialize ("HC" with "HE []"); first done.
+    rewrite -{3}(vec_to_list_of_list args). iApply ("HC" with "Htl HL HT").
   Qed.
 
   Lemma type_cont argsb L1 (T' : vec val (length argsb) → _) E L2 C T econt e2 kb :
@@ -28,13 +28,13 @@ Section typing.
   Proof.
     iIntros (Hc1 Hc2 He2 Hecont) "!#". iIntros (tid qE) "#HEAP #LFT Htl HE HL HC HT". iApply wp_let'.
     { simpl. rewrite decide_left. done. }
-    iModIntro. iApply (He2 with "* HEAP LFT Htl HE HL [HC] HT"). clear He2.
+    iModIntro. iApply (He2 with "HEAP LFT Htl HE HL [HC] HT"). clear He2.
     iIntros "HE". iLöb as "IH". iIntros (x) "H".
-    iDestruct "H" as %[->|?]%elem_of_cons; last by iApply ("HC" with "HE *").
+    iDestruct "H" as %[->|?]%elem_of_cons; last by iApply ("HC" with "HE").
     iIntros (args) "Htl HL HT". iApply wp_rec; try done.
     { rewrite Forall_fmap Forall_forall=>? _. rewrite /= to_of_val. eauto. }
     { by rewrite -(subst_v_eq (_ :: _) (RecV _ _ _ ::: _)). }
-    iNext. iApply (Hecont with "* HEAP LFT Htl HE HL [HC] HT").
+    iNext. iApply (Hecont with "HEAP LFT Htl HE HL [HC] HT").
     by iApply "IH".
   Qed.
 End typing.
