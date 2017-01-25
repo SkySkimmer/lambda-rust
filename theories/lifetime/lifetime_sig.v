@@ -67,11 +67,9 @@ Module Type lifetime_sig.
   Global Declare Instance bor_ne κ n : Proper (dist n ==> dist n) (bor κ).
   Global Declare Instance bor_contractive κ : Contractive (bor κ).
   Global Declare Instance bor_proper κ : Proper ((≡) ==> (≡)) (bor κ).
-  Parameter bor_iff_proper : ∀ κ P P', ▷ □ (P ↔ P') -∗ &{κ}P -∗ &{κ}P'.
   Global Declare Instance idx_bor_ne κ i n : Proper (dist n ==> dist n) (idx_bor κ i).
   Global Declare Instance idx_bor_contractive κ i : Contractive (idx_bor κ i).
   Global Declare Instance idx_bor_proper κ i : Proper ((≡) ==> (≡)) (idx_bor κ i).
-  Parameter idx_bor_iff_proper : ∀ κ i P P', ▷ □ (P ↔ P') -∗ &{κ,i}P -∗ &{κ,i}P'.
 
   Global Declare Instance lft_tok_fractional κ : Fractional (λ q, q.[κ])%I.
   Global Declare Instance lft_tok_as_fractional κ q :
@@ -94,19 +92,23 @@ Module Type lifetime_sig.
   Parameter bor_fake : ∀ E κ P,
     ↑lftN ⊆ E → lft_ctx -∗ [†κ] ={E}=∗ &{κ}P.
 
+  Parameter bor_iff : ∀ κ P P', ▷ □ (P ↔ P') -∗ &{κ}P -∗ &{κ}P'.
+  Parameter bor_shorten : ∀ κ κ' P, κ ⊑ κ' -∗ &{κ'}P -∗ &{κ}P.
+
   Parameter bor_sep : ∀ E κ P Q,
     ↑lftN ⊆ E → lft_ctx -∗ &{κ} (P ∗ Q) ={E}=∗ &{κ} P ∗ &{κ} Q.
   Parameter bor_combine : ∀ E κ P Q,
     ↑lftN ⊆ E → lft_ctx -∗ &{κ} P -∗ &{κ} Q ={E}=∗ &{κ} (P ∗ Q).
 
-  Parameter bor_unfold_idx : ∀ κ P, &{κ}P ⊣⊢ ∃ i, &{κ,i}P ∗ idx_bor_own 1 i.
-  Parameter bor_shorten : ∀ κ κ' P, κ ⊑ κ' -∗ &{κ'}P -∗ &{κ}P.
-  Parameter idx_bor_shorten : ∀ κ κ' i P, κ ⊑ κ' -∗ &{κ',i} P -∗ &{κ,i} P.
-
   Parameter rebor : ∀ E κ κ' P,
     ↑lftN ⊆ E → lft_ctx -∗ κ' ⊑ κ -∗ &{κ}P ={E}=∗ &{κ'}P ∗ ([†κ'] ={E}=∗ &{κ}P).
   Parameter bor_unnest : ∀ E κ κ' P,
     ↑lftN ⊆ E → lft_ctx -∗ &{κ'} &{κ} P ={E, E∖↑lftN}▷=∗ &{κ ∪ κ'} P.
+
+  Parameter bor_unfold_idx : ∀ κ P, &{κ}P ⊣⊢ ∃ i, &{κ,i}P ∗ idx_bor_own 1 i.
+
+  Parameter idx_bor_shorten : ∀ κ κ' i P, κ ⊑ κ' -∗ &{κ',i} P -∗ &{κ,i} P.
+  Parameter idx_bor_iff : ∀ κ i P P', ▷ □ (P ↔ P') -∗ &{κ,i}P -∗ &{κ,i}P'.
 
   Parameter idx_bor_acc : ∀ E q κ i P, ↑lftN ⊆ E →
     lft_ctx -∗ &{κ,i}P -∗ idx_bor_own 1 i -∗ q.[κ] ={E}=∗

@@ -64,7 +64,7 @@ Section uniq_bor.
     iDestruct (Hty with "* [] [] []") as "(_ & #Ho & #Hs)"; [done..|clear Hty].
     iDestruct (Hκ with "[] []") as "#Hκ"; [done..|]. iSplit; iAlways.
     - iIntros (? [|[[]|][]]) "H"; try iDestruct "H" as "[]".
-      iApply (bor_shorten with "Hκ"). iApply bor_iff_proper; last done.
+      iApply (bor_shorten with "Hκ"). iApply bor_iff; last done.
       iSplit; iIntros "!>!# H"; iDestruct "H" as (vl) "[??]";
       iExists vl; iFrame; by iApply "Ho".
     - iIntros (κ ??) "H". iAssert (κ2 ∪ κ ⊑ κ1 ∪ κ)%I as "#Hincl'".
@@ -96,7 +96,7 @@ Section uniq_bor.
     Send ty → Send (uniq_bor κ ty).
   Proof.
     iIntros (Hsend tid1 tid2 [|[[]|][]]) "H"; try iDestruct "H" as "[]".
-    iApply bor_iff_proper; last done. iNext. iAlways. iApply uPred.equiv_iff.
+    iApply bor_iff; last done. iNext. iAlways. iApply uPred.equiv_iff.
     do 3 f_equiv. iSplit; iIntros "."; by iApply Hsend.
   Qed.
 

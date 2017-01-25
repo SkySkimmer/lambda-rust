@@ -133,7 +133,7 @@ Proof.
     iIntros "[$ [>? $]]". iModIntro. iNext. rewrite /raw_bor.
     iExists i. iFrame. iExists _. iFrame "#". }
   iExists Pb'. iModIntro. iFrame. iSplitL "Hclose Hκ". by iApply "Hclose".
-  by iApply (raw_bor_iff_proper with "HPP'").
+  by iApply (raw_bor_iff with "HPP'").
 Qed.
 
 Lemma raw_rebor E κ κ' P :
@@ -171,7 +171,7 @@ Proof.
     with "[$HI $Hκ] Hi Hislice Hbor [Hvs]")
     as (Pb') "([HI Hκ] & HP' & Halive & Hvs)"; [solve_ndisj|done|done|..].
   { iNext. by iApply lft_vs_frame. }
-  iDestruct (raw_bor_iff_proper with "HPP' HP'") as "$".
+  iDestruct (raw_bor_iff with "HPP' HP'") as "$".
   iDestruct ("Hκclose" with "Hκ") as "Hinv".
   iMod ("Hclose" with "[HA HI Hinv Halive Hinh Hvs]") as "_".
   { iNext. rewrite {2}/lfts_inv. iExists A, I. iFrame "HA HI".

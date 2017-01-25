@@ -26,11 +26,12 @@ Section frac_bor.
   Global Instance frac_bor_proper κ :
     Proper (pointwise_relation _ (⊣⊢) ==> (⊣⊢)) (frac_bor κ).
   Proof. solve_proper. Qed.
-  Lemma frac_bor_iff_proper κ φ' :
+
+  Lemma frac_bor_iff κ φ' :
     ▷ □ (∀ q, φ q ↔ φ' q) -∗ &frac{κ} φ -∗ &frac{κ} φ'.
   Proof.
     iIntros "#Hφφ' H". iDestruct "H" as (γ κ') "[? Hφ]". iExists γ, κ'. iFrame.
-    iApply (shr_bor_iff_proper with "[Hφφ'] Hφ"). iNext. iAlways.
+    iApply (shr_bor_iff with "[Hφφ'] Hφ"). iNext. iAlways.
     iSplit; iIntros "H"; iDestruct "H" as (q) "[H ?]"; iExists q; iFrame; by iApply "Hφφ'".
   Qed.
 
