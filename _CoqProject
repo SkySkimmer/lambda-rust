@@ -53,3 +53,6 @@ theories/typing/examples/unwrap_or.v
 theories/typing/examples/lazy_lft.v
 theories/typing/unsafe/cell.v
 theories/typing/unsafe/refcell.v
+theories/typing/unsafe/ref.v
+theories/typing/unsafe/refmut.v
+theories/typing/unsafe/refcell_code.v
