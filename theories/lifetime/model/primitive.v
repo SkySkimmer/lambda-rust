@@ -380,7 +380,7 @@ Proof.
 Qed.
 
 (** Basic rules about borrows *)
-Lemma raw_bor_iff_proper i P P' : ▷ □ (P ↔ P') -∗ raw_bor i P -∗ raw_bor i P'.
+Lemma raw_bor_iff i P P' : ▷ □ (P ↔ P') -∗ raw_bor i P -∗ raw_bor i P'.
 Proof.
   iIntros "#HPP' HP". unfold raw_bor. iDestruct "HP" as (s) "[HiP HP]".
   iExists s. iFrame. iDestruct "HP" as (P0) "[#Hiff ?]". iExists P0. iFrame.
@@ -388,7 +388,7 @@ Proof.
   by iApply "HPP'"; iApply "Hiff". by iApply "Hiff"; iApply "HPP'".
 Qed.
 
-Lemma idx_bor_iff_proper κ i P P' : ▷ □ (P ↔ P') -∗ &{κ,i}P -∗ &{κ,i}P'.
+Lemma idx_bor_iff κ i P P' : ▷ □ (P ↔ P') -∗ &{κ,i}P -∗ &{κ,i}P'.
 Proof.
   unfold idx_bor. iIntros "#HPP' [$ HP]". iDestruct "HP" as (P0) "[#HP0P Hs]".
   iExists P0. iFrame. iNext. iAlways. iSplit; iIntros.
@@ -404,10 +404,10 @@ Proof.
     iExists κ'. iFrame. iExists s. by iFrame.
 Qed.
 
-Lemma bor_iff_proper κ P P' : ▷ □ (P ↔ P') -∗ &{κ}P -∗ &{κ}P'.
+Lemma bor_iff κ P P' : ▷ □ (P ↔ P') -∗ &{κ}P -∗ &{κ}P'.
 Proof.
   rewrite !bor_unfold_idx. iIntros "#HPP' HP". iDestruct "HP" as (i) "[??]".
-  iExists i. iFrame. by iApply (idx_bor_iff_proper with "HPP'").
+  iExists i. iFrame. by iApply (idx_bor_iff with "HPP'").
 Qed.
 
 Lemma bor_shorten κ κ' P : κ ⊑ κ' -∗ &{κ'}P -∗ &{κ}P.

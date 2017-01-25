@@ -20,11 +20,12 @@ Section na_bor.
   Proof. solve_contractive. Qed.
   Global Instance na_bor_proper κ : Proper ((⊣⊢) ==> (⊣⊢)) (na_bor κ tid N).
   Proof. solve_proper. Qed.
-  Lemma na_bor_iff_proper κ P' :
+
+  Lemma na_bor_iff κ P' :
     ▷ □ (P ↔ P') -∗ &na{κ, tid, N} P -∗ &na{κ, tid, N} P'.
   Proof.
     iIntros "HPP' H". iDestruct "H" as (i) "[HP ?]". iExists i. iFrame.
-    iApply (idx_bor_iff_proper with "HPP' HP").
+    iApply (idx_bor_iff with "HPP' HP").
   Qed.
 
   Global Instance na_bor_persistent κ : PersistentP (&na{κ,tid,N} P) := _.

@@ -89,7 +89,7 @@ Section refmut.
     - iIntros (tid [|[[]|][|[[]|][]]]); try iIntros "[]". iIntros "H".
       iDestruct "H" as (γ β ty') "(Hb & #H⊑ & #Hinv & Hown)".
       iExists γ, β, ty'. iFrame "∗#". iSplit.
-      + iApply bor_iff_proper; last done.
+      + iApply bor_iff; last done.
         iSplit; iIntros "!>!# H"; iDestruct "H" as (vl) "[??]";
           iExists vl; iFrame; by iApply "Ho".
       + by iApply lft_incl_trans.

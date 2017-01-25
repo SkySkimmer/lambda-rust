@@ -21,7 +21,7 @@ Definition reading_st (q : frac) (κ : lft) : refcell_stR :=
   Some (Cinr (to_agree (κ : leibnizC lft), q, xH)).
 Definition writing_st : refcell_stR := Some (Cinl (Excl ())).
 
-Definition refcellN := nroot .@ "refcell".
+Definition refcellN := lrustN .@ "refcell".
 Definition refcell_invN := refcellN .@ "inv".
 
 Section refcell_inv.
@@ -56,7 +56,7 @@ Section refcell_inv.
     iDestruct (Hty with "LFT HE HL") as "(% & Hown & Hshr)".
     iAssert (□ (&{α} shift_loc l 1 ↦∗: ty_own ty1 tid -∗
                 &{α} shift_loc l 1 ↦∗: ty_own ty2 tid))%I with "[]" as "#Hb".
-    { iIntros "!# H". iApply bor_iff_proper; last done.
+    { iIntros "!# H". iApply bor_iff; last done.
       iSplit; iIntros "!>!#H"; iDestruct "H" as (vl) "[Hf H]"; iExists vl;
       iFrame; by iApply "Hown". }
     iDestruct "H" as (st) "H"; iExists st;
@@ -82,7 +82,7 @@ Section refcell.
          (∃ α γ, κ ⊑ α ∗ &na{α, tid, refcell_invN}(refcell_inv tid l γ α ty))%I |}.
   Next Obligation.
     iIntros (??[|[[]|]]); try iIntros "[]". rewrite ty_size_eq.
-    iIntros "[_ %]!%/=". congruence.
+    iIntros "[_ %] !% /=". congruence.
   Qed.
   Next Obligation.
     iIntros (ty E κ l tid q ?) "#LFT Hb Htok".
@@ -147,7 +147,7 @@ Section refcell.
     - iPureIntro. simpl. congruence.
     - destruct vl as [|[[]|]]; try done. iDestruct "H" as "[$ H]". by iApply "Hown".
     - iDestruct "H" as (a γ) "[Ha H]". iExists a, γ. iFrame.
-      iApply na_bor_iff_proper; last done.
+      iApply na_bor_iff; last done.
       iSplit; iIntros "!>!# H"; by iApply refcell_inv_proper.
   Qed.
   Lemma refcell_mono' E L ty1 ty2 :
