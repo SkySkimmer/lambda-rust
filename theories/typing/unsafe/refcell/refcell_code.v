@@ -5,7 +5,7 @@ From iris.base_logic Require Import big_op fractional.
 From lrust.lang Require Import memcpy.
 From lrust.lifetime Require Import na_borrow.
 From lrust.typing Require Import typing.
-From lrust.typing.unsafe Require Import refcell ref refmut.
+From lrust.typing.unsafe.refcell Require Import refcell ref refmut.
 Set Default Proof Using "Type".
 
 Section refcell_functions.

@@ -52,7 +52,7 @@ theories/typing/examples/option_as_mut.v
 theories/typing/examples/unwrap_or.v
 theories/typing/examples/lazy_lft.v
 theories/typing/unsafe/cell.v
-theories/typing/unsafe/refcell.v
-theories/typing/unsafe/ref.v
-theories/typing/unsafe/refmut.v
-theories/typing/unsafe/refcell_code.v
+theories/typing/unsafe/refcell/refcell.v
+theories/typing/unsafe/refcell/ref.v
+theories/typing/unsafe/refcell/refmut.v
+theories/typing/unsafe/refcell/refcell_code.v
