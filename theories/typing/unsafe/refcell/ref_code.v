@@ -52,7 +52,7 @@ Section ref_functions.
         revert Heq. intros [= <-]. destruct st'' as [[ag q'] n].
         revert Hle=>/Some_included_2 /Some_pair_included
                [/Some_pair_included_total_1 [/agree_included Heq _] _] [[Hag _] _].
-        iExists q', n. iPureIntro. repeat constructor. apply Cinlr_equiv.
+        iExists q', n. iPureIntro. repeat constructor. apply Cinr_equiv.
         do 2 constructor; last done. apply agree_op_inv. by rewrite comm -Heq. }
     iDestruct "Hst" as %[st' [-> Hst']]%equiv_Some_inv_r'.
     destruct st' as [|[[]]|]; try by inversion Hst'. apply (inj Cinr), (inj2 pair) in Hst'.
