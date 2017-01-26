@@ -161,7 +161,7 @@ Section typing.
       iDestruct ("Hown") as (vl) "[>H↦ Hown]".
       iDestruct (ty_size_eq with "Hown") as "#>%".
       iDestruct (ty_size_eq with "Hown'") as "#>%".
-      iApply wp_fupd. iApply (wp_memcpy with "[$HEAP $H↦ $H↦']"); [done..|].
+      iApply wp_fupd. iApply (wp_memcpy with "[$HEAP $H↦ $H↦']"); [done||lia..|].
       iNext. iIntros "[H↦ H↦']". rewrite {1}/elctx_interp big_opL_singleton /=.
       iMod ("Hclose" with "[H↦ Hown'] Htl") as "[$ $]".
       { iExists vl'. by iFrame. }

@@ -6,7 +6,7 @@ From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
 Definition refcell_stR :=
-  optionUR (csumR (exclR unitC) (prodR (prodR (agreeR (leibnizC lft)) fracR) posR)).
+  optionUR (csumR (exclR unitC) (prodR (prodR (agreeR lftC) fracR) posR)).
 Class refcellG Σ :=
   RefCellG :> inG Σ (authR refcell_stR).
 
@@ -17,8 +17,8 @@ Definition Z_of_refcell_st (st : refcell_stR) : Z :=
   | Some _ => -1
   end.
 
-Definition reading_st (q : frac) (κ : lft) : refcell_stR :=
-  Some (Cinr (to_agree (κ : leibnizC lft), q, xH)).
+Definition reading_st (q : frac) (ν : lft) : refcell_stR :=
+  Some (Cinr (to_agree ν, q, xH)).
 Definition writing_st : refcell_stR := Some (Cinl (Excl ())).
 
 Definition refcellN := lrustN .@ "refcell".
@@ -108,8 +108,7 @@ Section refcell.
     clear dependent n. iDestruct "H" as ([|n|[]]) "[Hn >%]"; try lia.
     - iFrame. iMod (own_alloc (● None)) as (γ) "Hst". done. iExists γ, None. by iFrame.
     - iMod (lft_create with "LFT") as (ν) "[[Htok1 Htok2] #Hhν]". done.
-      iMod (own_alloc
-         (● Some (Cinr (to_agree (ν : leibnizC _), (1/2)%Qp, n)))) as (γ) "Hst".
+      iMod (own_alloc (● Some (Cinr (to_agree ν, (1/2)%Qp, n)))) as (γ) "Hst".
       { by apply auth_auth_valid. }
       iMod (rebor _ _ (κ ∪ ν) with "LFT [] Hvl") as "[Hvl Hh]". done.
       { iApply lft_le_incl. apply gmultiset_union_subseteq_l. }

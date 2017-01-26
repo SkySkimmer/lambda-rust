@@ -56,3 +56,4 @@ theories/typing/unsafe/refcell/refcell.v
 theories/typing/unsafe/refcell/ref.v
 theories/typing/unsafe/refcell/refmut.v
 theories/typing/unsafe/refcell/refcell_code.v
+theories/typing/unsafe/refcell/ref_code.v

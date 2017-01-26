@@ -14,6 +14,8 @@ Module Export lifetime : lifetime_sig.
   Include creation.
 End lifetime.
 
+Canonical lftC := leibnizC lft.
+
 Section derived.
 Context `{invG Σ, lftG Σ}.
 Implicit Types κ : lft.

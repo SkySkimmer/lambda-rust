@@ -233,7 +233,7 @@ Section case.
     rewrite -(take_drop (ty.(ty_size)) vl1) heap_mapsto_vec_app.
     iDestruct "H↦vl1" as "[H↦vl1 H↦pad]".
     iDestruct (ty_size_eq with "Hty") as "#>%".
-    iApply wp_fupd. iApply (wp_memcpy with "[$HEAP $H↦vl1 $H↦2]"); try done.
+    iApply wp_fupd. iApply (wp_memcpy with "[$HEAP $H↦vl1 $H↦2]"); [done| |lia|].
     { rewrite take_length. lia. }
     iNext; iIntros "[H↦vl1 H↦2]".
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //.

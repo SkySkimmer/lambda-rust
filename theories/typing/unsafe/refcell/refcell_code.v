@@ -36,7 +36,7 @@ Section refcell_functions.
     iDestruct "Hr" as "[Hr↦ >SZ]". destruct vl' as [|]; iDestruct "SZ" as %[=].
     rewrite heap_mapsto_vec_cons. iDestruct "Hr↦" as "[Hr↦0 Hr↦1]". wp_op.
     rewrite shift_loc_0. wp_write. wp_op. iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
-    wp_bind (_ <-{_} !_)%E. iApply (wp_memcpy with "[$HEAP $Hr↦1 $Hx↦]"); [done..|].
+    wp_bind (_ <-{_} !_)%E. iApply (wp_memcpy with "[$HEAP $Hr↦1 $Hx↦]"); [done||lia..|].
     iIntros "!> [Hr↦1 Hx↦]". wp_seq.
     iApply (type_delete _ _ [ #lx ◁ box (uninit (ty_size ty)); #lr ◁ box (refcell ty)]%TC
         with "HEAP LFT Hna HE HL Hk [-]"); [solve_typing..| |]; last first.
@@ -70,7 +70,7 @@ Section refcell_functions.
     iDestruct "Hr" as (vl') "Hr". rewrite uninit_own heap_mapsto_vec_cons.
     iDestruct "Hr" as "[Hr↦ >%]". iDestruct "Hx↦" as "[Hx↦0 Hx↦1]". wp_op.
     iDestruct "Hx" as "[% Hx]". iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
-    wp_bind (_ <-{_} !_)%E. iApply (wp_memcpy with "[$HEAP $Hr↦ $Hx↦1]"); [done..|].
+    wp_bind (_ <-{_} !_)%E. iApply (wp_memcpy with "[$HEAP $Hr↦ $Hx↦1]"); [done||lia..|].
     iIntros "!> [Hr↦ Hx↦1]". wp_seq.
     iApply (type_delete _ _ [ #lx ◁ box (uninit (S (ty_size ty))); #lr ◁ box ty]%TC
         with "HEAP LFT Hna HE HL Hk [-]"); [solve_typing..| |]; last first.
