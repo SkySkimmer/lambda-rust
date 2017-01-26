@@ -29,7 +29,7 @@ Section ref_functions.
   Proof.
     apply type_fn; [apply _..|]. move=>/= [α β] ret arg. inv_vec arg=>x. simpl_subst.
     eapply type_deref; [solve_typing..|by apply read_own_move|done|]=>x'.
-    iIntros "!# * #HEAP #LFT Hna HE HL Hk HT". simpl_subst.
+    iIntros "!# * #LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']".
     destruct x' as [[|lx'|]|]; try iDestruct "Hx'" as "[]".
@@ -73,7 +73,7 @@ Section ref_functions.
     wp_bind (new [ #2])%E. iApply wp_new; [done..|]. iNext. iIntros (lr ?) "(%&?&Hlr)".
     iAssert (lx' ↦∗{qlx'} [ #lv; #lrc])%I  with "[H↦1 H↦2]" as "H↦".
     { rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton. iFrame. }
-    wp_let. wp_bind (_ <-{_} !_)%E. iApply (wp_memcpy with "[$HEAP $Hlr $H↦]"); [done..|].
+    wp_let. wp_bind (_ <-{_} !_)%E. iApply (wp_memcpy with "[$Hlr $H↦]"); [done..|].
     iIntros "!>[Hlr H↦]". wp_seq.
     iMod ("Hcloseα2" with "[$H◯] Hna") as "[Hα2 Hna]".
     iMod ("Hcloseδ" with "[H↦lrc H● Hν1 INV] Hna") as "[Hδ Hna]".
@@ -83,7 +83,7 @@ Section ref_functions.
     iAssert (elctx_interp [☀ α; ☀ β] qE) with "[Hα1 Hα2 Hβ]" as "HE".
     { rewrite /elctx_interp big_sepL_cons big_sepL_singleton. iFrame. }
     iApply (type_delete _ _
-        [ x ◁ box (uninit 1); #lr ◁ box(ref β ty)]%TC with "HEAP LFT Hna HE HL Hk");
+        [ x ◁ box (uninit 1); #lr ◁ box(ref β ty)]%TC with "LFT Hna HE HL Hk");
       [solve_typing..| |]; first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       rewrite /= freeable_sz_full. iFrame. iExists _. iFrame. iExists _, _, _, _, _.
@@ -109,7 +109,7 @@ Section ref_functions.
   Proof.
     apply type_fn; [apply _..|]. move=>/= [α β] ret arg. inv_vec arg=>x. simpl_subst.
     eapply type_deref; [solve_typing..|by apply read_own_move|done|]=>x'.
-    iIntros "!# * #HEAP #LFT Hna HE HL Hk HT". simpl_subst.
+    iIntros "!# * #LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']".
     destruct x' as [[|lx'|]|]; try iDestruct "Hx'" as "[]".
@@ -123,7 +123,7 @@ Section ref_functions.
     iAssert (elctx_interp [☀ α; ☀ β; α ⊑ β] qE) with "[Hα Hβ Hαβ]" as "HE".
     { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
     iApply (type_letalloc_1 (&shr{α}ty) _
-        [ x ◁ box (uninit 1); #lv ◁ &shr{α}ty]%TC with "HEAP LFT Hna HE HL Hk");
+        [ x ◁ box (uninit 1); #lv ◁ &shr{α}ty]%TC with "LFT Hna HE HL Hk");
       [solve_typing..| |]; first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (ty_shr_mono with "LFT [] Hshr"). by iApply lft_incl_glb. }

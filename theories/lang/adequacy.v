@@ -1,31 +1,32 @@
-From iris.program_logic Require Export hoare adequacy.
+From iris.program_logic Require Export adequacy weakestpre.
 From iris.algebra Require Import auth.
 From lrust.lang Require Export heap.
 From lrust.lang Require Import proofmode notation.
 Set Default Proof Using "Type".
 
-Class heapPreG Σ := HeapPreG {
-  heap_preG_ownP :> ownPPreG lrust_lang Σ;
-  heap_preG_heap :> inG Σ (authR heapUR);
-  heap_preG_heap_freeable :> inG Σ (authR heap_freeableUR)
+Class lrustPreG Σ := HeapPreG {
+  lrust_preG_irig :> invPreG Σ;
+  lrust_preG_heap :> inG Σ (authR heapUR);
+  lrust_preG_heap_freeable :> inG Σ (authR heap_freeableUR)
 }.
 
-Definition heapΣ : gFunctors :=
-  #[ownPΣ state;
+Definition lrustΣ : gFunctors :=
+  #[invΣ;
     GFunctor (constRF (authR heapUR));
     GFunctor (constRF (authR heap_freeableUR))].
-Instance subG_heapPreG {Σ} : subG heapΣ Σ → heapPreG Σ.
+Instance subG_heapPreG {Σ} : subG lrustΣ Σ → lrustPreG Σ.
 Proof. solve_inG. Qed.
 
-Definition heap_adequacy Σ `{heapPreG Σ} e σ φ :
-  (∀ `{heapG Σ}, {{ heap_ctx }} e {{ v, ⌜φ v⌝ }}) →
+Definition lrust_adequacy Σ `{lrustPreG Σ} e σ φ :
+  (∀ `{lrustG Σ}, True ⊢ WP e {{ v, ⌜φ v⌝ }}) →
   adequate e σ φ.
 Proof.
-  intros Hwp; eapply (ownP_adequacy Σ _). iIntros (?) "Hσ".
+  intros Hwp; eapply (wp_adequacy _ _); iIntros (?) "".
   iMod (own_alloc (● to_heap σ)) as (vγ) "Hvγ".
   { apply (auth_auth_valid (to_heap _)), to_heap_valid. }
   iMod (own_alloc (● (∅ : heap_freeableUR))) as (fγ) "Hfγ"; first done.
-  set (Hheap := HeapG _ _ _ _ vγ fγ).
-  iMod (inv_alloc heapN _ heap_inv with "[-]"); [iNext; iExists σ, ∅; by iFrame|].
-  iApply (Hwp _). by rewrite /heap_ctx.
+  set (Hheap := HeapG _ _ _ vγ fγ).
+  iModIntro. iExists heap_ctx. iSplitL.
+  { iExists ∅. by iFrame. }
+  iApply (Hwp (LRustG _ _ Hheap)).
 Qed.

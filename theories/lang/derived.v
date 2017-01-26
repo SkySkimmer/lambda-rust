@@ -18,7 +18,7 @@ Notation Newlft := (Lit LitUnit) (only parsing).
 Notation Endlft := Skip (only parsing).
 
 Section derived.
-Context `{ownPG lrust_lang Σ}.
+Context `{lrustG Σ}.
 Implicit Types P Q : iProp Σ.
 Implicit Types Φ : val → iProp Σ.
 
@@ -119,9 +119,9 @@ Proof.
   destruct (bool_decide_reflect (n1 = n2)); [rewrite Hl //|rewrite Hg //];
     clear Hl Hg; iApply wp_bin_op_pure; subst.
   - intros. apply BinOpEqTrue. constructor.
-  - iNext; iIntros (?? Heval). inversion_clear Heval. done. by inversion H.
+  - iNext; iIntros (?? Heval). by inversion_clear Heval; inv_lit.
   - intros. apply BinOpEqFalse. by constructor.
-  - iNext; iIntros (?? Heval). inversion_clear Heval. by inversion H. done.
+  - iNext; iIntros (?? Heval). by inversion_clear Heval; inv_lit.
 Qed.
 
 (* TODO : wp_eq for locations, if needed. *)

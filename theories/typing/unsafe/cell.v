@@ -151,7 +151,7 @@ Section typing.
                          (T2 := λ _, [d ◁ &shr{α} cell ty;
                                       x ◁ box (uninit ty.(ty_size))]%TC); try solve_typing; [|].
     { (* The core of the proof: Showing that the assignment is safe. *)
-      iAlways. iIntros (tid qE) "#HEAP #LFT Htl HE $".
+      iAlways. iIntros (tid qE) "#LFT Htl HE $".
       rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
       iIntros "[#Hshr Hx]". rewrite {1}/elctx_interp big_opL_singleton /=.
       destruct d as [[]|]; try iDestruct "Hshr" as "[]".
@@ -161,7 +161,7 @@ Section typing.
       iDestruct ("Hown") as (vl) "[>H↦ Hown]".
       iDestruct (ty_size_eq with "Hown") as "#>%".
       iDestruct (ty_size_eq with "Hown'") as "#>%".
-      iApply wp_fupd. iApply (wp_memcpy with "[$HEAP $H↦ $H↦']"); [done||lia..|].
+      iApply wp_fupd. iApply (wp_memcpy with "[$H↦ $H↦']"); [done||lia..|].
       iNext. iIntros "[H↦ H↦']". rewrite {1}/elctx_interp big_opL_singleton /=.
       iMod ("Hclose" with "[H↦ Hown'] Htl") as "[$ $]".
       { iExists vl'. by iFrame. }

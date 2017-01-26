@@ -1,13 +1,13 @@
 From Coq Require Import Min.
+From iris.prelude Require Import coPset.
 From iris.algebra Require Import cmra_big_op gmap frac agree.
 From iris.algebra Require Import csum excl auth.
-From iris.base_logic Require Import big_op lib.invariants lib.fractional.
+From iris.base_logic Require Import big_op lib.fractional.
+From iris.base_logic Require Export lib.own.
 From iris.proofmode Require Export tactics.
-From lrust.lang Require Export lifting.
+From lrust.lang Require Export lang.
 Set Default Proof Using "Type".
 Import uPred.
-
-Definition heapN : namespace := nroot .@ "heap".
 
 Definition lock_stateR : cmraT :=
   csumR (exclR unitC) natR.
@@ -19,7 +19,6 @@ Definition heap_freeableUR : ucmraT :=
   gmapUR block (prodR fracR (gmapR Z (exclR unitC))).
 
 Class heapG Σ := HeapG {
-  heapG_ownP_inG :> ownPG lrust_lang Σ;
   heap_inG :> inG Σ (authR heapUR);
   heap_freeable_inG :> inG Σ (authR heap_freeableUR);
   heap_name : gname;
@@ -32,7 +31,7 @@ Definition to_heap : state → heapUR :=
   fmap (λ v, (1%Qp, to_lock_stateR (v.1), to_agree (v.2))).
 Definition heap_freeable_rel (σ : state) (hF : heap_freeableUR) : Prop :=
   ∀ blk qs, hF !! blk = Some qs →
-  qs.2 ≠ ∅ ∧ ∀ i, is_Some (σ !! (blk, i)) ↔ is_Some (qs.2 !! i).
+    qs.2 ≠ ∅ ∧ ∀ i, is_Some (σ !! (blk, i)) ↔ is_Some (qs.2 !! i).
 
 Section definitions.
   Context `{heapG Σ}.
@@ -61,17 +60,13 @@ Section definitions.
   Definition heap_freeable_eq : @heap_freeable = @heap_freeable_def :=
     seal_eq heap_freeable_aux.
 
-  Definition heap_inv : iProp Σ :=
-    (∃ (σ:state) hF, ownP σ ∗ own heap_name (● to_heap σ)
-                            ∗ own heap_freeable_name (● hF)
-                            ∗ ⌜heap_freeable_rel σ hF⌝)%I.
-  Definition heap_ctx : iProp Σ := inv heapN heap_inv.
-
-  Global Instance heap_ctx_persistent : PersistentP heap_ctx.
-  Proof. apply _. Qed.
+  Definition heap_ctx (σ:state) : iProp Σ :=
+    (∃ hF, own heap_name (● to_heap σ)
+         ∗ own heap_freeable_name (● hF)
+         ∗ ⌜heap_freeable_rel σ hF⌝)%I.
 End definitions.
 
-Typeclasses Opaque heap_ctx heap_mapsto heap_freeable heap_mapsto_vec.
+Typeclasses Opaque heap_mapsto heap_freeable heap_mapsto_vec.
 Instance: Params (@heap_mapsto) 4.
 Instance: Params (@heap_freeable) 5.
 
@@ -92,13 +87,9 @@ Notation "†{ q } l … n" := (heap_freeable l q n)
   (at level 20, q at level 50, format "†{ q } l … n") : uPred_scope.
 Notation "† l … n" := (heap_freeable l 1 n) (at level 20) : uPred_scope.
 
-Section heap.
-  Context {Σ : gFunctors}.
-  Implicit Types P Q : iProp Σ.
+Section to_heap.
   Implicit Types σ : state.
-  Implicit Types E : coPset.
 
-  (** Allocation *)
   Lemma to_heap_valid σ : ✓ to_heap σ.
   Proof. intros l. rewrite lookup_fmap. case (σ !! l)=> [[[|n] v]|] //=. Qed.
 
@@ -112,8 +103,13 @@ Section heap.
 
   Lemma to_heap_delete σ l : to_heap (delete l σ) = delete l (to_heap σ).
   Proof. by rewrite /to_heap fmap_delete. Qed.
+End to_heap.
 
+Section heap.
   Context `{heapG Σ}.
+  Implicit Types P Q : iProp Σ.
+  Implicit Types σ : state.
+  Implicit Types E : coPset.
 
   (** General properties of mapsto and freeable *)
   Global Instance heap_mapsto_timeless l q v : TimelessP (l↦{q}v).
@@ -179,8 +175,7 @@ Section heap.
     - revert l. induction Hlen as [|v1 v2 vl1 vl2 _ _ IH]=> l.
       { rewrite !heap_mapsto_vec_nil. iIntros "_"; auto. }
       rewrite !heap_mapsto_vec_cons. iIntros "[[Hv1 Hvl1] [Hv2 Hvl2]]".
-      iDestruct (IH (shift_loc l 1) with "[Hvl1 Hvl2]") as "[% $]";
-        subst; first by iFrame.
+      iDestruct (IH (shift_loc l 1) with "[$Hvl1 $Hvl2]") as "[% $]"; subst.
       rewrite (inj_iff (:: vl2)).
       iDestruct (heap_mapsto_agree with "[$Hv1 $Hv2]") as %<-.
       iSplit; first done. iFrame.
@@ -206,7 +201,7 @@ Section heap.
     l ↦∗{q}: Φ1 -∗ (∀ vl, Φ1 vl -∗ Φ2 vl) -∗ l ↦∗{q}: Φ2.
   Proof.
     iIntros "Hm Hwand". iDestruct "Hm" as (vl) "[Hm HΦ]". iExists vl.
-    iFrame "Hm". iApply "Hwand". done.
+    iFrame "Hm". by iApply "Hwand".
   Qed.
 
   Lemma heap_mapsto_vec_combine l q vl :
@@ -338,7 +333,7 @@ Section heap.
   Qed.
 
   (** Weakest precondition *)
-  Lemma heap_alloc_vs σ l vl:
+  Lemma heap_alloc_vs σ l vl :
     (∀ m : Z, σ !! shift_loc l m = None) →
     own heap_name (● to_heap σ)
     ==∗ own heap_name (● to_heap (init_mem l vl σ))
@@ -358,31 +353,29 @@ Section heap.
     rewrite lookup_init_mem_ne /=; last lia. by rewrite -(shift_loc_0 l) FRESH.
   Qed.
 
-  Lemma wp_alloc E n:
-    ↑heapN ⊆ E → 0 < n →
-    {{{ heap_ctx }}} Alloc (Lit $ LitInt n) @ E
-    {{{ l vl, RET LitV $ LitLoc l; ⌜n = length vl⌝ ∗ †l…(Z.to_nat n) ∗ l ↦∗ vl }}}.
+  Lemma heap_alloc σ l n vl :
+    0 < n →
+    (∀ m, σ !! shift_loc l m = None) →
+    Z.of_nat (length vl) = n →
+    heap_ctx σ ==∗
+      heap_ctx (init_mem l vl σ) ∗ †l…(Z.to_nat n) ∗ l ↦∗ vl.
   Proof.
-    iIntros (???) "#Hinv HΦ". rewrite /heap_ctx /heap_inv.
-    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
-    iApply (wp_alloc_pst with "[$Hσ]")=> //.
-    iNext. iIntros (l σ') "(% & #Hσσ' & Hσ')".
-    iDestruct "Hσσ'" as %(vl & HvlLen & Hvl).
+    intros ?? HvlLen; iDestruct 1 as (hF) "(Hvalσ & HhF & %)".
     assert (vl ≠ []) by (intros ->; simpl in *; lia).
-    iMod (heap_alloc_vs with "[$Hvalσ]") as "[Hvalσ' Hmapsto]"; first done.
+    iMod (heap_alloc_vs _ _ vl with "[$Hvalσ]") as "[Hvalσ Hmapsto]"; first done.
     iMod (own_update _ (● hF) with "HhF") as "[HhF Hfreeable]".
     { apply auth_update_alloc,
         (alloc_singleton_local_update _ (l.1) (1%Qp, inter (l.2) (Z.to_nat n))).
       - eauto using heap_freeable_rel_None.
       - split. done. apply inter_valid. }
-    iMod ("Hclose" with "[Hσ' Hvalσ' HhF]") as "_".
-    - iNext. iExists σ', _. subst σ'. iFrame. iPureIntro.
-      rewrite HvlLen Nat2Z.id. auto using heap_freeable_rel_init_mem.
-    - rewrite heap_freeable_eq /heap_freeable_def. iApply "HΦ".
-      iSplitR; first auto. iFrame. by rewrite heap_mapsto_vec_combine.
+    iModIntro. iSplitL "Hvalσ HhF".
+    { iExists _. iFrame. iPureIntro.
+      rewrite -HvlLen Nat2Z.id. auto using heap_freeable_rel_init_mem. }
+    rewrite heap_freeable_eq /heap_freeable_def heap_mapsto_vec_combine //.
+    iFrame.
   Qed.
 
-  Lemma heap_free_vs l vl σ :
+  Lemma heap_free_vs σ l vl :
     own heap_name (● to_heap σ) ∗ own heap_name (◯ [⋅ list] i ↦ v ∈ vl,
       {[shift_loc l i := (1%Qp, Cinr 0%nat, to_agree v)]})
     ==∗ own heap_name (● to_heap (free_mem l (length vl) σ)).
@@ -403,15 +396,14 @@ Section heap.
     setoid_rewrite <-shift_loc_assoc. apply IH.
   Qed.
 
-  Lemma wp_free E (n:Z) l vl :
-    ↑heapN ⊆ E → n = length vl →
-    {{{ heap_ctx ∗ ▷ l ↦∗ vl ∗ ▷ †l…(length vl) }}}
-      Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E
-    {{{ RET LitV LitUnit; True }}}.
+  Lemma heap_free σ l vl (n : Z) :
+    n = length vl →
+    heap_ctx σ -∗ l ↦∗ vl -∗ †l…(length vl)
+    ==∗ ⌜0 < n⌝ ∗ ⌜∀ m, is_Some (σ !! (shift_loc l m)) ↔ (0 ≤ m < n)⌝ ∗
+        heap_ctx (free_mem l (Z.to_nat n) σ).
   Proof.
-    iIntros (???Φ) "(#Hinv & >Hmt & >Hf) HΦ". rewrite /heap_ctx /heap_inv.
-    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & REL)" "Hclose". iDestruct "REL" as %REL.
-    rewrite heap_freeable_eq /heap_freeable_def.
+    iDestruct 1 as (hF) "(Hvalσ & HhF & REL)"; iDestruct "REL" as %REL.
+    iIntros "Hmt Hf". rewrite heap_freeable_eq /heap_freeable_def.
     iDestruct (own_valid_2 with "HhF Hf") as % [Hl Hv]%auth_valid_discrete_2.
     move: Hl=> /singleton_included [[q qs] [/leibniz_equiv_iff Hl Hq]].
     apply (Some_included_exclusive _ _) in Hq as [=<-<-]%leibniz_equiv; last first.
@@ -419,18 +411,16 @@ Section heap.
     assert (vl ≠ []).
     { intros ->. by destruct (REL (l.1) (1%Qp, ∅)) as [[] ?]. }
     assert (0 < n) by (subst n; by destruct vl).
-    iApply (wp_free_pst _ σ with "[$Hσ]"). by auto.
-    { intros i. subst n. eauto using heap_freeable_is_Some. }
-    iNext. iIntros "Hσ". iMod (heap_free_vs with "[Hmt Hvalσ]") as "Hvalσ".
+    iMod (heap_free_vs with "[Hmt Hvalσ]") as "Hvalσ".
     { rewrite heap_mapsto_vec_combine //. iFrame. }
     iMod (own_update_2 with "HhF Hf") as "HhF".
     { apply auth_update_dealloc, (delete_singleton_local_update _ _ _). }
-    iMod ("Hclose" with "[-HΦ]") as "_"; last by iApply "HΦ".
-    iNext. iExists _, _. subst. rewrite Nat2Z.id. iFrame.
+    iModIntro; subst. repeat iSplit;  eauto using heap_freeable_is_Some.
+    iExists _. subst. rewrite Nat2Z.id. iFrame.
     eauto using heap_freeable_rel_free_mem.
   Qed.
 
-  Lemma heap_mapsto_lookup l ls q v σ:
+  Lemma heap_mapsto_lookup σ l ls q v :
     own heap_name (● to_heap σ) -∗
     own heap_name (◯ {[ l := (q, to_lock_stateR ls, to_agree v) ]}) -∗
     ⌜∃ n' : nat,
@@ -448,7 +438,7 @@ Section heap.
     by exists O. eauto. exists O. by rewrite Nat.add_0_r.
   Qed.
 
-  Lemma heap_mapsto_lookup_1 l ls v σ:
+  Lemma heap_mapsto_lookup_1 σ l ls v :
     own heap_name (● to_heap σ) -∗
     own heap_name (◯ {[ l := (1%Qp, to_lock_stateR ls, to_agree v) ]}) -∗
     ⌜σ !! l = Some (ls, v)⌝.
@@ -463,210 +453,94 @@ Section heap.
     destruct ls, ls''; rewrite ?Nat.add_0_r; naive_solver.
   Qed.
 
-  Lemma wp_read_sc E l q v :
-    ↑heapN ⊆ E →
-    {{{ heap_ctx ∗ ▷ l ↦{q} v }}} Read ScOrd (Lit $ LitLoc l) @ E
-    {{{ RET v; l ↦{q} v }}}.
-  Proof.
-    iIntros (??) "[#Hinv >Hv] HΦ".
-    rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
-    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
-    iDestruct (heap_mapsto_lookup with "Hvalσ Hv") as %[n Hσl].
-    iApply (wp_read_sc_pst with "[$Hσ]"); first done. iNext. iIntros "Hσ".
-    iMod ("Hclose" with "[-Hv HΦ]"); last by iApply "HΦ".
-    iNext. iExists σ, hF. iFrame. eauto.
-  Qed.
-
   Lemma heap_read_vs σ n1 n2 nf l q v:
     σ !! l = Some (RSt (n1 + nf), v) →
-    own heap_name (● to_heap σ) ∗ heap_mapsto_st (RSt n1) l q v
+    own heap_name (● to_heap σ) -∗ heap_mapsto_st (RSt n1) l q v
     ==∗ own heap_name (● to_heap (<[l:=(RSt (n2 + nf), v)]> σ))
         ∗ heap_mapsto_st (RSt n2) l q v.
   Proof.
-    intros Hσv. rewrite -!own_op to_heap_insert.
+    intros Hσv. apply uPred.wand_intro_r. rewrite -!own_op to_heap_insert.
     eapply own_update, auth_update, singleton_local_update.
     { by rewrite /to_heap lookup_fmap Hσv. }
     apply prod_local_update_1, prod_local_update_2, csum_local_update_r.
     apply nat_local_update; lia.
   Qed.
 
-  Lemma wp_read_na E l q v :
-    ↑heapN ⊆ E →
-    {{{ heap_ctx ∗ ▷ l ↦{q} v }}} Read Na1Ord (Lit $ LitLoc l) @ E
-    {{{ RET v; l ↦{q} v }}}.
+  Lemma heap_read σ l q v :
+    heap_ctx σ -∗ l ↦{q} v -∗ ∃ n, ⌜σ !! l = Some (RSt n, v)⌝.
   Proof.
-    iIntros (??Φ) "[#Hinv >Hv] HΦ".
-    rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
-    iApply (wp_read_na1_pst E).
-    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
-    iDestruct (heap_mapsto_lookup with "Hvalσ Hv") as %[n Hσl].
-    iMod (heap_read_vs _ 0 1 with "[$Hvalσ $Hv]") as "[Hvalσ Hv]"; first done.
-    iMod (fupd_intro_mask' (E∖↑heapN) ∅) as "Hclose'"; first set_solver.
-    iModIntro. iExists σ, n, v. iFrame. iSplit; [done|]. iIntros "!> Hσ".
-    iMod "Hclose'" as "_". iMod ("Hclose" with "[Hσ Hvalσ HhF]") as "_".
-    { iNext. iExists _, _. iFrame. eauto using heap_freeable_rel_stable. }
-    iModIntro. clear dependent n σ hF.
-    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
-    iDestruct (heap_mapsto_lookup with "Hvalσ Hv") as %[n Hσl].
-    iApply (wp_read_na2_pst with "[$Hσ]"); first done. iNext. iIntros "Hσ".
-    iMod (heap_read_vs with "[$Hvalσ $Hv]") as "[Hvalσ Hv]"; first done.
-    iMod ("Hclose" with "[-Hv HΦ]") as "_"; last by iApply "HΦ".
-    iNext. iExists _, hF. iFrame. eauto using heap_freeable_rel_stable.
+    iDestruct 1 as (hF) "(Hσ & HhF & REL)". iIntros "Hmt".
+    rewrite heap_mapsto_eq.
+    iDestruct (heap_mapsto_lookup with "Hσ Hmt") as %[n Hσl]; eauto.
+  Qed.
+
+  Lemma heap_read_1 σ l v :
+    heap_ctx σ -∗ l ↦ v -∗ ⌜σ !! l = Some (RSt 0, v)⌝.
+  Proof.
+    iDestruct 1 as (hF) "(Hσ & HhF & REL)". iIntros "Hmt".
+    rewrite heap_mapsto_eq.
+    iDestruct (heap_mapsto_lookup_1 with "Hσ Hmt") as %?; auto.
+  Qed.
+
+  Lemma heap_read_na σ l q v :
+    heap_ctx σ -∗ l ↦{q} v ==∗ ∃ n,
+      ⌜σ !! l = Some (RSt n, v)⌝ ∗
+      heap_ctx (<[l:=(RSt (S n), v)]> σ) ∗
+      ∀ σ2, heap_ctx σ2 ==∗ ∃ n2, ⌜σ2 !! l = Some (RSt (S n2), v)⌝ ∗
+        heap_ctx (<[l:=(RSt n2, v)]> σ2) ∗ l ↦{q} v.
+  Proof.
+    iDestruct 1 as (hF) "(Hσ & HhF & %)"; iIntros "Hmt".
+    rewrite heap_mapsto_eq.
+    iDestruct (heap_mapsto_lookup with "Hσ Hmt") as %[n Hσl]; eauto.
+    iMod (heap_read_vs _ 0 1 with "Hσ Hmt") as "[Hσ Hmt]"; first done.
+    iModIntro. iExists n; iSplit; [done|]. iSplitL "HhF Hσ".
+    { iExists hF. iFrame. eauto using heap_freeable_rel_stable. }
+    clear dependent n σ hF. iIntros (σ2). iDestruct 1 as (hF) "(Hσ & HhF & %)".
+    iDestruct (heap_mapsto_lookup with "Hσ Hmt") as %[n Hσl]; eauto.
+    iMod (heap_read_vs _ 1 0 with "Hσ Hmt") as "[Hσ Hmt]"; first done.
+    iExists n; iModIntro; iSplit; [done|]. iFrame "Hmt".
+    iExists hF. iFrame. eauto using heap_freeable_rel_stable.
   Qed.
 
   Lemma heap_write_vs σ st1 st2 l v v':
     σ !! l = Some (st1, v) →
-    own heap_name (● to_heap σ) ∗ heap_mapsto_st st1 l 1%Qp v
+    own heap_name (● to_heap σ) -∗ heap_mapsto_st st1 l 1%Qp v
     ==∗ own heap_name (● to_heap (<[l:=(st2, v')]> σ))
         ∗ heap_mapsto_st st2 l 1%Qp v'.
   Proof.
-    intros Hσv. rewrite -!own_op to_heap_insert.
+    intros Hσv. apply uPred.wand_intro_r. rewrite -!own_op to_heap_insert.
     eapply own_update, auth_update, singleton_local_update.
     { by rewrite /to_heap lookup_fmap Hσv. }
     apply exclusive_local_update. by destruct st2.
   Qed.
 
-  Lemma wp_write_sc E l e v v' :
-    ↑heapN ⊆ E → to_val e = Some v →
-    {{{ heap_ctx ∗ ▷ l ↦ v' }}} Write ScOrd (Lit $ LitLoc l) e @ E
-    {{{ RET LitV LitUnit; l ↦ v }}}.
+  Lemma heap_write σ l v v' :
+    heap_ctx σ -∗ l ↦ v ==∗ heap_ctx (<[l:=(RSt 0, v')]> σ) ∗ l ↦ v'.
   Proof.
-    iIntros (? <-%of_to_val?) "[#Hinv >Hv] HΦ".
-    rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
-    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
-    iDestruct (heap_mapsto_lookup_1 with "Hvalσ Hv") as %?.
-    iApply (wp_write_sc_pst with "[$Hσ]"); [done|]. iNext. iIntros "Hσ".
-    iMod (heap_write_vs with "[$Hvalσ $Hv]") as "[Hvalσ Hv]"; first done.
-    iMod ("Hclose" with "[-Hv HΦ]") as "_"; last by iApply "HΦ".
-    iNext. iExists _, hF. iFrame. eauto using heap_freeable_rel_stable.
+    iDestruct 1 as (hF) "(Hσ & HhF & %)". iIntros "Hmt".
+    rewrite heap_mapsto_eq.
+    iDestruct (heap_mapsto_lookup_1 with "Hσ Hmt") as %?; auto.
+    iMod (heap_write_vs with "Hσ Hmt") as "[Hσ $]"; first done.
+    iModIntro. iExists _. iFrame. eauto using heap_freeable_rel_stable.
   Qed.
 
-  Lemma wp_write_na E l e v v' :
-    ↑heapN ⊆ E → to_val e = Some v →
-    {{{ heap_ctx ∗ ▷ l ↦ v' }}} Write Na1Ord (Lit $ LitLoc l) e @ E
-    {{{ RET LitV LitUnit; l ↦ v }}}.
+  Lemma heap_write_na σ l v v' :
+    heap_ctx σ -∗ l ↦ v ==∗
+      ⌜σ !! l = Some (RSt 0, v)⌝ ∗
+      heap_ctx (<[l:=(WSt, v)]> σ) ∗
+      ∀ σ2, heap_ctx σ2 ==∗ ⌜σ2 !! l = Some (WSt, v)⌝ ∗
+        heap_ctx (<[l:=(RSt 0, v')]> σ2) ∗ l ↦ v'.
   Proof.
-    iIntros (? <-%of_to_val?) "[#Hinv >Hv] HΦ".
-    rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
-    iApply (wp_write_na1_pst E).
-    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
-    iDestruct (heap_mapsto_lookup_1 with "Hvalσ Hv") as %?.
-    iMod (heap_write_vs with "[$Hvalσ $Hv]") as "[Hvalσ Hv]"; first done.
-    iMod (fupd_intro_mask' (E∖↑heapN) ∅) as "Hclose'"; first set_solver.
-    iModIntro. iExists σ, v'. iSplit; [done|]. iIntros "{$Hσ} !> Hσ".
-    iMod "Hclose'" as "_". iMod ("Hclose" with "[Hσ Hvalσ HhF]") as "_".
-    { iNext. iExists _, _. iFrame. eauto using heap_freeable_rel_stable. }
-    iModIntro. clear dependent σ hF.
-    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
-    iDestruct (heap_mapsto_lookup_1 with "Hvalσ Hv") as %?.
-    iApply (wp_write_na2_pst with "[$Hσ]"); [done|]. iNext. iIntros "Hσ".
-    iMod (heap_write_vs with "[$Hvalσ $Hv]") as "[Hvalσ Hv]"; first done.
-    iMod ("Hclose" with "[-Hv HΦ]"); last by iApply "HΦ".
-    iNext. iExists _, hF. iFrame. eauto using heap_freeable_rel_stable.
-  Qed.
-
-  Lemma wp_cas_int_fail E l q z1 e2 lit2 zl :
-    ↑heapN ⊆ E → to_val e2 = Some $ LitV lit2 → z1 ≠ zl →
-    {{{ heap_ctx ∗ ▷ l ↦{q} (LitV $ LitInt zl) }}}
-      CAS (Lit $ LitLoc l) (Lit $ LitInt z1) e2 @ E
-    {{{ RET LitV $ LitInt 0; l ↦{q} (LitV $ LitInt zl) }}}.
-  Proof.
-    iIntros (? <-%of_to_val ??) "[#Hinv >Hv] HΦ".
-    rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
-    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
-    iDestruct (heap_mapsto_lookup with "Hvalσ Hv") as %[n Hσl].
-    iApply (wp_cas_pst with "[$Hσ]"); eauto.
-    { right. by constructor. }
-    { inversion 1. done. }
-    iNext. iIntros ([|]).
-    { iIntros "[Heq _]". iDestruct "Heq" as %Heq. inversion Heq. done. }
-    iIntros "[_ Hσ]". iMod ("Hclose" with "[-Hv HΦ]") as "_"; last by iApply "HΦ".
-    iNext. iExists _, hF. iFrame. eauto using heap_freeable_rel_stable.
-  Qed.
-
-  Lemma wp_cas_int_suc E l z1 e2 lit2 :
-    ↑heapN ⊆ E → to_val e2 = Some $ LitV lit2 →
-    {{{ heap_ctx ∗ ▷ l ↦ (LitV $ LitInt z1) }}}
-      CAS (Lit $ LitLoc l) (Lit $ LitInt z1) e2 @ E
-    {{{ RET LitV $ LitInt 1; l ↦ LitV lit2 }}}.
-  Proof.
-    iIntros (? <-%of_to_val?) "[#Hinv >Hv] HΦ".
-    rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
-    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
-    iDestruct (heap_mapsto_lookup_1 with "Hvalσ Hv") as %?.
-    iApply (wp_cas_pst with "[$Hσ]"); eauto.
-    { left. by constructor. }
-    iNext. iIntros ([|]); last first.
-    { iIntros "[Hneq _]". iDestruct "Hneq" as %Hneq. inversion Hneq. done. }
-    iIntros "[_ Hσ]". iMod (heap_write_vs with "[$Hvalσ $Hv]") as "[Hvalσ Hv]"; first done.
-    iMod ("Hclose" with "[-Hv HΦ]"); last by iApply "HΦ"; iFrame.
-    iNext. iExists _, hF. iFrame. eauto using  heap_freeable_rel_stable.
-  Qed.
-
-  Lemma wp_cas_loc_fail E l q q' q1 l1 v1' e2 lit2 l' vl' :
-    ↑heapN ⊆ E → to_val e2 = Some $ LitV lit2 → l1 ≠ l' →
-    {{{ heap_ctx ∗ ▷ l ↦{q} (LitV $ LitLoc l') ∗ ▷ l' ↦{q'} vl' ∗ ▷ l1 ↦{q1} v1' }}}
-      CAS (Lit $ LitLoc l) (Lit $ LitLoc l1) e2 @ E
-    {{{ RET LitV $ LitInt 0;
-        l ↦{q} (LitV $ LitLoc l') ∗ l' ↦{q'} vl' ∗ l1 ↦{q1} v1' }}}.
-  Proof.
-    iIntros (? <-%of_to_val ??) "(#Hinv & >Hl & >Hl' & >Hl1) HΦ".
-    rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
-    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
-    iDestruct (heap_mapsto_lookup with "Hvalσ Hl") as %[n Hσl].
-    iDestruct (heap_mapsto_lookup with "Hvalσ Hl'") as %[n' Hσl'].
-    iDestruct (heap_mapsto_lookup with "Hvalσ Hl1") as %[n1 Hσl1].
-    iApply (wp_cas_pst with "[$Hσ]"); eauto.
-    { right. by constructor. }
-    { inversion 1; subst; (by destruct (σ !! l1)) || by destruct (σ !! l'). }
-    iNext. iIntros ([|]).
-    { iIntros "[Heq _]". iDestruct "Heq" as %Heq. inversion Heq; subst.
-      done. by destruct (σ !! l1). by destruct (σ !! l'). }
-    iIntros "[_ Hσ]". iMod ("Hclose" with "[-Hl Hl' Hl1 HΦ]") as "_"; last by iApply "HΦ"; iFrame.
-    iNext. iExists _, hF. by iFrame.
-  Qed.
-
-  Lemma wp_cas_loc_suc E l l1 e2 lit2 :
-    ↑heapN ⊆ E → to_val e2 = Some $ LitV lit2 →
-    {{{ heap_ctx ∗ ▷ l ↦ (LitV $ LitLoc l1) }}}
-      CAS (Lit $ LitLoc l) (Lit $ LitLoc l1) e2 @ E
-    {{{ RET LitV $ LitInt 1; l ↦ LitV lit2 }}}.
-  Proof.
-    iIntros (? <-%of_to_val?) "[#Hinv >Hv] HΦ".
-    rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
-    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
-    iDestruct (heap_mapsto_lookup_1 with "Hvalσ Hv") as %?.
-    iApply (wp_cas_pst with "[$Hσ]"); eauto.
-    { left. by constructor. }
-    iNext. iIntros ([|]); last first.
-    { iIntros "[Hneq _]". iDestruct "Hneq" as %Hneq. inversion Hneq. done. }
-    iIntros "[_ Hσ]". iMod (heap_write_vs with "[$Hvalσ $Hv]") as "[Hvalσ Hv]"; first done.
-    iMod ("Hclose" with "[-Hv HΦ]"); last by iApply "HΦ"; iFrame.
-    iNext. iExists _, hF. iFrame. eauto using  heap_freeable_rel_stable.
-  Qed.
-
-  Lemma wp_cas_loc_nondet E l l1 e2 l2 ll :
-    ↑heapN ⊆ E → to_val e2 = Some $ LitV $ LitLoc l2 →
-    {{{ heap_ctx ∗ ▷ l ↦ (LitV $ LitLoc ll) }}}
-      CAS (Lit $ LitLoc l) (Lit $ LitLoc l1) e2 @ E
-    {{{ b, RET LitV $ lit_of_bool b;
-        if b is true then l ↦ LitV (LitLoc l2)
-        else ⌜l1 ≠ ll⌝ ∗ l ↦ LitV (LitLoc ll) }}}.
-  Proof.
-    iIntros (? <-%of_to_val?) "[#Hinv >Hv] HΦ".
-    rewrite /heap_ctx /heap_inv heap_mapsto_eq /heap_mapsto_def.
-    iInv heapN as (σ hF) ">(Hσ & Hvalσ & HhF & %)" "Hclose".
-    iDestruct (heap_mapsto_lookup_1 with "Hvalσ Hv") as %?.
-    iApply (wp_cas_pst with "[$Hσ]"); eauto.
-    { destruct (decide (l1 = ll)) as [->|Hne].
-      - left. by constructor.
-      - right. by constructor. }
-    iNext. iIntros ([|]).
-    - iIntros "[_ Hσ]". iMod (heap_write_vs with "[$Hvalσ $Hv]") as "[Hvalσ Hv]"; first done.
-      iMod ("Hclose" with "[-Hv HΦ]"); last by iApply "HΦ"; iFrame.
-      iNext. iExists _, hF. iFrame. eauto using  heap_freeable_rel_stable.
-    - iIntros "[Hneq Hσ]". iDestruct "Hneq" as %Hneq. inversion_clear Hneq.
-      iMod ("Hclose" with "[-Hv HΦ]"); last by iApply ("HΦ" $! false); iFrame.
-      iNext. iExists _, hF. iFrame. eauto using  heap_freeable_rel_stable.
+    iDestruct 1 as (hF) "(Hσ & HhF & %)"; iIntros "Hmt".
+    rewrite heap_mapsto_eq.
+    iDestruct (heap_mapsto_lookup_1 with "Hσ Hmt") as %?; eauto.
+    iMod (heap_write_vs with "Hσ Hmt") as "[Hσ Hmt]"; first done.
+    iModIntro. iSplit; [done|]. iSplitL "HhF Hσ".
+    { iExists hF. iFrame. eauto using heap_freeable_rel_stable. }
+    clear dependent σ hF. iIntros (σ2). iDestruct 1 as (hF) "(Hσ & HhF & %)".
+    iDestruct (heap_mapsto_lookup with "Hσ Hmt") as %[n Hσl]; eauto.
+    iMod (heap_write_vs with "Hσ Hmt") as "[Hσ Hmt]"; first done.
+    iModIntro; iSplit; [done|]. iFrame "Hmt".
+    iExists hF. iFrame. eauto using heap_freeable_rel_stable.
   Qed.
 End heap.
