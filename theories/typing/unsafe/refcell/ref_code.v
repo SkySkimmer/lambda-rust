@@ -10,6 +10,7 @@ Set Default Proof Using "Type".
 Section ref_functions.
   Context `{typeG Σ, refcellG Σ}.
 
+  (* Cloning a ref. We need to increment the counter. *)
   Definition ref_clone : val :=
     funrec: <> ["x"] :=
       let: "x'" := !"x" in
@@ -88,5 +89,45 @@ Section ref_functions.
       rewrite /= freeable_sz_full. iFrame. iExists _. iFrame. iExists _, _, _, _, _.
       iFrame "∗#". }
     eapply (type_jump [ #_]); solve_typing.
+  Qed.
+
+  (* TODO : map, when we will have a nice story about closures. *)
+
+  (* Turning a ref into a shared borrow. *)
+  Definition ref_deref : val :=
+    funrec: <> ["x"] :=
+      let: "x'" := !"x" in
+      let: "r'" := !"x'" in
+      letalloc: "r" <- "r'" in
+      delete [ #1; "x"];; "return" ["r"].
+
+  Lemma ref_deref_type ty :
+    typed_instruction_ty [] [] [] ref_deref
+      (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
+          (fun '(α, β) => [# &shr{α}(ref β ty)]%T)
+          (fun '(α, β) => &shr{α}ty)%T).
+  Proof.
+    apply type_fn; [apply _..|]. move=>/= [α β] ret arg. inv_vec arg=>x. simpl_subst.
+    eapply type_deref; [solve_typing..|by apply read_own_move|done|]=>x'.
+    iIntros "!# * #HEAP #LFT Hna HE HL Hk HT". simpl_subst.
+    rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
+    iDestruct "HT" as "[Hx Hx']".
+    destruct x' as [[|lx'|]|]; try iDestruct "Hx'" as "[]".
+    iDestruct "Hx'" as (ν q γ δ ty' lv lrc) "#(Hαν & Hfrac & Hshr & Hx')".
+    rewrite {1}/elctx_interp 2!big_sepL_cons big_sepL_singleton.
+    iDestruct "HE" as "(Hα & Hβ & #Hαβ)".
+    iMod (frac_bor_acc with "LFT Hfrac Hα") as (qlx') "[H↦ Hcloseα]". done.
+    rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
+    iMod "H↦" as "[H↦1 H↦2]". wp_read. wp_let.
+    iMod ("Hcloseα" with "[$H↦1 $H↦2]") as "Hα".
+    iAssert (elctx_interp [☀ α; ☀ β; α ⊑ β] qE) with "[Hα Hβ Hαβ]" as "HE".
+    { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
+    iApply (type_letalloc_1 (&shr{α}ty) _
+        [ x ◁ box (uninit 1); #lv ◁ &shr{α}ty]%TC with "HEAP LFT Hna HE HL Hk");
+      [solve_typing..| |]; first last.
+    { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
+      iFrame. iApply (ty_shr_mono with "LFT [] Hshr"). by iApply lft_incl_glb. }
+    intros r. simpl_subst. eapply type_delete; [solve_typing..|].
+    eapply (type_jump [_]); solve_typing.
   Qed.
 End ref_functions.
