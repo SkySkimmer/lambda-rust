@@ -6,7 +6,7 @@ From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
 Definition refcell_stR :=
-  optionUR (csumR (exclR unitC) (prodR (prodR (agreeR lftC) fracR) posR)).
+  optionUR (csumR (exclR unitC) (prodR (prodR (agreeR lftC) fracR) positiveR)).
 Class refcellG Σ :=
   RefCellG :> inG Σ (authR refcell_stR).
 
