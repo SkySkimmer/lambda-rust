@@ -31,7 +31,7 @@ Section fn.
   Proof.
     intros ?? Htys ?? Hty. unfold fn. f_equiv. rewrite st_dist_unfold /=.
     f_contractive=>tid vl. unfold typed_body.
-    do 12 f_equiv. f_contractive. do 18 f_equiv.
+    do 12 f_equiv. f_contractive. do 17 f_equiv.
     - rewrite !cctx_interp_singleton /=. do 5 f_equiv.
       rewrite !tctx_interp_singleton /tctx_elt_interp /=. repeat f_equiv. apply Hty.
       by rewrite (ty_size_proper_d _ _ _ (Hty _)).
@@ -77,10 +77,10 @@ Section typing.
     intros HE Htys Hty. apply subtype_simple_type=>//= _ vl.
     iIntros "#LFT #HE0 #HL0 Hf". iDestruct "Hf" as (fb kb xb e ?) "[% [% #Hf]]". subst.
     iExists fb, kb, xb, e, _. iSplit. done. iSplit. done. iNext.
-    rewrite /typed_body. iIntros "* !# * #HEAP _ Htl HE HL HC HT".
+    rewrite /typed_body. iIntros "* !# * _ Htl HE HL HC HT".
     iDestruct (elctx_interp_persist with "HE") as "#HEp".
     iMod (HE with "HE0 HL0 HE") as (qE') "[HE' Hclose]". done.
-    iApply ("Hf" with "HEAP LFT Htl HE' HL [HC Hclose] [HT]").
+    iApply ("Hf" with "LFT Htl HE' HL [HC Hclose] [HT]").
     - iIntros "HE'". unfold cctx_interp. iIntros (elt) "Helt".
       iDestruct "Helt" as %->%elem_of_list_singleton. iIntros (ret) "Htl HL HT".
       iMod ("Hclose" with "HE'") as "HE".
@@ -172,7 +172,7 @@ Section typing.
                 T)
                (call: p ps → k).
   Proof.
-    iIntros (HE) "!# * #HEAP #LFT Htl HE HL HC".
+    iIntros (HE) "!# * #LFT Htl HE HL HC".
     rewrite tctx_interp_cons tctx_interp_app. iIntros "(Hf & Hargs & HT)".
     wp_bind p. iApply (wp_hasty with "Hf"). iIntros (v) "% Hf".
     iApply (wp_app_vec _ _ (_::_) ((λ v, ⌜v = k⌝):::
@@ -193,7 +193,7 @@ Section typing.
       { rewrite -fmap_cons -(subst_v_eq (fb::kb::xb) (_:::k:::vl)) //. }
       iNext. iSpecialize ("Hf" $! x k vl).
       iMod (HE with "HE HL") as (q') "[HE' Hclose]"; first done.
-      iApply ("Hf" with "HEAP LFT Htl HE' [] [HC Hclose HT]").
+      iApply ("Hf" with "LFT Htl HE' [] [HC Hclose HT]").
       + by rewrite /llctx_interp big_sepL_nil.
       + iIntros "HE'". iApply fupd_cctx_interp. iMod ("Hclose" with "HE'") as "[HE HL]".
         iSpecialize ("HC" with "HE"). iModIntro. iIntros (y) "IN".
@@ -267,13 +267,13 @@ Section typing.
                    (subst_v (fb :: BNamed "return" :: argsb) (f ::: k ::: args) e)) →
     typed_instruction_ty E L T (funrec: fb argsb := e) (fn E' tys ty).
   Proof.
-    iIntros (Hc Hbody) "!# * #HEAP #LFT $ $ $ #HT". iApply wp_value.
+    iIntros (Hc Hbody) "!# * #LFT $ $ $ #HT". iApply wp_value.
     { simpl. rewrite ->(decide_left Hc). done. }
     rewrite tctx_interp_singleton. iLöb as "IH". iExists _. iSplit.
     { simpl. rewrite decide_left. done. }
     iExists fb, _, argsb, e, _. iSplit. done. iSplit. done. iNext. clear qE.
-    iIntros (x k args) "!#". iIntros (tid' qE) "_ _ Htl HE HL HC HT'".
-    iApply (Hbody with "HEAP LFT Htl HE HL HC").
+    iIntros (x k args) "!#". iIntros (tid' qE) "_ Htl HE HL HC HT'".
+    iApply (Hbody with "LFT Htl HE HL HC").
     rewrite tctx_interp_cons tctx_interp_app. iFrame "HT' IH".
     by iApply sendc_change_tid.
   Qed.

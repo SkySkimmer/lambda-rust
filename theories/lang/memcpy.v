@@ -21,14 +21,13 @@ Notation "e1 <-{ n ',Σ' i } ! e2" :=
   (at level 80, n, i at next level,
    format "e1  <-{ n ,Σ  i }  ! e2") : expr_scope.
 
-Lemma wp_memcpy `{heapG Σ} E l1 l2 vl1 vl2 q (n : Z):
-  ↑heapN ⊆ E →
+Lemma wp_memcpy `{lrustG Σ} E l1 l2 vl1 vl2 q (n : Z):
   Z.of_nat (length vl1) = n → Z.of_nat (length vl2) = n →
-  {{{ heap_ctx ∗ l1 ↦∗ vl1 ∗ l2 ↦∗{q} vl2 }}}
+  {{{ l1 ↦∗ vl1 ∗ l2 ↦∗{q} vl2 }}}
     #l1 <-{n} !#l2 @ E
   {{{ RET #(); l1 ↦∗ vl2 ∗ l2 ↦∗{q} vl2 }}}.
 Proof.
-  iIntros (? Hvl1 Hvl2 Φ) "(#Hinv & Hl1 & Hl2) HΦ".
+  iIntros (Hvl1 Hvl2 Φ) "(Hl1 & Hl2) HΦ".
   iLöb as "IH" forall (n l1 l2 vl1 vl2 Hvl1 Hvl2). wp_rec. wp_op=> ?; wp_if.
   - iApply "HΦ". assert (n = O) by lia; subst.
     destruct vl1, vl2; try discriminate. by iFrame.

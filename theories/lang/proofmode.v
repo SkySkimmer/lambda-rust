@@ -138,13 +138,13 @@ Tactic Notation "wp_bind" open_constr(efoc) :=
   end.
 
 Section heap.
-Context `{heapG Σ}.
+Context `{lrustG Σ}.
 Implicit Types P Q : iProp Σ.
 Implicit Types Φ : val → iProp Σ.
 Implicit Types Δ : envs (iResUR Σ).
 
 Lemma tac_wp_alloc Δ Δ' E j1 j2 n Φ :
-  (Δ ⊢ heap_ctx) → ↑heapN ⊆ E → 0 < n →
+  0 < n →
   IntoLaterNEnvs 1 Δ Δ' →
   (∀ l vl, n = length vl → ∃ Δ'',
     envs_app false (Esnoc (Esnoc Enil j1 (l ↦∗ vl)) j2 (†l…(Z.to_nat n))) Δ'
@@ -152,7 +152,7 @@ Lemma tac_wp_alloc Δ Δ' E j1 j2 n Φ :
     (Δ'' ⊢ Φ (LitV $ LitLoc l))) →
   Δ ⊢ WP Alloc (Lit $ LitInt n) @ E {{ Φ }}.
 Proof.
-  intros ???? HΔ. rewrite -wp_fupd. eapply wand_apply; first exact:wp_alloc.
+  intros ?? HΔ. rewrite -wp_fupd. eapply wand_apply; first exact:wp_alloc.
   rewrite -always_and_sep_l. apply and_intro; first done.
   rewrite into_laterN_env_sound; apply later_mono, forall_intro=> l;
   apply forall_intro=> vl. apply wand_intro_l. rewrite -assoc.
@@ -162,7 +162,7 @@ Proof.
 Qed.
 
 Lemma tac_wp_free Δ Δ' Δ'' Δ''' E i1 i2 vl (n : Z) (n' : nat) l Φ :
-  (Δ ⊢ heap_ctx) → ↑heapN ⊆ E → n = length vl →
+  n = length vl →
   IntoLaterNEnvs 1 Δ Δ' →
   envs_lookup i1 Δ' = Some (false, l ↦∗ vl)%I →
   envs_delete i1 false Δ' = Δ'' →
@@ -172,47 +172,43 @@ Lemma tac_wp_free Δ Δ' Δ'' Δ''' E i1 i2 vl (n : Z) (n' : nat) l Φ :
   (Δ''' ⊢ Φ (LitV LitUnit)) →
   Δ ⊢ WP Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
-  intros ?? -> ?? <- ? <- -> HΔ. rewrite -wp_fupd.
-  eapply wand_apply; first exact:wp_free. rewrite -!assoc -always_and_sep_l.
-  apply and_intro; first done.
+  intros -> ?? <- ? <- -> HΔ. rewrite -wp_fupd.
+  eapply wand_apply; first exact:wp_free; simpl.
   rewrite into_laterN_env_sound -!later_sep; apply later_mono.
-  do 2 (rewrite envs_lookup_sound' //). by rewrite HΔ wand_True -fupd_intro.
+  do 2 (rewrite envs_lookup_sound' //).
+  by rewrite HΔ wand_True -fupd_intro -assoc.
 Qed.
 
 Lemma tac_wp_read Δ Δ' E i l q v o Φ :
-  (Δ ⊢ heap_ctx) → ↑heapN ⊆ E → o = Na1Ord ∨ o = ScOrd →
+  o = Na1Ord ∨ o = ScOrd →
   IntoLaterNEnvs 1 Δ Δ' →
   envs_lookup i Δ' = Some (false, l ↦{q} v)%I →
   (Δ' ⊢ Φ v) →
   Δ ⊢ WP Read o (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
-  intros ??[->| ->]???.
+  intros [->| ->] ???.
   - rewrite -wp_fupd. eapply wand_apply; first exact:wp_read_na.
-    rewrite -!assoc -always_and_sep_l. apply and_intro; first done.
     rewrite into_laterN_env_sound -later_sep envs_lookup_split //; simpl.
       rewrite -fupd_intro. by apply later_mono, sep_mono_r, wand_mono.
   - rewrite -wp_fupd. eapply wand_apply; first exact:wp_read_sc.
-    rewrite -!assoc -always_and_sep_l. apply and_intro; first done.
     rewrite into_laterN_env_sound -later_sep envs_lookup_split //; simpl.
       rewrite -fupd_intro. by apply later_mono, sep_mono_r, wand_mono.
 Qed.
 
 Lemma tac_wp_write Δ Δ' Δ'' E i l v e v' o Φ :
   to_val e = Some v' →
-  (Δ ⊢ heap_ctx) → ↑heapN ⊆ E → o = Na1Ord ∨ o = ScOrd →
+  o = Na1Ord ∨ o = ScOrd →
   IntoLaterNEnvs 1 Δ Δ' →
   envs_lookup i Δ' = Some (false, l ↦ v)%I →
   envs_simple_replace i false (Esnoc Enil i (l ↦ v')) Δ' = Some Δ'' →
   (Δ'' ⊢ Φ (LitV LitUnit)) →
   Δ ⊢ WP Write o (Lit $ LitLoc l) e @ E {{ Φ }}.
 Proof.
-  intros ???[->| ->]????.
+  intros ? [->| ->] ????.
   - rewrite -wp_fupd. eapply wand_apply; first by apply wp_write_na.
-    rewrite -!assoc -always_and_sep_l. apply and_intro; first done.
     rewrite into_laterN_env_sound -later_sep envs_simple_replace_sound //; simpl.
     rewrite right_id -fupd_intro. by apply later_mono, sep_mono_r, wand_mono.
   - rewrite -wp_fupd. eapply wand_apply; first by apply wp_write_sc.
-    rewrite -!assoc -always_and_sep_l. apply and_intro; first done.
     rewrite into_laterN_env_sound -later_sep envs_simple_replace_sound //; simpl.
     rewrite right_id -fupd_intro. by apply later_mono, sep_mono_r, wand_mono.
 Qed.
@@ -235,9 +231,7 @@ Tactic Notation "wp_alloc" ident(l) ident(vl) "as" constr(H) constr(Hf) :=
          match eval hnf in e' with Alloc _ => wp_bind_core K end)
       |fail 1 "wp_alloc: cannot find 'Alloc' in" e];
     eapply tac_wp_alloc with _ H Hf;
-      [iAssumption || fail "wp_alloc: cannot find heap_ctx"
-      |solve_ndisj
-      |try fast_done
+      [try fast_done
       |apply _
       |first [intros l vl ? | fail 1 "wp_alloc:" l "or" vl "not fresh"];
         eexists; split;
@@ -258,9 +252,7 @@ Tactic Notation "wp_free" :=
          match eval hnf in e' with Free _ _ => wp_bind_core K end)
       |fail 1 "wp_free: cannot find 'Free' in" e];
     eapply tac_wp_free;
-      [iAssumption || fail "wp_free: cannot find heap_ctx"
-      |solve_ndisj
-      |try fast_done
+      [try fast_done
       |apply _
       |let l := match goal with |- _ = Some (_, (?l ↦∗ _)%I) => l end in
        iAssumptionCore || fail "wp_free: cannot find" l "↦∗ ?"
@@ -282,9 +274,7 @@ Tactic Notation "wp_read" :=
          match eval hnf in e' with Read _ _ => wp_bind_core K end)
       |fail 1 "wp_read: cannot find 'Read' in" e];
     eapply tac_wp_read;
-      [iAssumption || fail "wp_read: cannot find heap_ctx"
-      |solve_ndisj
-      |(right; fast_done) || (left; fast_done) ||
+      [(right; fast_done) || (left; fast_done) ||
        fail "wp_read: order is neither Na2Ord nor ScOrd"
       |apply _
       |let l := match goal with |- _ = Some (_, (?l ↦{_} _)%I) => l end in
@@ -304,8 +294,6 @@ Tactic Notation "wp_write" :=
     eapply tac_wp_write;
       [let e' := match goal with |- to_val ?e' = _ => e' end in
        wp_done || fail "wp_write:" e' "not a value"
-      |iAssumption || fail "wp_write: cannot find heap_ctx"
-      |solve_ndisj
       |(right; fast_done) || (left; fast_done) ||
        fail "wp_write: order is neither Na2Ord nor ScOrd"
       |apply _

@@ -9,14 +9,14 @@ From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
 Class typePreG Σ := PreTypeG {
-  type_heapG :> heapPreG Σ;
+  type_heapG :> lrustPreG Σ;
   type_lftG :> lftPreG Σ;
   type_preG_na_invG :> na_invG Σ;
   type_frac_borrowG :> frac_borG Σ
 }.
 
 Definition typeΣ : gFunctors :=
-  #[heapΣ; lftΣ; na_invΣ; GFunctor (constRF fracR)].
+  #[lrustΣ; lftΣ; na_invΣ; GFunctor (constRF fracR)].
 Instance subG_typePreG {Σ} : subG typeΣ Σ → typePreG Σ.
 Proof. solve_inG. Qed.
 
@@ -36,11 +36,11 @@ Section type_soundness.
     cut (adequate (main [exit_cont]%E) ∅ (λ _, True)).
     { split. by eapply adequate_nonracing.
       intros. by eapply (adequate_safe (main [exit_cont]%E)). }
-    apply: heap_adequacy=>?.
-    iIntros "!# #HEAP". iMod lft_init as (?) "#LFT". done.
+    apply: lrust_adequacy=>?.
+    iMod lft_init as (?) "#LFT". done.
     iMod na_alloc as (tid) "Htl". set (Htype := TypeG _ _ _ _ _).
     wp_bind (of_val main). iApply (wp_wand with "[Htl]").
-    iApply (Hmain _ $! tid 1%Qp with "HEAP LFT Htl [] [] []").
+    iApply (Hmain _ $! tid 1%Qp with "LFT Htl [] [] []").
     { by rewrite /elctx_interp big_sepL_nil. }
     { by rewrite /llctx_interp big_sepL_nil. }
     { by rewrite tctx_interp_nil. }
@@ -51,7 +51,7 @@ Section type_soundness.
     destruct x; try done.
     iApply (wp_rec _ _ _ _ _ _ [exit_cont]%E); [done| |by simpl_subst|iNext].
     { repeat econstructor. apply to_of_val. }
-    iApply ("Hmain" $! () exit_cont [#] tid 1%Qp with "HEAP LFT Htl HE HL []");
+    iApply ("Hmain" $! () exit_cont [#] tid 1%Qp with "LFT Htl HE HL []");
       last by rewrite tctx_interp_nil.
     iIntros "_". rewrite cctx_interp_singleton. simpl. iIntros (args) "_ _".
     inv_vec args. iIntros (x) "_ /=". by wp_lam.
