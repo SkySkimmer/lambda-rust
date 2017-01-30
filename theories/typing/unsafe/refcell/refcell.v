@@ -6,20 +6,21 @@ From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
 Definition refcell_stR :=
-  optionUR (csumR (exclR unitC) (prodR (prodR (agreeR lftC) fracR) positiveR)).
+  optionUR (prodR (agreeR lftC) (csumR (exclR unitC) (prodR fracR positiveR))).
 Class refcellG Σ :=
   RefCellG :> inG Σ (authR refcell_stR).
 
 Definition Z_of_refcell_st (st : refcell_stR) : Z :=
   match st with
   | None => 0
-  | Some (Cinr (_, _, n)) => Zpos n
+  | Some (_, Cinr (_, n)) => Zpos n
   | Some _ => -1
   end.
 
 Definition reading_st (q : frac) (ν : lft) : refcell_stR :=
-  Some (Cinr (to_agree ν, q, xH)).
-Definition writing_st : refcell_stR := Some (Cinl (Excl ())).
+  Some (to_agree ν, Cinr (q, xH)).
+Definition writing_st (ν : lft) : refcell_stR :=
+  Some (to_agree ν, Cinl (Excl ())).
 
 Definition refcellN := lrustN .@ "refcell".
 Definition refcell_invN := refcellN .@ "inv".
@@ -30,12 +31,19 @@ Section refcell_inv.
   Definition refcell_inv tid (l : loc) (γ : gname) (α : lft) ty : iProp Σ :=
     (∃ st, l ↦ #(Z_of_refcell_st st) ∗ own γ (● st) ∗
       match st return _ with
-      | None => &{α}(shift_loc l 1 ↦∗: ty.(ty_own) tid)
-      | Some (Cinr (agν, q, n)) =>
-        ∃ q' ν, agν ≡ to_agree ν ∗ ⌜(q + q')%Qp = 1%Qp⌝ ∗ q'.[ν] ∗
-                ty.(ty_shr) (α ∪ ν) tid (shift_loc l 1) ∗
-                (1.[ν] ={⊤, ⊤∖↑lftN}▷=∗ &{α}(shift_loc l 1 ↦∗: ty.(ty_own) tid))
-      | Some _ => True
+      | None =>
+        (* Not borrowed. *)
+        &{α}(shift_loc l 1 ↦∗: ty.(ty_own) tid)
+      | Some (agν, st) =>
+        ∃ ν, agν ≡ to_agree ν ∗
+             (1.[ν] ={⊤, ⊤∖↑lftN}▷=∗ &{α}(shift_loc l 1 ↦∗: ty.(ty_own) tid)) ∗
+             match st with
+             | Cinr (q, n) =>
+               (* Immutably borrowed. *)
+               ty.(ty_shr) (α ∪ ν) tid (shift_loc l 1) ∗
+               ∃ q', ⌜(q + q')%Qp = 1%Qp⌝ ∗ q'.[ν]
+             | _ => (* Mutably borrowed. *) True
+             end
       end)%I.
 
   Global Instance refcell_inv_ne n tid l γ α :
@@ -60,11 +68,12 @@ Section refcell_inv.
       iSplit; iIntros "!>!#H"; iDestruct "H" as (vl) "[Hf H]"; iExists vl;
       iFrame; by iApply "Hown". }
     iDestruct "H" as (st) "H"; iExists st;
-      iDestruct "H" as "($&$&H)"; destruct st as [[|[[]]|]|]; try done;
+      iDestruct "H" as "($&$&H)"; destruct st as [[agν st]|]; try done;
       last by iApply "Hb".
-    iDestruct "H" as (q' ν) "(Hag & Heq & Htok & Hs & Hh)". iExists q', ν.
-    iDestruct ("Hshr" with "Hs") as "$". iFrame. iIntros "H†".
-    iMod ("Hh" with "H†") as "Hh". iModIntro. iNext. iMod "Hh". by iApply "Hb".
+    iDestruct "H" as (ν) "(Hag & Hh & H)". iExists ν. iFrame. iSplitL "Hh".
+    { iIntros "Hν". iMod ("Hh" with "Hν") as "Hh". iModIntro. iNext.
+      iMod "Hh". by iApply "Hb". }
+    destruct st as [|[]|]; try done. iDestruct "H" as "[H $]". by iApply "Hshr".
   Qed.
 End refcell_inv.
 
@@ -102,26 +111,27 @@ Section refcell.
       as "[$ HQ]"; last first.
     { iMod ("Hclose" with "HQ []") as "[Hb $]".
       - iIntros "!> H !>". iNext. iDestruct "H" as (γ st) "(? & _ & _)".
-        iExists _. iIntros "{$H}!%". destruct st as [[|[[]?]|]|]; simpl; lia.
+        iExists _. iIntros "{$H}!%". destruct st as [[?[|[]|]]|]; simpl; lia.
       - iMod (bor_exists with "LFT Hb") as (γ) "Hb". done.
         iExists κ, γ. iSplitR. by iApply lft_incl_refl. by iApply bor_na. }
     clear dependent n. iDestruct "H" as ([|n|[]]) "[Hn >%]"; try lia.
     - iFrame. iMod (own_alloc (● None)) as (γ) "Hst". done. iExists γ, None. by iFrame.
     - iMod (lft_create with "LFT") as (ν) "[[Htok1 Htok2] #Hhν]". done.
-      iMod (own_alloc (● Some (Cinr (to_agree ν, (1/2)%Qp, n)))) as (γ) "Hst".
+      iMod (own_alloc (● Some (to_agree ν, Cinr ((1/2)%Qp, n)))) as (γ) "Hst".
       { by apply auth_auth_valid. }
       iMod (rebor _ _ (κ ∪ ν) with "LFT [] Hvl") as "[Hvl Hh]". done.
       { iApply lft_le_incl. apply gmultiset_union_subseteq_l. }
       iDestruct (lft_glb_acc with "Htok' Htok1") as (q') "[Htok Hclose]".
       iMod (ty_share with "LFT Hvl Htok") as "[Hshr Htok]". done.
       iDestruct ("Hclose" with "Htok") as "[$ Htok]".
-      iExists γ, _. iFrame "Hst Hn". iExists _, _. iIntros "{$Htok2 $Hshr}!>!>".
-      rewrite Qp_div_2. iSplit; first done. iSplit; first done. iIntros "Hν".
-      iMod ("Hhν" with "Hν") as "Hν". iModIntro. iNext. iMod "Hν".
+      iExists γ, _. iFrame "Hst Hn". iExists _. iIntros "{$Hshr}".
+      iSplitR; first by auto. iSplitR "Htok2"; last first.
+      { iExists _. iFrame. rewrite Qp_div_2. auto. }
+      iIntros "!> !> Hν". iMod ("Hhν" with "Hν") as "Hν". iModIntro. iNext. iMod "Hν".
       iApply fupd_mask_mono; last iApply "Hh". done. rewrite -lft_dead_or. auto.
-    - iMod (own_alloc (● Some (Cinl (Excl ())))) as (γ) "Hst".
-      { by apply auth_auth_valid. }
-      iFrame. iExists _, _. by iFrame.
+    - iMod (own_alloc (● writing_st static)) as (γ) "Hst". { by apply auth_auth_valid. }
+      iFrame. iExists _, _. iFrame. iExists _. iSplitR; first by auto.
+      iIntros "!>!> _". iApply step_fupd_intro; auto.
   Qed.
   Next Obligation.
     iIntros (?????) "LFT #Hκ H". iDestruct "H" as (α γ) "[#??]".

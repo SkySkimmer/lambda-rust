@@ -176,21 +176,22 @@ Section refcell_functions.
                        ty_shr ty (β ∪ ν) tid (shift_loc lx 1) ∗
                        own γ (◯ reading_st qν ν) ∗ refcell_inv tid lx γ β ty)%I
         with ">[Hlx Hownst Hst Hβtok2]" as (q' ν) "(Hβtok2 & Hν & Hshr & Hreading & INV)".
-      { destruct st as [[|[[agν q] n]|]|]; try done.
-        - iDestruct "Hst" as (q' ν) "(Hag & #Hqq' & [Hν1 Hν2] & #Hshr & H†)".
+      { destruct st as [[agν [|[q n]|]]|]; try done.
+        - iDestruct "Hst" as (ν) "(Hag & H† & #Hshr & Hst)".
+          iDestruct "Hst" as (q') "(#Hqq' & [Hν1 Hν2])".
           iExists _, _. iFrame "Hν1". iDestruct "Hag" as %Hag. iDestruct "Hqq'" as %Hqq'.
           iMod (own_update with "Hownst") as "[Hownst ?]".
           { apply auth_update_alloc,
-               (op_local_update_discrete _ _ (reading_st (q'/2)%Qp ν))=>-[[Hagv _]_].
-            split; [split|].
+            (op_local_update_discrete _ _ (reading_st (q'/2)%Qp ν))=>-[Hagv _].
+            split; [|split].
             - by rewrite -Hag /= agree_idemp.
             - change ((q'/2+q)%Qp ≤ 1%Qp)%Qc. rewrite -Hqq' comm -{2}(Qp_div_2 q').
               apply Qcplus_le_mono_l. rewrite -{1}(Qcplus_0_l (q'/2)%Qp).
               apply Qcplus_le_mono_r, Qp_ge_0.
             - done. }
-          iFrame "∗#". iExists _. rewrite Z.add_comm /=. iFrame. iExists _, _. iFrame.
-          rewrite /= Hag agree_idemp (comm Qp_plus) (assoc Qp_plus) Qp_div_2
-                  (comm Qp_plus). auto.
+          iFrame "∗#". iExists _. rewrite Z.add_comm /=. iFrame. iExists _. iFrame.
+          iSplitR; first by rewrite /= Hag agree_idemp. iFrame "Hshr". iExists _. iFrame.
+          rewrite (comm Qp_plus) (assoc Qp_plus) Qp_div_2 (comm Qp_plus). auto.
         - iMod (lft_create with "LFT") as (ν) "[[Htok1 Htok2] #Hhν]". done.
           iMod (own_update with "Hownst") as "[Hownst Hreading]"; first by apply
             auth_update_alloc, (op_local_update_discrete _ _ (reading_st (1/2)%Qp ν)).
@@ -200,9 +201,10 @@ Section refcell_functions.
           { iApply lft_le_incl. apply gmultiset_union_subseteq_l. }
           iMod (ty_share with "LFT Hst Htok") as "[#Hshr Htok]". done. iFrame "Hshr".
           iDestruct ("Hclose" with "Htok") as "[$ Htok2]". iExists _. iFrame.
-          iExists _, _. iFrame. rewrite Qp_div_2. iSplitR; first done. iSplitR; first done.
-          iIntros "{$Hshr} !> Hν". iMod ("Hhν" with "Hν") as "Hν". iModIntro.
-          iNext. iMod "Hν". iApply "Hh". rewrite -lft_dead_or. auto. }
+          iExists _. iSplitR; first done. iFrame "Hshr". iSplitR "Htok2".
+          + iIntros "!> Hν". iMod ("Hhν" with "Hν") as "Hν". iModIntro.
+            iNext. iMod "Hν". iApply "Hh". rewrite -lft_dead_or. auto.
+          + iExists _. iFrame. by rewrite Qp_div_2. }
       iMod ("Hclose'" with "[$INV] Hna") as "[Hβtok1 Hna]".
       iAssert (elctx_interp [☀α] qE)%I with ">[Hclose Hβtok1 Hβtok2]" as "HE".
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
@@ -259,17 +261,22 @@ Section refcell_functions.
     rewrite {1}/elctx_interp big_sepL_singleton.
     iMod (lft_incl_acc with "Hαβ HE") as (qβ) "[Hβtok Hclose]". done.
     iMod (na_bor_acc with "LFT Hinv Hβtok Hna") as "(INV & Hna & Hclose')"; try done.
-    iDestruct "INV" as (st) "(Hlx & Hownst & Hst)". wp_read. wp_let. wp_op=>?; wp_if.
+    iDestruct "INV" as (st) "(Hlx & Hownst & Hb)". wp_read. wp_let. wp_op=>?; wp_if.
     - wp_write. wp_bind (new _). iApply wp_new; [done..|]. iNext.
       iIntros (lref vl) "(EQ & H† & Hlref)". iDestruct "EQ" as %?%(inj Z.of_nat 2%nat).
       destruct vl as [|?[|?[]]]; try done. wp_let.
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
       iDestruct "Hlref" as "[Hlref0 Hlref1]". wp_op. wp_write. wp_op. wp_write.
-      destruct st as [[|[[]]|]|]; try done.
+      destruct st as [[?[|[]|]]|]; try done.
+      iMod (lft_create with "LFT") as (ν) "[Htok #Hhν]". done.
       iMod (own_update with "Hownst") as "[Hownst ?]".
-      { apply auth_update_alloc, (op_local_update_discrete _ _ writing_st)=>//. }
-      iMod ("Hclose'" with "[Hlx Hownst] Hna") as "[Hβtok Hna]";
-        first by iExists _; iFrame.
+      { by eapply auth_update_alloc, (op_local_update_discrete _ _ (writing_st ν)). }
+      iMod (rebor _ _ (β ∪ ν) with "LFT [] Hb") as "[Hb Hbh]". done.
+      { iApply lft_le_incl. apply gmultiset_union_subseteq_l. }
+      iMod ("Hclose'" with "[Hlx Hownst Hbh] Hna") as "[Hβtok Hna]".
+      { iExists _. iFrame. iExists ν. iSplit; first by auto. iNext. iSplitL; last by auto.
+        iIntros "Hν". iMod ("Hhν" with "Hν") as "Hν". iModIntro. iNext. iMod "Hν".
+        iApply "Hbh". rewrite -lft_dead_or. auto. }
       iAssert (elctx_interp [☀α] qE)%I with ">[Hclose Hβtok]" as "HE".
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
       iApply (type_sum_memcpy [refmut α ty; unit] _ _ _ _ _ _ _ _
@@ -280,9 +287,10 @@ Section refcell_functions.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame.
         rewrite tctx_hasty_val' //. rewrite /= freeable_sz_full. iFrame.
         iExists [_; _]. rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
-        iFrame. iExists _, _, _. iFrame "∗#". }
+        iFrame. iExists _, _, _, _. iFrame "#∗". iApply (bor_shorten with "[] [$Hb]").
+        iApply lft_glb_mono; first done. iApply lft_incl_refl. }
       simpl. eapply type_delete; [solve_typing..|]. eapply (type_jump [_]); solve_typing.
-    - iMod ("Hclose'" with "[Hlx Hownst Hst] Hna") as "[Hβtok Hna]";
+    - iMod ("Hclose'" with "[Hlx Hownst Hb] Hna") as "[Hβtok Hna]";
         first by iExists st; iFrame.
       iAssert (elctx_interp [☀α] qE)%I with ">[Hclose Hβtok]" as "HE".
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }

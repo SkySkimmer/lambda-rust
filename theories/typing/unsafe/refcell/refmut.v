@@ -15,9 +15,9 @@ Section refmut.
        ty_own tid vl :=
          match vl return _ with
          | [ #(LitLoc lv);  #(LitLoc lrc) ] =>
-           ∃ γ β ty', &{β}(lv ↦∗: ty.(ty_own) tid) ∗
+           ∃ ν γ β ty', &{α ∪ ν}(lv ↦∗: ty.(ty_own) tid) ∗
              α ⊑ β ∗ &na{β, tid, refcell_invN}(refcell_inv tid lrc γ β ty') ∗
-             own γ (◯ writing_st)
+             1.[ν] ∗ own γ (◯ writing_st ν)
          | _ => False
          end;
        ty_shr κ tid l :=
@@ -35,10 +35,16 @@ Section refmut.
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦". done.
     destruct vl as [|[[|lv|]|][|[[|lrc|]|][]]];
       try by iMod (bor_persistent_tok with "LFT Hb Htok") as "[>[] _]".
+    iMod (bor_exists with "LFT Hb") as (ν) "Hb". done.
     iMod (bor_exists with "LFT Hb") as (γ) "Hb". done.
     iMod (bor_exists with "LFT Hb") as (β) "Hb". done.
     iMod (bor_exists with "LFT Hb") as (ty') "Hb". done.
-    rewrite (assoc _ _ (α ⊑ β)%I). iMod (bor_sep with "LFT Hb") as "[Hb _]". done.
+    rewrite (assoc _ _ (α ⊑ β)%I). iMod (bor_sep with "LFT Hb") as "[Hb H]". done.
+    rewrite (comm _ (1).[ν])%I. rewrite (assoc _ _ _ (1).[ν])%I.
+    iMod (bor_sep with "LFT H") as "[_ H]". done.
+    iMod (bor_fracture (λ q, (1 * q).[ν])%I with "LFT [H]") as "H". done.
+    { by rewrite Qp_mult_1_l. }
+    iDestruct (frac_bor_lft_incl _ _ 1 with "LFT H") as "#Hκν". iClear "H".
     iMod (bor_sep with "LFT Hb") as "[Hb Hαβ]". done.
     iMod (bor_persistent_tok with "LFT Hαβ Htok") as "[#Hαβ $]". done.
     iExists _, _. iFrame "H↦". rewrite {1}bor_unfold_idx.
@@ -52,7 +58,9 @@ Section refmut.
       { iApply bor_unfold_idx. eauto. }
       iModIntro. iNext. iMod "Hb".
       iMod (ty.(ty_share) with "LFT [Hb] Htok") as "[#Hshr $]". solve_ndisj.
-      { iApply bor_shorten; last done. iApply lft_glb_mono. done. iApply lft_incl_refl. }
+      { iApply bor_shorten; last done. rewrite -assoc.
+        iApply lft_glb_mono; first by iApply lft_incl_refl.
+        iApply lft_incl_glb; first done. iApply lft_incl_refl. }
       iMod ("Hclose" with "[]") as "_"; auto.
     - iMod ("Hclose" with "[]") as "_". by eauto.
       iApply step_fupd_intro. set_solver. auto.
@@ -88,10 +96,11 @@ Section refmut.
     iSplit; [|iSplit; iAlways].
     - done.
     - iIntros (tid [|[[]|][|[[]|][]]]); try iIntros "[]". iIntros "H".
-      iDestruct "H" as (γ β ty') "(Hb & #H⊑ & #Hinv & Hown)".
-      iExists γ, β, ty'. iFrame "∗#". iSplit.
-      + iApply bor_iff; last done.
-        iSplit; iIntros "!>!# H"; iDestruct "H" as (vl) "[??]";
+      iDestruct "H" as (ν γ β ty') "(Hb & #H⊑ & #Hinv & Hν & Hown)".
+      iExists ν, γ, β, ty'. iFrame "∗#". iSplit.
+      + iApply bor_shorten; last iApply bor_iff; last done.
+        * iApply lft_glb_mono; first done. iApply lft_incl_refl.
+        * iSplit; iIntros "!>!# H"; iDestruct "H" as (vl) "[??]";
           iExists vl; iFrame; by iApply "Ho".
       + by iApply lft_incl_trans.
     - iIntros (κ tid l) "H". iDestruct "H" as (lv lrc) "H". iExists lv, lrc.

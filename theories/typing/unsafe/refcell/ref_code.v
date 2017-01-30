@@ -13,35 +13,33 @@ Section ref_functions.
   Lemma refcell_inv_reading_inv tid l γ α ty q ν :
     refcell_inv tid l γ α ty -∗
     own γ (◯ reading_st q ν) -∗
-    ∃ q' q'' n, l ↦ #(Zpos n) ∗
-            own γ (● Some (Cinr (to_agree ν, q', n)) ⋅ ◯ reading_st q ν) ∗
-            ⌜(q' + q'' = 1)%Qp ∧ (q ≤ q')%Qc⌝ ∗ q''.[ν] ∗
+    ∃ (q' : Qp) n, l ↦ #(Zpos n) ∗ ⌜(q ≤ q')%Qc⌝ ∗
+            own γ (● Some (to_agree ν, Cinr (q', n)) ⋅ ◯ reading_st q ν) ∗
             ty.(ty_shr) (α ∪ ν) tid (shift_loc l 1) ∗
-            ((1).[ν] ={⊤,⊤ ∖ ↑lftN}▷=∗ &{α} shift_loc l 1 ↦∗: ty_own ty tid).
+            ((1).[ν] ={⊤,⊤ ∖ ↑lftN}▷=∗ &{α} shift_loc l 1 ↦∗: ty_own ty tid) ∗
+            ∃ q'', ⌜(q' + q'' = 1)%Qp⌝ ∗ q''.[ν].
   Proof.
     iIntros "INV H◯".
     iDestruct "INV" as (st) "(H↦lrc & H● & INV)".
-    iAssert (∃ q' n, st ≡ Some (Cinr (to_agree ν, q', n)) ∗ ⌜q ≤ q'⌝%Qc)%I with
+    iAssert (∃ q' n, st ≡ Some (to_agree ν, Cinr (q', n)) ∗ ⌜q ≤ q'⌝%Qc)%I with
        "[#]" as (q' n) "[Hst %]".
     { iDestruct (own_valid_2 with "H● H◯") as %[[[=]|
-         (? & st' & [=<-] & -> & [Heq|Hle])]%option_included Hv]%auth_valid_discrete_2.
-      - iExists q, xH.  iSplit; iPureIntro. by constructor. done.
+       (? & [agν st'] & [=<-] & -> & [Heq|Hle])]%option_included Hv]%auth_valid_discrete_2.
+      - iExists q, xH. iSplit; iPureIntro. by constructor. done.
       - iClear "∗#".
-        revert Hle Hv=>/csum_included [ -> // | [[?[?[//]]] | [?[st''[Heq[-> Hle]]]]]].
-        revert Heq. intros [= <-]. destruct st'' as [[ag q'] n].
-        revert Hle=>/Some_included_2 /Some_pair_included
-           [/Some_pair_included_total_1 [/agree_included Heq Hqq'] _] [[Hag _] _].
+        revert Hle Hv=>/prod_included [/= /agree_included Hag /csum_included
+              [-> [//] | [[?[?[//]]] | [?[[q' n] [Heq [-> Hle]]]]]]] [Hagok _].
+        revert Heq. intros [= <-]. revert Hle=>/prod_included [/= Hqq' _].
         iExists q', n. iSplit.
-        + iPureIntro. do 4 constructor; last done.
-          apply agree_op_inv. by rewrite comm -Heq.
-        + revert Hqq'. by intros [<-%leibniz_equiv|?%frac_included_weak]%Some_included. }
+        + iPureIntro. rewrite (agree_op_inv agν) //. by rewrite comm -Hag.
+        + by revert Hqq'=>/frac_included_weak. }
     iDestruct "Hst" as %[st' [-> Hst']]%equiv_Some_inv_r'.
-    destruct st' as [|[[]]|]; try by inversion Hst'. apply (inj Cinr), (inj2 pair) in Hst'.
-    destruct Hst' as [[Hst' <-%leibniz_equiv]%(inj2 pair) <-%leibniz_equiv].
-    simpl. setoid_rewrite <-Hst'. clear Hst'.
-    iDestruct "INV" as (q'' ν') "(Hag & Hq'q'' & Hν & INV)".
+    destruct st' as [?[|[]|]]; destruct Hst' as [Hag Hst']; try by inversion Hst'.
+    apply (inj Cinr), (inj2 pair) in Hst'.
+    destruct Hst' as [<-%leibniz_equiv <-%leibniz_equiv]. simpl in *.
+    setoid_rewrite <-Hag. iDestruct "INV" as (ν') "(Hag & Hν & Hshr & Hq')".
     iDestruct "Hag" as %<-%(inj to_agree)%leibniz_equiv.
-    iDestruct "Hq'q''" as %Hq'q''. iExists _, _, _. rewrite own_op. iFrame. auto.
+    iExists q', n. rewrite own_op. by iFrame.
   Qed.
 
   (* Cloning a ref. We need to increment the counter. *)
@@ -77,12 +75,12 @@ Section ref_functions.
     rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
     iMod "H↦" as "[H↦1 H↦2]". wp_read. wp_let.
     iDestruct (refcell_inv_reading_inv with "INV H◯")
-      as (q' q'' n) "(H↦lrc & [H● H◯] & Hq'q'' & [Hν1 Hν2] & INV)".
-    wp_read. wp_let. wp_op. wp_write. iDestruct "Hq'q''" as %[Hq'q'' _].
-    iMod (own_update with "H●") as "[H● ?]".
+      as (q' n) "(H↦lrc & _ & [H● H◯] & Hshr' & H† & Hq')".
+    wp_read. wp_let. wp_op. wp_write. iDestruct "Hq'" as (q'') "(Hq'q'' & Hν1 & Hν2)".
+    iDestruct "Hq'q''" as %Hq'q''. iMod (own_update with "H●") as "[H● ?]".
     { apply auth_update_alloc,
-         (op_local_update_discrete _ _ (reading_st (q''/2)%Qp ν))=>-[[Hagv _]_].
-      split; [split|done].
+         (op_local_update_discrete _ _ (reading_st (q''/2)%Qp ν))=>-[Hagv _].
+      split; [|split; last done].
       - by rewrite /= agree_idemp.
       - change ((q''/2+q')%Qp ≤ 1%Qp)%Qc. rewrite -Hq'q'' comm -{2}(Qp_div_2 q'').
         apply Qcplus_le_mono_l. rewrite -{1}(Qcplus_0_l (q''/2)%Qp).
@@ -93,9 +91,11 @@ Section ref_functions.
     wp_let. wp_bind (_ <-{_} !_)%E. iApply (wp_memcpy with "[$Hlr $H↦]"); [done..|].
     iIntros "!>[Hlr H↦]". wp_seq.
     iMod ("Hcloseα2" with "[$H◯] Hna") as "[Hα2 Hna]".
-    iMod ("Hcloseδ" with "[H↦lrc H● Hν1 INV] Hna") as "[Hδ Hna]".
-    { iExists _. rewrite Z.add_comm. iFrame. iExists _, _. iFrame. simpl.
-      rewrite agree_idemp (comm Qp_plus) (assoc Qp_plus) Qp_div_2 (comm Qp_plus). auto. }
+    iMod ("Hcloseδ" with "[H↦lrc H● Hν1 Hshr' H†] Hna") as "[Hδ Hna]".
+    { iExists _. rewrite Z.add_comm. iFrame. iExists _. iFrame. iSplitR.
+      - rewrite /= agree_idemp. auto.
+      - iExists _. iFrame.
+        rewrite (comm Qp_plus) (assoc Qp_plus) Qp_div_2 (comm Qp_plus). auto. }
     iMod ("Hcloseβ" with "Hδ") as "Hβ". iMod ("Hcloseα1" with "[$H↦]") as "Hα1".
     iAssert (elctx_interp [☀ α; ☀ β] qE) with "[Hα1 Hα2 Hβ]" as "HE".
     { rewrite /elctx_interp big_sepL_cons big_sepL_singleton. iFrame. }
@@ -173,29 +173,28 @@ Section ref_functions.
     iMod (lft_incl_acc with "Hαβ Hα") as (qβ) "[Hβ Hcloseα]". done.
     iMod (na_bor_acc with "LFT Hinv Hβ Hna") as "(INV & Hna & Hcloseβ)"; [done..|].
     iDestruct (refcell_inv_reading_inv with "INV [$H◯]")
-      as (q' q'' n) "(H↦lrc & H●◯ & >% & Hν' & Hshr & Hend)".
+      as (q' n) "(H↦lrc & >% & H●◯ & Hshr & H† & Hq')". iDestruct "Hq'" as (q'') ">[% Hν']".
     wp_read. wp_let. wp_op. wp_write.
     iAssert (|={⊤,⊤ ∖ ↑lftN}▷=> refcell_inv tid lrc γ β ty')%I
-      with "[H↦lrc H●◯ Hν Hν' Hshr Hend]" as "INV".
-    { iDestruct (own_valid with "H●◯")
-        as %[[Heq%(inj Cinr)|Hincl%csum_included]%Some_included Hv]%auth_valid_discrete_2.
-      - destruct Heq as [[_ ?%leibniz_equiv]?%leibniz_equiv]. simpl in *. subst.
+      with "[H↦lrc H●◯ Hν Hν' Hshr H†]" as "INV".
+    { iDestruct (own_valid with "H●◯") as %[[ _ [Heq%(inj Cinr)|Hincl%csum_included]
+        %Some_included]%Some_pair_included [_ Hv]]%auth_valid_discrete_2.
+      - destruct Heq as [?%leibniz_equiv ?%leibniz_equiv]. simpl in *. subst.
         iExists None. iFrame. iMod (own_update with "H●◯") as "$".
         { apply auth_update_dealloc. rewrite -(right_id None op (Some _)).
           apply op_local_update_cancellable_empty, _. }
-        iApply "Hend". replace 1%Qp with (q'+q'')%Qp by naive_solver. iFrame.
-      - destruct Hincl as [[=]|[(?&?&[=]&?)|(?&?&[=<-]&[=<-]&[[[ag q0]n']EQ])]].
-        rewrite EQ. destruct EQ as [[EQag ?%leibniz_equiv]?%leibniz_equiv].
-           simpl in *. subst.
+        iApply "H†". replace 1%Qp with (q'+q'')%Qp by naive_solver. iFrame.
+      - destruct Hincl as [ [=] |[ (?&?&[=]&?) | (?&?&[=<-]&[=<-]&[[q0 n']EQ]) ]].
+        destruct EQ as [?%leibniz_equiv ?%leibniz_equiv]. simpl in *. subst.
         iAssert (lrc ↦ #(Z.pos n'))%I with "[H↦lrc]" as "H↦lrc".
         { destruct n'; [|done..]. by rewrite /= Pos.pred_double_succ. }
-        iExists (Some (Cinr (ag, q0, n'))). iFrame. iMod (own_update with "H●◯") as "$".
-        { apply auth_update_dealloc. rewrite -Cinr_op Some_op.
+        iExists (Some (_, Cinr (q0, n'))). iFrame. iMod (own_update with "H●◯") as "$".
+        { apply auth_update_dealloc.
+          rewrite -(agree_idemp (to_agree _)) -pair_op -Cinr_op -pair_op Some_op.
           apply (op_local_update_cancellable_empty (reading_st q ν)), _. }
-        iExists (q+q'')%Qp, ν. iFrame. iApply step_fupd_intro; first done. iIntros "!>".
-        iSplit; iPureIntro.
-        + apply agree_op_inv. by rewrite comm -EQag.
-        + rewrite assoc (comm _ q0 q). by intuition. }
+        iExists ν. iFrame. iApply step_fupd_intro; first done. iIntros "!>".
+        iSplitR; first done. iExists (q+q'')%Qp. iFrame.
+        by rewrite assoc (comm _ q0 q). }
     wp_bind Endlft. iApply (wp_fupd_step with "INV"); [done..|]. wp_seq.
     iIntros "INV !>". wp_seq. iMod ("Hcloseβ" with "[$INV] Hna") as "[Hβ Hna]".
     iMod ("Hcloseα" with "Hβ") as "Hα".
