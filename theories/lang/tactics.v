@@ -1,4 +1,4 @@
-From iris.prelude Require Import fin_maps.
+From stdpp Require Import fin_maps.
 From lrust.lang Require Export lang.
 Set Default Proof Using "Type".
 

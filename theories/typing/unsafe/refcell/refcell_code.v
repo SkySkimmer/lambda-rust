@@ -184,7 +184,7 @@ Section refcell_functions.
           { apply auth_update_alloc,
             (op_local_update_discrete _ _ (reading_st (q'/2)%Qp ν))=>-[Hagv _].
             split; [|split].
-            - by rewrite -Hag /= agree_idemp.
+            - by rewrite /= -Hag agree_idemp.
             - change ((q'/2+q)%Qp ≤ 1%Qp)%Qc. rewrite -Hqq' comm -{2}(Qp_div_2 q').
               apply Qcplus_le_mono_l. rewrite -{1}(Qcplus_0_l (q'/2)%Qp).
               apply Qcplus_le_mono_r, Qp_ge_0.
