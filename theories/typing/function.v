@@ -65,6 +65,15 @@ Section fn.
   Qed.
 End fn.
 
+
+Notation "'fn(∀' x ',' E ';' T1 ',' .. ',' TN '→' R ')'" :=
+  (fn (λ x, E%EL) (λ x, (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T) (λ x, R%T))
+  (at level 0, E, T1, TN, R at level 50) : lrust_type_scope.
+Notation "'fn(' E ';' T1 ',' .. ',' TN '→' R ')'" :=
+  (fn (λ _:(), E%EL) (λ _, (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T) (λ _, R%T))
+  (at level 0, E, T1, TN, R at level 50,
+   format "'fn(' E ';'  T1 ','  .. ','  TN  '→'  R ')'") : lrust_type_scope.
+
 Section typing.
   Context `{typeG Σ}.
 

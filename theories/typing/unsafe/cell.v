@@ -81,7 +81,7 @@ Section typing.
 
   Lemma cell_new_type ty :
     typed_instruction_ty [] [] [] cell_new
-        (fn (λ _, [])%EL (λ _, [# ty]) (λ _:(), cell ty)).
+        fn([]; ty → cell ty).
   Proof.
     apply type_fn; [apply _..|]. move=>/= _ ret arg. inv_vec arg=>x. simpl_subst.
     eapply (type_jump [_]); first solve_typing.
@@ -93,7 +93,7 @@ Section typing.
 
   Lemma cell_into_inner_type ty :
     typed_instruction_ty [] [] [] cell_into_inner
-        (fn (λ _, [])%EL (λ _, [# cell ty]) (λ _:(), ty)).
+        fn([]; cell ty → ty).
   Proof.
     apply type_fn; [apply _..|]. move=>/= _ ret arg. inv_vec arg=>x. simpl_subst.
     eapply (type_jump [_]); first solve_typing.
@@ -105,7 +105,7 @@ Section typing.
 
   Lemma cell_get_mut_type ty :
     typed_instruction_ty [] [] [] cell_get_mut
-      (fn (λ α, [☀α])%EL (λ α, [# &uniq{α} (cell ty)])%T (λ α, &uniq{α} ty)%T).
+      fn(∀ α, [☀α]; &uniq{α} (cell ty) → &uniq{α} ty).
   Proof.
     apply type_fn; [apply _..|]. move=>/= α ret arg. inv_vec arg=>x. simpl_subst.
     eapply (type_jump [_]). solve_typing. rewrite /tctx_incl /=.
@@ -122,7 +122,7 @@ Section typing.
 
   Lemma cell_get_type `(!Copy ty) :
     typed_instruction_ty [] [] [] (cell_get ty)
-        (fn (λ α, [☀α])%EL (λ α, [# &shr{α} (cell ty)])%T (λ _, ty)).
+        fn(∀ α, [☀α]; &shr{α} (cell ty) → ty).
   Proof.
     apply type_fn; [apply _..|]. move=>/= α ret arg. inv_vec arg=>x. simpl_subst.
     eapply type_deref; [solve_typing..|apply read_own_move|done|]=>x'. simpl_subst.
@@ -142,7 +142,7 @@ Section typing.
 
   Lemma cell_set_type ty :
     typed_instruction_ty [] [] [] (cell_set ty)
-        (fn (λ α, [☀α])%EL (λ α, [# &shr{α} cell ty; ty]%T) (λ α, unit)).
+        fn(∀ α, [☀α]; &shr{α} cell ty, ty → unit).
   Proof.
     apply type_fn; try apply _. move=> /= α ret arg. inv_vec arg=>c x. simpl_subst.
     eapply type_deref; [solve_typing..|by apply read_own_move|done|].
