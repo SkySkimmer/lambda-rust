@@ -80,7 +80,7 @@ Section typing.
 End typing.
 
 Notation typed_instruction_ty E L T1 e ty :=
-  (typed_instruction E L T1 e (λ v : val, [v ◁ ty]%TC)).
+  (typed_instruction E L T1 e (λ v : val, [v ◁ ty%list%T]%TC)).
 
 Section typing_rules.
   Context `{typeG Σ}.

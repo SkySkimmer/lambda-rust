@@ -65,14 +65,22 @@ Section fn.
   Qed.
 End fn.
 
-
+(* TODO: Once we depend on 8.6pl1, extend this to recursive binders so that
+   patterns like '(a, b) can be used. *)
 Notation "'fn(∀' x ',' E ';' T1 ',' .. ',' TN '→' R ')'" :=
   (fn (λ x, E%EL) (λ x, (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T) (λ x, R%T))
   (at level 0, E, T1, TN, R at level 50) : lrust_type_scope.
+Notation "'fn(∀' x ',' E ';' '→' R ')'" :=
+  (fn (λ x, E%EL) (λ x, Vector.nil) (λ x, R%T))
+  (at level 0, E, R at level 50) : lrust_type_scope.
 Notation "'fn(' E ';' T1 ',' .. ',' TN '→' R ')'" :=
   (fn (λ _:(), E%EL) (λ _, (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T) (λ _, R%T))
   (at level 0, E, T1, TN, R at level 50,
    format "'fn(' E ';'  T1 ','  .. ','  TN  '→'  R ')'") : lrust_type_scope.
+Notation "'fn(' E ';' '→' R ')'" :=
+  (fn (λ _:(), E%EL) (λ _, Vector.nil) (λ _, R%T))
+  (at level 0, E, R at level 50,
+   format "'fn(' E ';' '→'  R ')'") : lrust_type_scope.
 
 Section typing.
   Context `{typeG Σ}.
