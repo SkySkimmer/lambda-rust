@@ -103,7 +103,7 @@ Section typing.
   Definition cell_get_mut : val :=
     funrec: <> ["x"] := "return" ["x"].
 
-  Lemma cell_get_mut_type `(!Copy ty) :
+  Lemma cell_get_mut_type ty :
     typed_instruction_ty [] [] [] cell_get_mut
       (fn (λ α, [☀α])%EL (λ α, [# &uniq{α} (cell ty)])%T (λ α, &uniq{α} ty)%T).
   Proof.
