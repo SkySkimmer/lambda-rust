@@ -341,7 +341,6 @@ Section subtyping.
   Lemma type_incl_trans ty1 ty2 ty3 :
     type_incl ty1 ty2 -∗ type_incl ty2 ty3 -∗ type_incl ty1 ty3.
   Proof.
-    (* TODO: this iIntros takes suspiciously long. *)
     iIntros "(% & #Ho12 & #Hs12) (% & #Ho23 & #Hs23)".
     iSplit; first (iPureIntro; etrans; done).
     iSplit; iAlways; iIntros.
