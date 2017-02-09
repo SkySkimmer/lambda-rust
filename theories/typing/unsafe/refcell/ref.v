@@ -28,7 +28,7 @@ Section ref.
              ▷ (α ⊑ β) ∗ ▷ &na{β, tid, refcell_invN}(refcell_inv tid lrc γ β ty') ∗
              &na{κ, tid, refcell_refN}(own γ (◯ reading_st q ν)) |}%I.
   Next Obligation.
-    iIntros (???[|[[]|][|[[]|][]]]); try iIntros "[]". by iIntros "_".
+    iIntros (???[|[[]|][|[[]|][]]]); try iIntros "[]"; auto.
   Qed.
   Next Obligation.
     iIntros (α ty E κ l tid q ?) "#LFT Hb Htok".
@@ -49,9 +49,7 @@ Section ref.
     iMod (bor_sep with "LFT Hb") as "[Hinv Hb]". done.
     iMod (bor_persistent_tok with "LFT Hinv Htok") as "[#Hinv $]". done.
     iMod (bor_sep with "LFT Hb") as "[Hκν Hb]". done.
-    (* FIXME : I cannot write #Hκν directly. *)
-    iDestruct (frac_bor_lft_incl with "LFT >[Hκν]") as "Hκν";
-      last iDestruct "Hκν" as "#Hκν".
+    iDestruct (frac_bor_lft_incl with "LFT >[Hκν]") as "#Hκν".
     { iApply bor_fracture; try done. by rewrite Qp_mult_1_r. }
     iMod (bor_na with "Hb") as "#Hb". done. eauto 20.
   Qed.
