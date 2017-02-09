@@ -4,7 +4,7 @@ set -e
 ## Usage:
 ##   ./opam-pins.sh < opam.pins
 
-if ! which curl; then
+if ! which curl >/dev/null; then
     echo "opam-pins needs curl. Please install curl and try again."
     exit 1
 fi
