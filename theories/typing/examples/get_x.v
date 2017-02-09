@@ -12,7 +12,10 @@ Section get_x.
 
   Lemma get_x_type :
     typed_instruction_ty [] [] [] get_x
-        (fn (λ α, [☀α])%EL (λ α, [# &uniq{α}Π[int; int]]%T) (λ α, &shr{α} int)%T).
+        fn(∀ α, [☀α]; &uniq{α} Π[int; int] → &shr{α} int).
+  (* FIXME: The above is pretty-printed with some explicit scope annotations,
+     and without using 'typed_instruction_ty'.  I think that's related to
+     the list notation that we added to %TC. *)
   Proof.
     apply type_fn; try apply _. move=> /= α ret p. inv_vec p=>p. simpl_subst.
     eapply type_deref; [solve_typing..|by apply read_own_move|done|].

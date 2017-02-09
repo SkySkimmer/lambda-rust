@@ -17,7 +17,7 @@ Notation tctx := (list tctx_elt).
 Delimit Scope lrust_tctx_scope with TC.
 Bind Scope lrust_tctx_scope with tctx_elt.
 
-Infix "◁" := TCtx_hasty (at level 70) : lrust_tctx_scope.
+Notation "p ◁ ty" := (TCtx_hasty p ty%list%T) (at level 70) : lrust_tctx_scope.
 Notation "p ◁{ κ } ty" := (TCtx_blocked p κ ty)
    (at level 70, format "p  ◁{ κ }  ty") : lrust_tctx_scope.
 Notation "a :: b" := (@cons tctx_elt a%TC b%TC)

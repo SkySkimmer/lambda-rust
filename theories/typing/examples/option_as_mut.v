@@ -16,7 +16,7 @@ Section option_as_mut.
 
   Lemma option_as_mut_type τ :
     typed_instruction_ty [] [] [] option_as_mut
-        (fn (λ α, [☀α])%EL (λ α, [# &uniq{α}Σ[unit; τ]]%T) (λ α, Σ[unit; &uniq{α}τ])%T).
+        fn(∀ α, [☀α]; &uniq{α} Σ[unit; τ] → Σ[unit; &uniq{α}τ]).
   Proof.
     apply type_fn; try apply _. move=> /= α ret p. inv_vec p=>o. simpl_subst.
     eapply (type_cont [_] [] (λ r, [o ◁ _; r!!!0 ◁ _])%TC) ; [solve_typing..| |].
