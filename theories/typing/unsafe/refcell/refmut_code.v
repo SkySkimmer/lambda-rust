@@ -122,7 +122,7 @@ Section refmut_functions.
 
   Lemma refmut_drop_type ty :
     typed_instruction_ty [] [] [] refmut_drop
-      fn(∀ α, [☀α]; refmut α ty → unit).
+      (fn(∀ α, [☀α]; refmut α ty) → unit).
   Proof.
     apply type_fn; [apply _..|]. move=>/= α ret arg. inv_vec arg=>x. simpl_subst.
     iIntros "!# * #LFT Hna Hα HL Hk Hx".

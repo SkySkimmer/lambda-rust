@@ -18,7 +18,7 @@ Section lazy_lft.
 
   Lemma lazy_lft_type :
     typed_instruction_ty [] [] [] lazy_lft
-        fn([]; → unit).
+        (fn([]) → unit).
   Proof.
     apply type_fn; try apply _. move=> /= [] ret p. inv_vec p. simpl_subst.
     eapply (type_newlft []); [solve_typing|]=>α.
