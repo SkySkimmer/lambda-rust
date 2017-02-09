@@ -1,4 +1,5 @@
 -Q theories lrust
+-arg -w -arg -notation-overridden,-redundant-canonical-projection,-several-object-files
 theories/lifetime/model/definitions.v
 theories/lifetime/model/faking.v
 theories/lifetime/model/creation.v

@@ -1,6 +1,6 @@
 From iris.program_logic Require Export language ectx_language ectxi_language.
-From iris.prelude Require Export strings.
-From iris.prelude Require Import gmap.
+From stdpp Require Export strings.
+From stdpp Require Import gmap.
 Set Default Proof Using "Type".
 
 Open Scope Z_scope.

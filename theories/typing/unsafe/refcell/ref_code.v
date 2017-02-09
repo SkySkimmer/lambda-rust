@@ -182,7 +182,7 @@ Section ref_functions.
       - destruct Heq as [?%leibniz_equiv ?%leibniz_equiv]. simpl in *. subst.
         iExists None. iFrame. iMod (own_update with "H●◯") as "$".
         { apply auth_update_dealloc. rewrite -(right_id None op (Some _)).
-          apply op_local_update_cancellable_empty, _. }
+          apply cancel_local_update_empty, _. }
         iApply "H†". replace 1%Qp with (q'+q'')%Qp by naive_solver. iFrame.
       - destruct Hincl as [ [=] |[ (?&?&[=]&?) | (?&?&[=<-]&[=<-]&[[q0 n']EQ]) ]].
         destruct EQ as [?%leibniz_equiv ?%leibniz_equiv]. simpl in *. subst.
@@ -191,7 +191,7 @@ Section ref_functions.
         iExists (Some (_, Cinr (q0, n'))). iFrame. iMod (own_update with "H●◯") as "$".
         { apply auth_update_dealloc.
           rewrite -(agree_idemp (to_agree _)) -pair_op -Cinr_op -pair_op Some_op.
-          apply (op_local_update_cancellable_empty (reading_st q ν)), _. }
+          apply (cancel_local_update_empty (reading_st q ν)), _. }
         iExists ν. iFrame. iApply step_fupd_intro; first done. iIntros "!>".
         iSplitR; first done. iExists (q+q'')%Qp. iFrame.
         by rewrite assoc (comm _ q0 q). }

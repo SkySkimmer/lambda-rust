@@ -1,5 +1,5 @@
 From iris.algebra Require Import frac.
-From iris.prelude Require Export gmultiset strings.
+From stdpp Require Export gmultiset strings.
 From iris.base_logic.lib Require Export invariants.
 From iris.base_logic.lib Require Import boxes fractional.
 Set Default Proof Using "Type".

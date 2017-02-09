@@ -147,7 +147,7 @@ Section refmut_functions.
     iMod ("Hcloseβ" with ">[H↦lrc H● H◯ Hb] Hna") as "[Hβ Hna]".
     { iExists None. iFrame. iMod (own_update_2 with "H● H◯") as "$"; last done.
       apply auth_update_dealloc. rewrite -(right_id None _ (Some _)).
-      apply op_local_update_cancellable_empty, _. }
+      apply cancel_local_update_empty, _. }
     iMod ("Hcloseα" with "Hβ") as "Hα". wp_seq.
     iAssert (elctx_interp [☀ α] qE) with "[Hα]" as "HE".
     { by rewrite /elctx_interp big_sepL_singleton. }
