@@ -24,7 +24,7 @@ Section type_soundness.
   Definition exit_cont : val := λ: [<>], #().
 
   Definition main_type `{typeG Σ} :=
-    fn (λ _, []) (λ _, [# ]) (λ _:(), box unit).
+    (fn([]) → unit)%T.
 
   Theorem type_soundness `{typePreG Σ} (main : val) σ t :
     (∀ `{typeG Σ}, typed_instruction_ty [] [] [] main main_type) →

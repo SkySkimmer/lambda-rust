@@ -12,7 +12,7 @@ Section get_x.
 
   Lemma get_x_type :
     typed_instruction_ty [] [] [] get_x
-        fn(∀ α, [☀α]; &uniq{α} Π[int; int] → &shr{α} int).
+        (fn(∀ α, [☀α]; &uniq{α} Π[int; int]) → &shr{α} int).
   (* FIXME: The above is pretty-printed with some explicit scope annotations,
      and without using 'typed_instruction_ty'.  I think that's related to
      the list notation that we added to %TC. *)
