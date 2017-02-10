@@ -207,6 +207,7 @@ Bind Scope lrust_type_scope with type.
 Section ofe.
   Context `{typeG Σ}.
 
+  (* TODO: Use the ofe_iso infrastructure from Iris. *)
   Section def.
     Definition tuple_of_type (ty : type) : prodC (prodC _ _) _ :=
       (ty.(ty_size),
