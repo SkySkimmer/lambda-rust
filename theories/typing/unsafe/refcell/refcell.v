@@ -9,6 +9,9 @@ Definition refcell_stR :=
   optionUR (prodR (agreeR lftC) (csumR (exclR unitC) (prodR fracR positiveR))).
 Class refcellG Σ :=
   RefCellG :> inG Σ (authR refcell_stR).
+Definition refcellΣ : gFunctors := #[GFunctor (authR refcell_stR)].
+Instance subG_refcellΣ {Σ} : subG refcellΣ Σ → refcellG Σ.
+Proof. solve_inG. Qed.
 
 Definition Z_of_refcell_st (st : refcell_stR) : Z :=
   match st with

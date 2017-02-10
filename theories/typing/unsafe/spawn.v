@@ -1,54 +1,91 @@
 From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
+From lrust.lang Require Import spawn.
 From lrust.typing Require Export type.
 From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
+Definition spawnN := lrustN .@ "spawn".
+
+Section join_handle.
+  Context `{!typeG Σ, !spawnG Σ}.
+
+  Definition join_inv (ty : type) tid (v : val) :=
+    (box ty).(ty_own) tid [v].
+
+  Program Definition join_handle (ty : type) :=
+    {| ty_size := 1;
+       ty_own tid vl :=
+         match vl return _ with
+         | [ #(LitLoc l) ] => join_handle spawnN l (join_inv ty tid)
+         | _ => False
+         end%I;
+       ty_shr κ tid l := True%I |}.
+  Next Obligation. by iIntros (ty tid [|[[]|][]]) "H"; try iDestruct "H" as "[]". Qed.
+  Next Obligation.
+    (* FIXME: Replacing the % by a _ below fails. *)
+    iIntros "* % _ _ $". auto.
+  Qed.
+  Next Obligation.
+    (* FIXME: for some reason, `iIntros "*" does not do anything here. *)
+    iIntros (?) "* _ _ _". auto.
+  Qed.
+
+  (* TODO: figure out whether Rust considers this a pointer type,
+     and whether it allows subtyping. *)
+End join_handle.
+
 Section spawn.
-  Context `{typeG Σ}.
+  Context `{!typeG Σ, !spawnG Σ}.
 
   Definition thread_cont : val := λ: [<>], #().
 
   Definition spawn : val :=
     funrec: <> ["f"; "env"] :=
       let: "f'" := !"f" in
-      Fork (call: "f'" ["env":expr] → thread_cont);;
-      let: "r" := new [ #0 ] in
+      let: "join" := spawn [λ: ["c"],
+                            letcall: "r" := "f'" ["env":expr] in
+                            finish ["c"; "r"]] in
+      letalloc: "r" <- "join" in
       delete [ #1; "f"];; "return" ["r"].
 
-  Lemma spawn_type `(!Send envty) :
+  Lemma spawn_type `(!Send envty, !Send retty) :
     typed_instruction_ty [] [] [] spawn
-        (fn([]; fn([] ; envty) → unit, envty) → unit).
+        (fn([]; fn([] ; envty) → retty, envty) → join_handle retty).
   Proof. (* FIXME: typed_instruction_ty is not used for printing. *)
     eapply type_fn; [solve_typing..|]=>- _ ret /= arg. inv_vec arg=>f env. simpl_subst.
     eapply type_deref; [solve_typing..|exact: read_own_move|done|].
     move=>f'. simpl_subst.
     eapply type_let with (T1 := [f' ◁ _; env ◁ _]%TC)
-                         (T2 := λ _, []); try solve_typing; [|].
-    { (* The core of the proof: showing that Forking is safe. *)
+                         (T2 := λ j, [j ◁ join_handle retty]%TC); try solve_typing; [|].
+    { (* The core of the proof: showing that spawn is safe. *)
       iAlways. iIntros (tid qE) "#LFT $ $ $".
       rewrite tctx_interp_cons tctx_interp_singleton.
-      iIntros "[Hf' Henv]". iApply (wp_fork with "[-]"); last first.
-      { rewrite tctx_interp_nil. auto. }
-      iNext. iMod na_alloc as (tid') "Htl".
-      iApply (type_call' [] [] (λ _:(), []) [] f' [env:expr]
-              (λ _, [# envty]) (λ _, unit) thread_cont () $! _ 1%Qp with "LFT Htl").
+      iIntros "[Hf' Henv]". iApply (spawn_spec _ (join_inv retty tid) with "[-]"); first solve_to_val; last first; last simpl_subst.
+      { iIntros "!> *". rewrite tctx_interp_singleton tctx_hasty_val. auto. }
+      iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let.
+      (* FIXME this is horrible. *)
+      assert (Hcall := type_call' [] [] (λ _:(), []) [] f' [env:expr]
+              (λ _, [# envty]) (λ _, retty)).
+      specialize (Hcall (rec: "_k" ["r"] := finish [ #c; "r"])%V ()).
+      erewrite of_val_unlock in Hcall; last done.
+      iApply (Hcall $! _ 1%Qp with "LFT Htl [] [] [Hfin]").
       - apply elctx_sat_nil.
       - rewrite /elctx_interp big_sepL_nil. done.
       - rewrite /llctx_interp big_sepL_nil. done.
       - rewrite /cctx_interp. iIntros "_ * Hin".
         iDestruct "Hin" as %Hin%elem_of_list_singleton. subst x.
-        rewrite /cctx_elt_interp. iIntros "* ???". inv_vec args=>arg /=.
-        wp_seq. auto.
+        rewrite /cctx_elt_interp. iIntros "* ?? Hret". inv_vec args=>arg /=.
+        wp_rec. iApply (finish_spec with "[$Hfin Hret]"); last auto.
+        rewrite tctx_interp_singleton tctx_hasty_val. by iApply @send_change_tid.
       - rewrite tctx_interp_cons tctx_interp_singleton. iSplitL "Hf'".
         + rewrite !tctx_hasty_val.
-          (* FIXME: The following should work, but does not. TC inference is doing sth. wrong.
-             iApply (send_change_tid with "Hf'"). *)
           iApply @send_change_tid. done.
         + rewrite !tctx_hasty_val. iApply @send_change_tid. done. }
-    move=>v. simpl_subst. clear v.
+    move=>v. simpl_subst.
     eapply type_new; [solve_typing..|].
     intros r. simpl_subst.
+    eapply type_assign; [solve_typing..|exact: write_own|].
     eapply type_delete; [solve_typing..|].
     eapply (type_jump [_]); solve_typing.
   Qed.
