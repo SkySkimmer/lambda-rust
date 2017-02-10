@@ -146,7 +146,7 @@ Implicit Types Δ : envs (iResUR Σ).
 Lemma tac_wp_alloc Δ Δ' E j1 j2 n Φ :
   0 < n →
   IntoLaterNEnvs 1 Δ Δ' →
-  (∀ l vl, n = length vl → ∃ Δ'',
+  (∀ l sz (vl : vec val sz), n = sz → ∃ Δ'',
     envs_app false (Esnoc (Esnoc Enil j1 (l ↦∗ vl)) j2 (†l…(Z.to_nat n))) Δ'
       = Some Δ'' ∧
     (Δ'' ⊢ Φ (LitV $ LitLoc l))) →
@@ -154,10 +154,10 @@ Lemma tac_wp_alloc Δ Δ' E j1 j2 n Φ :
 Proof.
   intros ?? HΔ. rewrite -wp_fupd. eapply wand_apply; first exact:wp_alloc.
   rewrite -always_and_sep_l. apply and_intro; first done.
-  rewrite into_laterN_env_sound; apply later_mono, forall_intro=> l;
-  apply forall_intro=> vl. apply wand_intro_l. rewrite -assoc.
+  rewrite into_laterN_env_sound; apply later_mono, forall_intro=> l.
+  apply forall_intro=>sz. apply forall_intro=> vl. apply wand_intro_l. rewrite -assoc.
   apply pure_elim_sep_l=> Hn. apply wand_elim_r'.
-  destruct (HΔ l vl) as (Δ''&?&HΔ'). done.
+  destruct (HΔ l _ vl) as (Δ''&?&HΔ'); first done.
   rewrite envs_app_sound //; simpl. by rewrite right_id HΔ' -fupd_intro.
 Qed.
 
@@ -233,7 +233,16 @@ Tactic Notation "wp_alloc" ident(l) ident(vl) "as" constr(H) constr(Hf) :=
     eapply tac_wp_alloc with _ H Hf;
       [try fast_done
       |apply _
-      |first [intros l vl ? | fail 1 "wp_alloc:" l "or" vl "not fresh"];
+      |let sz := fresh "sz" in let Hsz := fresh "Hsz" in
+       first [intros l sz vl Hsz | fail 1 "wp_alloc:" l "or" vl "not fresh"];
+       (* If Hsz is "constant Z = nat", change that to an equation on nat and
+          potentially substitute away the sz. *)
+       try (match goal with Hsz : ?x = _ |- _ => rewrite <-(Z2Nat.id x) in Hsz; last done end;
+            apply Nat2Z.inj in Hsz;
+            try (cbv [Z.to_nat Pos.to_nat] in Hsz;
+                 simpl in Hsz;
+                 (* Substitute only if we have a literal nat. *)
+                 match goal with Hsz : S _ = _ |- _ => subst sz end));
         eexists; split;
           [env_cbv; reflexivity || fail "wp_alloc:" H "or" Hf "not fresh"
           |wp_finish]]

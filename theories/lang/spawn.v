@@ -67,14 +67,9 @@ Lemma spawn_spec (Ψ : val → iProp Σ) e (f : val) :
     spawn [e] {{{ c, RET #c; join_handle c Ψ }}}.
 Proof.
   iIntros (<-%of_to_val Φ) "Hf HΦ". rewrite /spawn /=.
-  wp_let. wp_alloc l vl as "Hl" "H†". wp_let.
+  wp_let. wp_alloc l vl as "Hl" "H†". wp_let. inv_vec vl=>v0 v1.
   iMod (own_alloc (Excl ())) as (γf) "Hγf"; first done.
   iMod (own_alloc (Excl ())) as (γj) "Hγj"; first done.
-  (* TODO: maybe we should get vl as a vector here instead of a separate hypothesis for the length? *)
-  assert (2 = length vl)%nat as Hvl.
-  { apply Nat2Z.inj. done. }
-  destruct vl as [|v0 vl]; first done. destruct vl as [|v1 vl]; first done.
-  destruct vl; last done. clear H Hvl.
   rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
   iDestruct "Hl" as "[Hc Hd]". wp_write. clear v0.
   iMod (inv_alloc N _ (spawn_inv γf γj l Ψ) with "[Hc]") as "#?".

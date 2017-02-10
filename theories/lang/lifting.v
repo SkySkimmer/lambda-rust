@@ -40,16 +40,19 @@ Lemma wp_bindi {E e} Ki Φ :
      WP fill_item Ki e @ E {{ Φ }}.
 Proof. exact: weakestpre.wp_bind. Qed.
 
-Lemma wp_alloc E n:
+Lemma wp_alloc E (n : Z) :
   0 < n →
   {{{ True }}} Alloc (Lit $ LitInt n) @ E
-  {{{ l vl, RET LitV $ LitLoc l; ⌜n = length vl⌝ ∗ †l…(Z.to_nat n) ∗ l ↦∗ vl }}}.
+  {{{ l sz (vl : vec val sz), RET LitV $ LitLoc l; ⌜n = sz⌝ ∗ †l…(Z.to_nat n) ∗ l ↦∗ vl }}}.
 Proof.
   iIntros (? Φ) "HΦ". iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1) "Hσ !>"; iSplit; first by auto.
   iNext; iIntros (v2 σ2 efs Hstep); inv_head_step.
   iMod (heap_alloc with "Hσ") as "[Hσ Hl]"; [done..|].
-  iModIntro; iSplit=> //. iFrame. iApply "HΦ"; auto.
+  iModIntro; iSplit=> //. iFrame.
+  (* FIXME: Merging these two into one "iApply" doesn't work. *)
+  iSpecialize ("HΦ" $! _ (length init)). iApply ("HΦ" $! (list_to_vec init)).
+  rewrite vec_to_list_of_list. auto.
 Qed.
 
 Lemma wp_free E (n:Z) l vl :
