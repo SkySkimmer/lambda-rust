@@ -20,7 +20,7 @@ Section spawn.
     typed_instruction_ty [] [] [] spawn
         (fn([]; fn([] ; envty) → unit, envty) → unit).
   Proof. (* FIXME: typed_instruction_ty is not used for printing. *)
-    apply type_fn; [apply _..|]=>_ ret /= arg. inv_vec arg=>f env. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>- _ ret /= arg. inv_vec arg=>f env. simpl_subst.
     eapply type_deref; [solve_typing..|exact: read_own_move|done|].
     move=>f'. simpl_subst.
     eapply type_let with (T1 := [f' ◁ _; env ◁ _]%TC)

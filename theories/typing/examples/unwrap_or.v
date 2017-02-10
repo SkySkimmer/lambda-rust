@@ -15,7 +15,7 @@ Section unwrap_or.
     typed_instruction_ty [] [] [] (unwrap_or τ)
         (fn([]; Σ[unit; τ], τ) → τ).
   Proof.
-    apply type_fn; try apply _. move=> /= [] ret p. inv_vec p=>o def. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>- /= [] ret p. inv_vec p=>o def. simpl_subst.
     eapply type_case_own; [solve_typing..|]. constructor; last constructor; last constructor.
     + right. eapply type_delete; [solve_typing..|].
       eapply (type_jump [_]); solve_typing.

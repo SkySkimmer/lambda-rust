@@ -104,15 +104,14 @@ Lemma join_spec (Ψ : val → iProp Σ) c :
   {{{ join_handle c Ψ }}} join [ #c] {{{ v, RET v; Ψ v }}}.
 Proof.
   iIntros (Φ) "H HΦ". iDestruct "H" as (γf γj) "(Hj & H† & #?)".
-  iLöb as "IH". (* FIXME: Just wp_rec or even simpl unfolds the IH... *)
-  rewrite {1}(lock join). wp_rec.
+  iLöb as "IH". wp_rec.
   wp_bind (!ˢᶜ _)%E. iInv N as "[[_ >Hj']|Hinv]" "Hclose".
   { iExFalso. iCombine "Hj" "Hj'" as "Hj". iDestruct (own_valid with "Hj") as "%".
     auto. }
   iDestruct "Hinv" as (b) "[>Hc Ho]". wp_read. destruct b; last first.
   { iMod ("Hclose" with "[Hc]").
     - iNext. iRight. iExists _. iFrame.
-    - iModIntro. iApply wp_if. iNext. unlock. iApply ("IH" with "Hj H†").
+    - iModIntro. iApply wp_if. iNext. iApply ("IH" with "Hj H†").
       auto. }
   iDestruct "Ho" as (v) "(Hd & HΨ & Hf)".
   iMod ("Hclose" with "[Hj Hf]").

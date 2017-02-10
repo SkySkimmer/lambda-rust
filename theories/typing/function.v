@@ -274,9 +274,11 @@ Section typing.
       apply subst'_is_closed; last done. apply is_closed_of_val.
   Qed.
 
-  Lemma type_rec {A} E L E' fb (argsb : list binder) e
-        (tys : A → vec type (length argsb)) ty
+  Lemma type_rec {A} E L E' fb (argsb : list binder) ef e n
+        (tys : A → vec type n) ty
         T `{!CopyC T, !SendC T} :
+    ef = (funrec: fb argsb := e)%E →
+    n = length argsb →
     Closed (fb :b: "return" :b: argsb +b+ []) e →
     (∀ x (f : val) k (args : vec val (length argsb)),
         typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
@@ -284,9 +286,9 @@ Section typing.
                       zip_with (TCtx_hasty ∘ of_val) args
                                ((λ ty, box ty) <$> vec_to_list (tys x)) ++ T)
                    (subst_v (fb :: BNamed "return" :: argsb) (f ::: k ::: args) e)) →
-    typed_instruction_ty E L T (funrec: fb argsb := e) (fn E' tys ty).
+    typed_instruction_ty E L T ef (fn E' tys ty).
   Proof.
-    iIntros (Hc Hbody) "!# * #LFT $ $ $ #HT". iApply wp_value.
+    iIntros (-> -> Hc Hbody) "!# * #LFT $ $ $ #HT". iApply wp_value.
     { simpl. rewrite ->(decide_left Hc). done. }
     rewrite tctx_interp_singleton. iLöb as "IH". iExists _. iSplit.
     { simpl. rewrite decide_left. done. }
@@ -297,18 +299,20 @@ Section typing.
     by iApply sendc_change_tid.
   Qed.
 
-  Lemma type_fn {A} E L E' (argsb : list binder) e
-        (tys : A → vec type (length argsb)) ty
+  Lemma type_fn {A} E L E' (argsb : list binder) ef e n
+        (tys : A → vec type n) ty
         T `{!CopyC T, !SendC T} :
+    ef = (funrec: <> argsb := e)%E →
+    n = length argsb →
     Closed ("return" :b: argsb +b+ []) e →
     (∀ x k (args : vec val (length argsb)),
         typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
                    (zip_with (TCtx_hasty ∘ of_val) args
                              ((λ ty, box ty) <$> vec_to_list (tys x)) ++ T)
                    (subst_v (BNamed "return" :: argsb) (k ::: args) e)) →
-    typed_instruction_ty E L T (funrec: <> argsb := e) (fn E' tys ty).
+    typed_instruction_ty E L T ef (fn E' tys ty).
   Proof.
-    intros. apply type_rec; try done. intros. rewrite -typed_body_mono //=.
+    intros. eapply type_rec; try done. intros. rewrite -typed_body_mono //=.
     eapply contains_tctx_incl. by constructor.
   Qed.
 End typing.

@@ -19,7 +19,7 @@ Section rebor.
     typed_instruction_ty [] [] [] rebor
         (fn([]; Π[int; int], Π[int; int]) → int).
   Proof.
-    apply type_fn; try apply _. move=> /= [] ret p. inv_vec p=>t1 t2. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>- /= [] ret p. inv_vec p=>t1 t2. simpl_subst.
     eapply (type_newlft []). apply _. move=> α.
     eapply (type_letalloc_1 (&uniq{α}Π[int; int])); [solve_typing..|]=>x. simpl_subst.
     eapply type_deref; [solve_typing..|apply read_own_move|done|]=>x'. simpl_subst.

@@ -18,7 +18,7 @@ Section option_as_mut.
     typed_instruction_ty [] [] [] option_as_mut
         (fn(∀ α, [☀α]; &uniq{α} Σ[unit; τ]) → Σ[unit; &uniq{α}τ]).
   Proof.
-    apply type_fn; try apply _. move=> /= α ret p. inv_vec p=>o. simpl_subst.
+    eapply type_fn; [solve_typing..|]=> /= α ret p. inv_vec p=>o. simpl_subst.
     eapply (type_cont [_] [] (λ r, [o ◁ _; r!!!0 ◁ _])%TC) ; [solve_typing..| |].
     - intros k. simpl_subst.
       eapply type_deref; [solve_typing..|apply read_own_move|done|]=>o'. simpl_subst.

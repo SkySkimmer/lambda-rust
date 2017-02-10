@@ -46,7 +46,7 @@ Notation "e1 <- e2" := (Write Na1Ord e1%E e2%E)
   (at level 80) : expr_scope.
 Notation "'rec:' f xl := e" := (Rec f%RustB xl%RustB e%E)
   (at level 102, f, xl at level 1, e at level 200) : expr_scope.
-Notation "'rec:' f xl := e" := (RecV f%RustB xl%RustB e%E)
+Notation "'rec:' f xl := e" := (locked (RecV f%RustB xl%RustB e%E))
   (at level 102, f, xl at level 1, e at level 200) : val_scope.
 Notation "e1 +ₗ e2" := (BinOp OffsetOp e1%E e2%E)
   (at level 50, left associativity) : expr_scope.
@@ -58,8 +58,9 @@ notations are otherwise not pretty printed back accordingly. *)
 
 Notation "λ: xl , e" := (Lam xl%RustB e%E)
   (at level 102, xl at level 1, e at level 200) : expr_scope.
-Notation "λ: xl , e" := (LamV xl%RustB e%E)
+Notation "λ: xl , e" := (locked (LamV xl%RustB e%E))
   (at level 102, xl at level 1, e at level 200) : val_scope.
+(* RJ TODO: let the user pick the name of the return continuation. *)
 Notation "'funrec:' f xl := e" := (rec: f ("return"::xl) := e)%E
   (only parsing, at level 102, f, xl at level 1, e at level 200) : expr_scope.
 Notation "'funrec:' f xl := e" := (rec: f ("return"::xl) := e)%V

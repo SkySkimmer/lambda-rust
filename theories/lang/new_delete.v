@@ -7,13 +7,11 @@ Definition new : val :=
   λ: ["n"],
     if: "n" ≤ #0 then #((42%positive, 1337):loc)
     else Alloc "n".
-Global Opaque new.
 
 Definition delete : val :=
   λ: ["n"; "loc"],
     if: "n" ≤ #0 then #()
     else Free "n" "loc".
-Global Opaque delete.
 
 Section specs.
   Context `{lrustG Σ}.

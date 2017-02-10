@@ -1,6 +1,7 @@
 From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import fractional.
+From lrust.lang Require Import proofmode.
 From lrust.lifetime Require Import frac_borrow.
 Set Default Proof Using "Type".
 
@@ -451,6 +452,7 @@ Create HintDb lrust_typing discriminated.
 Create HintDb lrust_typing_merge discriminated.
 
 Hint Constructors Forall Forall2 elem_of_list : lrust_typing.
+Hint Resolve of_val_unlock : lrust_typing.
 Hint Resolve
      lctx_lft_incl_relf lctx_lft_incl_static lctx_lft_incl_local'
      lctx_lft_incl_external'

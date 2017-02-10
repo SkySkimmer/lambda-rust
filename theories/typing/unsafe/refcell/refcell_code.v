@@ -23,7 +23,7 @@ Section refcell_functions.
     typed_instruction_ty [] [] [] (refcell_new ty)
         (fn (λ _, []) (λ _, [# ty]) (λ _:(), refcell ty)).
   Proof.
-    apply type_fn; [apply _..|]. move=>/= _ ret arg. inv_vec arg=>x. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>-/= _ ret arg. inv_vec arg=>x. simpl_subst.
     eapply type_new; [solve_typing..|].
     iIntros (r) "!# * #LFT Hna HE HL Hk HT". simpl_subst.
     rewrite (Nat2Z.id (S ty.(ty_size))) tctx_interp_cons
@@ -58,7 +58,7 @@ Section refcell_functions.
     typed_instruction_ty [] [] [] (refcell_into_inner ty)
         (fn (λ _, []) (λ _, [# refcell ty]) (λ _:(), ty)).
   Proof.
-    apply type_fn; [apply _..|]. move=>/= _ ret arg. inv_vec arg=>x. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>- /= _ ret arg. inv_vec arg=>x. simpl_subst.
     eapply type_new; [solve_typing..|].
     iIntros (r) "!# * #LFT Hna HE HL Hk HT". simpl_subst.
     rewrite (Nat2Z.id (ty.(ty_size))) tctx_interp_cons
@@ -91,7 +91,7 @@ Section refcell_functions.
     typed_instruction_ty [] [] [] refcell_get_mut
         (fn (λ α, [☀α])%EL (λ α, [# &uniq{α} (refcell ty)])%T (λ α, &uniq{α} ty)%T).
   Proof.
-    apply type_fn; [apply _..|]. move=>/= α ret arg. inv_vec arg=>x. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>- /= α ret arg. inv_vec arg=>x. simpl_subst.
     eapply type_deref; [solve_typing..|by eapply read_own_move|done|]=>x'. simpl_subst.
     iIntros "!# * #LFT Hna HE HL HC HT".
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
@@ -140,7 +140,7 @@ Section refcell_functions.
     typed_instruction_ty [] [] [] refcell_try_borrow
         (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(refcell ty)]%T) (λ α, Σ[ref α ty; unit])%T).
   Proof.
-    apply type_fn; [apply _..|]. move=>/= α ret arg. inv_vec arg=>x. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>- /= α ret arg. inv_vec arg=>x. simpl_subst.
     eapply (type_cont [_] [] (λ r, [x ◁ box (&shr{α} refcell ty);
                                     r!!!0 ◁ box Σ[ref α ty; unit]])%TC);
       [solve_typing..|intros k|move=>/= k arg; inv_vec arg=>r]; simpl_subst; last first.
@@ -245,7 +245,7 @@ Section refcell_functions.
     typed_instruction_ty [] [] [] refcell_try_borrow_mut
         (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(refcell ty)]%T) (λ α, Σ[refmut α ty; unit])%T).
   Proof.
-    apply type_fn; [apply _..|]. move=>/= α ret arg. inv_vec arg=>x. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>- /= α ret arg. inv_vec arg=>x. simpl_subst.
     eapply (type_cont [_] [] (λ r, [x ◁ box (&shr{α} refcell ty);
                                     r!!!0 ◁ box Σ[refmut α ty; unit]])%TC);
       [solve_typing..|intros k|move=>/= k arg; inv_vec arg=>r]; simpl_subst; last first.

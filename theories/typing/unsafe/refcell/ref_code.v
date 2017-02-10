@@ -59,7 +59,7 @@ Section ref_functions.
       (fn (fun '(α, β) => [☀α; ☀β])%EL (fun '(α, β) => [# &shr{α}(ref β ty)]%T)
                                        (fun '(α, β) => ref β ty)%T).
   Proof.
-    apply type_fn; [apply _..|]. move=>/= [α β] ret arg. inv_vec arg=>x. simpl_subst.
+    eapply type_fn; [solve_typing..|]. move=>/= [α β] ret arg. inv_vec arg=>x. simpl_subst.
     eapply type_deref; [solve_typing..|by apply read_own_move|done|]=>x'.
     iIntros "!# * #LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
@@ -124,7 +124,7 @@ Section ref_functions.
           (fun '(α, β) => [# &shr{α}(ref β ty)]%T)
           (fun '(α, β) => &shr{α}ty)%T).
   Proof.
-    apply type_fn; [apply _..|]. move=>/= [α β] ret arg. inv_vec arg=>x. simpl_subst.
+    eapply type_fn; [solve_typing..|]. move=>/= [α β] ret arg. inv_vec arg=>x. simpl_subst.
     eapply type_deref; [solve_typing..|by apply read_own_move|done|]=>x'.
     iIntros "!# * #LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
@@ -162,7 +162,7 @@ Section ref_functions.
     typed_instruction_ty [] [] [] ref_drop
       (fn (fun α => [☀α])%EL (fun α => [# ref α ty])  (fun α => unit)).
   Proof.
-    apply type_fn; [apply _..|]. move=>/= α ret arg. inv_vec arg=>x. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>- /= α ret arg. inv_vec arg=>x. simpl_subst.
     iIntros "!# * #LFT Hna Hα HL Hk Hx".
     rewrite {1}/elctx_interp big_sepL_singleton tctx_interp_singleton tctx_hasty_val.
     destruct x as [[|lx|]|]; try iDestruct "Hx" as "[]". iDestruct "Hx" as "[Hx Hx†]".

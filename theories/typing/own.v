@@ -41,6 +41,7 @@ Section own.
       rewrite /= -Qcmult_plus_distr_l -Z2Qc_inj_add /Z.add. do 3 f_equal. lia.
   Qed.
 
+  (* Make sure 'simpl' doesn't unfold. *)
   Global Opaque freeable_sz.
 
   Program Definition own_ptr (n : nat) (ty : type) :=
@@ -121,7 +122,7 @@ Section own.
   Proof. intros. by apply own_mono. Qed.
   Global Instance own_proper E L :
     Proper (ctx_eq E L ==> eqtype E L ==> eqtype E L) own_ptr.
-  Proof. intros ?? ??? Heq. split; f_equiv; try done; apply Heq. Qed.
+  Proof. intros ??? ??[]; split; by apply own_mono. Qed.
   Lemma own_proper' E L n1 n2 ty1 ty2 :
     ctx_eq E L n1 n2 → eqtype E L ty1 ty2 →
     eqtype E L (own_ptr n1 ty1) (own_ptr n2 ty2).
@@ -282,14 +283,14 @@ Section typing.
   Proof.
     intros. eapply type_new.
     - rewrite /Closed /=. rewrite !andb_True.
-      eauto 100 using is_closed_weaken with set_solver.
+      eauto 10 using is_closed_of_val, is_closed_weaken with set_solver.
     - lia.
     - move=>xv /=.
       assert (subst x xv (x <-{ty.(ty_size)} !p ;; e)%E =
               (xv <-{ty.(ty_size)} !p ;; subst x xv e)%E) as ->.
       { (* TODO : simpl_subst should be able to do this. *)
         unfold subst=>/=. repeat f_equal.
-        - eapply (is_closed_subst []). done. set_solver.
+        - eapply (is_closed_subst []). apply is_closed_of_val. set_solver.
         - by rewrite bool_decide_true.
         - eapply is_closed_subst. done. set_solver. }
       rewrite Nat2Z.id. eapply type_memcpy.

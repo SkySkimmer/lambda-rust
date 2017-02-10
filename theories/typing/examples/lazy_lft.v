@@ -20,7 +20,7 @@ Section lazy_lft.
     typed_instruction_ty [] [] [] lazy_lft
         (fn([]) → unit).
   Proof.
-    apply type_fn; try apply _. move=> /= [] ret p. inv_vec p. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>- /= [] ret p. inv_vec p. simpl_subst.
     eapply (type_newlft []); [solve_typing|]=>α.
     eapply (type_new_subtype (Π[uninit 1;uninit 1])); [solve_typing..|].
       intros t. simpl_subst.

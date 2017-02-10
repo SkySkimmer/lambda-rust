@@ -14,7 +14,7 @@ Section unbox.
     typed_instruction_ty [] [] [] unbox
         (fn(∀ α, [☀α]; &uniq{α}box (Π[int; int])) → &uniq{α} int).
   Proof.
-    apply type_fn; try apply _. move=> /= α ret b. inv_vec b=>b. simpl_subst.
+    eapply type_fn; [solve_typing..|]=> /= α ret b. inv_vec b=>b. simpl_subst.
     eapply type_deref; [solve_typing..|by apply read_own_move|done|].
     intros b'; simpl_subst.
     eapply type_deref_uniq_own; [solve_typing..|]=>bx; simpl_subst.

@@ -17,7 +17,7 @@ Section get_x.
      and without using 'typed_instruction_ty'.  I think that's related to
      the list notation that we added to %TC. *)
   Proof.
-    apply type_fn; try apply _. move=> /= α ret p. inv_vec p=>p. simpl_subst.
+    eapply type_fn; [solve_typing..|]=> /= α ret p. inv_vec p=>p. simpl_subst.
     eapply type_deref; [solve_typing..|by apply read_own_move|done|].
       intros p'; simpl_subst.
     eapply (type_letalloc_1 (&shr{α}int)); [solve_typing..|]=>r. simpl_subst.

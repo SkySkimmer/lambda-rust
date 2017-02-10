@@ -8,7 +8,6 @@ Definition memcpy : val :=
     if: "len" ≤ #0 then #()
     else "dst" <- !"src";;
          "memcpy" ["dst" +ₗ #1 ; "len" - #1 ; "src" +ₗ #1].
-Global Opaque memcpy.
 
 Notation "e1 <-{ n } ! e2" :=
   (memcpy (@cons expr e1%E

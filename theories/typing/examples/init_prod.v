@@ -15,7 +15,7 @@ Section init_prod.
     typed_instruction_ty [] [] [] init_prod
         (fn([]; int, int) → Π[int;int]).
   Proof.
-    apply type_fn; try apply _. move=> /= [] ret p. inv_vec p=>x y. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>- /= [] ret p. inv_vec p=>x y. simpl_subst.
     eapply type_deref; [solve_typing..|apply read_own_move|done|]=>x'. simpl_subst.
     eapply type_deref; [solve_typing..|apply read_own_move|done|]=>y'. simpl_subst.
     eapply (type_new_subtype (Π[uninit 1; uninit 1])); [solve_typing..|].

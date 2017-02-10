@@ -83,7 +83,7 @@ Section typing.
     typed_instruction_ty [] [] [] cell_new
         (fn([]; ty) → cell ty).
   Proof.
-    apply type_fn; [apply _..|]. move=>/= _ ret arg. inv_vec arg=>x. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>- /= _ ret arg. inv_vec arg=>x. simpl_subst.
     eapply (type_jump [_]); first solve_typing.
     iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
@@ -95,7 +95,7 @@ Section typing.
     typed_instruction_ty [] [] [] cell_into_inner
         (fn([]; cell ty) → ty).
   Proof.
-    apply type_fn; [apply _..|]. move=>/= _ ret arg. inv_vec arg=>x. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>-/= _ ret arg. inv_vec arg=>x. simpl_subst.
     eapply (type_jump [_]); first solve_typing.
     iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
@@ -107,7 +107,7 @@ Section typing.
     typed_instruction_ty [] [] [] cell_get_mut
       (fn(∀ α, [☀α]; &uniq{α} (cell ty)) → &uniq{α} ty).
   Proof.
-    apply type_fn; [apply _..|]. move=>/= α ret arg. inv_vec arg=>x. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>- /= α ret arg. inv_vec arg=>x. simpl_subst.
     eapply (type_jump [_]). solve_typing. rewrite /tctx_incl /=.
     iIntros (???) "_ $$". rewrite !tctx_interp_singleton /tctx_elt_interp /=.
     by iIntros "$".
@@ -124,7 +124,7 @@ Section typing.
     typed_instruction_ty [] [] [] (cell_get ty)
         (fn(∀ α, [☀α]; &shr{α} (cell ty)) → ty).
   Proof.
-    apply type_fn; [apply _..|]. move=>/= α ret arg. inv_vec arg=>x. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>- /= α ret arg. inv_vec arg=>x. simpl_subst.
     eapply type_deref; [solve_typing..|apply read_own_move|done|]=>x'. simpl_subst.
     eapply type_letalloc_n; [solve_typing..| |solve_typing|intros r; simpl_subst].
     { apply (read_shr _ _ _ (cell ty)); solve_typing. }
@@ -144,7 +144,7 @@ Section typing.
     typed_instruction_ty [] [] [] (cell_set ty)
         (fn(∀ α, [☀α]; &shr{α} cell ty, ty) → unit).
   Proof.
-    apply type_fn; try apply _. move=> /= α ret arg. inv_vec arg=>c x. simpl_subst.
+    eapply type_fn; [solve_typing..|]=>- /= α ret arg. inv_vec arg=>c x. simpl_subst.
     eapply type_deref; [solve_typing..|by apply read_own_move|done|].
     intros d. simpl_subst.
     eapply type_let with (T1 := [d ◁ _; x ◁ _]%TC)
