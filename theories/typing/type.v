@@ -341,7 +341,6 @@ Section subtyping.
   Lemma type_incl_trans ty1 ty2 ty3 :
     type_incl ty1 ty2 -∗ type_incl ty2 ty3 -∗ type_incl ty1 ty3.
   Proof.
-    (* TODO: this iIntros takes suspiciously long. *)
     iIntros "(% & #Ho12 & #Hs12) (% & #Ho23 & #Hs23)".
     iSplit; first (iPureIntro; etrans; done).
     iSplit; iAlways; iIntros.
@@ -462,12 +461,11 @@ Section weakening.
     E1 ⊆+ E2 → L1 ⊆+ L2 →
     subtype E1 L1 ty1 ty2 → subtype E2 L2 ty1 ty2.
   Proof.
-    (* TODO: There's no lemma relating `contains` to membership (∈)...?? *)
-    iIntros (HE12 [L' HL12]%submseteq_Permutation Hsub) "#LFT HE HL".
+    iIntros (HE12 ? Hsub) "#LFT HE HL".
     iApply (Hsub with "LFT [HE] [HL]").
     - rewrite /elctx_interp_0. by iApply big_sepL_submseteq.
     - iDestruct "HL" as %HL. iPureIntro. intros ??. apply HL.
-      rewrite HL12. set_solver.
+      eauto using elem_of_submseteq.
   Qed.
 End weakening.
 
