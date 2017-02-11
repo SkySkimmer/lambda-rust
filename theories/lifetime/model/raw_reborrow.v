@@ -40,8 +40,7 @@ Proof.
   iMod (slice_empty with "Hislice Hbox") as "[HP Hbox]"; first done.
   { by rewrite lookup_fmap HB. }
   iMod (own_bor_update_2 with "HB● Hi") as "[HB● Hi]".
-  { eapply auth_update. (* FIXME: eapply singleton_local_update loops. *)
-    apply: singleton_local_update; last eapply
+  { eapply auth_update, singleton_local_update; last eapply
      (exclusive_local_update _ (1%Qp, to_agree (Bor_rebor κ'))); last done.
     rewrite /to_borUR lookup_fmap. by rewrite HB. }
   iAssert (▷?q lft_inv A κ)%I with "[H◯ HB● HB Hvs' Hinh' Hbox]" as "Hκ".

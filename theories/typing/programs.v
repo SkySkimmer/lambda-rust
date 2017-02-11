@@ -262,9 +262,8 @@ Section typing_rules.
   Proof.
     iIntros (Hsz Hwrt Hread) "!#". iIntros (tid qE) "#LFT Htl HE HL HT".
     iApply (type_memcpy_iris with "[] [] [$LFT $Htl $HE $HL HT]"); try done.
-    (* TODO: This is kind of silly, why can't I iApply the assumptions directly? *)
-    { iPoseProof Hwrt as "Hwrt". done. }
-    { iPoseProof Hread as "Hread". done. }
+    { iApply Hwrt. }
+    { iApply Hread. }
     { by rewrite tctx_interp_cons tctx_interp_singleton. }
     rewrite tctx_interp_cons tctx_interp_singleton. auto.
   Qed.

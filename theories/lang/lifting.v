@@ -51,8 +51,7 @@ Proof.
   iNext; iIntros (v2 σ2 efs Hstep); inv_head_step.
   iMod (heap_alloc with "Hσ") as "[Hσ Hl]"; [done..|].
   iModIntro; iSplit=> //. iFrame.
-  (* FIXME: Merging these two into one "iApply" doesn't work. *)
-  iSpecialize ("HΦ" $! _ (length init)). iApply ("HΦ" $! (list_to_vec init)).
+  iApply ("HΦ" $! _ _ (list_to_vec init)).
   rewrite vec_to_list_of_list. auto.
 Qed.
 

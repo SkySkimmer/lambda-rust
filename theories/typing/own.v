@@ -155,8 +155,7 @@ Section own.
     iIntros (Hsync κ tid1 tid2 l) "H". iDestruct "H" as (l') "[Hm #Hshr]".
     iExists _. iFrame "Hm". iAlways. iIntros (F q) "% Htok".
     iMod ("Hshr" with "[] Htok") as "Hfin"; first done. iModIntro. iNext.
-    iClear "Hshr". (* FIXME: Using "{HShr} [HShr $]" for the intro pattern in the following line doesn't work. *)
-    iMod "Hfin" as "[Hshr $]". by iApply Hsync.
+    iMod "Hfin" as "{Hshr} [Hshr $]". by iApply Hsync.
   Qed.
 End own.
 
@@ -225,9 +224,7 @@ Section typing.
     typed_body E L C T (let: x := new [ #n ] in e).
   Proof.
     intros ???? Htyp. eapply type_let. done. by apply type_new_instr. solve_typing.
-    iIntros (v). iApply typed_body_mono; [done| |done|].
-    (* FIXME : why can't we iApply Htyp? *)
-    2:by iDestruct (Htyp v) as "$".
+    iIntros (v). iApply typed_body_mono; [done| |done|by iApply (Htyp v)].
     by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl, own_mono.
   Qed.
 

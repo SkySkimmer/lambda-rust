@@ -155,11 +155,7 @@ Section type_context.
 
   Global Instance tctx_ty_copy T p ty :
     CopyC T → Copy ty → CopyC ((p ◁ ty) :: T).
-  Proof.
-    (* TODO RJ: Should we have instances that PersistentP respects equiv? *)
-    intros ???. rewrite /PersistentP tctx_interp_cons.
-    apply uPred.sep_persistent; by apply _.
-  Qed.
+  Proof. intros ???. rewrite tctx_interp_cons. apply _. Qed.
 
   (** Send typing contexts *)
   Class SendC (T : tctx) :=

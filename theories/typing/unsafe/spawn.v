@@ -23,14 +23,8 @@ Section join_handle.
          end%I;
        ty_shr κ tid l := True%I |}.
   Next Obligation. by iIntros (ty tid [|[[]|][]]) "H"; try iDestruct "H" as "[]". Qed.
-  Next Obligation.
-    (* FIXME: Replacing the % by a _ below fails. *)
-    iIntros "* % _ _ $". auto.
-  Qed.
-  Next Obligation.
-    (* FIXME: for some reason, `iIntros "*" does not do anything here. *)
-    iIntros (?) "* _ _ _". auto.
-  Qed.
+  Next Obligation. iIntros "* _ _ _ $". auto. Qed.
+  Next Obligation. iIntros (?) "**"; auto. Qed.
 
   Lemma join_handle_subtype ty1 ty2 :
     type_incl ty1 ty2 -∗ type_incl (join_handle ty1) (join_handle ty2).
