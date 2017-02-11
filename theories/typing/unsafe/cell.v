@@ -6,6 +6,10 @@ From lrust.typing Require Export type.
 From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
+(* TODO: Some changes have recently landed in Rust adding
+   more operations to Cell for non-Copy types. We should make
+   sure we got them all covered. *)
+
 Section cell.
   Context `{typeG Σ}.
   Local Hint Extern 1000 (_ ⊆ _) => set_solver : ndisj.
