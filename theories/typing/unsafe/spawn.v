@@ -89,4 +89,28 @@ Section spawn.
     eapply type_delete; [solve_typing..|].
     eapply (type_jump [_]); solve_typing.
   Qed.
+
+  Definition join : val :=
+    funrec: <> ["c"] :=
+      let: "c'" := !"c" in
+      let: "r" := join ["c'"] in
+      delete [ #1; "c"];; "return" ["r"].
+
+  Lemma join_type retty :
+    typed_instruction_ty [] [] [] join
+        (fn([]; join_handle retty) → retty).
+  Proof.
+    eapply type_fn; [solve_typing..|]=>- _ ret /= arg. inv_vec arg=>c. simpl_subst.
+    eapply type_deref; [solve_typing..|exact: read_own_move|done|]. move=>c'; simpl_subst.
+    eapply type_let with (T1 := [c' ◁ _]%TC)
+                         (T2 := λ r, [r ◁ box retty]%TC); try solve_typing; [|].
+    { iAlways. iIntros (tid qE) "#LFT $ $ $".
+      rewrite tctx_interp_singleton tctx_hasty_val. iIntros "Hc'".
+      destruct c' as [[|c'|]|]; try by iDestruct "Hc'" as "[]".
+      iApply (join_spec with "Hc'"). iIntros "!> * Hret".
+      rewrite tctx_interp_singleton tctx_hasty_val. auto. }
+    move=>r; simpl_subst.
+    eapply type_delete; [solve_typing..|].
+    eapply (type_jump [_]); solve_typing.
+  Qed.
 End spawn.
