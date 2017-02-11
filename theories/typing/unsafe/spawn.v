@@ -17,7 +17,8 @@ Section join_handle.
     {| ty_size := 1;
        ty_own tid vl :=
          match vl return _ with
-         | [ #(LitLoc l) ] => join_handle spawnN l (join_inv ty tid)
+         | [ #(LitLoc l) ] =>
+           ∃ ty', type_incl ty' ty ∗ join_handle spawnN l (join_inv ty' tid)
          | _ => False
          end%I;
        ty_shr κ tid l := True%I |}.
@@ -31,14 +32,26 @@ Section join_handle.
     iIntros (?) "* _ _ _". auto.
   Qed.
 
-  (* TODO: figure out whether Rust considers this a pointer type,
-     and whether it allows subtyping. *)
+  Global Instance join_handle_mono E L :
+    Proper (subtype E L ==> subtype E L) join_handle.
+  Proof.
+    iIntros (ty1 ty2 Hsub) "#? #? #?". iSplit; last iSplit; first done.
+    - iIntros "!# * Hvl". destruct vl as [|[[|vl|]|] [|]]; try by iDestruct "Hvl" as "[]".
+      iDestruct "Hvl" as (ty) "[Hincl ?]". iExists ty. iFrame.
+      iApply (type_incl_trans with "Hincl").
+      iDestruct (Hsub with "[] [] []") as "$"; done.
+    - iIntros "!# * _". auto.
+  Qed.
+
+  Global Instance join_handle_proper E L :
+    Proper (eqtype E L ==> eqtype E L) join_handle.
+  Proof. intros ??[]. by split; apply join_handle_mono. Qed.
+
+  (* TODO: Show that the type is contractive. *)
 End join_handle.
 
 Section spawn.
   Context `{!typeG Σ, !spawnG Σ}.
-
-  Definition thread_cont : val := λ: [<>], #().
 
   Definition spawn : val :=
     funrec: <> ["f"; "env"] :=
@@ -62,7 +75,8 @@ Section spawn.
       iAlways. iIntros (tid qE) "#LFT $ $ $".
       rewrite tctx_interp_cons tctx_interp_singleton.
       iIntros "[Hf' Henv]". iApply (spawn_spec _ (join_inv retty tid) with "[-]"); first solve_to_val; last first; last simpl_subst.
-      { iIntros "!> *". rewrite tctx_interp_singleton tctx_hasty_val. auto. }
+      { iIntros "!> *". rewrite tctx_interp_singleton tctx_hasty_val.
+        iIntros "?". iExists retty. iFrame. iApply type_incl_refl. }
       iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let.
       (* FIXME this is horrible. *)
       assert (Hcall := type_call' [] [] (λ _:(), []) [] f' [env:expr]
@@ -107,8 +121,12 @@ Section spawn.
     { iAlways. iIntros (tid qE) "#LFT $ $ $".
       rewrite tctx_interp_singleton tctx_hasty_val. iIntros "Hc'".
       destruct c' as [[|c'|]|]; try by iDestruct "Hc'" as "[]".
+      iDestruct "Hc'" as (ty') "[#Hsub Hc']".
       iApply (join_spec with "Hc'"). iIntros "!> * Hret".
-      rewrite tctx_interp_singleton tctx_hasty_val. auto. }
+      rewrite tctx_interp_singleton tctx_hasty_val.
+      iPoseProof "Hsub" as "Hsz". iDestruct "Hsz" as "[% _]".
+      iDestruct (own_type_incl with "Hsub") as "(_ & Hincl & _)".
+      iApply "Hincl". rewrite -H. done. }
     move=>r; simpl_subst.
     eapply type_delete; [solve_typing..|].
     eapply (type_jump [_]); solve_typing.

@@ -98,23 +98,26 @@ Section own.
     by iApply (ty.(ty_shr_mono) with "LFT Hκ").
   Qed.
 
-  Global Instance own_mono E L :
-    Proper (ctx_eq E L ==> subtype E L ==> subtype E L) own_ptr.
+  Lemma own_type_incl n ty1 ty2 :
+    type_incl ty1 ty2 -∗ type_incl (own_ptr n ty1) (own_ptr n ty2).
   Proof.
-    intros n1 n2 Hn12 ty1 ty2 Hincl. iIntros. iSplit; first done.
-    iDestruct (Hincl with "[] [] []") as "(_ & #Ho & #Hs)"; [done..|clear Hincl].
-    iSplit; iAlways.
+    iIntros "(#Hsz & #Ho & #Hs)". iSplit; first done. iSplit; iAlways.
     - iIntros (?[|[[| |]|][]]) "H"; try iDestruct "H" as "[]". simpl.
       iDestruct "H" as "[Hmt H†]". iDestruct "Hmt" as (vl') "[Hmt Hown]". iNext.
-      iDestruct (ty_size_eq with "Hown") as %<-.
-      iDestruct ("Ho" with "Hown") as "Hown".
-      iDestruct (ty_size_eq with "Hown") as %<-.
-      iDestruct (Hn12 with "[] [] []") as %->; [done..|]. iFrame.
-      iExists _. by iFrame.
+      iDestruct ("Ho" with "Hown") as "Hown". iDestruct ("Hsz") as %<-.
+      iFrame. iExists _. iFrame.
     - iIntros (???) "H". iDestruct "H" as (l') "[Hfb #Hvs]".
       iExists l'. iFrame. iIntros "!#". iIntros (F' q) "% Htok".
       iMod ("Hvs" with "[%] Htok") as "Hvs'". done. iModIntro. iNext.
       iMod "Hvs'" as "[Hshr $]". iApply ("Hs" with "Hshr").
+  Qed.
+
+  Global Instance own_mono E L :
+    Proper (ctx_eq E L ==> subtype E L ==> subtype E L) own_ptr.
+  Proof.
+    intros n1 n2 Hn12 ty1 ty2 Hincl. iIntros.
+    iDestruct (Hn12 with "[] [] []") as %->; [done..|].
+    iApply own_type_incl. iApply Hincl; done.
   Qed.
   Lemma own_mono' E L n1 n2 ty1 ty2 :
     ctx_eq E L n1 n2 → subtype E L ty1 ty2 →
