@@ -1,4 +1,4 @@
-From lrust.lang Require Export derived.
+From lrust.lang Require Export lang.
 Set Default Proof Using "Type".
 
 Coercion LitInt : Z >-> base_lit.

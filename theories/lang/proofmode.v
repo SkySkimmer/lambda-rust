@@ -2,7 +2,7 @@ From iris.base_logic Require Import namespaces.
 From iris.program_logic Require Export weakestpre.
 From iris.proofmode Require Import coq_tactics.
 From iris.proofmode Require Export tactics.
-From lrust.lang Require Export tactics derived heap.
+From lrust.lang Require Export tactics lifting.
 Set Default Proof Using "Type".
 Import uPred.
 

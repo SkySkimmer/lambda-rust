@@ -14,7 +14,6 @@ theories/lifetime/shr_borrow.v
 theories/lifetime/frac_borrow.v
 theories/lifetime/na_borrow.v
 theories/lang/adequacy.v
-theories/lang/derived.v
 theories/lang/heap.v
 theories/lang/lang.v
 theories/lang/lifting.v

@@ -614,3 +614,16 @@ Proof.
     + destruct (of_val <$> vl); last done. destruct (fill K e'); done.
   - by eapply stuck_not_head_step.
 Qed.
+
+(* Define some derived forms *)
+Notation Lam xl e := (Rec BAnon xl e).
+Notation Let x e1 e2 := (App (Lam [x] e2) [e1]).
+Notation Seq e1 e2 := (Let BAnon e1 e2).
+Notation LamV xl e := (RecV BAnon xl e).
+Notation LetCtx x e2 := (AppRCtx (LamV [x] e2) [] []).
+Notation SeqCtx e2 := (LetCtx BAnon e2).
+Notation Skip := (Seq (Lit LitUnit) (Lit LitUnit)).
+Coercion lit_of_bool : bool >-> base_lit.
+Notation If e0 e1 e2 := (Case e0 [e2;e1]).
+Notation Newlft := (Lit LitUnit) (only parsing).
+Notation Endlft := Skip (only parsing).
