@@ -353,6 +353,7 @@ Section subtyping.
 
   Definition subtype (ty1 ty2 : type) : Prop :=
     lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗ type_incl ty1 ty2.
+  (* TODO RJ: I'd really like to get rid of this definition. *)
   Definition ctx_eq {A} (x1 x2 : A) : Prop :=
     lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗ ⌜x1 = x2⌝.
 

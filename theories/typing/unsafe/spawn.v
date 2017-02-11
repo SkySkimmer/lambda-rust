@@ -32,17 +32,22 @@ Section join_handle.
     iIntros (?) "* _ _ _". auto.
   Qed.
 
+  Lemma join_handle_subtype ty1 ty2 :
+    type_incl ty1 ty2 -∗ type_incl (join_handle ty1) (join_handle ty2).
+  Proof.
+    iIntros "#Hincl". iSplit; first done. iSplit; iAlways.
+    - iIntros "* Hvl". destruct vl as [|[[|vl|]|] [|]]; try by iDestruct "Hvl" as "[]".
+      iDestruct "Hvl" as (ty) "[Hincl' ?]". iExists ty. iFrame.
+      iApply (type_incl_trans with "Hincl'"). done.
+    - iIntros "* _". auto.
+  Qed.
+
   Global Instance join_handle_mono E L :
     Proper (subtype E L ==> subtype E L) join_handle.
   Proof.
-    iIntros (ty1 ty2 Hsub) "#? #? #?". iSplit; last iSplit; first done.
-    - iIntros "!# * Hvl". destruct vl as [|[[|vl|]|] [|]]; try by iDestruct "Hvl" as "[]".
-      iDestruct "Hvl" as (ty) "[Hincl ?]". iExists ty. iFrame.
-      iApply (type_incl_trans with "Hincl").
-      iDestruct (Hsub with "[] [] []") as "$"; done.
-    - iIntros "!# * _". auto.
+    iIntros (ty1 ty2 Hsub) "#? #? #?". iApply join_handle_subtype.
+    iApply Hsub; done.
   Qed.
-
   Global Instance join_handle_proper E L :
     Proper (eqtype E L ==> eqtype E L) join_handle.
   Proof. intros ??[]. by split; apply join_handle_mono. Qed.
