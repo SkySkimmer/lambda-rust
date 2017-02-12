@@ -24,7 +24,7 @@ Section product_split.
     intros Hp.
     revert off1 off2; induction tyl; intros off1 off2; simpl; first done.
     rewrite !tctx_interp_cons. f_equiv; last first.
-    { rewrite IHtyl plus_assoc. done. } (* FIXME RJ: Using assoc, even with a pattern, is pretty slow here. *)
+    { by rewrite IHtyl assoc_L. }
     apply tctx_elt_interp_hasty_path. clear Hp. simpl.
     clear. destruct (eval_path p); last done. destruct v; try done.
     destruct l; try done. rewrite shift_loc_assoc Nat2Z.inj_add //.
