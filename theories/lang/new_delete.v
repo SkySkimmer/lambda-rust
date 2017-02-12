@@ -25,9 +25,7 @@ Section specs.
     iIntros (? Φ) "HΦ". wp_lam. wp_op; intros ?.
     - wp_if. assert (n = 0) as -> by lia. iApply ("HΦ" $! _ []).
       rewrite heap_mapsto_vec_nil. auto.
-    - wp_if. wp_alloc l vl as "H↦" "H†".
-      (* FIXME: I have to state the coercion vec_to_list explicitly here. *)
-      iApply ("HΦ" $! _ (vec_to_list vl)).
+    - wp_if. wp_alloc l vl as "H↦" "H†". iApply ("HΦ" $! _ vl).
       rewrite vec_to_list_length -{2}Hsz Z2Nat.id //. iFrame. auto.
   Qed.
 
