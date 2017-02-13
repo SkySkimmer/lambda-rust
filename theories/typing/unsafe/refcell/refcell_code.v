@@ -38,12 +38,13 @@ Section refcell_functions.
     rewrite shift_loc_0. wp_write. wp_op. iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
     wp_bind (_ <-{_} !_)%E. iApply (wp_memcpy with "[$Hr↦1 $Hx↦]"); [done||lia..|].
     iIntros "!> [Hr↦1 Hx↦]". wp_seq.
-    iApply (type_delete _ _ [ #lx ◁ box (uninit (ty_size ty)); #lr ◁ box (refcell ty)]%TC
-        with "LFT Hna HE HL Hk [-]"); [solve_typing..| |]; last first.
+    iApply (type_type _ _ _ [ #lx ◁ box (uninit (ty_size ty)); #lr ◁ box (refcell ty)]%TC
+        with "LFT Hna HE HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //=. iFrame.
       iSplitL "Hx↦".
       - iExists _. rewrite uninit_own. auto.
       - iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame. auto. }
+    eapply type_delete; [solve_typing..|].
     eapply (type_jump [ #_]); solve_typing.
   Qed.
 

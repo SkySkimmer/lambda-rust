@@ -275,8 +275,8 @@ Section typing.
 
   Lemma type_letalloc_n {E L} ty ty1 ty2 C T T' (x : string) p e :
     Closed [] p → Closed (x :b: []) e →
-    typed_read E L ty1 ty ty2 →
     tctx_extract_hasty E L p ty1 T T' →
+    typed_read E L ty1 ty ty2 →
     (∀ (v : val),
         typed_body E L C ((v ◁ own_ptr (ty.(ty_size)) ty)::(p ◁ ty2)::T') (subst x v e)) →
     typed_body E L C T (letalloc: x <-{ty.(ty_size)} !p in e).

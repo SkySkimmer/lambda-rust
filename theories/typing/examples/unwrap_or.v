@@ -19,7 +19,7 @@ Section unwrap_or.
     eapply type_case_own; [solve_typing..|]. constructor; last constructor; last constructor.
     + right. eapply type_delete; [solve_typing..|].
       eapply (type_jump [_]); solve_typing.
-    + left. eapply type_letalloc_n; [solve_typing..|by apply read_own_move|solve_typing|]=>r.
+    + left. eapply type_letalloc_n; [solve_typing..|by apply read_own_move|]=>r.
         simpl_subst.
       eapply (type_delete (Π[uninit _;uninit _;uninit _])); [solve_typing..|].
       eapply type_delete; [solve_typing..|].

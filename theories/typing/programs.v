@@ -85,6 +85,12 @@ Notation typed_instruction_ty E L T1 e ty :=
 Section typing_rules.
   Context `{typeG Σ}.
 
+  (* This lemma is helpful when switching from proving unsafe code in Iris
+     back to proving it in the type system. *)
+  Lemma type_type E L C T e :
+    typed_body E L C T e → typed_body E L C T e.
+  Proof. done. Qed.
+
   (* TODO: notation scopes need tuing to avoid the %list here. *)
   (* TODO: Proof a version of this that substitutes into a compatible context...
      if we really want to do that. *)
