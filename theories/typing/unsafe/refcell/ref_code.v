@@ -99,12 +99,13 @@ Section ref_functions.
     iMod ("Hcloseβ" with "Hδ") as "Hβ". iMod ("Hcloseα1" with "[$H↦]") as "Hα1".
     iAssert (elctx_interp [☀ α; ☀ β] qE) with "[Hα1 Hα2 Hβ]" as "HE".
     { rewrite /elctx_interp big_sepL_cons big_sepL_singleton. iFrame. }
-    iApply (type_delete _ _
+    iApply (type_type _ _ _
         [ x ◁ box (uninit 1); #lr ◁ box(ref β ty)]%TC with "LFT Hna HE HL Hk");
-      [solve_typing..| |]; first last.
+        first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       rewrite /= freeable_sz_full. iFrame. iExists _. iFrame. iExists _, _, _, _, _.
       iFrame "∗#". }
+    eapply type_delete; [solve_typing..|].
     eapply (type_jump [ #_]); solve_typing.
   Qed.
 
@@ -139,11 +140,11 @@ Section ref_functions.
     iMod ("Hcloseα" with "[$H↦1 $H↦2]") as "Hα".
     iAssert (elctx_interp [☀ α; ☀ β; α ⊑ β] qE) with "[Hα Hβ Hαβ]" as "HE".
     { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
-    iApply (type_letalloc_1 (&shr{α}ty) _
-        [ x ◁ box (uninit 1); #lv ◁ &shr{α}ty]%TC with "LFT Hna HE HL Hk");
-      [solve_typing..| |]; first last.
+    iApply (type_type _ _ _
+        [ x ◁ box (uninit 1); #lv ◁ &shr{α}ty]%TC with "LFT Hna HE HL Hk"); first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (ty_shr_mono with "LFT [] Hshr"). by iApply lft_incl_glb. }
+    eapply (type_letalloc_1 (&shr{α}ty)); [solve_typing..|].
     intros r. simpl_subst. eapply type_delete; [solve_typing..|].
     eapply (type_jump [_]); solve_typing.
   Qed.
@@ -200,10 +201,11 @@ Section ref_functions.
     iMod ("Hcloseα" with "Hβ") as "Hα".
     iAssert (elctx_interp [☀ α] qE) with "[Hα]" as "HE".
     { by rewrite /elctx_interp big_sepL_singleton. }
-    iApply (type_delete _ _ [ #lx ◁ box (uninit 2)]%TC with "LFT Hna HE HL Hk");
-      [solve_typing..| |]; first last.
+    iApply (type_type _ _ _ [ #lx ◁ box (uninit 2)]%TC with "LFT Hna HE HL Hk");
+      first last.
     { rewrite tctx_interp_singleton tctx_hasty_val' //. iFrame. iExists [ #lv;#lrc].
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton uninit_own. iFrame. auto. }
+    eapply type_delete; [solve_typing..|].
     eapply type_new; [solve_typing..|]=>r. simpl_subst.
     eapply (type_jump [_]); solve_typing.
   Qed.

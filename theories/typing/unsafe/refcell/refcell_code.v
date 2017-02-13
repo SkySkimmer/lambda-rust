@@ -73,12 +73,13 @@ Section refcell_functions.
     iDestruct "Hx" as "[% Hx]". iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
     wp_bind (_ <-{_} !_)%E. iApply (wp_memcpy with "[$Hr↦ $Hx↦1]"); [done||lia..|].
     iIntros "!> [Hr↦ Hx↦1]". wp_seq.
-    iApply (type_delete _ _ [ #lx ◁ box (uninit (S (ty_size ty))); #lr ◁ box ty]%TC
-        with "LFT Hna HE HL Hk [-]"); [solve_typing..| |]; last first.
+    iApply (type_type _ _ _ [ #lx ◁ box (uninit (S (ty_size ty))); #lr ◁ box ty]%TC
+        with "LFT Hna HE HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //. iFrame.
       iSplitR "Hr↦ Hx".
       - iExists (_::_). rewrite heap_mapsto_vec_cons uninit_own -Hsz. iFrame. auto.
       - iExists vl. iFrame. }
+    eapply type_delete; [solve_typing..|].
     eapply (type_jump [ #_]); solve_typing.
   Qed.
 
@@ -108,12 +109,12 @@ Section refcell_functions.
         iSplitL "H1 H↦1"; eauto. iExists _. iFrame. }
     destruct x as [[|lx|]|]; try iDestruct "Hx" as "[]". iDestruct "Hx" as "[Hx Hx†]".
     iDestruct "Hx" as (vl) "[Hx↦ Hx]". rewrite uninit_own. wp_op.
-    iApply (type_assign _ _ _ _
+    iApply (type_type _ _ _
             [ #lx ◁ box (uninit 1); #(shift_loc lx' 1) ◁ &uniq{α}ty]%TC
-            with "LFT Hna HE HL HC [-]");
-      [solve_typing..|by apply write_own| |]; last first.
+            with "LFT Hna HE HL HC [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //. iFrame.
       iNext. iExists _. rewrite uninit_own. iFrame. }
+    eapply type_assign; [solve_typing..|exact: write_own|].
     eapply (type_jump [ #_]); solve_typing.
   Qed.
 
@@ -162,11 +163,12 @@ Section refcell_functions.
         first by iExists st; iFrame.
       iAssert (elctx_interp [☀α] qE)%I with ">[Hclose Hβtok1 Hβtok2]" as "HE".
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_assign_unit [ref α ty; unit] _ _ _ _
+      iApply (type_type _ _ _
               [ x ◁ box (&shr{α}(refcell ty)); r ◁ box (uninit 3) ]%TC
-              with "LFT Hna HE HL Hk");
-        [solve_typing..|by eapply write_own|done| |]; first last.
+              with "LFT Hna HE HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
+      eapply (type_sum_assign_unit [ref α ty; unit]);
+        [solve_typing..|by eapply write_own|]; first last.
       simpl. eapply (type_jump [_]); solve_typing.
     - wp_op. wp_write. wp_bind (new _). iApply wp_new; [done..|]. iNext.
       iIntros (lref vl) "(EQ & H† & Hlref)". iDestruct "EQ" as %?%(inj Z.of_nat 2%nat).
@@ -209,16 +211,17 @@ Section refcell_functions.
       iMod ("Hclose'" with "[$INV] Hna") as "[Hβtok1 Hna]".
       iAssert (elctx_interp [☀α] qE)%I with ">[Hclose Hβtok1 Hβtok2]" as "HE".
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_memcpy [ref α ty; unit] _ _ _ _ _ _ _ _
+      iApply (type_type  _ _ _
         [ x ◁ box (&shr{α}(refcell ty)); r ◁ box (uninit 3); #lref ◁ box (ref α ty)]%TC
               with "LFT Hna HE HL Hk");
-        [solve_typing..|by eapply write_own|by eapply read_own_move|done|done| |];
         first last.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame.
         rewrite tctx_hasty_val' //. rewrite /= freeable_sz_full. iFrame.
         iExists [_; _]. rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
         iFrame. iExists _, _, _, _, _. iFrame "∗#". iApply ty_shr_mono; try by auto.
         iApply lft_glb_mono. done. iApply lft_incl_refl. }
+      eapply (type_sum_memcpy [ref α ty; unit]);
+        [solve_typing..|by eapply write_own|by eapply read_own_move|done|].
       simpl. eapply type_delete; [solve_typing..|]. eapply (type_jump [_]); solve_typing.
   Qed.
 
@@ -280,26 +283,27 @@ Section refcell_functions.
         iApply "Hbh". rewrite -lft_dead_or. auto. }
       iAssert (elctx_interp [☀α] qE)%I with ">[Hclose Hβtok]" as "HE".
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_memcpy [refmut α ty; unit] _ _ _ _ _ _ _ _
+      iApply (type_type _ _ _
         [ x ◁ box (&shr{α}(refcell ty)); r ◁ box (uninit 3); #lref ◁ box (refmut α ty)]%TC
-              with "LFT Hna HE HL Hk");
-        [solve_typing..|by eapply write_own|by eapply read_own_move|done|done| |];
-        first last.
+              with "LFT Hna HE HL Hk"); first last.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame.
         rewrite tctx_hasty_val' //. rewrite /= freeable_sz_full. iFrame.
         iExists [_; _]. rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
         iFrame. iExists _, _, _, _. iFrame "#∗". iApply (bor_shorten with "[] [$Hb]").
         iApply lft_glb_mono; first done. iApply lft_incl_refl. }
+      eapply (type_sum_memcpy [refmut α ty; unit]);
+        [solve_typing..|by eapply write_own|by eapply read_own_move|done|].
       simpl. eapply type_delete; [solve_typing..|]. eapply (type_jump [_]); solve_typing.
     - iMod ("Hclose'" with "[Hlx Hownst Hb] Hna") as "[Hβtok Hna]";
         first by iExists st; iFrame.
       iAssert (elctx_interp [☀α] qE)%I with ">[Hclose Hβtok]" as "HE".
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_assign_unit [refmut α ty; unit] _ _ _ _
+      iApply (type_type _ _ _
               [ x ◁ box (&shr{α}(refcell ty)); r ◁ box (uninit 3) ]%TC
-              with "LFT Hna HE HL Hk");
-        [solve_typing..|by eapply write_own|done| |]; first last.
+              with "LFT Hna HE HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
+      eapply (type_sum_assign_unit [refmut α ty; unit]);
+        [solve_typing..|by eapply write_own|].
       simpl. eapply (type_jump [_]); solve_typing.
   Qed.
 End refcell_functions.

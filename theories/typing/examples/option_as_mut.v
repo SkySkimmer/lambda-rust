@@ -25,9 +25,9 @@ Section option_as_mut.
       eapply type_new; [solve_typing..|]. intros r. simpl_subst.
       eapply type_case_uniq; [solve_typing..|].
         constructor; last constructor; last constructor; left.
-      + eapply (type_sum_assign_unit [unit; &uniq{α}τ]%T); [solve_typing..|by apply write_own|done|].
+      + eapply (type_sum_assign_unit [unit; &uniq{α}τ]%T); [solve_typing..|by apply write_own|].
         eapply (type_jump [_]); solve_typing.
-      + eapply (type_sum_assign [unit; &uniq{α}τ]%T); [solve_typing..|by apply write_own|done|].
+      + eapply (type_sum_assign [unit; &uniq{α}τ]%T); [solve_typing..|by apply write_own|].
         eapply (type_jump [_]); solve_typing.
     - move=>/= k r. inv_vec r=>r. simpl_subst.
       eapply type_delete; [solve_typing..|].

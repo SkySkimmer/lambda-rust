@@ -43,14 +43,13 @@ Section refmut_functions.
     iMod "H↦" as "[H↦1 H↦2]". wp_read. iIntros "[#Hshr' Hα2β]!>". wp_let.
     iDestruct ("Hcloseβα2" with "Hα2β") as "[Hβ Hα2]".
     iMod ("Hcloseα1" with "[$H↦1 $H↦2]") as "Hα1".
-    iAssert (elctx_interp [☀ α; ☀ β; α ⊑ β] qE) with "[Hα1 Hα2 Hβ Hαβ]" as "HE".
-    { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
-    iApply (type_letalloc_1 (&shr{α}ty) _
-        [ x ◁ box (uninit 1); #lv ◁ &shr{α}ty]%TC with "LFT Hna HE HL Hk");
-      [solve_typing..| |]; first last.
+    iApply (type_type [☀ α; ☀ β; α ⊑ β]%EL _ _ [ x ◁ box (uninit 1); #lv ◁ &shr{α}ty]%TC
+            with "LFT Hna [Hα1 Hα2 Hβ Hαβ] HL Hk"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (ty_shr_mono with "LFT [] Hshr'"). iApply lft_incl_glb; first done.
       iApply lft_incl_refl. }
+    { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
+    eapply (type_letalloc_1 (&shr{α}ty)); [solve_typing..|].
     intros r. simpl_subst. eapply type_delete; [solve_typing..|].
     eapply (type_jump [_]); solve_typing.
   Qed.
@@ -99,14 +98,13 @@ Section refmut_functions.
       [done| |by iApply (bor_unnest with "LFT Hb")|]; first done.
     wp_read. iIntros "Hb !>". wp_let.
     iMod ("Hcloseα" with "[$H↦]") as "[_ Hα]".
-    iAssert (elctx_interp [☀ α; ☀ β; α ⊑ β] qE) with "[Hα Hβ Hαβ]" as "HE".
-    { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
-    iApply (type_letalloc_1 (&uniq{α}ty) _
-        [ x ◁ box (uninit 1); #lv ◁ &uniq{α}ty]%TC with "LFT Hna HE HL Hk");
-      [solve_typing..| |]; first last.
+    iApply (type_type [☀ α; ☀ β; α ⊑ β]%EL _ _ [ x ◁ box (uninit 1); #lv ◁ &uniq{α}ty]%TC
+            with "LFT Hna [Hα Hβ Hαβ] HL Hk"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (bor_shorten with "[] Hb").
       by iApply lft_incl_glb; [iApply lft_incl_glb|iApply lft_incl_refl]. }
+    { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
+    eapply (type_letalloc_1 (&uniq{α}ty)); [solve_typing..|].
     intros r. simpl_subst. eapply type_delete; [solve_typing..|].
     eapply (type_jump [_]); solve_typing.
   Qed.
@@ -149,12 +147,12 @@ Section refmut_functions.
       apply auth_update_dealloc. rewrite -(right_id None _ (Some _)).
       apply cancel_local_update_empty, _. }
     iMod ("Hcloseα" with "Hβ") as "Hα". wp_seq.
-    iAssert (elctx_interp [☀ α] qE) with "[Hα]" as "HE".
-    { by rewrite /elctx_interp big_sepL_singleton. }
-    iApply (type_delete _ _ [ #lx ◁ box (uninit 2)]%TC with "LFT Hna HE HL Hk");
-      [solve_typing..| |]; first last.
+    iApply (type_type [☀ α]%EL _ _ [ #lx ◁ box (uninit 2)]%TC
+            with "LFT Hna [Hα] HL Hk"); last first.
     { rewrite tctx_interp_singleton tctx_hasty_val' //. iFrame. iExists [ #lv;#lrc].
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton uninit_own. iFrame. auto. }
+    { by rewrite /elctx_interp big_sepL_singleton. }
+    eapply type_delete; [solve_typing..|].
     eapply type_new; [solve_typing..|]=>r. simpl_subst.
     eapply (type_jump [_]); solve_typing.
   Qed.
