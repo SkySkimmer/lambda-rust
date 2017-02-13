@@ -155,9 +155,8 @@ Section typing.
     rewrite 3!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iIntros "(Hr & Hc & #Hc' & Hx)".
     rewrite {1}/elctx_interp big_opL_singleton /=.
-    destruct c' as [[|c'|]|]; try iDestruct "Hc'" as "[]".
-    destruct x as [[|x|]|]; try iDestruct "Hx" as "[]".
-    destruct r as [[|r|]|]; try iDestruct "Hr" as "[]".
+    destruct c' as [[|c'|]|]; try done. destruct x as [[|x|]|]; try done.
+    destruct r as [[|r|]|]; try done.
     iMod (na_bor_acc with "LFT Hc' HE Htl") as "(Hc'↦ & Htl & Hclose)"; [solve_ndisj..|].
     iDestruct "Hc'↦" as (vc') "[>Hc'↦ Hc'own]".
     iDestruct (ty_size_eq with "Hc'own") as "#>%".

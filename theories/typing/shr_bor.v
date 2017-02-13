@@ -13,16 +13,14 @@ Section shr_bor.
          | [ #(LitLoc l) ] => ty.(ty_shr) κ tid l
          | _ => False
          end%I |}.
-  Next Obligation.
-    iIntros (κ ty tid [|[[]|][]]) "H"; try iDestruct "H" as "[]". done.
-  Qed.
+  Next Obligation. by iIntros (κ ty tid [|[[]|][]]) "H". Qed.
   Next Obligation. intros κ ty tid [|[[]|][]]; apply _. Qed.
 
   Global Instance shr_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> subtype E L ==> subtype E L) shr_bor.
   Proof.
     intros κ1 κ2 Hκ ty1 ty2 Hty. apply subtype_simple_type.
-    iIntros (? [|[[]|][]]) "#LFT #HE #HL H"; try iDestruct "H" as "[]".
+    iIntros (? [|[[]|][]]) "#LFT #HE #HL H"; try done.
     iDestruct (Hκ with "HE HL") as "#Hκ". iApply (ty2.(ty_shr_mono) with "LFT Hκ").
     iDestruct (Hty with "[] [] []") as "(_ & _ & #Hs1)"; [done..|clear Hty].
     by iApply "Hs1".
@@ -44,9 +42,7 @@ Section shr_bor.
 
   Global Instance shr_send κ ty :
     Sync ty → Send (shr_bor κ ty).
-  Proof.
-    iIntros (Hsync tid1 tid2 [|[[]|][]]) "H"; try iDestruct "H" as "[]". by iApply Hsync.
-  Qed.
+  Proof. by iIntros (Hsync tid1 tid2 [|[[]|][]]) "H"; try iApply Hsync. Qed.
 End shr_bor.
 
 Notation "&shr{ κ } ty" := (shr_bor κ ty)
@@ -72,8 +68,7 @@ Section typing.
     iDestruct (llctx_interp_persist with "HL") as "#HL'". iFrame "HE HL".
     iDestruct (Hκκ' with "HE' HL'") as "Hκκ'".
     rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
-    iDestruct "H" as ([[]|]) "[% #Hshr]"; try iDestruct "Hshr" as "[]".
-    iModIntro. iSplit.
+    iDestruct "H" as ([[]|]) "[% #Hshr]"; try done. iModIntro. iSplit.
     - iExists _. iSplit. done. by iApply (ty_shr_mono with "LFT Hκκ' Hshr").
     - iExists _. auto.
   Qed.
@@ -81,8 +76,8 @@ Section typing.
   Lemma read_shr E L κ ty :
     Copy ty → lctx_lft_alive E L κ → typed_read E L (&shr{κ}ty) ty (&shr{κ}ty).
   Proof.
-    iIntros (Hcopy Halive) "!#". iIntros ([[]|] tid F qE qL ?) "#LFT Htl HE HL #Hshr";
-      try iDestruct "Hshr" as "[]".
+    iIntros (Hcopy Halive) "!#".
+    iIntros ([[]|] tid F qE qL ?) "#LFT Htl HE HL #Hshr"; try done.
     iMod (Halive with "HE HL") as (q) "[Hκ Hclose]"; first set_solver.
     assert (↑shrN ⊆ (↑lrustN : coPset)) by solve_ndisj. (* set_solver needs some help. *)
     iMod (copy_shr_acc with "LFT Hshr Htl Hκ") as (q') "(Htl & H↦ & Hcl)".

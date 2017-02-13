@@ -63,8 +63,7 @@ Section ref_functions.
     eapply type_deref; [solve_typing..|by apply read_own_move|done|]=>x'.
     iIntros "!# * #LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hx Hx']".
-    destruct x' as [[|lx'|]|]; try iDestruct "Hx'" as "[]".
+    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
     iDestruct "Hx'" as (ν q γ δ ty' lv lrc) "#(Hαν & Hfrac & Hshr & Hβδ & Hinv & H◯inv)".
     wp_op. rewrite {1}/elctx_interp big_sepL_cons big_sepL_singleton.
     iDestruct "HE" as "[[Hα1 Hα2] Hβ]".
@@ -129,8 +128,7 @@ Section ref_functions.
     eapply type_deref; [solve_typing..|by apply read_own_move|done|]=>x'.
     iIntros "!# * #LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hx Hx']".
-    destruct x' as [[|lx'|]|]; try iDestruct "Hx'" as "[]".
+    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
     iDestruct "Hx'" as (ν q γ δ ty' lv lrc) "#(Hαν & Hfrac & Hshr & Hx')".
     rewrite {1}/elctx_interp 2!big_sepL_cons big_sepL_singleton.
     iDestruct "HE" as "(Hα & Hβ & #Hαβ)".
@@ -166,7 +164,7 @@ Section ref_functions.
     eapply type_fn; [solve_typing..|]=>- /= α ret arg. inv_vec arg=>x. simpl_subst.
     iIntros "!# * #LFT Hna Hα HL Hk Hx".
     rewrite {1}/elctx_interp big_sepL_singleton tctx_interp_singleton tctx_hasty_val.
-    destruct x as [[|lx|]|]; try iDestruct "Hx" as "[]". iDestruct "Hx" as "[Hx Hx†]".
+    destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
     iDestruct "Hx" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Hx"; try iDestruct "Hx" as "[_ >[]]".
     rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
     iDestruct "Hx" as "[[Hx↦1 Hx↦2] Hx]". wp_op. wp_read. wp_let.

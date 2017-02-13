@@ -22,7 +22,7 @@ Section join_handle.
          | _ => False
          end%I;
        ty_shr κ tid l := True%I |}.
-  Next Obligation. by iIntros (ty tid [|[[]|][]]) "H"; try iDestruct "H" as "[]". Qed.
+  Next Obligation. by iIntros (ty tid [|[[]|][]]) "H". Qed.
   Next Obligation. iIntros "* _ _ _ $". auto. Qed.
   Next Obligation. iIntros (?) "**"; auto. Qed.
 
@@ -30,7 +30,7 @@ Section join_handle.
     type_incl ty1 ty2 -∗ type_incl (join_handle ty1) (join_handle ty2).
   Proof.
     iIntros "#Hincl". iSplit; first done. iSplit; iAlways.
-    - iIntros "* Hvl". destruct vl as [|[[|vl|]|] [|]]; try by iDestruct "Hvl" as "[]".
+    - iIntros "* Hvl". destruct vl as [|[[|vl|]|] [|]]; try done.
       iDestruct "Hvl" as (ty) "[Hincl' ?]". iExists ty. iFrame.
       iApply (type_incl_trans with "Hincl'"). done.
     - iIntros "* _". auto.
@@ -73,7 +73,8 @@ Section spawn.
     { (* The core of the proof: showing that spawn is safe. *)
       iAlways. iIntros (tid qE) "#LFT $ $ $".
       rewrite tctx_interp_cons tctx_interp_singleton.
-      iIntros "[Hf' Henv]". iApply (spawn_spec _ (join_inv retty tid) with "[-]"); first solve_to_val; last first; last simpl_subst.
+      iIntros "[Hf' Henv]". iApply (spawn_spec _ (join_inv retty tid) with "[-]");
+                              first solve_to_val; last first; last simpl_subst.
       { iIntros "!> *". rewrite tctx_interp_singleton tctx_hasty_val.
         iIntros "?". iExists retty. iFrame. iApply type_incl_refl. }
       iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let.
@@ -119,8 +120,7 @@ Section spawn.
                          (T2 := λ r, [r ◁ box retty]%TC); try solve_typing; [|].
     { iAlways. iIntros (tid qE) "#LFT $ $ $".
       rewrite tctx_interp_singleton tctx_hasty_val. iIntros "Hc'".
-      destruct c' as [[|c'|]|]; try by iDestruct "Hc'" as "[]".
-      iDestruct "Hc'" as (ty') "[#Hsub Hc']".
+      destruct c' as [[|c'|]|]; try done. iDestruct "Hc'" as (ty') "[#Hsub Hc']".
       iApply (join_spec with "Hc'"). iIntros "!> * Hret".
       rewrite tctx_interp_singleton tctx_hasty_val.
       iPoseProof "Hsub" as "Hsz". iDestruct "Hsz" as "[% _]".

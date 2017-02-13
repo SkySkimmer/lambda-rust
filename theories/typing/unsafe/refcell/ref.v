@@ -27,9 +27,7 @@ Section ref.
              ▷ ty.(ty_shr) (α ∪ ν) tid lv ∗
              ▷ (α ⊑ β) ∗ ▷ &na{β, tid, refcell_invN}(refcell_inv tid lrc γ β ty') ∗
              &na{κ, tid, refcell_refN}(own γ (◯ reading_st q ν)) |}%I.
-  Next Obligation.
-    iIntros (???[|[[]|][|[[]|][]]]); try iIntros "[]"; auto.
-  Qed.
+  Next Obligation. iIntros (???[|[[]|][|[[]|][]]]) "?"; auto. Qed.
   Next Obligation.
     iIntros (α ty E κ l tid q ?) "#LFT Hb Htok".
     iMod (bor_exists with "LFT Hb") as (vl) "Hb". done.
@@ -79,7 +77,7 @@ Section ref.
     iDestruct (Hα with "HE HL") as "Hα1α2".
     iSplit; [|iSplit; iAlways].
     - done.
-    - iIntros (tid [|[[]|][|[[]|][]]]); try iIntros "[]". iIntros "H".
+    - iIntros (tid [|[[]|][|[[]|][]]]) "H"; try done.
       iDestruct "H" as (ν q γ β ty') "(#Hshr & #H⊑ & #Hinv & Htok & Hown)".
       iExists ν, q, γ, β, ty'. iFrame "∗#". iSplit.
       + iApply ty_shr_mono; last by iApply "Hs". done.
