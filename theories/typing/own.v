@@ -77,12 +77,10 @@ Section own.
           with "[Hpbown]") as "#Hinv"; first by eauto.
     iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
-    - iMod (bor_later with "LFT [Hbtok]") as "Hb".
-      { apply ndisj_subseteq_difference. solve_ndisj. set_solver. } (* FIXME: some tactic should solve this in one go. *)
+    - iMod (bor_later with "LFT [Hbtok]") as "Hb"; first solve_ndisj.
       { rewrite bor_unfold_idx. eauto. }
       iModIntro. iNext. iMod "Hb".
-      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#$ $]".
-      { apply ndisj_subseteq_difference. solve_ndisj. set_solver. } (* FIXME: some tactic should solve this in one go. *)
+      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#$ $]"; first solve_ndisj.
       iApply "Hclose". auto.
     - iMod fupd_intro_mask' as "Hclose'"; last iModIntro. set_solver.
       iNext. iMod "Hclose'" as "_". iMod ("Hclose" with "[]") as "_"; by eauto.

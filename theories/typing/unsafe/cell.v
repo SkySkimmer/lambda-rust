@@ -8,7 +8,6 @@ Set Default Proof Using "Type".
 
 Section cell.
   Context `{typeG Σ}.
-  Local Hint Extern 1000 (_ ⊆ _) => set_solver : ndisj.
 
   Program Definition cell (ty : type) :=
     {| ty_size := ty.(ty_size);
@@ -50,7 +49,7 @@ Section cell.
     intros ty Hcopy. split; first by intros; simpl; apply _.
     iIntros (κ tid E F l q ??) "#LFT #Hshr Htl Htok". iExists 1%Qp. simpl in *.
     (* Size 0 needs a special case as we can't keep the thread-local invariant open. *)
-    destruct (ty_size ty) as [|sz] eqn:Hsz.
+    destruct (ty_size ty) as [|sz] eqn:Hsz; simpl in *.
     { iMod (na_bor_acc with "LFT Hshr Htok Htl") as "(Hown & Htl & Hclose)"; [solve_ndisj..|].
       iDestruct "Hown" as (vl) "[H↦ #Hown]".
       simpl. assert (F ∖ ∅ = F) as -> by set_solver+.

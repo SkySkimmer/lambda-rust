@@ -8,7 +8,6 @@ Set Default Proof Using "Type".
 
 Section refmut.
   Context `{typeG Σ, refcellG Σ}.
-  Local Hint Extern 1000 (_ ⊆ _) => set_solver : ndisj.
 
   Program Definition refmut (α : lft) (ty : type) :=
     {| ty_size := 2;

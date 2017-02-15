@@ -7,7 +7,6 @@ Set Default Proof Using "Type".
 
 Section uniq_bor.
   Context `{typeG Σ}.
-  Local Hint Extern 1000 (_ ⊆ _) => set_solver : ndisj.
 
   Program Definition uniq_bor (κ:lft) (ty:type) :=
     {| ty_size := 1;
