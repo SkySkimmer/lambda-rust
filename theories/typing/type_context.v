@@ -56,8 +56,7 @@ Section type_context.
     destruct (eval_path p1); try (intros ?; by iApply wp_value); [].
     destruct v0; try discriminate; [].
     destruct l; try discriminate; [].
-    intros [=<-]. iStartProof. wp_bind p1.
-    iApply (wp_wand with "[]").
+    intros [=<-]. wp_bind p1. iApply (wp_wand with "[]").
     { iApply IHp1. done. }
     iIntros (v) "%". subst v. wp_op. done.
   Qed.

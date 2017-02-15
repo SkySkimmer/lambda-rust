@@ -13,7 +13,7 @@ Section bool.
          | [ #(LitInt (0|1))] => True
          | _ => False
          end%I |}.
-  Next Obligation. intros ? [|[[| |[|[]|]]|] []]; iStartProof; auto. Qed.
+  Next Obligation. intros ? [|[[| |[|[]|]]|] []]; auto with I. Qed.
   Next Obligation. intros ? [|[[| |[|[]|]]|] []]; apply _. Qed.
 
   Global Instance bool_send : Send bool.
