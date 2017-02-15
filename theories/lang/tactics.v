@@ -67,8 +67,7 @@ Ltac of_expr e :=
     let e := of_expr e in let el := of_expr el in constr:(e::el)
   | to_expr ?e => e
   | of_val ?v => constr:(Val v)
-  | _ => constr:(ltac:(
-     match goal with H : Closed [] e |- _ => exact (@ClosedExpr e H) end))
+  | _ => match goal with H : Closed [] e |- _ => constr:(@ClosedExpr e H) end
   end.
 
 Fixpoint is_closed (X : list string) (e : expr) : bool :=
