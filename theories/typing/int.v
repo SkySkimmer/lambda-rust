@@ -42,9 +42,9 @@ Section typing.
   Proof.
     iAlways. iIntros (tid qE) "_ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
-    wp_bind p1. iApply (wp_hasty with "Hp1").
+    wp_apply (wp_hasty with "Hp1").
     iIntros ([[]|]) "_ H1"; try iDestruct "H1" as "[]".
-    wp_bind p2. iApply (wp_hasty with "Hp2").
+    wp_apply (wp_hasty with "Hp2").
     iIntros ([[]|]) "_ H2"; try iDestruct "H2" as "[]".
     wp_op. by rewrite tctx_interp_singleton tctx_hasty_val' //.
   Qed.
@@ -63,9 +63,9 @@ Section typing.
   Proof.
     iAlways. iIntros (tid qE) "_ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
-    wp_bind p1. iApply (wp_hasty with "Hp1").
+    wp_apply (wp_hasty with "Hp1").
     iIntros ([[]|]) "_ H1"; try iDestruct "H1" as "[]".
-    wp_bind p2. iApply (wp_hasty with "Hp2").
+    wp_apply (wp_hasty with "Hp2").
     iIntros ([[]|]) "_ H2"; try iDestruct "H2" as "[]".
     wp_op. by rewrite tctx_interp_singleton tctx_hasty_val' //.
   Qed.
@@ -84,9 +84,9 @@ Section typing.
   Proof.
     iAlways. iIntros (tid qE) "_ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
-    wp_bind p1. iApply (wp_hasty with "Hp1").
+    wp_apply (wp_hasty with "Hp1").
     iIntros ([[]|]) "_ H1"; try iDestruct "H1" as "[]".
-    wp_bind p2. iApply (wp_hasty with "Hp2").
+    wp_apply (wp_hasty with "Hp2").
     iIntros ([[]|]) "_ H2"; try iDestruct "H2" as "[]".
     wp_op; intros _; by rewrite tctx_interp_singleton tctx_hasty_val' //.
   Qed.

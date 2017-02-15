@@ -74,10 +74,9 @@ Proof.
   iDestruct "Hl" as "[Hc Hd]". wp_write. clear v0.
   iMod (inv_alloc N _ (spawn_inv γf γj l Ψ) with "[Hc]") as "#?".
   { iNext. iRight. iExists false. auto. }
-  (* TODO: Cannot use wp_apply due to curried lemma. *)
-  wp_bind (Fork _). iApply (wp_fork with "[Hγf Hf Hd]").
-  - iNext. iApply "Hf". iExists _, _, _. iFrame. auto.
-  - iIntros "!> _". wp_seq. iApply "HΦ". iExists _, _.
+  wp_apply (wp_fork with "[Hγf Hf Hd]").
+  - iApply "Hf". iExists _, _, _. iFrame. auto.
+  - iIntros "_". wp_seq. iApply "HΦ". iExists _, _.
     iFrame. auto.
 Qed.
 

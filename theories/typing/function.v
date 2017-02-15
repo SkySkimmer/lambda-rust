@@ -193,7 +193,7 @@ Section typing.
   Proof.
     iIntros (HE) "!# * #LFT Htl HE HL HC".
     rewrite tctx_interp_cons tctx_interp_app. iIntros "(Hf & Hargs & HT)".
-    wp_bind p. iApply (wp_hasty with "Hf"). iIntros (v) "% Hf".
+    wp_apply (wp_hasty with "Hf"). iIntros (v) "% Hf".
     iApply (wp_app_vec _ _ (_::_) ((λ v, ⌜v = k⌝):::
                vmap (λ ty (v : val), tctx_elt_interp tid (v ◁ box ty)) (tys x))%I
             with "[Hargs]"); first wp_done.

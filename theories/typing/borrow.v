@@ -50,7 +50,7 @@ Section borrow.
     iIntros (Hκ) "!#". iIntros (tid qE) "#LFT $ HE HL Hp".
     rewrite tctx_interp_singleton.
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
-    wp_bind p. iApply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown";
+    wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown";
       (try iDestruct "Hown" as "[]").
     iMod (bor_acc_cons with "LFT Hown Htok") as "[H↦ Hclose']". done.
     iDestruct "H↦" as ([|[[|l'|]|][]]) "[>H↦ Hown]"; try iDestruct "Hown" as ">[]".
@@ -83,7 +83,7 @@ Section borrow.
     iIntros (Hκ) "!#". iIntros (tid qE) "#LFT $ HE HL Hp".
     rewrite tctx_interp_singleton.
     iMod (Hκ with "HE HL") as (q) "[[Htok1 Htok2] Hclose]"; first set_solver.
-    wp_bind p. iApply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown";
+    wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown";
       (try iDestruct "Hown" as "[]"). iDestruct "Hown" as (l') "#[H↦b #Hown]".
     iMod (frac_bor_acc with "LFT H↦b Htok1") as (q''') "[>H↦ Hclose']". done.
     iApply (wp_fupd_step _ (_∖_) with "[Hown Htok2]"); try done.
@@ -113,7 +113,7 @@ Section borrow.
     iPoseProof (Hincl with "[#] [#]") as "Hincl".
     { by iApply elctx_interp_persist. } { by iApply llctx_interp_persist. }
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
-    wp_bind p. iApply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown";
+    wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown";
       try iDestruct "Hown" as "[]".
     iMod (bor_exists with "LFT Hown") as (vl) "Hbor". done.
     iMod (bor_sep with "LFT Hbor") as "[H↦ Hbor]". done.
@@ -149,7 +149,7 @@ Section borrow.
     iPoseProof (Hincl with "[#] [#]") as "Hincl".
     { by iApply elctx_interp_persist. } { by iApply llctx_interp_persist. }
     iMod (Hκ with "HE HL") as (q) "[[Htok1 Htok2] Hclose]"; first set_solver.
-    wp_bind p. iApply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hshr";
+    wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hshr";
       try iDestruct "Hshr" as "[]". iDestruct "Hshr" as (l') "[H↦ Hown]".
     iMod (frac_bor_acc with "LFT H↦ Htok1") as (q'') "[>H↦ Hclose']". done.
     iAssert (κ ⊑ κ' ∪ κ)%I as "#Hincl'".

@@ -85,12 +85,11 @@ Section ref_functions.
       - change ((q''/2+q')%Qp ≤ 1%Qp)%Qc. rewrite -Hq'q'' comm -{2}(Qp_div_2 q'').
         apply Qcplus_le_mono_l. rewrite -{1}(Qcplus_0_l (q''/2)%Qp).
         apply Qcplus_le_mono_r, Qp_ge_0. }
-    wp_bind (new [ #2])%E. iApply wp_new; [done..|]. iNext. iIntros (lr ?) "(%&?&Hlr)".
+    wp_apply wp_new; [done..|]. iIntros (lr ?) "(%&?&Hlr)".
     iAssert (lx' ↦∗{qlx'} [ #lv; #lrc])%I  with "[H↦1 H↦2]" as "H↦".
     { rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton. iFrame. }
-    wp_let. wp_bind (_ <-{_} !_)%E. iApply (wp_memcpy with "[$Hlr $H↦]"); [done..|].
-    iIntros "!>[Hlr H↦]". wp_seq.
-    iMod ("Hcloseα2" with "[$H◯] Hna") as "[Hα2 Hna]".
+    wp_let. wp_apply (wp_memcpy with "[$Hlr $H↦]"); [done..|].
+    iIntros "[Hlr H↦]". wp_seq. iMod ("Hcloseα2" with "[$H◯] Hna") as "[Hα2 Hna]".
     iMod ("Hcloseδ" with "[H↦lrc H● Hν1 Hshr' H†] Hna") as "[Hδ Hna]".
     { iExists _. rewrite Z.add_comm. iFrame. iExists _. iFrame. iSplitR.
       - rewrite /= agree_idemp. auto.

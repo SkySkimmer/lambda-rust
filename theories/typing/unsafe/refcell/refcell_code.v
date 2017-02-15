@@ -36,8 +36,8 @@ Section refcell_functions.
     iDestruct "Hr" as "[Hr↦ >SZ]". destruct vl' as [|]; iDestruct "SZ" as %[=].
     rewrite heap_mapsto_vec_cons. iDestruct "Hr↦" as "[Hr↦0 Hr↦1]". wp_op.
     rewrite shift_loc_0. wp_write. wp_op. iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
-    wp_bind (_ <-{_} !_)%E. iApply (wp_memcpy with "[$Hr↦1 $Hx↦]"); [done||lia..|].
-    iIntros "!> [Hr↦1 Hx↦]". wp_seq.
+    wp_apply (wp_memcpy with "[$Hr↦1 $Hx↦]"); [done||lia..|].
+    iIntros "[Hr↦1 Hx↦]". wp_seq.
     iApply (type_type _ _ _ [ #lx ◁ box (uninit (ty_size ty)); #lr ◁ box (refcell ty)]%TC
         with "LFT Hna HE HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //=. iFrame.
@@ -52,7 +52,9 @@ Section refcell_functions.
   Definition refcell_into_inner ty : val :=
     funrec: <> ["x"] :=
       let: "r" := new [ #ty.(ty_size)] in
-      "r" <-{ty.(ty_size)} !"x" +ₗ #1;;
+      "r" <-{ty.(ty_size)} !("x" +ₗ #1);;
+          (* TODO RJ: Can we make it so that the parenthesis above are mandatory?
+             Leaving them away is inconsistent with `let ... := !"x" +ₗ #1`. *)
        delete [ #(S ty.(ty_size)) ; "x"];; "return" ["r"].
 
   Lemma refcell_into_inner_type ty :
@@ -71,8 +73,8 @@ Section refcell_functions.
     iDestruct "Hr" as (vl') "Hr". rewrite uninit_own heap_mapsto_vec_cons.
     iDestruct "Hr" as "[Hr↦ >%]". iDestruct "Hx↦" as "[Hx↦0 Hx↦1]". wp_op.
     iDestruct "Hx" as "[% Hx]". iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
-    wp_bind (_ <-{_} !_)%E. iApply (wp_memcpy with "[$Hr↦ $Hx↦1]"); [done||lia..|].
-    iIntros "!> [Hr↦ Hx↦1]". wp_seq.
+    wp_apply (wp_memcpy with "[$Hr↦ $Hx↦1]"); [done||lia..|].
+    iIntros "[Hr↦ Hx↦1]". wp_seq.
     iApply (type_type _ _ _ [ #lx ◁ box (uninit (S (ty_size ty))); #lr ◁ box ty]%TC
         with "LFT Hna HE HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //. iFrame.
@@ -126,7 +128,7 @@ Section refcell_functions.
       let: "n" := !"x'" in
       if: "n" ≤ #-1 then
         "r" <-{Σ 1} ();;
-        "k" ["r"]
+        "k" ["r"] (* FIXME RJ: this is very confusing, "k" does not even look like it is bound here... *)
       else
         "x'" <- "n" + #1;;
         let: "ref" := new [ #2 ] in
@@ -170,7 +172,7 @@ Section refcell_functions.
       eapply (type_sum_assign_unit [ref α ty; unit]);
         [solve_typing..|by eapply write_own|]; first last.
       simpl. eapply (type_jump [_]); solve_typing.
-    - wp_op. wp_write. wp_bind (new _). iApply wp_new; [done..|]. iNext.
+    - wp_op. wp_write. wp_apply wp_new; [done..|].
       iIntros (lref vl) "(EQ & H† & Hlref)". iDestruct "EQ" as %?%(inj Z.of_nat 2%nat).
       destruct vl as [|?[|?[]]]; try done. wp_let.
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
@@ -266,7 +268,7 @@ Section refcell_functions.
     iMod (lft_incl_acc with "Hαβ HE") as (qβ) "[Hβtok Hclose]". done.
     iMod (na_bor_acc with "LFT Hinv Hβtok Hna") as "(INV & Hna & Hclose')"; try done.
     iDestruct "INV" as (st) "(Hlx & Hownst & Hb)". wp_read. wp_let. wp_op=>?; wp_if.
-    - wp_write. wp_bind (new _). iApply wp_new; [done..|]. iNext.
+    - wp_write. wp_apply wp_new; [done..|].
       iIntros (lref vl) "(EQ & H† & Hlref)". iDestruct "EQ" as %?%(inj Z.of_nat 2%nat).
       destruct vl as [|?[|?[]]]; try done. wp_let.
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.

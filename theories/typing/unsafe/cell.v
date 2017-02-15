@@ -163,19 +163,17 @@ Section typing.
     iDestruct (ty_size_eq with "Hc'own") as "#>%".
     iDestruct "Hr" as "[Hr↦ Hr†]". iDestruct "Hr↦" as (vr) "[>Hr↦ Hrown]".
     iDestruct (ty_size_eq with "Hrown") as ">Heq". iDestruct "Heq" as %Heq.
-    (* TODO: We need `wp_apply ... with ...`. *)
-    wp_bind (_ <-{_} !_)%E.
     (* FIXME: Changing the order of $Hr↦ $Hc'↦ breaks applying...?? *)
-    iApply (wp_memcpy with "[$Hr↦ $Hc'↦]").
+    wp_apply (wp_memcpy with "[$Hr↦ $Hc'↦]").
     { by rewrite Heq Nat2Z.id. }
     { f_equal. done. }
-    iNext. iIntros "[Hr↦ Hc'↦]". wp_seq.
+    iIntros "[Hr↦ Hc'↦]". wp_seq.
     iDestruct "Hx" as "[Hx↦ Hx†]". iDestruct "Hx↦" as (vx) "[Hx↦ Hxown]".
     rewrite Nat2Z.id. iDestruct (ty_size_eq with "Hxown") as "#%".
-    wp_bind (_ <-{_} !_)%E. iApply (wp_memcpy with "[$Hc'↦ $Hx↦]").
+    wp_apply (wp_memcpy with "[$Hc'↦ $Hx↦]").
     { f_equal. done. }
     { f_equal. done. }
-    iNext. iIntros "[Hc'↦ Hx↦]". wp_seq.
+    iIntros "[Hc'↦ Hx↦]". wp_seq.
     iMod ("Hclose" with "[Hc'↦ Hxown] Htl") as "[HE Htl]".
     { iExists _. iFrame. }
     (* Now go back to typing level. *)
