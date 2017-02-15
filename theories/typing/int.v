@@ -12,7 +12,7 @@ Section int.
          | [ #(LitInt z)] => True
          | _ => False
          end%I |}.
-  Next Obligation. intros ? [|[[]|] []]; auto with I. Qed.
+  Next Obligation. intros ? [|[[]|] []]; auto. Qed.
   Next Obligation. intros ? [|[[]|] []]; apply _. Qed.
 
   Global Instance int_send : Send int.
