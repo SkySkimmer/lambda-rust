@@ -17,9 +17,8 @@ Section case.
   Proof.
     iIntros (Hel) "!#". iIntros (tid qE) "#LFT Hna HE HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
-    iApply (wp_hasty with "Hp"). iIntros ([[]|] Hv) "Hp";
-      try iDestruct "Hp" as "[]". iDestruct "Hp" as "[H↦ Hf]".
-    iDestruct "H↦" as (vl) "[H↦ Hown]".
+    iApply (wp_hasty with "Hp"). iIntros ([[]|] Hv) "Hp"; try done.
+    iDestruct "Hp" as "[H↦ Hf]". iDestruct "H↦" as (vl) "[H↦ Hown]".
     iDestruct "Hown" as (i vl' vl'') "(>% & >EQlen & Hown)". subst.
     simpl ty_size. iDestruct "EQlen" as %[=EQlen]. rewrite -EQlen. simpl length.
     rewrite -Nat.add_1_l app_length -!freeable_sz_split
@@ -116,12 +115,12 @@ Section case.
   Proof.
     iIntros (Halive Hel) "!#". iIntros (tid qE) "#LFT Hna HE HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
-    iApply (wp_hasty with "Hp"). iIntros ([[]|] Hv) "Hp"; try iDestruct "Hp" as "[]".
+    iApply (wp_hasty with "Hp"). iIntros ([[]|] Hv) "Hp"; try done.
     iDestruct "Hp" as (i) "[#Hb Hshr]".
     iMod (Halive with "HE HL") as (q) "[Htok Hclose]". done.
     iMod (frac_bor_acc with "LFT Hb Htok") as (q') "[[H↦i H↦vl''] Hclose']". done.
     rewrite nth_lookup.
-    destruct (tyl !! i) as [ty|] eqn:EQty; last iDestruct "Hshr" as "[]".
+    destruct (tyl !! i) as [ty|] eqn:EQty; last done.
     edestruct @Forall2_lookup_l as (e & He & Hety); eauto.
     wp_read. iApply wp_case; [lia|by rewrite Nat2Z.id|]. iNext.
     iMod ("Hclose'" with "[$H↦i $H↦vl'']") as "Htok".

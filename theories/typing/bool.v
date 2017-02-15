@@ -13,7 +13,7 @@ Section bool.
          | [ #(LitInt (0|1))] => True
          | _ => False
          end%I |}.
-  Next Obligation. intros ? [|[[| |[|[]|]]|] []]; try iIntros "[]"; auto. Qed.
+  Next Obligation. intros ? [|[[| |[|[]|]]|] []]; auto with I. Qed.
   Next Obligation. intros ? [|[[| |[|[]|]]|] []]; apply _. Qed.
 
   Global Instance bool_send : Send bool.
@@ -46,8 +46,7 @@ Section typing.
     iIntros (Hp He1 He2) "!#". iIntros (tid qE) "#LFT Htl HE HL HC HT".
     iDestruct (big_sepL_elem_of _ _ _ Hp with "HT") as "#Hp".
     wp_bind p. iApply (wp_hasty with "Hp").
-    iIntros ([[| |[|[]|]]|]) "_ H1"; try iDestruct "H1" as "[]";
-      (iApply wp_case; [done..|iNext]).
+    iIntros ([[| |[|[]|]]|]) "_ H1"; try done; (iApply wp_case; [done..|iNext]).
     - iApply (He2 with "LFT Htl HE HL HC HT").
     - iApply (He1 with "LFT Htl HE HL HC HT").
   Qed.

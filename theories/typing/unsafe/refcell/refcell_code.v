@@ -28,10 +28,9 @@ Section refcell_functions.
     iIntros (r) "!# * #LFT Hna HE HL Hk HT". simpl_subst.
     rewrite (Nat2Z.id (S ty.(ty_size))) tctx_interp_cons
             tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hr Hx]".
-    destruct x as [[|lx|]|]; try iDestruct "Hx" as "[]". iDestruct "Hx" as "[Hx Hx†]".
-    iDestruct "Hx" as (vl) "[Hx↦ Hx]".
-    destruct r as [[|lr|]|]; try iDestruct "Hr" as "[]". iDestruct "Hr" as "[Hr Hr†]".
+    iDestruct "HT" as "[Hr Hx]". destruct x as [[|lx|]|]; try done.
+    iDestruct "Hx" as "[Hx Hx†]". iDestruct "Hx" as (vl) "[Hx↦ Hx]".
+    destruct r as [[|lr|]|]; try done. iDestruct "Hr" as "[Hr Hr†]".
     iDestruct "Hr" as (vl') "Hr". rewrite uninit_own.
     iDestruct "Hr" as "[Hr↦ >SZ]". destruct vl' as [|]; iDestruct "SZ" as %[=].
     rewrite heap_mapsto_vec_cons. iDestruct "Hr↦" as "[Hr↦0 Hr↦1]". wp_op.
@@ -66,10 +65,10 @@ Section refcell_functions.
     iIntros (r) "!# * #LFT Hna HE HL Hk HT". simpl_subst.
     rewrite (Nat2Z.id (ty.(ty_size))) tctx_interp_cons
             tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hr Hx]". destruct x as [[|lx|]|]; try iDestruct "Hx" as "[]".
+    iDestruct "HT" as "[Hr Hx]". destruct x as [[|lx|]|]; try done.
     iDestruct "Hx" as "[Hx Hx†]".
     iDestruct "Hx" as ([|[[]|]vl]) "[Hx↦ Hx]"; try iDestruct "Hx" as ">[]".
-    destruct r as [[|lr|]|]; try iDestruct "Hr" as "[]". iDestruct "Hr" as "[Hr Hr†]".
+    destruct r as [[|lr|]|]; try done. iDestruct "Hr" as "[Hr Hr†]".
     iDestruct "Hr" as (vl') "Hr". rewrite uninit_own heap_mapsto_vec_cons.
     iDestruct "Hr" as "[Hr↦ >%]". iDestruct "Hx↦" as "[Hx↦0 Hx↦1]". wp_op.
     iDestruct "Hx" as "[% Hx]". iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
@@ -109,7 +108,7 @@ Section refcell_functions.
         rewrite heap_mapsto_vec_cons.
         iDestruct "H" as "[H1 H2]". iDestruct "H↦" as "[H↦1 H↦2]".
         iSplitL "H1 H↦1"; eauto. iExists _. iFrame. }
-    destruct x as [[|lx|]|]; try iDestruct "Hx" as "[]". iDestruct "Hx" as "[Hx Hx†]".
+    destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
     iDestruct "Hx" as (vl) "[Hx↦ Hx]". rewrite uninit_own. wp_op.
     iApply (type_type _ _ _
             [ #lx ◁ box (uninit 1); #(shift_loc lx' 1) ◁ &uniq{α}ty]%TC
@@ -154,8 +153,7 @@ Section refcell_functions.
     eapply type_deref; [solve_typing..|apply read_own_copy, _|done|].
     iIntros (x') "!# * #LFT Hna HE HL Hk HT". simpl_subst.
     rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "(Hx & Hx' & Hr)".
-    destruct x' as [[|lx|]|]; try iDestruct "Hx'" as "[]".
+    iDestruct "HT" as "(Hx & Hx' & Hr)". destruct x' as [[|lx|]|]; try done.
     iDestruct "Hx'" as (β γ) "#[Hαβ Hinv]".
     rewrite {1}/elctx_interp big_sepL_singleton.
     iMod (lft_incl_acc with "Hαβ HE") as (qβ) "[[Hβtok1 Hβtok2] Hclose]". done.
@@ -261,8 +259,7 @@ Section refcell_functions.
     eapply type_deref; [solve_typing..|apply read_own_copy, _|done|].
     iIntros (x') "!# * #LFT Hna HE HL Hk HT". simpl_subst.
     rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "(Hx & Hx' & Hr)".
-    destruct x' as [[|lx|]|]; try iDestruct "Hx'" as "[]".
+    iDestruct "HT" as "(Hx & Hx' & Hr)". destruct x' as [[|lx|]|]; try done.
     iDestruct "Hx'" as (β γ) "#[Hαβ Hinv]".
     rewrite {1}/elctx_interp big_sepL_singleton.
     iMod (lft_incl_acc with "Hαβ HE") as (qβ) "[Hβtok Hclose]". done.

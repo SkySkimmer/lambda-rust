@@ -19,17 +19,12 @@ Section sum.
     iMod (bor_acc with "LFT Hown Htok") as "[>H _]"; first done.
     iDestruct "H" as (?) "[_ []]".
   Qed.
-  Next Obligation.
-    iIntros (κ κ' tid l) "#LFT #Hord []".
-  Qed.
+  Next Obligation. iIntros (κ κ' tid l) "#LFT #Hord []". Qed.
 
   Global Instance emp_empty : Empty type := emp.
 
   Global Instance emp_copy : Copy ∅.
-  Proof.
-    split; first by apply _.
-    iIntros (????????) "? []".
-  Qed.
+  Proof. split; first by apply _. iIntros (????????) "? []". Qed.
 
   Global Instance emp_send : Send ∅.
   Proof. iIntros (???) "[]". Qed.
@@ -168,9 +163,8 @@ Section sum.
     - iIntros (??) "[]".
     - iIntros (κ tid l) "[]".
     - iIntros (??) "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)".
-      rewrite nth_empty. by iDestruct "Hown" as "[]".
-    - iIntros (???) "H". iDestruct "H" as (i) "(_ & Hshr)".
-      rewrite nth_empty. by iDestruct "Hshr" as "[]".
+      by rewrite nth_empty.
+    - iIntros (???) "H". iDestruct "H" as (i) "(_ & Hshr)". by rewrite nth_empty.
   Qed.
 
   Global Instance sum_copy tyl : LstCopy tyl → Copy (sum tyl).

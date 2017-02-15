@@ -95,7 +95,7 @@ Section refmut.
     iDestruct (Hα with "HE HL") as "Hα1α2".
     iSplit; [|iSplit; iAlways].
     - done.
-    - iIntros (tid [|[[]|][|[[]|][]]]); try iIntros "[]". iIntros "H".
+    - iIntros (tid [|[[]|][|[[]|][]]]) "H"; try done.
       iDestruct "H" as (ν γ β ty') "(Hb & #H⊑ & #Hinv & Hν & Hown)".
       iExists ν, γ, β, ty'. iFrame "∗#". iSplit.
       + iApply bor_shorten; last iApply bor_iff; last done.

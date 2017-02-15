@@ -62,7 +62,7 @@ Section own.
          (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ∗
             □ (∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ] ={F,F∖↑shrN∖↑lftN}▷=∗ ty.(ty_shr) κ tid l' ∗ q.[κ]))%I
     |}.
-  Next Obligation. by iIntros (q ty tid [|[[]|][]]) "H"; try iDestruct "H" as "[]". Qed.
+  Next Obligation. by iIntros (q ty tid [|[[]|][]]) "H". Qed.
   Next Obligation.
     move=>n ty N κ l tid ?? /=. iIntros "#LFT Hshr Htok".
     iMod (bor_exists with "LFT Hshr") as (vl) "Hb". set_solver.
@@ -102,7 +102,7 @@ Section own.
     type_incl ty1 ty2 -∗ type_incl (own_ptr n ty1) (own_ptr n ty2).
   Proof.
     iIntros "(#Hsz & #Ho & #Hs)". iSplit; first done. iSplit; iAlways.
-    - iIntros (?[|[[| |]|][]]) "H"; try iDestruct "H" as "[]". simpl.
+    - iIntros (?[|[[| |]|][]]) "H"; try done. simpl.
       iDestruct "H" as "[Hmt H†]". iDestruct "Hmt" as (vl') "[Hmt Hown]". iNext.
       iDestruct ("Ho" with "Hown") as "Hown". iDestruct ("Hsz") as %<-.
       iFrame. iExists _. iFrame.
@@ -168,17 +168,15 @@ Section typing.
   Lemma write_own {E L} ty ty' n :
     ty.(ty_size) = ty'.(ty_size) → typed_write E L (own_ptr n ty') ty (own_ptr n ty).
   Proof.
-    iIntros (Hsz) "!#". iIntros ([[]|] tid F qE qL ?) "_ $ $ Hown";
-      try iDestruct "Hown" as "[]". rewrite /= Hsz. iDestruct "Hown" as "[H↦ $]".
-    iDestruct "H↦" as (vl) "[>H↦ Hown]". iDestruct (ty_size_eq with "Hown") as "#>%".
-    iExists _, _. iFrame "H↦". auto.
+    iIntros (Hsz) "!#". iIntros ([[]|] tid F qE qL ?) "_ $ $ Hown"; try done.
+    rewrite /= Hsz. iDestruct "Hown" as "[H↦ $]". iDestruct "H↦" as (vl) "[>H↦ Hown]".
+    iDestruct (ty_size_eq with "Hown") as "#>%". iExists _, _. iFrame "H↦". auto.
   Qed.
 
   Lemma read_own_copy E L ty n :
     Copy ty → typed_read E L (own_ptr n ty) ty (own_ptr n ty).
   Proof.
-    iIntros (Hsz) "!#". iIntros ([[]|] tid F qE qL ?) "_ $ $ $ Hown";
-      try iDestruct "Hown" as "[]".
+    iIntros (Hsz) "!#". iIntros ([[]|] tid F qE qL ?) "_ $ $ $ Hown"; try done.
     iDestruct "Hown" as "[H↦ H†]". iDestruct "H↦" as (vl) "[>H↦ #Hown]".
     iExists l, _, _. iFrame "∗#". iSplitR; first done. iIntros "!> Hl !>".
     iExists _. auto.
@@ -187,8 +185,7 @@ Section typing.
   Lemma read_own_move E L ty n :
     typed_read E L (own_ptr n ty) ty (own_ptr n $ uninit ty.(ty_size)).
   Proof.
-    iAlways. iIntros ([[]|] tid F qE qL ?) "_ $ $ $ Hown";
-      try iDestruct "Hown" as "[]".
+    iAlways. iIntros ([[]|] tid F qE qL ?) "_ $ $ $ Hown"; try done.
     iDestruct "Hown" as "[H↦ H†]". iDestruct "H↦" as (vl) "[>H↦ Hown]".
     iDestruct (ty_size_eq with "Hown") as "#>%".
     iExists l, vl, _. iFrame "∗#". iSplitR; first done. iIntros "!> Hl !> !>".
@@ -233,11 +230,10 @@ Section typing.
     typed_instruction E L [p ◁ box ty] (delete [ #n; p])%E (λ _, []).
   Proof.
     iIntros (<-) "!#". iIntros (tid eq) "#LFT $ $ $ Hp". rewrite tctx_interp_singleton.
-    wp_bind p. iApply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown";
-      try iDestruct "Hown" as "[]". iDestruct "Hown" as "[H↦∗: >H†]".
-    iDestruct "H↦∗:" as (vl) "[>H↦ Hown]". rewrite tctx_interp_nil.
-    iDestruct (ty_size_eq with "Hown") as "#>EQ". iDestruct "EQ" as %<-.
-    iApply (wp_delete with "[-]"); try (by auto); [].
+    wp_bind p. iApply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown"; try done.
+    iDestruct "Hown" as "[H↦∗: >H†]". iDestruct "H↦∗:" as (vl) "[>H↦ Hown]".
+    rewrite tctx_interp_nil. iDestruct (ty_size_eq with "Hown") as "#>EQ".
+    iDestruct "EQ" as %<-. iApply (wp_delete with "[-]"); auto; [].
     rewrite freeable_sz_full. by iFrame.
   Qed.
 
