@@ -62,8 +62,8 @@ Section ref.
 
   Global Instance ref_contractive α : Contractive (ref α).
   Proof.
-    intros n ?? EQ. unfold ref. split; [split|]=>//=.
-    - f_contractive=>tid vl. repeat (f_contractive || f_equiv). apply EQ.
+    intros n ?? EQ. unfold ref. constructor=>//=.
+    - intros tid vl. destruct n as [|n]=>//=. repeat (f_contractive || f_equiv). apply EQ.
     - intros κ tid l. repeat (f_contractive || f_equiv). apply EQ.
   Qed.
   Global Instance ref_ne n α : Proper (dist n ==> dist n) (ref α).

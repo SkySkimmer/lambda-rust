@@ -29,17 +29,17 @@ Section fn.
     Proper (pointwise_relation A (dist_later n') ==>
             pointwise_relation A (dist_later n') ==> dist n') (fn E).
   Proof.
-    intros ?? Htys ?? Hty. unfold fn. f_equiv. rewrite st_dist_unfold /=.
-    f_contractive=>tid vl. unfold typed_body.
+    intros ?? Htys ?? Hty. apply ty_of_st_ne; constructor.
+    intros tid vl. destruct n' as [|n']; simpl; [done|]. unfold typed_body.
     do 12 f_equiv. f_contractive. do 17 f_equiv.
     - rewrite !cctx_interp_singleton /=. do 5 f_equiv.
       rewrite !tctx_interp_singleton /tctx_elt_interp /=. repeat f_equiv. apply Hty.
-      by rewrite (ty_size_proper_d _ _ _ (Hty _)).
+      by rewrite (ty_size_ne _ _ _ (Hty _)).
     - rewrite /tctx_interp !big_sepL_zip_with /=. do 3 f_equiv.
       cut (∀ n tid p i, Proper (dist (S n) ==> dist n)
         (λ (l : list _), ∀ ty, ⌜l !! i = Some ty⌝ → tctx_elt_interp tid (p ◁ ty))%I).
       { intros Hprop. apply Hprop, list_fmap_ne, Htys. intros ty1 ty2 Hty12.
-        rewrite (ty_size_proper_d _ _ _ Hty12). by rewrite Hty12. }
+        rewrite (ty_size_ne _ _ _ Hty12). by rewrite Hty12. }
       clear. intros n tid p i x y. rewrite list_dist_lookup=>Hxy.
       specialize (Hxy i). destruct (x !! i) as [tyx|], (y !! i) as [tyy|];
         inversion_clear Hxy; last done.

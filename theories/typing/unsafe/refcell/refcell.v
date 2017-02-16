@@ -143,9 +143,9 @@ Section refcell.
 
   Global Instance refcell_ne n : Proper (dist n ==> dist n) refcell.
   Proof.
-    move=>ty1 ty2 Hty. split; [split|]; simpl.
+    move=>ty1 ty2 Hty. constructor; simpl.
     - f_equiv. apply Hty.
-    - f_contractive=>tid vl. repeat f_equiv. apply Hty.
+    - intros tid vl. destruct n as [|n]=>//=. repeat f_equiv. apply Hty.
     - intros κ tid l. by repeat f_equiv.
   Qed.
 

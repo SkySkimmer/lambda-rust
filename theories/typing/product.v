@@ -70,10 +70,10 @@ Section product.
   Global Instance product2_ne n:
     Proper (dist n ==> dist n ==> dist n) product2.
   Proof.
-    intros ?? EQ1 ?? EQ2. split; [split|]; simpl.
+    intros ?? EQ1 ?? EQ2. constructor; simpl.
     - by rewrite EQ1 EQ2.
-    - f_contractive=>tid vl. by setoid_rewrite EQ1; setoid_rewrite EQ2.
-    - intros ???. by rewrite EQ1 EQ2.
+    - intros tid vs. destruct n as [|n]=>//=. by setoid_rewrite EQ1; setoid_rewrite EQ2.
+    - intros ???. by rewrite EQ1 EQ2. (* slow, FIXME *)
   Qed.
 
   Global Instance product2_mono E L:

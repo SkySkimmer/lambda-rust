@@ -43,7 +43,7 @@ Section uninit.
 
   Lemma uninit_uninit0_eqtype E L n :
     eqtype E L (uninit0 n) (uninit n).
-  Proof. apply equiv_eqtype; (split; first split)=>//=. apply uninit0_sz. Qed.
+  Proof. apply equiv_eqtype; constructor=>//=. apply uninit0_sz. Qed.
 
   Lemma uninit_product_subtype_cons {E L} (n : nat) ty tyl :
     ty.(ty_size) ≤ n →

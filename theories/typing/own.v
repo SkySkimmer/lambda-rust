@@ -131,7 +131,7 @@ Section own.
 
   Global Instance own_contractive n : Contractive (own_ptr n).
   Proof.
-    intros m ?? EQ. split; [split|]; simpl.
+    intros m ?? EQ. constructor; simpl.
     - done.
     - destruct m=>// tid vl /=. repeat (apply EQ || f_contractive || f_equiv).
     - intros κ tid l. repeat (apply EQ || f_contractive || f_equiv).

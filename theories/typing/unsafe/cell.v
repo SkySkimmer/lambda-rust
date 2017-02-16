@@ -23,7 +23,7 @@ Section cell.
 
   Global Instance cell_ne n : Proper (dist n ==> dist n) cell.
   Proof.
-    intros ?? EQ. split; [split|]; simpl; try apply EQ.
+    intros ?? EQ. constructor; simpl; try apply EQ.
     intros κ tid l. repeat (apply EQ || f_contractive || f_equiv).
   Qed.
 

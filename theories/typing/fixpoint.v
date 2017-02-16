@@ -13,7 +13,7 @@ Section fixpoint.
     (∀ `(!Copy ty), Copy (T ty)) → Copy (fixpoint T).
   Proof.
     intros ?. apply fixpoint_ind.
-    - intros ??[[EQsz%leibniz_equiv EQown]EQshr].
+    - intros ??[EQsz%leibniz_equiv EQown EQshr].
       specialize (λ tid vl, EQown tid vl). specialize (λ κ tid l, EQshr κ tid l).
       simpl in *=>-[Hp Hsh]; (split; [intros ??|intros ???]).
       + revert Hp. by rewrite /PersistentP -EQown.
@@ -27,10 +27,10 @@ Section fixpoint.
         apply uPred.entails_equiv_and, equiv_dist=>n. etrans.
         { apply equiv_dist, uPred.entails_equiv_and, (copy_shr_acc κ tid E F)=>//.
             by rewrite -conv_compl. }
-        symmetry.               (* FIXME : this is too slow *)
+        symmetry.
         do 2 f_equiv; first by rewrite conv_compl. set (cn:=c n).
         repeat (apply (conv_compl n c) || f_contractive || f_equiv);
-          by rewrite conv_compl.
+          by rewrite conv_compl. (* slow, FIXME *)
   Qed.
 
   Global Instance fixpoint_send :
@@ -78,12 +78,13 @@ Section subtyping.
       assert (Hsz : lft_ctx -∗ lft_contexts.elctx_interp_0 E -∗
                 ⌜lft_contexts.llctx_interp_0 L⌝ -∗
                 ⌜(compl c).(ty_size) = (fixpoint T2).(ty_size)⌝).
-      { iIntros "LFT HE HL". iDestruct (Hc 0%nat with "LFT HE HL") as "[$ _]". }
+      { iIntros "LFT HE HL". rewrite (conv_compl 0 c) /=.
+        iDestruct (Hc 0%nat with "LFT HE HL") as "[$ _]". }
       assert (Hown : lft_ctx -∗ lft_contexts.elctx_interp_0 E -∗
                 ⌜lft_contexts.llctx_interp_0 L⌝ -∗
                 □ (∀ tid vl, (compl c).(ty_own) tid vl -∗ (fixpoint T2).(ty_own) tid vl)).
       { apply uPred.entails_equiv_and, equiv_dist=>n.
-        destruct (conv_compl (S n) c) as [[_ Heq] _]. setoid_rewrite (λ tid vl, Heq tid vl).
+        destruct (conv_compl (S n) c) as [_ Heq _]; simpl in *. setoid_rewrite Heq.
         apply equiv_dist, uPred.entails_equiv_and. iIntros "LFT HE HL".
         iDestruct (Hc (S n) with "LFT HE HL") as "[_ [$ _]]". }
       assert (Hshr : lft_ctx -∗ lft_contexts.elctx_interp_0 E -∗
@@ -91,7 +92,7 @@ Section subtyping.
                 □ (∀ κ tid l,
                    (compl c).(ty_shr) κ tid l -∗ (fixpoint T2).(ty_shr) κ tid l)).
       { apply uPred.entails_equiv_and, equiv_dist=>n.
-        destruct (conv_compl n c) as [_ Heq]. setoid_rewrite (λ κ tid l, Heq κ tid l).
+        destruct (conv_compl n c) as [_ _ Heq]; simpl in *. setoid_rewrite Heq.
         apply equiv_dist, uPred.entails_equiv_and. iIntros "LFT HE HL".
         iDestruct (Hc n with "LFT HE HL") as "[_ [_ $]]". }
       iIntros "LFT HE HL". iSplit; [|iSplit].
@@ -112,12 +113,13 @@ Section subtyping.
       assert (Hsz : lft_ctx -∗ lft_contexts.elctx_interp_0 E -∗
                 ⌜lft_contexts.llctx_interp_0 L⌝ -∗
                 ⌜(compl c).(ty_size) = (fixpoint T2).(ty_size)⌝).
-      { iIntros "LFT HE HL". iDestruct (Hc 0%nat with "LFT HE HL") as "[$ _]". }
+      { iIntros "LFT HE HL". rewrite (conv_compl 0 c) /=.
+        iDestruct (Hc 0%nat with "LFT HE HL") as "[$ _]". }
       assert (Hown : lft_ctx -∗ lft_contexts.elctx_interp_0 E -∗
                 ⌜lft_contexts.llctx_interp_0 L⌝ -∗
                 □ (∀ tid vl, (compl c).(ty_own) tid vl ↔ (fixpoint T2).(ty_own) tid vl)).
       { apply uPred.entails_equiv_and, equiv_dist=>n.
-        destruct (conv_compl (S n) c) as [[_ Heq] _]. setoid_rewrite (λ tid vl, Heq tid vl).
+        destruct (conv_compl (S n) c) as [_ Heq _]; simpl in *. setoid_rewrite Heq.
         apply equiv_dist, uPred.entails_equiv_and. iIntros "LFT HE HL".
         iDestruct (Hc (S n) with "LFT HE HL") as "[_ [$ _]]". }
       assert (Hshr : lft_ctx -∗ lft_contexts.elctx_interp_0 E -∗
@@ -125,7 +127,7 @@ Section subtyping.
                 □ (∀ κ tid l,
                    (compl c).(ty_shr) κ tid l ↔ (fixpoint T2).(ty_shr) κ tid l)).
       { apply uPred.entails_equiv_and, equiv_dist=>n.
-        destruct (conv_compl n c) as [_ Heq]. setoid_rewrite (λ κ tid l, Heq κ tid l).
+        destruct (conv_compl n c) as [_ _ Heq]. setoid_rewrite Heq.
         apply equiv_dist, uPred.entails_equiv_and. iIntros "LFT HE HL".
         iDestruct (Hc n with "LFT HE HL") as "[_ [_ $]]". }
       iIntros "LFT HE HL". iSplit; [|iSplit].

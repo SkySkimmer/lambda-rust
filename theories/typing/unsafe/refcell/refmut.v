@@ -78,8 +78,8 @@ Section refmut.
 
   Global Instance refmut_contractive α : Contractive (refmut α).
   Proof.
-    intros n ?? EQ. unfold refmut. split; [split|]=>//=.
-    - f_contractive=>tid vl. repeat (f_contractive || f_equiv). apply EQ.
+    intros n ?? EQ. unfold refmut. constructor=>//=.
+    - intros tid vl. destruct n as [|n]=>//=. repeat (f_contractive || f_equiv). apply EQ.
     - intros κ tid l. repeat (f_contractive || f_equiv). apply EQ.
   Qed.
   Global Instance refmut_ne n α : Proper (dist n ==> dist n) (refmut α).

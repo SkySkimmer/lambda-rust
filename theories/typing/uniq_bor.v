@@ -81,8 +81,7 @@ Section uniq_bor.
 
   Global Instance uniq_contractive κ : Contractive (uniq_bor κ).
   Proof.
-    intros n ?? EQ. split; [split|]; simpl.
-    - done.
+    intros n ?? EQ. constructor=> //=.
     - destruct n=>// tid vl /=. repeat (apply EQ || f_contractive || f_equiv).
     - intros κ' tid l. repeat (apply EQ || f_contractive || f_equiv).
   Qed.

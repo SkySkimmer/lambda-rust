@@ -34,8 +34,8 @@ Section shr_bor.
 
   Global Instance shr_contractive κ : Contractive (shr_bor κ).
   Proof.
-    intros n ?? EQ. unfold shr_bor. f_equiv. rewrite st_dist_unfold.
-    f_contractive=> /= tid vl. repeat f_equiv. apply EQ.
+    intros n ?? EQ. apply ty_of_st_ne; constructor=> //=.
+    intros tid vl. destruct n as [n|]=>//=. repeat f_equiv. apply EQ.
   Qed.
   Global Instance shr_ne κ n : Proper (dist n ==> dist n) (shr_bor κ).
   Proof. apply contractive_ne, _. Qed.

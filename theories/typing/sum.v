@@ -103,9 +103,9 @@ Section sum.
       rewrite IH. f_equiv. apply EQ. }
     assert (EQnth :∀ i, nth i x ∅ ≡{n}≡ nth i y ∅).
     { clear EQmax. induction EQ as [|???? EQ _ IH]=>-[|i] //=. }
-    split; [split|]; simpl.
+    constructor; simpl.
     - by rewrite EQmax.
-    - f_contractive=>tid vl. rewrite EQmax. by setoid_rewrite EQnth.
+    - intros tid vl. destruct n as [|n]=> //=. rewrite EQmax. by setoid_rewrite EQnth.
     - intros κ tid l. unfold is_pad. rewrite EQmax.
       assert (EQsz : ∀ i, (nth i x ∅).(ty_size) = (nth i y ∅).(ty_size))
         by (intros; apply EQnth).
