@@ -65,11 +65,11 @@ Section spawn.
     typed_instruction_ty [] [] [] spawn
         (fn([]; fn([] ; envty) → retty, envty) → join_handle retty).
   Proof. (* FIXME: typed_instruction_ty is not used for printing. *)
-    eapply type_fn; [solve_typing..|]=>- _ ret /= arg. inv_vec arg=>f env. simpl_subst.
-    eapply type_deref; [solve_typing..|exact: read_own_move|done|].
-    move=>f'. simpl_subst.
-    eapply type_let with (T1 := [f' ◁ _; env ◁ _]%TC)
-                         (T2 := λ j, [j ◁ join_handle retty]%TC); try solve_typing; [|].
+    iApply type_fn; [solve_typing..|]. simpl. iIntros (_ ret arg). inv_vec arg=>f env. simpl_subst.
+    iApply type_deref; [solve_typing..|exact: read_own_move|done|].
+    iIntros (f'). simpl_subst.
+    iApply (type_let _ _ _ _ ([f' ◁ _; env ◁ _]%TC)
+                     (λ j, [j ◁ join_handle retty]%TC)); try solve_typing; [|].
     { (* The core of the proof: showing that spawn is safe. *)
       iAlways. iIntros (tid qE) "#LFT $ $ $".
       rewrite tctx_interp_cons tctx_interp_singleton.
@@ -96,12 +96,11 @@ Section spawn.
         + rewrite !tctx_hasty_val.
           iApply @send_change_tid. done.
         + rewrite !tctx_hasty_val. iApply @send_change_tid. done. }
-    move=>v. simpl_subst.
-    eapply type_new; [solve_typing..|].
-    intros r. simpl_subst.
-    eapply type_assign; [solve_typing..|exact: write_own|].
-    eapply type_delete; [solve_typing..|].
-    eapply (type_jump [_]); solve_typing.
+    iIntros (v). simpl_subst.
+    iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
+    iApply type_assign; [solve_typing..|exact: write_own|].
+    iApply type_delete; [solve_typing..|].
+    iApply (type_jump [_]); solve_typing.
   Qed.
 
   Definition join : val :=
@@ -114,10 +113,10 @@ Section spawn.
     typed_instruction_ty [] [] [] join
         (fn([]; join_handle retty) → retty).
   Proof.
-    eapply type_fn; [solve_typing..|]=>- _ ret /= arg. inv_vec arg=>c. simpl_subst.
-    eapply type_deref; [solve_typing..|exact: read_own_move|done|]. move=>c'; simpl_subst.
-    eapply type_let with (T1 := [c' ◁ _]%TC)
-                         (T2 := λ r, [r ◁ box retty]%TC); try solve_typing; [|].
+    iApply type_fn; [solve_typing..|]. simpl. iIntros (_ ret arg). inv_vec arg=>c. simpl_subst.
+    iApply type_deref; [solve_typing..|exact: read_own_move|done|]. iIntros (c'); simpl_subst.
+    iApply (type_let _ _ _ _ ([c' ◁ _]%TC)
+                             (λ r, [r ◁ box retty]%TC)); try solve_typing; [|].
     { iAlways. iIntros (tid qE) "#LFT $ $ $".
       rewrite tctx_interp_singleton tctx_hasty_val. iIntros "Hc'".
       destruct c' as [[|c'|]|]; try done. iDestruct "Hc'" as (ty') "[#Hsub Hc']".
@@ -126,8 +125,7 @@ Section spawn.
       iPoseProof "Hsub" as "Hsz". iDestruct "Hsz" as "[% _]".
       iDestruct (own_type_incl with "Hsub") as "(_ & Hincl & _)".
       iApply "Hincl". rewrite -H. done. }
-    move=>r; simpl_subst.
-    eapply type_delete; [solve_typing..|].
-    eapply (type_jump [_]); solve_typing.
+    iIntros (r); simpl_subst. iApply type_delete; [solve_typing..|].
+    iApply (type_jump [_]); solve_typing.
   Qed.
 End spawn.

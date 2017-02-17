@@ -1,3 +1,4 @@
+From iris.proofmode Require Export tactics.
 From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
@@ -15,14 +16,14 @@ Section unwrap_or.
     typed_instruction_ty [] [] [] (unwrap_or τ)
         (fn([]; Σ[unit; τ], τ) → τ).
   Proof.
-    eapply type_fn; [solve_typing..|]=>- /= [] ret p. inv_vec p=>o def. simpl_subst.
-    eapply type_case_own; [solve_typing..|]. constructor; last constructor; last constructor.
-    + right. eapply type_delete; [solve_typing..|].
-      eapply (type_jump [_]); solve_typing.
-    + left. eapply type_letalloc_n; [solve_typing..|by apply read_own_move|]=>r.
+    iApply type_fn; [solve_typing..|]. simpl. iIntros ([] ret p). inv_vec p=>o def. simpl_subst.
+    iApply type_case_own; [solve_typing|]. constructor; last constructor; last constructor.
+    + right. iApply type_delete; [solve_typing..|].
+      iApply (type_jump [_]); solve_typing.
+    + left. iApply type_letalloc_n; [solve_typing|by apply read_own_move|]. iIntros (r).
         simpl_subst.
-      eapply (type_delete (Π[uninit _;uninit _;uninit _])); [solve_typing..|].
-      eapply type_delete; [solve_typing..|].
-      eapply (type_jump [_]); solve_typing.
+      iApply (type_delete (Π[uninit _;uninit _;uninit _])); [solve_typing..|].
+      iApply type_delete; [solve_typing..|].
+      iApply (type_jump [_]); solve_typing.
   Qed.
 End unwrap_or.

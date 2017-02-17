@@ -32,22 +32,20 @@ Section typing.
 
   Lemma type_bool (b : Datatypes.bool) E L C T x e :
     Closed (x :b: []) e →
-    (∀ (v : val), typed_body E L C ((v ◁ bool) :: T) (subst' x v e)) →
+    (∀ (v : val), typed_body E L C ((v ◁ bool) :: T) (subst' x v e)) -∗
     typed_body E L C T (let: x := #b in e).
-  Proof.
-    intros. eapply type_let; [done|apply type_bool_instr|solve_typing|done].
-  Qed.
+  Proof. iIntros. iApply type_let; [apply type_bool_instr|solve_typing|done]. Qed.
 
   Lemma type_if E L C T e1 e2 p:
     (p ◁ bool)%TC ∈ T →
-    typed_body E L C T e1 → typed_body E L C T e2 →
+    typed_body E L C T e1 -∗ typed_body E L C T e2 -∗
     typed_body E L C T (if: p then e1 else e2).
   Proof.
-    iIntros (Hp He1 He2) "!#". iIntros (tid qE) "#LFT Htl HE HL HC HT".
+    iIntros (Hp) "#He1 #He2 !#". iIntros (tid qE) "#LFT Htl HE HL HC HT".
     iDestruct (big_sepL_elem_of _ _ _ Hp with "HT") as "#Hp".
     wp_bind p. iApply (wp_hasty with "Hp").
     iIntros ([[| |[|[]|]]|]) "_ H1"; try done; (iApply wp_case; [done..|iNext]).
-    - iApply (He2 with "LFT Htl HE HL HC HT").
-    - iApply (He1 with "LFT Htl HE HL HC HT").
+    - iApply ("He2" with "LFT Htl HE HL HC HT").
+    - iApply ("He1" with "LFT Htl HE HL HC HT").
   Qed.
 End typing.

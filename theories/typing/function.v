@@ -250,10 +250,10 @@ Section typing.
     elctx_sat E L (E' x) →
     tctx_extract_ctx E L (zip_with TCtx_hasty ps
                                    ((λ ty, box ty) <$> vec_to_list (tys x))) T T' →
-    (∀ ret : val, typed_body E L C ((ret ◁ box (ty x))::T') (subst' b ret e)) →
+    (∀ ret : val, typed_body E L C ((ret ◁ box (ty x))::T') (subst' b ret e)) -∗
     typed_body E L C T (letcall: b := p ps in e).
   Proof.
-    intros ?? Hpsc ????. eapply (type_cont [_] _ (λ r, (r!!!0 ◁ box (ty x)) :: T')%TC).
+    iIntros (?? Hpsc ???) "He". iApply (type_cont [_] _ (λ r, (r!!!0 ◁ box (ty x)) :: T')%TC).
     - (* TODO : make [solve_closed] work here. *)
       eapply is_closed_weaken; first done. set_solver+.
     - (* TODO : make [solve_closed] work here. *)
@@ -261,17 +261,19 @@ Section typing.
       + by eapply is_closed_weaken, list_subseteq_nil.
       + eapply Is_true_eq_left, forallb_forall, List.Forall_forall, Forall_impl=>//.
         intros. eapply Is_true_eq_true, is_closed_weaken=>//. set_solver+.
-    - intros.
+    - iIntros (k).
       (* TODO : make [simpl_subst] work here. *)
       change (subst' "_k" k (p (Var "_k" :: ps))) with
              ((subst "_k" k p) (of_val k :: map (subst "_k" k) ps)).
       rewrite is_closed_nil_subst //.
       assert (map (subst "_k" k) ps = ps) as ->.
       { clear -Hpsc. induction Hpsc=>//=. rewrite is_closed_nil_subst //. congruence. }
-      eapply type_call; try done. constructor. done.
-    - move=>/= k ret. inv_vec ret=>ret. rewrite /subst_v /=.
-      rewrite ->(is_closed_subst []), incl_cctx_incl; first done; try set_solver+.
-      apply subst'_is_closed; last done. apply is_closed_of_val.
+      iApply type_call; try done. constructor. done.
+    - simpl. iIntros (k ret). inv_vec ret=>ret. rewrite /subst_v /=.
+      rewrite ->(is_closed_subst []); last set_solver+; last first.
+      { apply subst'_is_closed; last done. apply is_closed_of_val. }
+      (iApply typed_body_mono; last by iApply "He"); [|done..].
+      apply incl_cctx_incl. set_solver+.
   Qed.
 
   Lemma type_rec {A} E L E' fb (argsb : list binder) ef e n
@@ -285,16 +287,16 @@ Section typing.
                    ((f ◁ fn E' tys ty) ::
                       zip_with (TCtx_hasty ∘ of_val) args
                                ((λ ty, box ty) <$> vec_to_list (tys x)) ++ T)
-                   (subst_v (fb :: BNamed "return" :: argsb) (f ::: k ::: args) e)) →
+                   (subst_v (fb :: BNamed "return" :: argsb) (f ::: k ::: args) e)) -∗
     typed_instruction_ty E L T ef (fn E' tys ty).
   Proof.
-    iIntros (-> -> Hc Hbody) "!# * #LFT $ $ $ #HT". iApply wp_value.
+    iIntros (-> -> Hc) "#Hbody !# * #LFT $ $ $ #HT". iApply wp_value.
     { simpl. rewrite ->(decide_left Hc). done. }
     rewrite tctx_interp_singleton. iLöb as "IH". iExists _. iSplit.
     { simpl. rewrite decide_left. done. }
     iExists fb, _, argsb, e, _. iSplit. done. iSplit. done. iNext. clear qE.
     iIntros (x k args) "!#". iIntros (tid' qE) "_ Htl HE HL HC HT'".
-    iApply (Hbody with "LFT Htl HE HL HC").
+    iApply ("Hbody" with "LFT Htl HE HL HC").
     rewrite tctx_interp_cons tctx_interp_app. iFrame "HT' IH".
     by iApply sendc_change_tid.
   Qed.
@@ -309,10 +311,11 @@ Section typing.
         typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
                    (zip_with (TCtx_hasty ∘ of_val) args
                              ((λ ty, box ty) <$> vec_to_list (tys x)) ++ T)
-                   (subst_v (BNamed "return" :: argsb) (k ::: args) e)) →
+                   (subst_v (BNamed "return" :: argsb) (k ::: args) e)) -∗
     typed_instruction_ty E L T ef (fn E' tys ty).
   Proof.
-    intros. eapply type_rec; try done. intros. rewrite -typed_body_mono //=.
+    iIntros (???) "He". iApply type_rec; try done. iIntros.
+    (iApply typed_body_mono; last by iApply "He"); try done.
     eapply contains_tctx_incl. by constructor.
   Qed.
 End typing.

@@ -1,3 +1,4 @@
+From iris.proofmode Require Export tactics.
 From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
@@ -17,11 +18,12 @@ Section get_x.
      and without using 'typed_instruction_ty'.  I think that's related to
      the list notation that we added to %TC. *)
   Proof.
-    eapply type_fn; [solve_typing..|]=> /= α ret p. inv_vec p=>p. simpl_subst.
-    eapply type_deref; [solve_typing..|by apply read_own_move|done|].
-      intros p'; simpl_subst.
-    eapply (type_letalloc_1 (&shr{α}int)); [solve_typing..|]=>r. simpl_subst.
-    eapply type_delete; [solve_typing..|].
-    eapply (type_jump [_]); solve_typing.
+    iApply type_fn; [solve_typing..|]. simpl. iIntros (α ret p).
+    inv_vec p=>p. simpl_subst.
+    iApply type_deref; [solve_typing..|by apply read_own_move|done|].
+      iIntros (p'); simpl_subst.
+    iApply (type_letalloc_1 (&shr{α}int)); [solve_typing..|]. iIntros (r). simpl_subst.
+    iApply type_delete; [solve_typing..|].
+    iApply (type_jump [_]); solve_typing.
   Qed.
 End get_x.

@@ -1,3 +1,4 @@
+From iris.proofmode Require Export tactics.
 From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
@@ -20,26 +21,26 @@ Section lazy_lft.
     typed_instruction_ty [] [] [] lazy_lft
         (fn([]) → unit).
   Proof.
-    eapply type_fn; [solve_typing..|]=>- /= [] ret p. inv_vec p. simpl_subst.
-    eapply (type_newlft []); [solve_typing|]=>α.
-    eapply (type_new_subtype (Π[uninit 1;uninit 1])); [solve_typing..|].
-      intros t. simpl_subst.
-    eapply type_new; [solve_typing..|]=>f. simpl_subst.
-    eapply type_new; [solve_typing..|]=>g. simpl_subst.
-    eapply type_int; [solve_typing|]=>v42. simpl_subst.
-    eapply type_assign; [solve_typing..|by eapply write_own|].
-    eapply (type_assign _ (&shr{α}_)); [solve_typing..|by eapply write_own|].
-    eapply type_assign; [solve_typing..|by eapply write_own|].
-    eapply type_deref; [solve_typing..|apply: read_own_copy|done|]=>t0'. simpl_subst.
-    eapply type_letpath; [solve_typing..|]=>dummy. simpl_subst.
-    eapply type_int; [solve_typing|]=>v23. simpl_subst.
-    eapply type_assign; [solve_typing..|by eapply write_own|].
-    eapply (type_assign _ (&shr{α}int)); [solve_typing..|by eapply write_own|].
-    eapply type_new; [solve_typing..|] =>r. simpl_subst.
-    eapply type_endlft; [solve_typing..|].
-    eapply (type_delete (Π[&shr{_}_;&shr{_}_])%T); [solve_typing..|].
-    eapply type_delete; [solve_typing..|].
-    eapply type_delete; [solve_typing..|].
-    eapply (type_jump [_]); solve_typing.
+    iApply type_fn; [solve_typing..|]. simpl. iIntros ([] ret p). inv_vec p. simpl_subst.
+    iApply (type_newlft []). iIntros (α).
+    iApply (type_new_subtype (Π[uninit 1;uninit 1])); [solve_typing..|].
+      iIntros (t). simpl_subst.
+    iApply type_new; [solve_typing|]. iIntros (f). simpl_subst.
+    iApply type_new; [solve_typing|]. iIntros (g). simpl_subst.
+    iApply type_int. iIntros (v42). simpl_subst.
+    iApply type_assign; [solve_typing|by eapply write_own|].
+    iApply (type_assign _ (&shr{α}_)); [solve_typing..|by eapply write_own|].
+    iApply type_assign; [solve_typing|by eapply write_own|].
+    iApply type_deref; [solve_typing|apply: read_own_copy|done|]. iIntros (t0'). simpl_subst.
+    iApply type_letpath; [solve_typing|]. iIntros (dummy). simpl_subst.
+    iApply type_int. iIntros (v23). simpl_subst.
+    iApply type_assign; [solve_typing|by eapply write_own|].
+    iApply (type_assign _ (&shr{α}int)); [solve_typing..|by eapply write_own|].
+    iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
+    iApply type_endlft; [solve_typing..|].
+    iApply (type_delete (Π[&shr{_}_;&shr{_}_])%T); [solve_typing..|].
+    iApply type_delete; [solve_typing..|].
+    iApply type_delete; [solve_typing..|].
+    iApply (type_jump [_]); solve_typing.
   Qed.
 End lazy_lft.

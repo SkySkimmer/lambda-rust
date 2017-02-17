@@ -1,3 +1,4 @@
+From iris.proofmode Require Export tactics.
 From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
@@ -15,15 +16,15 @@ Section init_prod.
     typed_instruction_ty [] [] [] init_prod
         (fn([]; int, int) → Π[int;int]).
   Proof.
-    eapply type_fn; [solve_typing..|]=>- /= [] ret p. inv_vec p=>x y. simpl_subst.
-    eapply type_deref; [solve_typing..|apply read_own_move|done|]=>x'. simpl_subst.
-    eapply type_deref; [solve_typing..|apply read_own_move|done|]=>y'. simpl_subst.
-    eapply (type_new_subtype (Π[uninit 1; uninit 1])); [solve_typing..|].
-      intros r. simpl_subst. unfold Z.to_nat, Pos.to_nat; simpl.
-    eapply (type_assign (own_ptr 2 (uninit 1))); [solve_typing..|by apply write_own|].
-    eapply type_assign; [solve_typing..|by apply write_own|].
-    eapply type_delete; [solve_typing..|].
-    eapply type_delete; [solve_typing..|].
-    eapply (type_jump [_]); solve_typing.
+    iApply type_fn; [solve_typing..|]. simpl. iIntros ([] ret p). inv_vec p=>x y. simpl_subst.
+    iApply type_deref; [solve_typing..|apply read_own_move|done|]. iIntros (x'). simpl_subst.
+    iApply type_deref; [solve_typing..|apply read_own_move|done|]. iIntros (y'). simpl_subst.
+    iApply (type_new_subtype (Π[uninit 1; uninit 1])); [solve_typing..|].
+      iIntros (r). simpl_subst. unfold Z.to_nat, Pos.to_nat; simpl.
+    iApply (type_assign (own_ptr 2 (uninit 1))); [solve_typing..|by apply write_own|].
+    iApply type_assign; [solve_typing..|by apply write_own|].
+    iApply type_delete; [solve_typing..|].
+    iApply type_delete; [solve_typing..|].
+    iApply (type_jump [_]); solve_typing.
   Qed.
 End init_prod.

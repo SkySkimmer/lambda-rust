@@ -88,7 +88,7 @@ Section typing_rules.
   (* This lemma is helpful when switching from proving unsafe code in Iris
      back to proving it in the type system. *)
   Lemma type_type E L C T e :
-    typed_body E L C T e → typed_body E L C T e.
+    typed_body E L C T e -∗ typed_body E L C T e.
   Proof. done. Qed.
 
   (* TODO: notation scopes need tuing to avoid the %list here. *)
@@ -109,43 +109,51 @@ Section typing_rules.
 
   Lemma type_let' E L T1 T2 (T : tctx) C xb e e' :
     Closed (xb :b: []) e' →
-    typed_instruction E L T1 e T2 →
-    (∀ v : val, typed_body E L C (T2 v ++ T) (subst' xb v e')) →
+    typed_instruction E L T1 e T2 -∗
+    (∀ v : val, typed_body E L C (T2 v ++ T) (subst' xb v e')) -∗
     typed_body E L C (T1 ++ T) (let: xb := e in e').
   Proof.
-    iIntros (Hc He He') "!#". iIntros (tid qE) "#LFT Htl HE HL HC HT". rewrite tctx_interp_app.
+    iIntros (Hc) "#He #He' !#". iIntros (tid qE) "#LFT Htl HE HL HC HT". rewrite tctx_interp_app.
     iDestruct "HT" as "[HT1 HT]". wp_bind e. iApply (wp_wand with "[HE HL HT1 Htl]").
-    { iApply (He with "LFT Htl HE HL HT1"). }
+    { iApply ("He" with "LFT Htl HE HL HT1"). }
     iIntros (v) "/= (Htl & HE & HL & HT2)". iApply wp_let; first wp_done.
-    iModIntro. iApply (He' with "LFT Htl HE HL HC [HT2 HT]").
+    iModIntro. iApply ("He'" with "LFT Htl HE HL HC [HT2 HT]").
     rewrite tctx_interp_app. by iFrame.
   Qed.
 
+  (* We do not make the [typed_instruction] hypothesis part of the
+     Iris hypotheses, because we want to preserve the order of the
+     hypotheses. The is important, since proving [typed_instruction]
+     will instantiate [T1] and [T2], and hence we know what to search
+     for the following hypothesis. *)
   Lemma type_let E L T T' T1 T2 C xb e e' :
     Closed (xb :b: []) e' →
     typed_instruction E L T1 e T2 →
     tctx_extract_ctx E L T1 T T' →
-    (∀ v : val, typed_body E L C (T2 v ++ T') (subst' xb v e')) →
+    (∀ v : val, typed_body E L C (T2 v ++ T') (subst' xb v e')) -∗
     typed_body E L C T (let: xb := e in e').
-  Proof. unfold tctx_extract_ctx. intros ?? -> ?. by eapply type_let'. Qed.
+  Proof.
+    unfold tctx_extract_ctx. iIntros (? He ->) "?". iApply type_let'; last done.
+    iApply He.
+  Qed.
 
   Lemma type_seq E L T T' T1 T2 C e e' :
     Closed [] e' →
     typed_instruction E L T1 e (λ _, T2) →
     tctx_extract_ctx E L T1 T T' →
-    (typed_body E L C (T2 ++ T') e') →
+    typed_body E L C (T2 ++ T') e' -∗
     typed_body E L C T (e ;; e').
-  Proof. intros. by eapply (type_let E L T T' T1 (λ _, T2)). Qed.
+  Proof. iIntros. iApply (type_let E L T T' T1 (λ _, T2)); auto. Qed.
 
   Lemma type_newlft {E L C T} κs e :
     Closed [] e →
-    (∀ κ, typed_body E ((κ ⊑ κs) :: L) C T e) →
+    (∀ κ, typed_body E ((κ ⊑ κs) :: L) C T e) -∗
     typed_body E L C T (Newlft ;; e).
   Proof.
-    iIntros (Hc He) "!#". iIntros (tid qE) "#LFT Htl HE HL HC HT".
+    iIntros (Hc) "#He !#". iIntros (tid qE) "#LFT Htl HE HL HC HT".
     iMod (lft_create with "LFT") as (Λ) "[Htk #Hinh]"; first done.
     set (κ' := foldr (∪) static κs). wp_seq.
-    iApply (He (κ' ∪ Λ) with "LFT Htl HE [HL Htk] HC HT").
+    iApply ("He" $! (κ' ∪ Λ) with "LFT Htl HE [HL Htk] HC HT").
     rewrite /llctx_interp big_sepL_cons. iFrame "HL".
     iExists Λ. iSplit; first done. iFrame. done.
   Qed.
@@ -154,13 +162,14 @@ Section typing_rules.
      Right now, we could take two. *)
   Lemma type_endlft E L C T1 T2 κ κs e :
     Closed [] e → UnblockTctx κ T1 T2 →
-    typed_body E L C T2 e → typed_body E ((κ ⊑ κs) :: L) C T1 (Endlft ;; e).
+    typed_body E L C T2 e -∗ typed_body E ((κ ⊑ κs) :: L) C T1 (Endlft ;; e).
   Proof.
-    iIntros (Hc Hub He) "!#". iIntros (tid qE) "#LFT Htl HE". rewrite /llctx_interp big_sepL_cons.
-    iIntros "[Hκ HL] HC HT". iDestruct "Hκ" as (Λ) "(% & Htok & #Hend)".
+    iIntros (Hc Hub) "#He !#". iIntros (tid qE) "#LFT Htl HE".
+    rewrite /llctx_interp big_sepL_cons. iIntros "[Hκ HL] HC HT".
+    iDestruct "Hκ" as (Λ) "(% & Htok & #Hend)".
     iSpecialize ("Hend" with "Htok"). wp_bind Endlft.
     iApply (wp_fupd_step with "Hend"); try done. wp_seq.
-    iIntros "#Hdead !>". wp_seq. iApply (He with "LFT Htl HE HL HC >").
+    iIntros "#Hdead !>". wp_seq. iApply ("He" with "LFT Htl HE HL HC >").
     iApply (Hub with "[] HT"). simpl in *. subst κ. rewrite -lft_dead_or. auto.
   Qed.
 
@@ -175,11 +184,9 @@ Section typing_rules.
   Lemma type_letpath {E L} ty C T T' x p e :
     Closed (x :b: []) e →
     tctx_extract_hasty E L p ty T T' →
-    (∀ (v : val), typed_body E L C ((v ◁ ty) :: T') (subst' x v e)) →
+    (∀ (v : val), typed_body E L C ((v ◁ ty) :: T') (subst' x v e)) -∗
     typed_body E L C T (let: x := p in e).
-  Proof.
-    intros. eapply type_let; [done|by apply type_path_instr|solve_typing|by simpl].
-  Qed.
+  Proof. iIntros. iApply type_let; [by apply type_path_instr|solve_typing|done]. Qed.
 
   Lemma type_assign_instr {E L} ty ty1 ty1' p1 p2 :
     typed_write E L ty1 ty ty1' →
@@ -203,9 +210,9 @@ Section typing_rules.
     Closed [] e →
     tctx_extract_ctx E L [p1 ◁ ty1; p2 ◁ ty] T T' →
     typed_write E L ty1 ty ty1' →
-    typed_body E L C ((p1 ◁ ty1') :: T') e →
+    typed_body E L C ((p1 ◁ ty1') :: T') e -∗
     typed_body E L C T (p1 <- p2 ;; e).
-  Proof. intros. eapply type_seq; [done |by apply type_assign_instr|done|done]. Qed.
+  Proof. iIntros. by iApply type_seq; first apply type_assign_instr. Qed.
 
   Lemma type_deref_instr {E L} ty ty1 ty1' p :
     ty.(ty_size) = 1%nat → typed_read E L ty1 ty ty1' →
@@ -229,11 +236,9 @@ Section typing_rules.
     tctx_extract_hasty E L p ty1 T T' →
     typed_read E L ty1 ty ty1' →
     ty.(ty_size) = 1%nat →
-    (∀ (v : val), typed_body E L C ((p ◁ ty1') :: (v ◁ ty) :: T') (subst' x v e)) →
+    (∀ (v : val), typed_body E L C ((p ◁ ty1') :: (v ◁ ty) :: T') (subst' x v e)) -∗
     typed_body E L C T (let: x := !p in e).
-  Proof.
-    intros. eapply type_let; [done|by apply type_deref_instr|solve_typing|by simpl].
-  Qed.
+  Proof. iIntros. by iApply type_let; [apply type_deref_instr|solve_typing|]. Qed.
 
   Lemma type_memcpy_iris E qE L qL tid ty ty1 ty1' ty2 ty2' (n : Z) p1 p2 :
     Z.of_nat (ty.(ty_size)) = n →
@@ -280,9 +285,7 @@ Section typing_rules.
     typed_write E L ty1 ty ty1' →
     typed_read E L ty2 ty ty2' →
     Z.of_nat (ty.(ty_size)) = n →
-    typed_body E L C ((p1 ◁ ty1') :: (p2 ◁ ty2') :: T') e →
+    typed_body E L C ((p1 ◁ ty1') :: (p2 ◁ ty2') :: T') e -∗
     typed_body E L C T (p1 <-{n} !p2;; e).
-  Proof.
-    intros. by eapply type_seq; [|by eapply (type_memcpy_instr ty ty1 ty1')|..].
-  Qed.
+  Proof. iIntros. by iApply type_seq; first eapply (type_memcpy_instr ty ty1 ty1'). Qed.
 End typing_rules.

@@ -1,3 +1,4 @@
+From iris.proofmode Require Export tactics.
 From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
@@ -19,18 +20,18 @@ Section rebor.
     typed_instruction_ty [] [] [] rebor
         (fn([]; Π[int; int], Π[int; int]) → int).
   Proof.
-    eapply type_fn; [solve_typing..|]=>- /= [] ret p. inv_vec p=>t1 t2. simpl_subst.
-    eapply (type_newlft []). apply _. move=> α.
-    eapply (type_letalloc_1 (&uniq{α}Π[int; int])); [solve_typing..|]=>x. simpl_subst.
-    eapply type_deref; [solve_typing..|apply read_own_move|done|]=>x'. simpl_subst.
-    eapply (type_letpath (&uniq{α}int)); [solve_typing..|]=>y. simpl_subst.
-    eapply (type_assign _ (&uniq{α}Π [int; int])); [solve_typing..|by apply write_own|].
-    eapply type_deref; [solve_typing..|apply: read_uniq; solve_typing|done|]=>y'. simpl_subst.
-    eapply type_letalloc_1; [solve_typing..|]=>r. simpl_subst.
-    eapply type_endlft; [solve_typing..|].
-    eapply type_delete; [solve_typing..|].
-    eapply type_delete; [solve_typing..|].
-    eapply type_delete; [solve_typing..|].
-    eapply (type_jump [_]); solve_typing.
+    iApply type_fn; [solve_typing..|]. simpl. iIntros ([] ret p). inv_vec p=>t1 t2. simpl_subst.
+    iApply (type_newlft []). iIntros (α).
+    iApply (type_letalloc_1 (&uniq{α}Π[int; int])); [solve_typing..|]. iIntros (x). simpl_subst.
+    iApply type_deref; [solve_typing|apply read_own_move|done|]. iIntros (x'). simpl_subst.
+    iApply (type_letpath (&uniq{α}int)); [solve_typing|]. iIntros (y). simpl_subst.
+    iApply (type_assign _ (&uniq{α}Π [int; int])); [solve_typing|by apply write_own|].
+    iApply type_deref; [solve_typing|apply: read_uniq; solve_typing|done|]. iIntros (y'). simpl_subst.
+    iApply type_letalloc_1; [solve_typing..|]. iIntros (r). simpl_subst.
+    iApply type_endlft.
+    iApply type_delete; [solve_typing..|].
+    iApply type_delete; [solve_typing..|].
+    iApply type_delete; [solve_typing..|].
+    iApply (type_jump [_]); solve_typing.
   Qed.
 End rebor.

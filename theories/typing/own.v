@@ -206,20 +206,20 @@ Section typing.
     Closed (x :b: []) e →
     0 ≤ n →
     (∀ (v : val) (n' := Z.to_nat n),
-        typed_body E L C ((v ◁ box (uninit n')) :: T) (subst' x v e)) →
+        typed_body E L C ((v ◁ box (uninit n')) :: T) (subst' x v e)) -∗
     typed_body E L C T (let: x := new [ #n ] in e).
-  Proof. intros. eapply type_let; [done|by apply type_new_instr|solve_typing..]. Qed.
+  Proof. iIntros. iApply type_let; [by apply type_new_instr|solve_typing..]. Qed.
 
   Lemma type_new_subtype ty E L C T x (n : Z) e :
     Closed (x :b: []) e →
     0 ≤ n →
     let n' := Z.to_nat n in
     subtype E L (uninit n') ty →
-    (∀ (v : val), typed_body E L C ((v ◁ own_ptr n' ty) :: T) (subst' x v e)) →
+    (∀ (v : val), typed_body E L C ((v ◁ own_ptr n' ty) :: T) (subst' x v e)) -∗
     typed_body E L C T (let: x := new [ #n ] in e).
   Proof.
-    intros ???? Htyp. eapply type_let. done. by apply type_new_instr. solve_typing.
-    iIntros (v). iApply typed_body_mono; [done| |done|by iApply (Htyp v)].
+    iIntros (????) "Htyp". iApply type_let; [by apply type_new_instr|solve_typing|].
+    iIntros (v). iApply typed_body_mono; last iApply "Htyp"; try done.
     by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl, own_mono.
   Qed.
 
@@ -239,10 +239,10 @@ Section typing.
     Closed [] e →
     tctx_extract_hasty E L p (own_ptr n' ty) T T' →
     n = n' → Z.of_nat (ty.(ty_size)) = n →
-    typed_body E L C T' e →
+    typed_body E L C T' e -∗
     typed_body E L C T (delete [ #n; p ] ;; e).
   Proof.
-    intros ?? -> Hlen ?. eapply type_seq; [done|by apply type_delete_instr| |done].
+    iIntros (?? -> Hlen) "?". iApply type_seq; [by apply type_delete_instr| |done].
     by rewrite (inj _ _ _ Hlen).
   Qed.
 
@@ -250,20 +250,20 @@ Section typing.
     Closed [] p → Closed (x :b: []) e →
     tctx_extract_hasty E L p ty T T' →
     ty.(ty_size) = 1%nat →
-    (∀ (v : val), typed_body E L C ((v ◁ own_ptr 1 ty)::T') (subst x v e)) →
+    (∀ (v : val), typed_body E L C ((v ◁ own_ptr 1 ty)::T') (subst x v e)) -∗
     typed_body E L C T (letalloc: x <- p in e).
   Proof.
-    intros. eapply type_new.
+    iIntros. iApply type_new.
     - rewrite /Closed /=. rewrite !andb_True.
       eauto 10 using is_closed_weaken with set_solver.
     - done.
-    - move=>xv /=.
+    - iIntros (xv) "/=".
       assert (subst x xv (x <- p ;; e)%E = (xv <- p ;; subst x xv e)%E) as ->.
       { (* TODO : simpl_subst should be able to do this. *)
         unfold subst=>/=. repeat f_equal.
         - by rewrite bool_decide_true.
         - eapply is_closed_subst. done. set_solver. }
-      eapply type_assign; [|solve_typing|by eapply write_own|done].
+      iApply type_assign; [|solve_typing|by eapply write_own|done].
       apply subst_is_closed; last done. apply is_closed_of_val.
   Qed.
 
@@ -272,14 +272,14 @@ Section typing.
     tctx_extract_hasty E L p ty1 T T' →
     typed_read E L ty1 ty ty2 →
     (∀ (v : val),
-        typed_body E L C ((v ◁ own_ptr (ty.(ty_size)) ty)::(p ◁ ty2)::T') (subst x v e)) →
+        typed_body E L C ((v ◁ own_ptr (ty.(ty_size)) ty)::(p ◁ ty2)::T') (subst x v e)) -∗
     typed_body E L C T (letalloc: x <-{ty.(ty_size)} !p in e).
   Proof.
-    intros. eapply type_new.
+    iIntros. iApply type_new.
     - rewrite /Closed /=. rewrite !andb_True.
       eauto 10 using is_closed_of_val, is_closed_weaken with set_solver.
     - lia.
-    - move=>xv /=.
+    - iIntros (xv) "/=".
       assert (subst x xv (x <-{ty.(ty_size)} !p ;; e)%E =
               (xv <-{ty.(ty_size)} !p ;; subst x xv e)%E) as ->.
       { (* TODO : simpl_subst should be able to do this. *)
@@ -287,7 +287,7 @@ Section typing.
         - eapply (is_closed_subst []). apply is_closed_of_val. set_solver.
         - by rewrite bool_decide_true.
         - eapply is_closed_subst. done. set_solver. }
-      rewrite Nat2Z.id. eapply type_memcpy.
+      rewrite Nat2Z.id. iApply type_memcpy.
       + apply subst_is_closed; last done. apply is_closed_of_val.
       + solve_typing.
       + (* TODO: Doing "eassumption" here shows that unification takes *forever* to fail.

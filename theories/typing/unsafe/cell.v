@@ -85,8 +85,8 @@ Section typing.
     typed_instruction_ty [] [] [] cell_new
         (fn([]; ty) → cell ty).
   Proof.
-    eapply type_fn; [solve_typing..|]=>- /= _ ret arg. inv_vec arg=>x. simpl_subst.
-    eapply (type_jump [_]); first solve_typing.
+    iApply type_fn; [solve_typing..|]. simpl. iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply (type_jump [_]); first solve_typing.
     iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
 
@@ -97,8 +97,8 @@ Section typing.
     typed_instruction_ty [] [] [] cell_into_inner
         (fn([]; cell ty) → ty).
   Proof.
-    eapply type_fn; [solve_typing..|]=>-/= _ ret arg. inv_vec arg=>x. simpl_subst.
-    eapply (type_jump [_]); first solve_typing.
+    iApply type_fn; [solve_typing..|]. simpl. iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply (type_jump [_]); first solve_typing.
     iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
 
@@ -109,8 +109,8 @@ Section typing.
     typed_instruction_ty [] [] [] cell_get_mut
       (fn(∀ α, [☀α]; &uniq{α} (cell ty)) → &uniq{α} ty).
   Proof.
-    eapply type_fn; [solve_typing..|]=>- /= α ret arg. inv_vec arg=>x. simpl_subst.
-    eapply (type_jump [_]). solve_typing. rewrite /tctx_incl /=.
+    iApply type_fn; [solve_typing..|]. simpl. iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
+    iApply (type_jump [_]). solve_typing. rewrite /tctx_incl /=.
     iIntros (???) "_ $$". rewrite !tctx_interp_singleton /tctx_elt_interp /=.
     by iIntros "$".
   Qed.
@@ -126,12 +126,12 @@ Section typing.
     typed_instruction_ty [] [] [] (cell_get ty)
         (fn(∀ α, [☀α]; &shr{α} (cell ty)) → ty).
   Proof.
-    eapply type_fn; [solve_typing..|]=>- /= α ret arg. inv_vec arg=>x. simpl_subst.
-    eapply type_deref; [solve_typing..|apply read_own_move|done|]=>x'. simpl_subst.
-    eapply type_letalloc_n; [solve_typing..| |intros r; simpl_subst].
+    iApply type_fn; [solve_typing..|]. simpl. iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_deref; [solve_typing|apply read_own_move|done|]. iIntros (x'). simpl_subst.
+    iApply type_letalloc_n; [solve_typing| |iIntros (r); simpl_subst].
     { apply (read_shr _ _ _ (cell ty)); solve_typing. }
-    eapply type_delete; [solve_typing..|].
-    eapply (type_jump [_]); solve_typing.
+    iApply type_delete; [solve_typing..|].
+    iApply (type_jump [_]); solve_typing.
   Qed.
 
   (* Writing to a cell *)
@@ -146,9 +146,9 @@ Section typing.
     typed_instruction_ty [] [] [] (cell_replace ty)
         (fn(∀ α, [☀α]; &shr{α} cell ty, ty) → ty).
   Proof.
-    eapply type_fn; [solve_typing..|]=>- /= α ret arg. inv_vec arg=>c x. simpl_subst.
-    eapply type_deref; [solve_typing..|exact: read_own_move|done|]=> c'; simpl_subst.
-    eapply type_new; [solve_typing..|]=> r; simpl_subst.
+    iApply type_fn; [solve_typing..|]. simpl. iIntros (α ret arg). inv_vec arg=>c x. simpl_subst.
+    iApply type_deref; [solve_typing|exact: read_own_move|done|]. iIntros (c'); simpl_subst.
+    iApply type_new; [solve_typing..|]. iIntros (r); simpl_subst.
     (* Drop to Iris level. *)
     iAlways. iIntros (tid qE) "#LFT Htl HE HL HC".
     rewrite 3!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
@@ -175,15 +175,17 @@ Section typing.
     iMod ("Hclose" with "[Hc'↦ Hxown] Htl") as "[HE Htl]".
     { iExists _. iFrame. }
     (* Now go back to typing level. *)
-    iApply (type_type [☀α]%EL [] _ [c ◁ box (uninit 1); #x ◁ box (uninit ty.(ty_size)); #r ◁ box ty]%TC with "LFT Htl [HE] HL HC"); last first.
+    iApply (type_type _ _ _
+           [c ◁ box (uninit 1); #x ◁ box (uninit ty.(ty_size)); #r ◁ box ty]%TC
+    with "[] LFT Htl [HE] HL HC"); last first.
     { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
       iFrame "Hc". rewrite !tctx_hasty_val' //. iSplitL "Hx↦ Hx†".
       - iFrame. iExists _. iFrame. iNext. iApply uninit_own. done.
       - iFrame. iExists _. iFrame. }
     { rewrite /elctx_interp big_opL_singleton. done. }
-    eapply type_delete; [solve_typing..|].
-    eapply type_delete; [solve_typing..|].
-    eapply (type_jump [ #_]); solve_typing.
+    iApply type_delete; [solve_typing..|].
+    iApply type_delete; [solve_typing..|].
+    iApply (type_jump [ #_]); solve_typing.
   Qed.
 End typing.
 

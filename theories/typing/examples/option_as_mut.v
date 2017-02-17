@@ -1,3 +1,4 @@
+From iris.proofmode Require Export tactics.
 From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
@@ -18,19 +19,19 @@ Section option_as_mut.
     typed_instruction_ty [] [] [] option_as_mut
         (fn(∀ α, [☀α]; &uniq{α} Σ[unit; τ]) → Σ[unit; &uniq{α}τ]).
   Proof.
-    eapply type_fn; [solve_typing..|]=> /= α ret p. inv_vec p=>o. simpl_subst.
-    eapply (type_cont [_] [] (λ r, [o ◁ _; r!!!0 ◁ _])%TC) ; [solve_typing..| |].
-    - intros k. simpl_subst.
-      eapply type_deref; [solve_typing..|apply read_own_move|done|]=>o'. simpl_subst.
-      eapply type_new; [solve_typing..|]. intros r. simpl_subst.
-      eapply type_case_uniq; [solve_typing..|].
+    iApply type_fn; [solve_typing..|]. simpl. iIntros (α ret p). inv_vec p=>o. simpl_subst.
+    iApply (type_cont [_] [] (λ r, [o ◁ _; r!!!0 ◁ _])%TC) ; [solve_typing..| |].
+    - iIntros (k). simpl_subst.
+      iApply type_deref; [solve_typing|apply read_own_move|done|]. iIntros (o'). simpl_subst.
+      iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
+      iApply type_case_uniq; [solve_typing..|].
         constructor; last constructor; last constructor; left.
-      + eapply (type_sum_assign_unit [unit; &uniq{α}τ]%T); [solve_typing..|by apply write_own|].
-        eapply (type_jump [_]); solve_typing.
-      + eapply (type_sum_assign [unit; &uniq{α}τ]%T); [solve_typing..|by apply write_own|].
-        eapply (type_jump [_]); solve_typing.
-    - move=>/= k r. inv_vec r=>r. simpl_subst.
-      eapply type_delete; [solve_typing..|].
-      eapply (type_jump [_]); solve_typing.
+      + iApply (type_sum_assign_unit [unit; &uniq{α}τ]%T); [solve_typing..|by apply write_own|].
+        iApply (type_jump [_]); solve_typing.
+      + iApply (type_sum_assign [unit; &uniq{α}τ]%T); [solve_typing..|by apply write_own|].
+        iApply (type_jump [_]); solve_typing.
+    - simpl. iIntros (k r). inv_vec r=>r. simpl_subst.
+      iApply type_delete; [solve_typing..|].
+      iApply (type_jump [_]); solve_typing.
   Qed.
 End option_as_mut.

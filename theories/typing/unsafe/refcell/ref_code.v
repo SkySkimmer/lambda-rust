@@ -59,8 +59,8 @@ Section ref_functions.
       (fn (fun '(α, β) => [☀α; ☀β])%EL (fun '(α, β) => [# &shr{α}(ref β ty)]%T)
                                        (fun '(α, β) => ref β ty)%T).
   Proof.
-    eapply type_fn; [solve_typing..|]. move=>/= [α β] ret arg. inv_vec arg=>x. simpl_subst.
-    eapply type_deref; [solve_typing..|by apply read_own_move|done|]=>x'.
+    iApply type_fn; [solve_typing..|]. simpl. iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
     iIntros "!# * #LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
@@ -95,19 +95,16 @@ Section ref_functions.
       - iExists _. iFrame.
         rewrite (comm Qp_plus) (assoc Qp_plus) Qp_div_2 (comm Qp_plus). auto. }
     iMod ("Hcloseβ" with "Hδ") as "Hβ". iMod ("Hcloseα1" with "[$H↦]") as "Hα1".
-    iAssert (elctx_interp [☀ α; ☀ β] qE) with "[Hα1 Hα2 Hβ]" as "HE".
-    { rewrite /elctx_interp big_sepL_cons big_sepL_singleton. iFrame. }
     iApply (type_type _ _ _
-        [ x ◁ box (uninit 1); #lr ◁ box(ref β ty)]%TC with "LFT Hna HE HL Hk");
+        [ x ◁ box (uninit 1); #lr ◁ box(ref β ty)]%TC with "[] LFT Hna [Hα1 Hα2 Hβ] HL Hk");
         first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       rewrite /= freeable_sz_full. iFrame. iExists _. iFrame. iExists _, _, _, _, _.
       iFrame "∗#". }
-    eapply type_delete; [solve_typing..|].
-    eapply (type_jump [ #_]); solve_typing.
+    { rewrite /elctx_interp big_sepL_cons big_sepL_singleton. iFrame. }
+    iApply type_delete; [solve_typing..|].
+    iApply (type_jump [ #_]); solve_typing.
   Qed.
-
-  (* TODO : map, when we will have a nice story about closures. *)
 
   (* Turning a ref into a shared borrow. *)
   Definition ref_deref : val :=
@@ -123,8 +120,8 @@ Section ref_functions.
           (fun '(α, β) => [# &shr{α}(ref β ty)]%T)
           (fun '(α, β) => &shr{α}ty)%T).
   Proof.
-    eapply type_fn; [solve_typing..|]. move=>/= [α β] ret arg. inv_vec arg=>x. simpl_subst.
-    eapply type_deref; [solve_typing..|by apply read_own_move|done|]=>x'.
+    iApply type_fn; [solve_typing..|]. simpl. iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
     iIntros "!# * #LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
@@ -135,15 +132,15 @@ Section ref_functions.
     rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
     iMod "H↦" as "[H↦1 H↦2]". wp_read. wp_let.
     iMod ("Hcloseα" with "[$H↦1 $H↦2]") as "Hα".
-    iAssert (elctx_interp [☀ α; ☀ β; α ⊑ β] qE) with "[Hα Hβ Hαβ]" as "HE".
-    { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
     iApply (type_type _ _ _
-        [ x ◁ box (uninit 1); #lv ◁ &shr{α}ty]%TC with "LFT Hna HE HL Hk"); first last.
+        [ x ◁ box (uninit 1); #lv ◁ &shr{α}ty]%TC with "[] LFT Hna [Hα Hβ Hαβ] HL Hk");
+      first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (ty_shr_mono with "LFT [] Hshr"). by iApply lft_incl_glb. }
-    eapply (type_letalloc_1 (&shr{α}ty)); [solve_typing..|].
-    intros r. simpl_subst. eapply type_delete; [solve_typing..|].
-    eapply (type_jump [_]); solve_typing.
+    { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
+    iApply (type_letalloc_1 (&shr{α}ty)); [solve_typing..|].
+    iIntros (r). simpl_subst. iApply type_delete; [solve_typing..|].
+    iApply (type_jump [_]); solve_typing.
   Qed.
 
   (* Dropping a ref and decrement the count in the corresponding refcell. *)
@@ -157,10 +154,9 @@ Section ref_functions.
       let: "r" := new [ #0] in "return" ["r"].
 
   Lemma ref_drop_type ty :
-    typed_instruction_ty [] [] [] ref_drop
-      (fn (fun α => [☀α])%EL (fun α => [# ref α ty])  (fun α => unit)).
+    typed_instruction_ty [] [] [] ref_drop (fn(∀ α, [☀α]; ref α ty) → unit).
   Proof.
-    eapply type_fn; [solve_typing..|]=>- /= α ret arg. inv_vec arg=>x. simpl_subst.
+    iApply type_fn; [solve_typing..|]. simpl. iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
     iIntros "!# * #LFT Hna Hα HL Hk Hx".
     rewrite {1}/elctx_interp big_sepL_singleton tctx_interp_singleton tctx_hasty_val.
     destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
@@ -196,14 +192,13 @@ Section ref_functions.
     wp_bind Endlft. iApply (wp_fupd_step with "INV"); [done..|]. wp_seq.
     iIntros "INV !>". wp_seq. iMod ("Hcloseβ" with "[$INV] Hna") as "[Hβ Hna]".
     iMod ("Hcloseα" with "Hβ") as "Hα".
-    iAssert (elctx_interp [☀ α] qE) with "[Hα]" as "HE".
-    { by rewrite /elctx_interp big_sepL_singleton. }
-    iApply (type_type _ _ _ [ #lx ◁ box (uninit 2)]%TC with "LFT Hna HE HL Hk");
+    iApply (type_type _ _ _ [ #lx ◁ box (uninit 2)]%TC with "[] LFT Hna [Hα] HL Hk");
       first last.
     { rewrite tctx_interp_singleton tctx_hasty_val' //. iFrame. iExists [ #lv;#lrc].
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton uninit_own. iFrame. auto. }
-    eapply type_delete; [solve_typing..|].
-    eapply type_new; [solve_typing..|]=>r. simpl_subst.
-    eapply (type_jump [_]); solve_typing.
+    { by rewrite /elctx_interp big_sepL_singleton. }
+    iApply type_delete; [solve_typing..|].
+    iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
+    iApply (type_jump [_]); solve_typing.
   Qed.
 End ref_functions.
