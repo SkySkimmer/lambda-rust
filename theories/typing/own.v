@@ -195,7 +195,7 @@ Section typing.
     let n' := Z.to_nat n in
     typed_instruction_ty E L [] (new [ #n ]%E) (own_ptr n' (uninit n')).
   Proof.
-    intros. iAlways. iIntros (tid q) "#LFT $ $ $ _".
+    iIntros (? tid q) "#LFT $ $ $ _".
     iApply wp_new; first done. iModIntro.
     iIntros (l vl) "(% & H† & Hlft)". subst. rewrite tctx_interp_singleton tctx_hasty_val.
     iNext. rewrite freeable_sz_full Z2Nat.id //. iFrame.
@@ -227,7 +227,7 @@ Section typing.
     Z.of_nat (ty.(ty_size)) = n →
     typed_instruction E L [p ◁ box ty] (delete [ #n; p])%E (λ _, []).
   Proof.
-    iIntros (<-) "!#". iIntros (tid eq) "#LFT $ $ $ Hp". rewrite tctx_interp_singleton.
+    iIntros (<- tid eq) "#LFT $ $ $ Hp". rewrite tctx_interp_singleton.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown"; try done.
     iDestruct "Hown" as "[H↦∗: >H†]". iDestruct "H↦∗:" as (vl) "[>H↦ Hown]".
     rewrite tctx_interp_nil. iDestruct (ty_size_eq with "Hown") as "#>EQ".

@@ -16,7 +16,7 @@ Section case.
       typed_body E L C ((p ◁ own_ptr n (sum tyl)) :: T) e) tyl el →
     typed_body E L C ((p ◁ own_ptr n (sum tyl)) :: T) (case: !p of el).
   Proof.
-    iIntros (Hel) "!#". iIntros (tid qE) "#LFT Hna HE HL HC HT". wp_bind p.
+    iIntros (Hel tid qE) "#LFT Hna HE HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
     iApply (wp_hasty with "Hp"). iIntros ([[]|] Hv) "Hp"; try done.
     iDestruct "Hp" as "[H↦ Hf]". iDestruct "H↦" as (vl) "[H↦ Hown]".
@@ -61,7 +61,7 @@ Section case.
       typed_body E L C ((p ◁ &uniq{κ}sum tyl) :: T) e) tyl el →
     typed_body E L C ((p ◁ &uniq{κ}sum tyl) :: T) (case: !p of el).
   Proof.
-    iIntros (Halive Hel) "!#". iIntros (tid qE) "#LFT Hna HE HL HC HT". wp_bind p.
+    iIntros (Halive Hel tid qE) "#LFT Hna HE HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
     iApply (wp_hasty with "Hp"). iIntros ([[]|] Hv) "Hp"; try iDestruct "Hp" as "[]".
     iMod (Halive with "HE HL") as (q) "[Htok Hclose]". done.
@@ -114,7 +114,7 @@ Section case.
       typed_body E L C ((p ◁ &shr{κ}sum tyl) :: T) e) tyl el →
     typed_body E L C ((p ◁ &shr{κ}sum tyl) :: T) (case: !p of el).
   Proof.
-    iIntros (Halive Hel) "!#". iIntros (tid qE) "#LFT Hna HE HL HC HT". wp_bind p.
+    iIntros (Halive Hel tid qE) "#LFT Hna HE HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
     iApply (wp_hasty with "Hp"). iIntros ([[]|] Hv) "Hp"; try done.
     iDestruct "Hp" as (i) "[#Hb Hshr]".
@@ -146,7 +146,7 @@ Section case.
     typed_write E L ty1 (sum tyl) ty2 →
     typed_instruction E L [p1 ◁ ty1; p2 ◁ ty] (p1 <-{Σ i} p2) (λ _, [p1 ◁ ty2]%TC).
   Proof.
-    iIntros (Hty Hw) "!# * #LFT $ HE HL Hp".
+    iIntros (Hty Hw tid qE) "#LFT $ HE HL Hp".
     rewrite tctx_interp_cons tctx_interp_singleton.
     iDestruct "Hp" as "[Hp1 Hp2]". iDestruct (closed_hasty with "Hp1") as "%".
     iDestruct (closed_hasty with "Hp2") as "%". wp_bind p1.
@@ -185,7 +185,7 @@ Section case.
     typed_write E L ty1 (sum tyl) ty2 →
     typed_instruction E L [p ◁ ty1] (p <-{Σ i} ()) (λ _, [p ◁ ty2]%TC).
   Proof.
-    iIntros (Hty Hw) "!# * #LFT $ HE HL Hp". rewrite tctx_interp_singleton.
+    iIntros (Hty Hw tid qE) "#LFT $ HE HL Hp". rewrite tctx_interp_singleton.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros (v Hv) "Hty".
     iMod (Hw with "[] LFT HE HL Hty") as (l vl) "(H & H↦ & Hw)". done.
     simpl. destruct vl as [|? vl]; iDestruct "H" as %[[= Hlen] ->].
@@ -215,7 +215,7 @@ Section case.
     typed_instruction E L [p1 ◁ ty1; p2 ◁ ty2]
                (p1 <-{ty.(ty_size),Σ i} !p2) (λ _, [p1 ◁ ty1'; p2 ◁ ty2']%TC).
   Proof.
-    iIntros (Hty Hw Hr) "!# * #LFT Htl [HE1 HE2] [HL1 HL2] Hp".
+    iIntros (Hty Hw Hr tid qE) "#LFT Htl [HE1 HE2] [HL1 HL2] Hp".
     rewrite tctx_interp_cons tctx_interp_singleton.
     iDestruct "Hp" as "[Hp1 Hp2]". iDestruct (closed_hasty with "Hp1") as "%".
     iDestruct (closed_hasty with "Hp2") as "%". wp_bind p1.

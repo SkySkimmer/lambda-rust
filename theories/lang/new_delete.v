@@ -43,7 +43,7 @@ End specs.
 (* FIXME : why are these notations not pretty-printed? *)
 Notation "'letalloc:' x <- e1 'in' e2" :=
   ((Lam (@cons binder x%E%E%E nil) (x <- e1 ;; e2)) [new [ #1]])%E
-  (at level 102, x at level 1, e1, e2 at level 200) : expr_scope.
+  (at level 102, x at level 1, e1, e2 at level 150) : expr_scope.
 Notation "'letalloc:' x <-{ n } ! e1 'in' e2" :=
   ((Lam (@cons binder x%E%E%E nil) (x <-{n%Z%V} !e1 ;; e2)) [new [ #n]])%E
-  (at level 102, x at level 1, e1, e2 at level 200) : expr_scope.
+  (at level 102, x at level 1, e1, e2 at level 150) : expr_scope.

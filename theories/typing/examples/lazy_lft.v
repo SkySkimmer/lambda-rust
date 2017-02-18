@@ -21,7 +21,8 @@ Section lazy_lft.
     typed_instruction_ty [] [] [] lazy_lft
         (fn([]) → unit).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros ([] ret p). inv_vec p. simpl_subst.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([] ret p).
+      inv_vec p. simpl_subst.
     iApply (type_newlft []). iIntros (α).
     iApply (type_new_subtype (Π[uninit 1;uninit 1])); [solve_typing..|].
       iIntros (t). simpl_subst.

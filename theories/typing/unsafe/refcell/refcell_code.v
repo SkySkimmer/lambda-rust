@@ -23,9 +23,10 @@ Section refcell_functions.
     typed_instruction_ty [] [] [] (refcell_new ty)
         (fn (λ _, []) (λ _, [# ty]) (λ _:(), refcell ty)).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (_ ret arg).
+      inv_vec arg=>x. simpl_subst.
     iApply type_new; [solve_typing..|].
-    iIntros (r) "!# * #LFT Hna HE HL Hk HT". simpl_subst.
+    iIntros (r tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite (Nat2Z.id (S ty.(ty_size))) tctx_interp_cons
             tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hr Hx]". destruct x as [[|lx|]|]; try done.
@@ -60,9 +61,10 @@ Section refcell_functions.
     typed_instruction_ty [] [] [] (refcell_into_inner ty)
         (fn (λ _, []) (λ _, [# refcell ty]) (λ _:(), ty)).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (_ ret arg).
+      inv_vec arg=>x. simpl_subst.
     iApply type_new; [solve_typing..|].
-    iIntros (r) "!# * #LFT Hna HE HL Hk HT". simpl_subst.
+    iIntros (r tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite (Nat2Z.id (ty.(ty_size))) tctx_interp_cons
             tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hr Hx]". destruct x as [[|lx|]|]; try done.
@@ -94,9 +96,11 @@ Section refcell_functions.
     typed_instruction_ty [] [] [] refcell_get_mut
         (fn (λ α, [☀α])%EL (λ α, [# &uniq{α} (refcell ty)])%T (λ α, &uniq{α} ty)%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_deref; [solve_typing..|by eapply read_own_move|done|]. iIntros (x'). simpl_subst.
-    iIntros "!# * #LFT Hna HE HL HC HT".
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
+      inv_vec arg=>x. simpl_subst.
+    iApply type_deref; [solve_typing..|by eapply read_own_move|done|].
+      iIntros (x'). simpl_subst.
+    iIntros (tid qE) "#LFT Hna HE HL HC HT".
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|];  try iDestruct "Hx'" as "[]".
     iAssert (&{α} (∃ (z : Z), lx' ↦ #z ∗ ⌜-1 ≤ z⌝) ∗
@@ -143,15 +147,16 @@ Section refcell_functions.
     typed_instruction_ty [] [] [] refcell_try_borrow
         (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(refcell ty)]%T) (λ α, Σ[ref α ty; unit])%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
+      inv_vec arg=>x. simpl_subst.
     iApply (type_cont [_] [] (λ r, [x ◁ box (&shr{α} refcell ty);
                                     r!!!0 ◁ box Σ[ref α ty; unit]])%TC);
-      [iIntros (k)|simpl; iIntros (k arg); inv_vec arg=>r]; simpl_subst; last first.
+      [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg=>r]; simpl_subst; last first.
     { iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing. }
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_deref; [solve_typing..|apply read_own_copy, _|done|].
-    iIntros (x') "!# * #LFT Hna HE HL Hk HT". simpl_subst.
+    iIntros (x' tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "(Hx & Hx' & Hr)". destruct x' as [[|lx|]|]; try done.
     iDestruct "Hx'" as (β γ) "#[Hαβ Hinv]".
@@ -248,15 +253,17 @@ Section refcell_functions.
     typed_instruction_ty [] [] [] refcell_try_borrow_mut
         (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(refcell ty)]%T) (λ α, Σ[refmut α ty; unit])%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
+      inv_vec arg=>x. simpl_subst.
     iApply (type_cont [_] [] (λ r, [x ◁ box (&shr{α} refcell ty);
                                     r!!!0 ◁ box Σ[refmut α ty; unit]])%TC);
-      [iIntros (k)|simpl; iIntros (k arg); inv_vec arg=>r]; simpl_subst; last first.
+      [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg=>r];
+      simpl_subst; last first.
     { iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing. }
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_deref; [solve_typing..|apply read_own_copy, _|done|].
-    iIntros (x') "!# * #LFT Hna HE HL Hk HT". simpl_subst.
+    iIntros (x' tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "(Hx & Hx' & Hr)". destruct x' as [[|lx|]|]; try done.
     iDestruct "Hx'" as (β γ) "#[Hαβ Hinv]".

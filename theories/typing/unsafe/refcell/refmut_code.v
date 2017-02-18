@@ -26,9 +26,10 @@ Section refmut_functions.
           (fun '(α, β) => [# &shr{α}(refmut β ty)]%T)
           (fun '(α, β) => &shr{α}ty)%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([α β] ret arg).
+      inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
-    iIntros "!# * #LFT Hna HE HL Hk HT". simpl_subst.
+    iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
     iDestruct "Hx'" as (lv lrc) "#(Hfrac & #Hshr)".
@@ -67,9 +68,10 @@ Section refmut_functions.
           (fun '(α, β) => [# &uniq{α}(refmut β ty)]%T)
           (fun '(α, β) => &uniq{α}ty)%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([α β] ret arg).
+      inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
-    iIntros "!# * #LFT Hna HE HL Hk HT". simpl_subst.
+    iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']".
     rewrite {1}/elctx_interp 2!big_sepL_cons big_sepL_singleton.
@@ -119,8 +121,9 @@ Section refmut_functions.
   Lemma refmut_drop_type ty :
     typed_instruction_ty [] [] [] refmut_drop (fn(∀ α, [☀α]; refmut α ty) → unit).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
-    iIntros "!# * #LFT Hna Hα HL Hk Hx".
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
+      inv_vec arg=>x. simpl_subst.
+    iIntros (tid qE) "#LFT Hna Hα HL Hk Hx".
     rewrite {1}/elctx_interp big_sepL_singleton tctx_interp_singleton tctx_hasty_val.
     destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
     iDestruct "Hx" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Hx"; try iDestruct "Hx" as "[_ >[]]".

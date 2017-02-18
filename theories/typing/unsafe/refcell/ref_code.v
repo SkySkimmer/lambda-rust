@@ -2,7 +2,7 @@ From Coq.QArith Require Import Qcanon.
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import auth csum frac agree.
 From iris.base_logic Require Import big_op fractional.
-From lrust.lifetime Require Import na_borrow.
+From lrust.lifetime Require Import lifetime na_borrow.
 From lrust.typing Require Import typing.
 From lrust.typing.unsafe.refcell Require Import refcell ref.
 Set Default Proof Using "Type".
@@ -59,9 +59,10 @@ Section ref_functions.
       (fn (fun '(α, β) => [☀α; ☀β])%EL (fun '(α, β) => [# &shr{α}(ref β ty)]%T)
                                        (fun '(α, β) => ref β ty)%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([α β] ret arg).
+      inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
-    iIntros "!# * #LFT Hna HE HL Hk HT". simpl_subst.
+    iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
     iDestruct "Hx'" as (ν q γ δ ty' lv lrc) "#(Hαν & Hfrac & Hshr & Hβδ & Hinv & H◯inv)".
@@ -120,9 +121,10 @@ Section ref_functions.
           (fun '(α, β) => [# &shr{α}(ref β ty)]%T)
           (fun '(α, β) => &shr{α}ty)%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([α β] ret arg).
+      inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
-    iIntros "!# * #LFT Hna HE HL Hk HT". simpl_subst.
+    iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
     iDestruct "Hx'" as (ν q γ δ ty' lv lrc) "#(Hαν & Hfrac & Hshr & Hx')".
@@ -156,8 +158,9 @@ Section ref_functions.
   Lemma ref_drop_type ty :
     typed_instruction_ty [] [] [] ref_drop (fn(∀ α, [☀α]; ref α ty) → unit).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
-    iIntros "!# * #LFT Hna Hα HL Hk Hx".
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
+      inv_vec arg=>x. simpl_subst.
+    iIntros (tid qE) "#LFT Hna Hα HL Hk Hx".
     rewrite {1}/elctx_interp big_sepL_singleton tctx_interp_singleton tctx_hasty_val.
     destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
     iDestruct "Hx" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Hx"; try iDestruct "Hx" as "[_ >[]]".
@@ -200,5 +203,74 @@ Section ref_functions.
     iApply type_delete; [solve_typing..|].
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply (type_jump [_]); solve_typing.
+  Qed.
+
+  (* Apply a function within the ref, typically for accessing a component. *)
+  Definition ref_map : val :=
+    funrec: <> ["ref"; "f"; "env"] :=
+      let: "x'" := !"ref" in
+      let: "f'" := !"f" in
+      letalloc: "x" <- "x'" in
+      letcall: "r" := "f'" ["env"; "x"]%E in
+      let: "r'" := !"r" in
+      "ref" <- "r'";;
+      delete [ #1; "f"];; "k" []
+    cont: "k" [] :=
+      "return" ["ref"].
+
+  Lemma ref_map_type ty1 ty2 envty E :
+    typed_instruction_ty [] [] [] ref_map
+      (fn(∀ β, [☀β] ++ E; ref β ty1, fn(∀ α, [☀α] ++ E; envty, &shr{α}ty1) → &shr{α}ty2, envty)
+       → ref β ty2).
+  Proof.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
+       inv_vec arg=>ref f env. simpl_subst.
+    iIntros (tid qE) "#LFT Hna HE HL Hk HT".
+    rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
+    iDestruct "HT" as "(Href & Hf & Henv)".
+    destruct ref as [[|lref|]|]; try done. iDestruct "Href" as "[Href Href†]".
+    iDestruct "Href" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Href";
+      try iDestruct "Href" as "[_ >[]]".
+    rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
+    iDestruct "Href" as "[[Href↦1 Href↦2] Href]".
+    iDestruct "Href" as (ν qν γ β ty') "(#Hshr & #Hαβ & #Hinv & >Hν & Hγ)".
+    rewrite -(freeable_sz_split _ 1 1). iDestruct "Href†" as "[Href†1 Href†2]".
+    destruct (Qp_lower_bound qE qν) as (q & qE' & qν' & ? & ?). subst.
+    iDestruct "HE" as "[HE HE']". iDestruct "Hν" as "[Hν Hν']".
+    remember (RecV "k" [] (ret [ LitV lref])%E)%V as k eqn:EQk.
+    iApply (wp_let' _ _ _ _ k). { subst. solve_to_val. } simpl_subst.
+    iApply (type_type ((☀ (α ∪ ν)) :: E)%EL []
+        [k ◁cont([], λ _:vec val 0, [ #lref ◁ own_ptr 2 (&shr{α ∪ ν}ty2)])]%CC
+        [ f ◁ box (fn(∀ α, [☀α] ++ E; envty, &shr{α}ty1) → &shr{α}ty2);
+          #lref ◁ own_ptr 2 (&shr{α ∪ ν}ty1); env ◁ box envty ]%TC
+       with "[] LFT Hna [HE Hν] HL [Hk HE' Hν' Href↦2 Hγ Href†2]"); first last.
+    { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
+      iFrame. iApply tctx_hasty_val'. done. iFrame. iExists [_].
+      rewrite heap_mapsto_vec_singleton. by iFrame. }
+    { rewrite !cctx_interp_singleton /=. iIntros "HE". iIntros (args) "Hna HL HT".
+      inv_vec args. subst. simpl. wp_rec.
+      rewrite {3}/elctx_interp big_sepL_cons /= -lft_tok_sep.
+      iDestruct "HE" as "[[Hα Hν] HE]". iSpecialize ("Hk" with "[Hα HE $HE']").
+      { rewrite /elctx_interp big_sepL_cons. iFrame. }
+      iApply ("Hk" $! [# #lref] with "Hna HL").
+      rewrite !tctx_interp_singleton !tctx_hasty_val' //.
+      iDestruct "HT" as "[Href Ḥref†2]".
+      rewrite /= -(freeable_sz_split _ 1 1). iFrame.
+      iDestruct "Href" as ([|[[|lv'|]|] [|]]) "[H↦ Href]"; auto.
+      iExists [ #lv'; #lrc].
+      rewrite (heap_mapsto_vec_cons _ _ _ [_]) !heap_mapsto_vec_singleton. iFrame.
+      iExists ν, (q+qν')%Qp. eauto 10 with iFrame. }
+    { rewrite /elctx_interp !big_sepL_cons /= -lft_tok_sep. iFrame. }
+    iApply type_deref; [solve_typing..|by apply read_own_move|done|].
+      iIntros (x'). simpl_subst.
+    iApply type_deref; [solve_typing..|by apply read_own_move|done|].
+       iIntros (f'). simpl_subst.
+    iApply type_letalloc_1; [solve_typing..|]. iIntros (x). simpl_subst.
+    iApply (type_letcall); [simpl; solve_typing..|]. iIntros (r). simpl_subst.
+    iApply type_deref; [solve_typing|by eapply read_own_move|done|].
+      iIntros (r'). simpl_subst.
+    iApply type_assign; [solve_typing|by eapply write_own|].
+    iApply type_delete; [solve_typing..|].
+    iApply (type_jump []); solve_typing.
   Qed.
 End ref_functions.

@@ -25,7 +25,7 @@ Section typing.
   Lemma type_int_instr (z : Z) E L :
     typed_instruction_ty E L [] #z int.
   Proof.
-    iAlways. iIntros (tid qE) "_ $ $ $ _". wp_value.
+    iIntros (tid qE) "_ $ $ $ _". wp_value.
     by rewrite tctx_interp_singleton tctx_hasty_val.
   Qed.
 
@@ -38,7 +38,7 @@ Section typing.
   Lemma type_plus_instr E L p1 p2 :
     typed_instruction_ty E L [p1 ◁ int; p2 ◁ int] (p1 + p2) int.
   Proof.
-    iAlways. iIntros (tid qE) "_ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
+    iIntros (tid qE) "_ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
     wp_apply (wp_hasty with "Hp1"). iIntros ([[]|]) "_ H1"; try done.
     wp_apply (wp_hasty with "Hp2"). iIntros ([[]|]) "_ H2"; try done.
@@ -55,7 +55,7 @@ Section typing.
   Lemma type_minus_instr E L p1 p2 :
     typed_instruction_ty E L [p1 ◁ int; p2 ◁ int] (p1 - p2) int.
   Proof.
-    iAlways. iIntros (tid qE) "_ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
+    iIntros (tid qE) "_ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
     wp_apply (wp_hasty with "Hp1"). iIntros ([[]|]) "_ H1"; try done.
     wp_apply (wp_hasty with "Hp2"). iIntros ([[]|]) "_ H2"; try done.
@@ -72,7 +72,7 @@ Section typing.
   Lemma type_le_instr E L p1 p2 :
     typed_instruction_ty E L [p1 ◁ int; p2 ◁ int] (p1 ≤ p2) bool.
   Proof.
-    iAlways. iIntros (tid qE) "_ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
+    iIntros (tid qE) "_ $ $ $". rewrite tctx_interp_cons tctx_interp_singleton.
     iIntros "[Hp1 Hp2]".
     wp_apply (wp_hasty with "Hp1"). iIntros ([[]|]) "_ H1"; try done.
     wp_apply (wp_hasty with "Hp2"). iIntros ([[]|]) "_ H2"; try done.

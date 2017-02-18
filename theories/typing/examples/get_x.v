@@ -18,7 +18,7 @@ Section get_x.
      and without using 'typed_instruction_ty'.  I think that's related to
      the list notation that we added to %TC. *)
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros (α ret p).
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret p).
     inv_vec p=>p. simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|].
       iIntros (p'); simpl_subst.

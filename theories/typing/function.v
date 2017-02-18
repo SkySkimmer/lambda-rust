@@ -13,11 +13,11 @@ Section fn.
     {| st_own tid vl := (∃ fb kb xb e H,
          ⌜vl = [@RecV fb (kb::xb) e H]⌝ ∗ ⌜length xb = n⌝ ∗
          ▷ ∀ (x : A) (k : val) (xl : vec val (length xb)),
-            typed_body (E x) []
-                       [k◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
-                       (zip_with (TCtx_hasty ∘ of_val) xl
-                                 ((λ ty, box ty) <$> (vec_to_list (tys x))))
-                       (subst_v (fb::kb::xb) (RecV fb (kb::xb) e:::k:::xl) e))%I |}.
+            □ typed_body (E x) []
+                         [k◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
+                         (zip_with (TCtx_hasty ∘ of_val) xl
+                                   ((λ ty, box ty) <$> (vec_to_list (tys x))))
+                         (subst_v (fb::kb::xb) (RecV fb (kb::xb) e:::k:::xl) e))%I |}.
   Next Obligation.
     iIntros (E tys ty tid vl) "H". iDestruct "H" as (fb kb xb e ?) "[% _]". by subst.
   Qed.
@@ -191,7 +191,7 @@ Section typing.
                 T)
                (call: p ps → k).
   Proof.
-    iIntros (HE) "!# * #LFT Htl HE HL HC".
+    iIntros (HE tid qE) "#LFT Htl HE HL HC".
     rewrite tctx_interp_cons tctx_interp_app. iIntros "(Hf & Hargs & HT)".
     wp_apply (wp_hasty with "Hf"). iIntros (v) "% Hf".
     iApply (wp_app_vec _ _ (_::_) ((λ v, ⌜v = k⌝):::
@@ -253,7 +253,8 @@ Section typing.
     (∀ ret : val, typed_body E L C ((ret ◁ box (ty x))::T') (subst' b ret e)) -∗
     typed_body E L C T (letcall: b := p ps in e).
   Proof.
-    iIntros (?? Hpsc ???) "He". iApply (type_cont [_] _ (λ r, (r!!!0 ◁ box (ty x)) :: T')%TC).
+    iIntros (?? Hpsc ???) "He".
+    iApply (type_cont_norec [_] _ (λ r, (r!!!0 ◁ box (ty x)) :: T')%TC).
     - (* TODO : make [solve_closed] work here. *)
       eapply is_closed_weaken; first done. set_solver+.
     - (* TODO : make [solve_closed] work here. *)
@@ -282,15 +283,15 @@ Section typing.
     ef = (funrec: fb argsb := e)%E →
     n = length argsb →
     Closed (fb :b: "return" :b: argsb +b+ []) e →
-    (∀ x (f : val) k (args : vec val (length argsb)),
-        typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
-                   ((f ◁ fn E' tys ty) ::
-                      zip_with (TCtx_hasty ∘ of_val) args
-                               ((λ ty, box ty) <$> vec_to_list (tys x)) ++ T)
-                   (subst_v (fb :: BNamed "return" :: argsb) (f ::: k ::: args) e)) -∗
+    □ (∀ x (f : val) k (args : vec val (length argsb)),
+          typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
+                     ((f ◁ fn E' tys ty) ::
+                        zip_with (TCtx_hasty ∘ of_val) args
+                                 ((λ ty, box ty) <$> vec_to_list (tys x)) ++ T)
+                     (subst_v (fb :: BNamed "return" :: argsb) (f ::: k ::: args) e)) -∗
     typed_instruction_ty E L T ef (fn E' tys ty).
   Proof.
-    iIntros (-> -> Hc) "#Hbody !# * #LFT $ $ $ #HT". iApply wp_value.
+    iIntros (-> -> Hc) "#Hbody". iIntros (tid qE) " #LFT $ $ $ #HT". iApply wp_value.
     { simpl. rewrite ->(decide_left Hc). done. }
     rewrite tctx_interp_singleton. iLöb as "IH". iExists _. iSplit.
     { simpl. rewrite decide_left. done. }
@@ -307,14 +308,14 @@ Section typing.
     ef = (funrec: <> argsb := e)%E →
     n = length argsb →
     Closed ("return" :b: argsb +b+ []) e →
-    (∀ x k (args : vec val (length argsb)),
+    □ (∀ x k (args : vec val (length argsb)),
         typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
                    (zip_with (TCtx_hasty ∘ of_val) args
                              ((λ ty, box ty) <$> vec_to_list (tys x)) ++ T)
                    (subst_v (BNamed "return" :: argsb) (k ::: args) e)) -∗
     typed_instruction_ty E L T ef (fn E' tys ty).
   Proof.
-    iIntros (???) "He". iApply type_rec; try done. iIntros.
+    iIntros (???) "#He". iApply type_rec; try done. iIntros "!# *".
     (iApply typed_body_mono; last by iApply "He"); try done.
     eapply contains_tctx_incl. by constructor.
   Qed.

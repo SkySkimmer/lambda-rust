@@ -334,6 +334,21 @@ Section lft_contexts.
     iExists q. rewrite {1 2 4 5}/elctx_interp big_sepL_cons /=.
     iIntros "{$Hincl $HE'}!>[_ ?]". by iApply "Hclose'".
   Qed.
+
+  Lemma elctx_sat_app E1 E2 :
+    elctx_sat E1 → elctx_sat E2 → elctx_sat (E1 ++ E2).
+  Proof.
+    iIntros (HE1 HE2 ????) "[HE1 HE2] [HL1 HL2]".
+    iMod (HE1 with "HE1 HL1") as (qE1) "[HE1 Hclose1]". done.
+    iMod (HE2 with "HE2 HL2") as (qE2) "[HE2 Hclose2]". done.
+    destruct (Qp_lower_bound qE1 qE2) as (q & qE1' & qE2' & -> & ->). iExists q.
+    rewrite !fractional (fractional_half_equiv qE) /elctx_interp big_sepL_app.
+    iDestruct "HE1" as "[$ HE1]". iDestruct "HE2" as "[$ HE2]". iIntros "!> [Hq1 Hq2]".
+    iMod ("Hclose1" with "[$HE1 $Hq1]") as "[$ $]". iApply "Hclose2". iFrame.
+  Qed.
+
+  Lemma elctx_sat_refl : elctx_sat E.
+  Proof. iIntros (????) "??". iExists _. eauto with iFrame. Qed.
 End lft_contexts.
 
 Arguments lctx_lft_incl {_ _ _} _%EL _%LL _ _.
@@ -457,7 +472,7 @@ Hint Resolve
      lctx_lft_incl_relf lctx_lft_incl_static lctx_lft_incl_local'
      lctx_lft_incl_external'
      lctx_lft_alive_static lctx_lft_alive_local lctx_lft_alive_external
-     elctx_sat_nil elctx_sat_alive elctx_sat_lft_incl
+     elctx_sat_nil elctx_sat_alive elctx_sat_lft_incl elctx_sat_app elctx_sat_refl
      elctx_incl_refl elctx_incl_nil elctx_incl_lft_alive elctx_incl_lft_incl
   : lrust_typing.
 Hint Resolve lctx_lft_alive_external' | 100 : lrust_typing.

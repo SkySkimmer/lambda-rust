@@ -85,7 +85,8 @@ Section typing.
     typed_instruction_ty [] [] [] cell_new
         (fn([]; ty) → cell ty).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (_ ret arg).
+      inv_vec arg=>x. simpl_subst.
     iApply (type_jump [_]); first solve_typing.
     iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
@@ -97,7 +98,8 @@ Section typing.
     typed_instruction_ty [] [] [] cell_into_inner
         (fn([]; cell ty) → ty).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (_ ret arg).
+      inv_vec arg=>x. simpl_subst.
     iApply (type_jump [_]); first solve_typing.
     iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
@@ -109,7 +111,8 @@ Section typing.
     typed_instruction_ty [] [] [] cell_get_mut
       (fn(∀ α, [☀α]; &uniq{α} (cell ty)) → &uniq{α} ty).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
+      inv_vec arg=>x. simpl_subst.
     iApply (type_jump [_]). solve_typing. rewrite /tctx_incl /=.
     iIntros (???) "_ $$". rewrite !tctx_interp_singleton /tctx_elt_interp /=.
     by iIntros "$".
@@ -126,7 +129,8 @@ Section typing.
     typed_instruction_ty [] [] [] (cell_get ty)
         (fn(∀ α, [☀α]; &shr{α} (cell ty)) → ty).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
+      inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing|apply read_own_move|done|]. iIntros (x'). simpl_subst.
     iApply type_letalloc_n; [solve_typing| |iIntros (r); simpl_subst].
     { apply (read_shr _ _ _ (cell ty)); solve_typing. }
@@ -146,11 +150,12 @@ Section typing.
     typed_instruction_ty [] [] [] (cell_replace ty)
         (fn(∀ α, [☀α]; &shr{α} cell ty, ty) → ty).
   Proof.
-    iApply type_fn; [solve_typing..|]. simpl. iIntros (α ret arg). inv_vec arg=>c x. simpl_subst.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
+      inv_vec arg=>c x. simpl_subst.
     iApply type_deref; [solve_typing|exact: read_own_move|done|]. iIntros (c'); simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r); simpl_subst.
     (* Drop to Iris level. *)
-    iAlways. iIntros (tid qE) "#LFT Htl HE HL HC".
+    iIntros (tid qE) "#LFT Htl HE HL HC".
     rewrite 3!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iIntros "(Hr & Hc & #Hc' & Hx)".
     rewrite {1}/elctx_interp big_opL_singleton /=.
