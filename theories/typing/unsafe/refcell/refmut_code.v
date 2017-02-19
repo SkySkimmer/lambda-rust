@@ -156,4 +156,76 @@ Section refmut_functions.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply (type_jump [_]); solve_typing.
   Qed.
+
+  (* Apply a function within the refmut, typically for accessing a component. *)
+  Definition refmut_map : val :=
+    funrec: <> ["ref"; "f"; "env"] :=
+      let: "x'" := !"ref" in
+      let: "f'" := !"f" in
+      letalloc: "x" <- "x'" in
+      letcall: "r" := "f'" ["env"; "x"]%E in
+      let: "r'" := !"r" in
+      "ref" <- "r'";;
+      delete [ #1; "f"];; "k" []
+    cont: "k" [] :=
+      "return" ["ref"].
+
+  Lemma refmut_map_type ty1 ty2 envty E :
+    typed_instruction_ty [] [] [] refmut_map
+      (fn(∀ β, [☀β] ++ E; refmut β ty1,
+                          fn(∀ α, [☀α] ++ E; envty, &uniq{α}ty1) → &uniq{α}ty2,
+                          envty)
+       → refmut β ty2).
+  Proof.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
+       inv_vec arg=>ref f env. simpl_subst.
+    iIntros (tid qE) "#LFT Hna HE HL Hk HT".
+    rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
+    iDestruct "HT" as "(Href & Hf & Henv)".
+    destruct ref as [[|lref|]|]; try done. iDestruct "Href" as "[Href Href†]".
+    iDestruct "Href" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Href";
+      try iDestruct "Href" as "[_ >[]]".
+    rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
+    iDestruct "Href" as "[[Href↦1 Href↦2] Href]".
+    iDestruct "Href" as (ν γ β ty') "(Hbor & #Hαβ & #Hinv & >Hν & Hγ)".
+    rewrite -(freeable_sz_split _ 1 1). iDestruct "Href†" as "[Href†1 Href†2]".
+    destruct (Qp_lower_bound qE 1) as (q & qE' & qν' & -> & EQ1).
+      rewrite [in (_).[ν]%I] EQ1.
+    iDestruct "HE" as "[HE HE']". iDestruct "Hν" as "[Hν Hν']".
+    remember (RecV "k" [] (ret [ LitV lref])%E)%V as k eqn:EQk.
+    iApply (wp_let' _ _ _ _ k). { subst. solve_to_val. } simpl_subst.
+    iApply (type_type ((☀ (α ∪ ν)) :: E)%EL []
+        [k ◁cont([], λ _:vec val 0, [ #lref ◁ own_ptr 2 (&uniq{α ∪ ν}ty2)])]%CC
+        [ f ◁ box (fn(∀ α, [☀α] ++ E; envty, &uniq{α}ty1) → &uniq{α}ty2);
+          #lref ◁ own_ptr 2 (&uniq{α ∪ ν}ty1); env ◁ box envty ]%TC
+       with "[] LFT Hna [HE Hν] HL [Hk HE' Hν' Href↦2 Hγ Href†2]"); first last.
+    { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
+      iFrame. iApply tctx_hasty_val'. done. iFrame. iExists [_].
+      rewrite heap_mapsto_vec_singleton. by iFrame. }
+    { rewrite !cctx_interp_singleton /=. iIntros "HE". iIntros (args) "Hna HL HT".
+      inv_vec args. subst. simpl. wp_rec.
+      rewrite {3}/elctx_interp big_sepL_cons /= -lft_tok_sep.
+      iDestruct "HE" as "[[Hα Hν] HE]". iSpecialize ("Hk" with "[Hα HE $HE']").
+      { rewrite /elctx_interp big_sepL_cons. iFrame. }
+      iApply ("Hk" $! [# #lref] with "Hna HL").
+      rewrite !tctx_interp_singleton !tctx_hasty_val' //.
+      iDestruct "HT" as "[Href Ḥref†2]".
+      rewrite /= -(freeable_sz_split _ 1 1). iFrame.
+      iDestruct "Href" as ([|[[|lv'|]|] [|]]) "[H↦ Href]"; auto.
+      iExists [ #lv'; #lrc].
+      rewrite (heap_mapsto_vec_cons _ _ _ [_]) !heap_mapsto_vec_singleton. iFrame.
+      iExists ν. rewrite EQ1. eauto 10 with iFrame. }
+    { rewrite /elctx_interp !big_sepL_cons /= -lft_tok_sep. iFrame. }
+    iApply type_deref; [solve_typing..|by apply read_own_move|done|].
+      iIntros (x'). simpl_subst.
+    iApply type_deref; [solve_typing..|by apply read_own_move|done|].
+       iIntros (f'). simpl_subst.
+    iApply type_letalloc_1; [solve_typing..|]. iIntros (x). simpl_subst.
+    iApply (type_letcall); [simpl; solve_typing..|]. iIntros (r). simpl_subst.
+    iApply type_deref; [solve_typing|by eapply read_own_move|done|].
+      iIntros (r'). simpl_subst.
+    iApply type_assign; [solve_typing|by eapply write_own|].
+    iApply type_delete; [solve_typing..|].
+    iApply (type_jump []); solve_typing.
+  Qed.
 End refmut_functions.

@@ -235,7 +235,7 @@ Section ref_functions.
     iDestruct "Href" as "[[Href↦1 Href↦2] Href]".
     iDestruct "Href" as (ν qν γ β ty') "(#Hshr & #Hαβ & #Hinv & >Hν & Hγ)".
     rewrite -(freeable_sz_split _ 1 1). iDestruct "Href†" as "[Href†1 Href†2]".
-    destruct (Qp_lower_bound qE qν) as (q & qE' & qν' & ? & ?). subst.
+    destruct (Qp_lower_bound qE qν) as (q & qE' & qν' & -> & ->).
     iDestruct "HE" as "[HE HE']". iDestruct "Hν" as "[Hν Hν']".
     remember (RecV "k" [] (ret [ LitV lref])%E)%V as k eqn:EQk.
     iApply (wp_let' _ _ _ _ k). { subst. solve_to_val. } simpl_subst.
