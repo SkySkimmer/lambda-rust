@@ -11,6 +11,14 @@ Definition refcell_refN := refcellN .@ "ref".
 Section ref.
   Context `{typeG Σ, refcellG Σ}.
 
+  (* The Rust type looks as follows (after some unfolding):
+
+     pub struct Ref<'b, T: ?Sized + 'b> {
+       value: &'b T,
+       borrow: &'b Cell<BorrowFlag>,
+     }
+  *)
+
   Program Definition ref (α : lft) (ty : type) :=
     {| ty_size := 2;
        ty_own tid vl :=

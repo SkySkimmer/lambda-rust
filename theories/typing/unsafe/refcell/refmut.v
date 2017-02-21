@@ -9,6 +9,16 @@ Set Default Proof Using "Type".
 Section refmut.
   Context `{typeG Σ, refcellG Σ}.
 
+  (* The Rust type looks as follows (after some unfolding):
+
+     pub struct RefMut<'b, T: ?Sized + 'b> {
+       value: &'b mut T,
+       borrow: &'b Cell<BorrowFlag>,
+     }
+
+     In other words, we have a pointer to the data, and a pointer
+     to the refcount field of the RefCell. *)
+
   Program Definition refmut (α : lft) (ty : type) :=
     {| ty_size := 2;
        ty_own tid vl :=

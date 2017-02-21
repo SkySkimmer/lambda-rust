@@ -83,6 +83,13 @@ End refcell_inv.
 Section refcell.
   Context `{typeG Σ, refcellG Σ}.
 
+  (* Original Rust type:
+     pub struct RefCell<T: ?Sized> {
+       borrow: Cell<BorrowFlag>,
+       value: UnsafeCell<T>,
+     }
+  *)
+
   Program Definition refcell (ty : type) :=
     {| ty_size := S ty.(ty_size);
        ty_own tid vl :=

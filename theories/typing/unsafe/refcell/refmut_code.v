@@ -173,7 +173,7 @@ Section refmut_functions.
   Lemma refmut_map_type ty1 ty2 envty E :
     typed_instruction_ty [] [] [] refmut_map
       (fn(∀ β, [☀β] ++ E; refmut β ty1,
-                          fn(∀ α, [☀α] ++ E; envty, &uniq{α}ty1) → &uniq{α}ty2,
+                          fn(∀ α, [☀α] ++ E; envty, &uniq{α} ty1) → &uniq{α} ty2,
                           envty)
        → refmut β ty2).
   Proof.
