@@ -33,8 +33,7 @@ Section fn.
     intros tid vl. destruct n' as [|n']; simpl; [done|]. unfold typed_body.
     do 12 f_equiv. f_contractive. do 17 f_equiv.
     - rewrite !cctx_interp_singleton /=. do 5 f_equiv.
-      rewrite !tctx_interp_singleton /tctx_elt_interp /=. repeat f_equiv. apply Hty.
-      by rewrite (ty_size_ne _ _ _ (Hty _)).
+      rewrite !tctx_interp_singleton /tctx_elt_interp /=. repeat (apply Hty || f_equiv).
     - rewrite /tctx_interp !big_sepL_zip_with /=. do 3 f_equiv.
       cut (∀ n tid p i, Proper (dist (S n) ==> dist n)
         (λ (l : list _), ∀ ty, ⌜l !! i = Some ty⌝ → tctx_elt_interp tid (p ◁ ty))%I).
