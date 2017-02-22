@@ -86,14 +86,14 @@ Section own.
       iNext. iMod "Hclose'" as "_". iMod ("Hclose" with "[]") as "_"; by eauto.
   Qed.
   Next Obligation.
-    intros _ ty κ κ' tid l. iIntros "#LFT #Hκ #H".
+    intros _ ty κ κ' tid l. iIntros "#Hκ #H".
     iDestruct "H" as (l') "[Hfb #Hvs]".
     iExists l'. iSplit. by iApply (frac_bor_shorten with "[]"). iIntros "!# *% Htok".
     iApply (step_fupd_mask_mono F _ _ (F∖↑shrN∖↑lftN)). set_solver. set_solver.
     iMod (lft_incl_acc with "Hκ Htok") as (q') "[Htok Hclose]"; first set_solver.
     iMod ("Hvs" with "[%] Htok") as "Hvs'". set_solver. iModIntro. iNext.
     iMod "Hvs'" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
-    by iApply (ty.(ty_shr_mono) with "LFT Hκ").
+    by iApply (ty.(ty_shr_mono) with "Hκ").
   Qed.
 
   Lemma own_type_incl n ty1 ty2 :
@@ -114,7 +114,7 @@ Section own.
     Proper (ctx_eq E L ==> subtype E L ==> subtype E L) own_ptr.
   Proof.
     intros n1 n2 Hn12 ty1 ty2 Hincl. iIntros.
-    iDestruct (Hn12 with "[] [] []") as %->; [done..|].
+    iDestruct (Hn12 with "[] []") as %->; [done..|].
     iApply own_type_incl. iApply Hincl; done.
   Qed.
   Lemma own_mono' E L n1 n2 ty1 ty2 :

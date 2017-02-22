@@ -94,9 +94,9 @@ Section typing.
     subtype E0 L0 (fn E' tys ty) (fn E tys' ty').
   Proof.
     intros HE Htys Hty. apply subtype_simple_type=>//= _ vl.
-    iIntros "#LFT #HE0 #HL0 Hf". iDestruct "Hf" as (fb kb xb e ?) "[% [% #Hf]]". subst.
+    iIntros "#HE0 #HL0 Hf". iDestruct "Hf" as (fb kb xb e ?) "[% [% #Hf]]". subst.
     iExists fb, kb, xb, e, _. iSplit. done. iSplit. done. iNext.
-    rewrite /typed_body. iIntros "* !# * _ Htl HE HL HC HT".
+    rewrite /typed_body. iIntros "* !# * #LFT Htl HE HL HC HT".
     iDestruct (elctx_interp_persist with "HE") as "#HEp".
     iMod (HE with "HE0 HL0 HE") as (qE') "[HE' Hclose]". done.
     iApply ("Hf" with "LFT Htl HE' HL [HC Hclose] [HT]").
@@ -110,7 +110,7 @@ Section typing.
       iDestruct "HT" as (v) "[HP Hown]". iExists v. iFrame "HP".
       assert (Hst : subtype (E0 ++ E x) L0 (box (ty x)) (box (ty' x)))
         by by rewrite ->Hty.
-      iDestruct (Hst with "LFT [HE0 HEp] HL0") as "(_ & Hty & _)".
+      iDestruct (Hst with "[HE0 HEp] HL0") as "(_ & Hty & _)".
       { rewrite /elctx_interp_0 big_sepL_app. by iSplit. }
       by iApply "Hty".
     - rewrite /tctx_interp
@@ -126,7 +126,7 @@ Section typing.
       specialize (Htys x). eapply Forall2_lookup_lr in Htys; try done.
       assert (Hst : subtype (E0 ++ E x) L0 (box ty2') (box ty1'))
         by by rewrite ->Htys.
-      iDestruct (Hst with "[] [] []") as "(_ & #Ho & _)"; [done| |done|].
+      iDestruct (Hst with "[] []") as "(_ & #Ho & _)"; [ |done|].
       { rewrite /elctx_interp_0 big_sepL_app. by iSplit. }
       by iApply "Ho".
   Qed.
@@ -177,7 +177,7 @@ Section typing.
     subtype E0 L0 (fn (n:=n) E tys ty) (fn (E ∘ σ) (tys ∘ σ) (ty ∘ σ)).
   Proof.
     apply subtype_simple_type=>//= _ vl.
-    iIntros "#LFT _ _ Hf". iDestruct "Hf" as (fb kb xb e ?) "[% [% #Hf]]". subst.
+    iIntros "_ _ Hf". iDestruct "Hf" as (fb kb xb e ?) "[% [% #Hf]]". subst.
     iExists fb, kb, xb, e, _. iSplit. done. iSplit. done.
     rewrite /typed_body. iNext. iIntros "*". iApply "Hf".
   Qed.

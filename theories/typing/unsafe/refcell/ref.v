@@ -60,7 +60,7 @@ Section ref.
     iMod (bor_na with "Hb") as "#Hb". done. eauto 20.
   Qed.
   Next Obligation.
-    iIntros (??????) "#? #? H". iDestruct "H" as (ν q γ β ty' lv lrc) "H".
+    iIntros (??????) "#? H". iDestruct "H" as (ν q γ β ty' lv lrc) "H".
     iExists _, _, _, _, _, _, _. iDestruct "H" as "#(? & ? & $ & $ & $ & ?)".
     iSplit; last iSplit.
     - by iApply lft_incl_trans.
@@ -80,20 +80,20 @@ Section ref.
   Global Instance ref_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> subtype E L ==> subtype E L) ref.
   Proof.
-    iIntros (α1 α2 Hα ty1 ty2 Hty) "#LFT #HE #HL".
-    iDestruct (Hty with "LFT HE HL") as "(%&#Ho&#Hs)".
+    iIntros (α1 α2 Hα ty1 ty2 Hty) "#HE #HL".
+    iDestruct (Hty with "HE HL") as "(%&#Ho&#Hs)".
     iDestruct (Hα with "HE HL") as "Hα1α2".
     iSplit; [|iSplit; iAlways].
     - done.
     - iIntros (tid [|[[]|][|[[]|][]]]) "H"; try done.
       iDestruct "H" as (ν q γ β ty') "(#Hshr & #H⊑ & #Hinv & Htok & Hown)".
       iExists ν, q, γ, β, ty'. iFrame "∗#". iSplit.
-      + iApply ty_shr_mono; last by iApply "Hs". done.
+      + iApply ty_shr_mono; last by iApply "Hs".
         iApply lft_glb_mono. done. iApply lft_incl_refl.
       + by iApply lft_incl_trans.
     - iIntros (κ tid l) "H". iDestruct "H" as (ν q γ β ty' lv lrc) "H".
       iExists ν, q, γ, β, ty', lv, lrc. iDestruct "H" as "#($&$&?&?&$&$)". iSplit.
-      + iApply ty_shr_mono; last by iApply "Hs". done.
+      + iApply ty_shr_mono; last by iApply "Hs".
         iApply lft_glb_mono. done. iApply lft_incl_refl.
       + by iApply lft_incl_trans.
   Qed.

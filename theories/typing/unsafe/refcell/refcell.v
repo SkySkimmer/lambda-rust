@@ -58,13 +58,13 @@ Section refcell_inv.
 
   Lemma refcell_inv_proper E L tid l γ α ty1 ty2 :
     eqtype E L ty1 ty2 →
-    lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
+    elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
     refcell_inv tid l γ α ty1 -∗ refcell_inv tid l γ α ty2.
   Proof.
     (* TODO : this proof is essentially [solve_proper], but within the logic.
               It would easily gain from some automation. *)
-    iIntros (Hty%eqtype_unfold) "#LFT #HE #HL H". unfold refcell_inv.
-    iDestruct (Hty with "LFT HE HL") as "(% & Hown & Hshr)".
+    iIntros (Hty%eqtype_unfold) "#HE #HL H". unfold refcell_inv.
+    iDestruct (Hty with "HE HL") as "(% & Hown & Hshr)".
     iAssert (□ (&{α} shift_loc l 1 ↦∗: ty_own ty1 tid -∗
                 &{α} shift_loc l 1 ↦∗: ty_own ty2 tid))%I with "[]" as "#Hb".
     { iIntros "!# H". iApply bor_iff; last done.
@@ -144,7 +144,7 @@ Section refcell.
       iIntros "!>!> _". iApply step_fupd_intro; auto.
   Qed.
   Next Obligation.
-    iIntros (?????) "LFT #Hκ H". iDestruct "H" as (α γ) "[#??]".
+    iIntros (?????) "#Hκ H". iDestruct "H" as (α γ) "[#??]".
     iExists _, _. iFrame. iApply lft_incl_trans; auto.
   Qed.
 
@@ -160,8 +160,8 @@ Section refcell.
   Proof.
     (* TODO : this proof is essentially [solve_proper], but within the logic.
               It would easily gain from some automation. *)
-    iIntros (ty1 ty2 EQ) "#LFT #HE #HL". pose proof EQ as EQ'%eqtype_unfold.
-    iDestruct (EQ' with "LFT HE HL") as "(% & #Hown & #Hshr)".
+    iIntros (ty1 ty2 EQ) "#HE #HL". pose proof EQ as EQ'%eqtype_unfold.
+    iDestruct (EQ' with "HE HL") as "(% & #Hown & #Hshr)".
     iSplit; [|iSplit; iIntros "!# * H"].
     - iPureIntro. simpl. congruence.
     - destruct vl as [|[[]|]]; try done. iDestruct "H" as "[$ H]". by iApply "Hown".

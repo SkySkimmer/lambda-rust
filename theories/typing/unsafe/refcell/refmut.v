@@ -75,7 +75,7 @@ Section refmut.
       iApply step_fupd_intro. set_solver. auto.
   Qed.
   Next Obligation.
-    iIntros (??????) "#? #? H". iDestruct "H" as (lv lrc) "[#Hf #H]".
+    iIntros (??????) "#? H". iDestruct "H" as (lv lrc) "[#Hf #H]".
     iExists _, _. iSplit.
     - by iApply frac_bor_shorten.
     - iIntros "!# * % Htok".
@@ -98,9 +98,9 @@ Section refmut.
   Global Instance refmut_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> eqtype E L ==> subtype E L) refmut.
   Proof.
-    iIntros (α1 α2 Hα ty1 ty2 Hty) "#LFT #HE #HL".
+    iIntros (α1 α2 Hα ty1 ty2 Hty) "#HE #HL".
     pose proof Hty as Hty'%eqtype_unfold.
-    iDestruct (Hty' with "LFT HE HL") as "(%&#Ho&#Hs)".
+    iDestruct (Hty' with "HE HL") as "(%&#Ho&#Hs)".
     iDestruct (Hα with "HE HL") as "Hα1α2".
     iSplit; [|iSplit; iAlways].
     - done.

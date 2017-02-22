@@ -138,7 +138,7 @@ Section ref_functions.
         [ x ◁ box (uninit 1); #lv ◁ &shr{α}ty]%TC with "[] LFT Hna [Hα Hβ Hαβ] HL Hk");
       first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
-      iFrame. iApply (ty_shr_mono with "LFT [] Hshr"). by iApply lft_incl_glb. }
+      iFrame. iApply (ty_shr_mono with "[] Hshr"). by iApply lft_incl_glb. }
     { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
     iApply (type_letalloc_1 (&shr{α}ty)); [solve_typing..|].
     iIntros (r). simpl_subst. iApply type_delete; [solve_typing..|].

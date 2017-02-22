@@ -42,7 +42,7 @@ Section uniq_bor.
       iApply step_fupd_intro. set_solver. auto.
   Qed.
   Next Obligation.
-    intros κ0 ty κ κ' tid l. iIntros "#LFT #Hκ #H".
+    intros κ0 ty κ κ' tid l. iIntros "#Hκ #H".
     iDestruct "H" as (l') "[Hfb Hvs]". iAssert (κ0∪κ' ⊑ κ0∪κ)%I as "#Hκ0".
     { iApply lft_glb_mono. iApply lft_incl_refl. done. }
     iExists l'. iSplit. by iApply (frac_bor_shorten with "[]").
@@ -51,14 +51,14 @@ Section uniq_bor.
     iMod (lft_incl_acc with "Hκ0 Htok") as (q') "[Htok Hclose]"; first set_solver.
     iMod ("Hvs" with "[%] Htok") as "Hvs'". set_solver. iModIntro. iNext.
     iMod "Hvs'" as "[#Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
-    by iApply (ty_shr_mono with "LFT Hκ0").
+    by iApply (ty_shr_mono with "Hκ0").
   Qed.
 
   Global Instance uniq_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> eqtype E L ==> subtype E L) uniq_bor.
   Proof.
     intros κ1 κ2 Hκ ty1 ty2 Hty%eqtype_unfold. iIntros. iSplit; first done.
-    iDestruct (Hty with "[] [] []") as "(_ & #Ho & #Hs)"; [done..|clear Hty].
+    iDestruct (Hty with "[] []") as "(_ & #Ho & #Hs)"; [done..|clear Hty].
     iDestruct (Hκ with "[] []") as "#Hκ"; [done..|]. iSplit; iAlways.
     - iIntros (? [|[[]|][]]) "H"; try done.
       iApply (bor_shorten with "Hκ"). iApply bor_iff; last done.

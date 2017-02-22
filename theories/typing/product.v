@@ -10,7 +10,7 @@ Section product.
     {| ty_size := 0; ty_own tid vl := ⌜vl = []⌝%I; ty_shr κ tid l := True%I |}.
   Next Obligation. iIntros (tid vl) "%". by subst. Qed.
   Next Obligation. by iIntros (??????) "_ _ $". Qed.
-  Next Obligation. by iIntros (????) "_ _ $". Qed.
+  Next Obligation. by iIntros (????) "_ $". Qed.
 
   Global Instance unit0_copy : Copy unit0.
   Proof.
@@ -63,8 +63,8 @@ Section product.
     iModIntro. iFrame "Htok". iFrame.
   Qed.
   Next Obligation.
-    intros ty1 ty2 κ κ' tid l. iIntros "#LFT /= #H⊑ [H1 H2]".
-    iSplitL "H1"; by iApply (ty_shr_mono with "LFT H⊑").
+    intros ty1 ty2 κ κ' tid l. iIntros "/= #H⊑ [H1 H2]".
+    iSplitL "H1"; by iApply (ty_shr_mono with "H⊑").
   Qed.
 
   Global Instance product2_ne n:
@@ -80,8 +80,8 @@ Section product.
     Proper (subtype E L ==> subtype E L ==> subtype E L) product2.
   Proof.
     iIntros (ty11 ty12 H1 ty21 ty22 H2). iIntros.
-    iDestruct (H1 with "[] [] []") as "(% & #Ho1 & #Hs1)"; [done..|]. clear H1.
-    iDestruct (H2 with "[] [] []") as "(% & #Ho2 & #Hs2)"; [done..|]. clear H2.
+    iDestruct (H1 with "[] []") as "(% & #Ho1 & #Hs1)"; [done..|]. clear H1.
+    iDestruct (H2 with "[] []") as "(% & #Ho2 & #Hs2)"; [done..|]. clear H2.
     iSplit; first by (iPureIntro; simpl; f_equal). iSplit; iAlways.
     - iIntros (??) "H". iDestruct "H" as (vl1 vl2) "(% & Hown1 & Hown2)".
       iExists _, _. iSplit. done. iSplitL "Hown1".
@@ -198,7 +198,7 @@ Section typing.
                   last iIntros (?); iIntros (??) "H").
     - iDestruct "H" as (? ?) "(% & % & ?)". by subst.
     - iDestruct "H" as "(? & ?)". rewrite shift_loc_0.
-      iApply (ty_shr_mono with "[] []"); [done| | done].
+      iApply ty_shr_mono; last done.
       iApply lft_incl_refl.
     - iExists [], _. eauto.
     - simpl. rewrite shift_loc_0. by iFrame.

@@ -20,9 +20,9 @@ Section shr_bor.
     Proper (flip (lctx_lft_incl E L) ==> subtype E L ==> subtype E L) shr_bor.
   Proof.
     intros κ1 κ2 Hκ ty1 ty2 Hty. apply subtype_simple_type.
-    iIntros (? [|[[]|][]]) "#LFT #HE #HL H"; try done.
-    iDestruct (Hκ with "HE HL") as "#Hκ". iApply (ty2.(ty_shr_mono) with "LFT Hκ").
-    iDestruct (Hty with "[] [] []") as "(_ & _ & #Hs1)"; [done..|clear Hty].
+    iIntros (? [|[[]|][]]) "#HE #HL H"; try done.
+    iDestruct (Hκ with "HE HL") as "#Hκ". iApply (ty2.(ty_shr_mono) with "Hκ").
+    iDestruct (Hty with "[] []") as "(_ & _ & #Hs1)"; [done..|clear Hty].
     by iApply "Hs1".
   Qed.
   Global Instance shr_mono_flip E L :
@@ -69,7 +69,7 @@ Section typing.
     iDestruct (Hκκ' with "HE' HL'") as "Hκκ'".
     rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
     iDestruct "H" as ([[]|]) "[% #Hshr]"; try done. iModIntro. iSplit.
-    - iExists _. iSplit. done. by iApply (ty_shr_mono with "LFT Hκκ' Hshr").
+    - iExists _. iSplit. done. by iApply (ty_shr_mono with "Hκκ' Hshr").
     - iExists _. auto.
   Qed.
 

@@ -19,7 +19,7 @@ Section sum.
     iMod (bor_acc with "LFT Hown Htok") as "[>H _]"; first done.
     iDestruct "H" as (?) "[_ []]".
   Qed.
-  Next Obligation. iIntros (κ κ' tid l) "#LFT #Hord []". Qed.
+  Next Obligation. iIntros (κ κ' tid l) "#Hord []". Qed.
 
   Global Instance emp_empty : Empty type := emp.
 
@@ -88,11 +88,11 @@ Section sum.
       by iFrame.
   Qed.
   Next Obligation.
-    iIntros (tyl κ κ' tid l) "#LFT #Hord H".
+    iIntros (tyl κ κ' tid l) "#Hord H".
     iDestruct "H" as (i) "[Hown0 Hown]". iExists i.
     iSplitL "Hown0".
     - by iApply (frac_bor_shorten with "Hord").
-    - iApply ((nth i tyl ∅).(ty_shr_mono) with "LFT Hord"); done.
+    - iApply ((nth i tyl ∅).(ty_shr_mono) with "Hord"); done.
   Qed.
 
   Global Instance sum_ne n: Proper (dist n ==> dist n) sum.
@@ -109,16 +109,16 @@ Section sum.
     - intros κ tid l. unfold is_pad. rewrite EQmax.
       assert (EQsz : ∀ i, (nth i x ∅).(ty_size) = (nth i y ∅).(ty_size))
         by (intros; apply EQnth).
-      repeat (rewrite EQsz || f_equiv). apply EQnth.
+      repeat (rewrite EQsz || apply EQnth || f_equiv).
   Qed.
 
   Global Instance sum_mono E L :
     Proper (Forall2 (subtype E L) ==> subtype E L) sum.
   Proof.
-    iIntros (tyl1 tyl2 Htyl) "#LFT #? %".
+    iIntros (tyl1 tyl2 Htyl) "#? %".
     iAssert (⌜list_max (map ty_size tyl1) = list_max (map ty_size tyl2)⌝%I) with "[#]" as %Hleq.
     { iInduction Htyl as [|???? Hsub] "IH"; first done.
-      iDestruct (Hsub with "LFT [] []") as "(% & _ & _)"; [done..|].
+      iDestruct (Hsub with "[] []") as "(% & _ & _)"; [done..|].
       iDestruct "IH" as %IH. iPureIntro. simpl. inversion_clear IH. by f_equal. }
     iAssert (∀ i, type_incl (nth i tyl1 ∅) (nth i tyl2 ∅))%I with "[#]" as "#Hty".
       { iIntros (i). edestruct (nth_lookup_or_length tyl1 i) as [Hl1|Hl]; last first.

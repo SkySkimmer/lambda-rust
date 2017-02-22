@@ -73,7 +73,7 @@ Section product_split.
       iClear "IH Htyl". iExists #l. rewrite product_nil. iSplitR; first done.
       assert (eqtype E L (ptr ty) (ptr (product2 ty unit))) as [Hincl _].
       { rewrite right_id. done. }
-      iDestruct (Hincl with "LFT HE' HL'") as "#(_ & #Heq & _)". by iApply "Heq". }
+      iDestruct (Hincl with "HE' HL'") as "#(_ & #Heq & _)". by iApply "Heq". }
     iMod ("IH" with "[] HE HL [Htyl]") as "(HE & HL & Htyl)"; first done.
     { change (ty_size ty) with (0+ty_size ty)%nat at 1.
       rewrite plus_comm -hasty_ptr_offsets_offset //. }

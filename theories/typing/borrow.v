@@ -154,7 +154,7 @@ Section borrow.
       iMod ("Hclose'" with "[H↦]") as "Htok1"; first by auto.
       iMod ("Hclose" with "[Htok1 Htok2]") as "($ & $)"; first by iFrame.
       rewrite tctx_interp_singleton tctx_hasty_val' //.
-      by iApply (ty_shr_mono with "LFT Hincl' Hshr").
+      by iApply (ty_shr_mono with "Hincl' Hshr").
   Qed.
 
   Lemma type_deref_shr_uniq {E L} κ κ' x p e ty C T T' :

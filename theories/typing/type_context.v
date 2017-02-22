@@ -238,7 +238,7 @@ Section type_context.
     iDestruct (elctx_interp_persist with "HE") as "#HE'".
     iDestruct (llctx_interp_persist with "HL") as "#HL'".
     iFrame "HE HL". iDestruct "H" as (v) "[% H]". iExists _. iFrame "%".
-    iDestruct (Hst with "[] [] []") as "(_ & #Ho & _)"; [done..|by iApply "Ho"].
+    iDestruct (Hst with "[] []") as "(_ & #Ho & _)"; [done..|by iApply "Ho"].
   Qed.
 
   (* Extracting from a type context. *)

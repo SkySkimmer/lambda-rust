@@ -18,7 +18,7 @@ Section cell.
     iIntros (ty E κ l tid q ?) "#LFT Hown $". by iApply (bor_na with "Hown").
   Qed.
   Next Obligation.
-    iIntros (ty ?? tid l) "#LFT #H⊑ H". by iApply (na_bor_shorten with "H⊑").
+    iIntros (ty ?? tid l) "#H⊑ H". by iApply (na_bor_shorten with "H⊑").
   Qed.
 
   Global Instance cell_ne n : Proper (dist n ==> dist n) cell.
@@ -29,8 +29,8 @@ Section cell.
 
   Global Instance cell_mono E L : Proper (eqtype E L ==> subtype E L) cell.
   Proof.
-    iIntros (?? EQ%eqtype_unfold) "#LFT #HE #HL".
-    iDestruct (EQ with "LFT HE HL") as "(% & #Hown & #Hshr)".
+    iIntros (?? EQ%eqtype_unfold) "#HE #HL".
+    iDestruct (EQ with "HE HL") as "(% & #Hown & #Hshr)".
     iSplit; [done|iSplit; iIntros "!# * H"].
     - iApply ("Hown" with "H").
     - iApply na_bor_iff; last done. iSplit; iIntros "!>!# H";

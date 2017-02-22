@@ -58,7 +58,7 @@ Section fixpoint.
   Lemma fixpoint_unfold_eqtype E L : eqtype E L (fixpoint T) (T (fixpoint T)).
   Proof.
     unfold eqtype, subtype, type_incl. setoid_rewrite <-fixpoint_unfold.
-    split; iIntros "_ _ _"; (iSplit; first done); iSplit; iIntros "!#*$".
+    split; iIntros "_ _"; (iSplit; first done); iSplit; iIntros "!#*$".
   Qed.
 End fixpoint.
 
@@ -75,30 +75,30 @@ Section subtyping.
     - by eexists _.
     - intros. rewrite (fixpoint_unfold_eqtype T2). by apply H12.
     - intros c Hc.
-      assert (Hsz : lft_ctx -∗ lft_contexts.elctx_interp_0 E -∗
+      assert (Hsz : lft_contexts.elctx_interp_0 E -∗
                 ⌜lft_contexts.llctx_interp_0 L⌝ -∗
                 ⌜(compl c).(ty_size) = (fixpoint T2).(ty_size)⌝).
-      { iIntros "LFT HE HL". rewrite (conv_compl 0 c) /=.
-        iDestruct (Hc 0%nat with "LFT HE HL") as "[$ _]". }
-      assert (Hown : lft_ctx -∗ lft_contexts.elctx_interp_0 E -∗
+      { iIntros "HE HL". rewrite (conv_compl 0 c) /=.
+        iDestruct (Hc 0%nat with "HE HL") as "[$ _]". }
+      assert (Hown : lft_contexts.elctx_interp_0 E -∗
                 ⌜lft_contexts.llctx_interp_0 L⌝ -∗
                 □ (∀ tid vl, (compl c).(ty_own) tid vl -∗ (fixpoint T2).(ty_own) tid vl)).
       { apply uPred.entails_equiv_and, equiv_dist=>n.
         destruct (conv_compl (S n) c) as [_ Heq _]; simpl in *. setoid_rewrite Heq.
-        apply equiv_dist, uPred.entails_equiv_and. iIntros "LFT HE HL".
-        iDestruct (Hc (S n) with "LFT HE HL") as "[_ [$ _]]". }
-      assert (Hshr : lft_ctx -∗ lft_contexts.elctx_interp_0 E -∗
+        apply equiv_dist, uPred.entails_equiv_and. iIntros "HE HL".
+        iDestruct (Hc (S n) with "HE HL") as "[_ [$ _]]". }
+      assert (Hshr : lft_contexts.elctx_interp_0 E -∗
                 ⌜lft_contexts.llctx_interp_0 L⌝ -∗
                 □ (∀ κ tid l,
                    (compl c).(ty_shr) κ tid l -∗ (fixpoint T2).(ty_shr) κ tid l)).
       { apply uPred.entails_equiv_and, equiv_dist=>n.
         destruct (conv_compl n c) as [_ _ Heq]; simpl in *. setoid_rewrite Heq.
-        apply equiv_dist, uPred.entails_equiv_and. iIntros "LFT HE HL".
-        iDestruct (Hc n with "LFT HE HL") as "[_ [_ $]]". }
-      iIntros "LFT HE HL". iSplit; [|iSplit].
-      + iApply (Hsz with "LFT HE HL").
-      + iApply (Hown with "LFT HE HL").
-      + iApply (Hshr with "LFT HE HL").
+        apply equiv_dist, uPred.entails_equiv_and. iIntros "HE HL".
+        iDestruct (Hc n with "HE HL") as "[_ [_ $]]". }
+      iIntros "HE HL". iSplit; [|iSplit].
+      + iApply (Hsz with "HE HL").
+      + iApply (Hown with "HE HL").
+      + iApply (Hshr with "HE HL").
   Qed.
 
   Lemma fixpoint_proper T1 `{Contractive T1} T2 `{Contractive T2} :
@@ -110,30 +110,30 @@ Section subtyping.
     - by eexists _.
     - intros. rewrite (fixpoint_unfold_eqtype T2). by apply H12.
     - intros c Hc. setoid_rewrite eqtype_unfold in Hc. rewrite eqtype_unfold.
-      assert (Hsz : lft_ctx -∗ lft_contexts.elctx_interp_0 E -∗
+      assert (Hsz : lft_contexts.elctx_interp_0 E -∗
                 ⌜lft_contexts.llctx_interp_0 L⌝ -∗
                 ⌜(compl c).(ty_size) = (fixpoint T2).(ty_size)⌝).
-      { iIntros "LFT HE HL". rewrite (conv_compl 0 c) /=.
-        iDestruct (Hc 0%nat with "LFT HE HL") as "[$ _]". }
-      assert (Hown : lft_ctx -∗ lft_contexts.elctx_interp_0 E -∗
+      { iIntros "HE HL". rewrite (conv_compl 0 c) /=.
+        iDestruct (Hc 0%nat with "HE HL") as "[$ _]". }
+      assert (Hown : lft_contexts.elctx_interp_0 E -∗
                 ⌜lft_contexts.llctx_interp_0 L⌝ -∗
                 □ (∀ tid vl, (compl c).(ty_own) tid vl ↔ (fixpoint T2).(ty_own) tid vl)).
       { apply uPred.entails_equiv_and, equiv_dist=>n.
         destruct (conv_compl (S n) c) as [_ Heq _]; simpl in *. setoid_rewrite Heq.
-        apply equiv_dist, uPred.entails_equiv_and. iIntros "LFT HE HL".
-        iDestruct (Hc (S n) with "LFT HE HL") as "[_ [$ _]]". }
-      assert (Hshr : lft_ctx -∗ lft_contexts.elctx_interp_0 E -∗
+        apply equiv_dist, uPred.entails_equiv_and. iIntros "HE HL".
+        iDestruct (Hc (S n) with "HE HL") as "[_ [$ _]]". }
+      assert (Hshr : lft_contexts.elctx_interp_0 E -∗
                 ⌜lft_contexts.llctx_interp_0 L⌝ -∗
                 □ (∀ κ tid l,
                    (compl c).(ty_shr) κ tid l ↔ (fixpoint T2).(ty_shr) κ tid l)).
       { apply uPred.entails_equiv_and, equiv_dist=>n.
         destruct (conv_compl n c) as [_ _ Heq]. setoid_rewrite Heq.
-        apply equiv_dist, uPred.entails_equiv_and. iIntros "LFT HE HL".
-        iDestruct (Hc n with "LFT HE HL") as "[_ [_ $]]". }
-      iIntros "LFT HE HL". iSplit; [|iSplit].
-      + iApply (Hsz with "LFT HE HL").
-      + iApply (Hown with "LFT HE HL").
-      + iApply (Hshr with "LFT HE HL").
+        apply equiv_dist, uPred.entails_equiv_and. iIntros "HE HL".
+        iDestruct (Hc n with "HE HL") as "[_ [_ $]]". }
+      iIntros "HE HL". iSplit; [|iSplit].
+      + iApply (Hsz with "HE HL").
+      + iApply (Hown with "HE HL").
+      + iApply (Hshr with "HE HL").
   Qed.
 
   Lemma fixpoint_unfold_subtype_l ty T `{Contractive T} :

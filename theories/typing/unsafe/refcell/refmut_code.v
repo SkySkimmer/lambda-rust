@@ -46,7 +46,7 @@ Section refmut_functions.
     iApply (type_type _ _ _ [ x ◁ box (uninit 1); #lv ◁ &shr{α}ty]%TC
             with "[] LFT Hna [Hα1 Hα2 Hβ Hαβ] HL Hk"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
-      iFrame. iApply (ty_shr_mono with "LFT [] Hshr'"). iApply lft_incl_glb; first done.
+      iFrame. iApply (ty_shr_mono with "[] Hshr'"). iApply lft_incl_glb; first done.
       iApply lft_incl_refl. }
     { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
     iApply (type_letalloc_1 (&shr{α}ty)); [solve_typing..|].

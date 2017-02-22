@@ -43,7 +43,7 @@ Record type `{typeG Σ} :=
       lft_ctx -∗ &{κ} (l ↦∗: ty_own tid) -∗ q.[κ] ={E}=∗
       ty_shr κ tid l ∗ q.[κ];
     ty_shr_mono κ κ' tid l :
-      lft_ctx -∗ κ' ⊑ κ -∗ ty_shr κ tid l -∗ ty_shr κ' tid l
+      κ' ⊑ κ -∗ ty_shr κ tid l -∗ ty_shr κ' tid l
   }.
 Existing Instance ty_shr_persistent.
 Instance: Params (@ty_size) 2.
@@ -166,7 +166,7 @@ Section type.
     - iExFalso. by iApply (lft_tok_dead with "Hκ").
   Qed.
   Next Obligation.
-    intros st κ κ' tid l. iIntros "#LFT #Hord H".
+    intros st κ κ' tid l. iIntros "#Hord H".
     iDestruct "H" as (vl) "[#Hf #Hown]".
     iExists vl. iFrame "Hown". by iApply (frac_bor_shorten with "Hord").
   Qed.
@@ -229,7 +229,7 @@ Section ofe.
     (∀ E κ l tid q, lftE ⊆ E →
       lft_ctx -∗ &{κ} (l ↦∗: λ vs, later_car (x.1.2 tid vs)) -∗
       q.[κ] ={E}=∗ x.2 κ tid l ∗ q.[κ]) ∧
-    (∀ κ κ' tid l, lft_ctx -∗ κ' ⊑ κ -∗ x.2 κ tid l -∗ x.2 κ' tid l).
+    (∀ κ κ' tid l, κ' ⊑ κ -∗ x.2 κ tid l -∗ x.2 κ' tid l).
 
   Definition type_unpack (ty : type) : T :=
     (ty.(ty_size), λ tid vl, Next (ty.(ty_own) tid vl), ty.(ty_shr)).
@@ -346,10 +346,10 @@ Section subtyping.
   Context (E : elctx) (L : llctx).
 
   Definition subtype (ty1 ty2 : type) : Prop :=
-    lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗ type_incl ty1 ty2.
+    elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗ type_incl ty1 ty2.
   (* TODO RJ: I'd really like to get rid of this definition. *)
   Definition ctx_eq {A} (x1 x2 : A) : Prop :=
-    lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗ ⌜x1 = x2⌝.
+    elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗ ⌜x1 = x2⌝.
 
   Lemma subtype_refl ty : subtype ty ty.
   Proof. iIntros. iApply type_incl_refl. Qed.
@@ -363,21 +363,21 @@ Section subtyping.
   Qed.
 
   Lemma ctx_eq_refl {A} (x : A) : ctx_eq x x.
-  Proof. by iIntros "_ _ _". Qed.
+  Proof. by iIntros "_ _". Qed.
   Global Instance ctx_eq_equivalent {A} : Equivalence (@ctx_eq A).
   Proof.
     split.
-    - by iIntros (?) "_ _ _".
-    - iIntros (x y Hxy) "LFT HE HL". by iDestruct (Hxy with "LFT HE HL") as %->.
-    - iIntros (x y z Hxy Hyz) "LFT HE HL".
-      iDestruct (Hxy with "LFT HE HL") as %->. by iApply (Hyz with "LFT HE HL").
+    - by iIntros (?) "_ _".
+    - iIntros (x y Hxy) "HE HL". by iDestruct (Hxy with "HE HL") as %->.
+    - iIntros (x y z Hxy Hyz) "HE HL".
+      iDestruct (Hxy with "HE HL") as %->. by iApply (Hyz with "HE HL").
   Qed.
 
   Lemma equiv_subtype ty1 ty2 : ty1 ≡ ty2 → subtype ty1 ty2.
   Proof. unfold subtype, type_incl=>EQ. setoid_rewrite EQ. apply subtype_refl. Qed.
 
   Global Instance ty_size_subtype : Proper (subtype ==> ctx_eq) ty_size.
-  Proof. iIntros (?? Hst) "LFT HE HL". iDestruct (Hst with "LFT HE HL") as "[$ ?]". Qed.
+  Proof. iIntros (?? Hst) "HE HL". iDestruct (Hst with "HE HL") as "[$ ?]". Qed.
   Global Instance ty_size_subtype_flip : Proper (flip subtype ==> ctx_eq) ty_size.
   Proof. by intros ?? ->. Qed.
   Lemma ty_size_subtype' ty1 ty2 :
@@ -393,21 +393,21 @@ Section subtyping.
 
   Lemma eqtype_unfold ty1 ty2 :
     eqtype ty1 ty2 ↔
-    (lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
+    (elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
       (⌜ty1.(ty_size) = ty2.(ty_size)⌝ ∗
       (□ ∀ tid vl, ty1.(ty_own) tid vl ↔ ty2.(ty_own) tid vl) ∗
       (□ ∀ κ tid l, ty1.(ty_shr) κ tid l ↔ ty2.(ty_shr) κ tid l))%I).
   Proof.
     split.
-    - iIntros ([EQ1 EQ2]) "#LFT #HE #HL".
-      iDestruct (EQ1 with "LFT HE HL") as "[#Hsz [#H1own #H1shr]]".
-      iDestruct (EQ2 with "LFT HE HL") as "[_ [#H2own #H2shr]]".
+    - iIntros ([EQ1 EQ2]) "#HE #HL".
+      iDestruct (EQ1 with "HE HL") as "[#Hsz [#H1own #H1shr]]".
+      iDestruct (EQ2 with "HE HL") as "[_ [#H2own #H2shr]]".
       iSplit; last iSplit.
       + done.
       + by iIntros "!#*"; iSplit; iIntros "H"; [iApply "H1own"|iApply "H2own"].
       + by iIntros "!#*"; iSplit; iIntros "H"; [iApply "H1shr"|iApply "H2shr"].
-    - intros EQ. split; iIntros "#LFT #HE #HL"; (iSplit; last iSplit);
-      iDestruct (EQ with "LFT HE HL") as "[% [#Hown #Hshr]]".
+    - intros EQ. split; iIntros "#HE #HL"; (iSplit; last iSplit);
+      iDestruct (EQ with "HE HL") as "[% [#Hown #Hshr]]".
       + done.
       + iIntros "!#* H". by iApply "Hown".
       + iIntros "!#* H". by iApply "Hshr".
@@ -438,15 +438,15 @@ Section subtyping.
   Proof. by intros ?? [-> _]. Qed.
 
   Lemma subtype_simple_type (st1 st2 : simple_type) :
-    (∀ tid vl, lft_ctx -∗ elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
+    (∀ tid vl, elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
                  st1.(st_own) tid vl -∗ st2.(st_own) tid vl) →
     subtype st1 st2.
   Proof.
     intros Hst. iIntros. iSplit; first done. iSplit; iAlways.
-    - iIntros. iApply (Hst with "[] [] []"); done.
+    - iIntros. iApply Hst; done.
     - iIntros (???) "H".
       iDestruct "H" as (vl) "[Hf Hown]". iExists vl. iFrame "Hf".
-      by iApply (Hst with "[] [] []").
+      by iApply Hst.
   Qed.
 End subtyping.
 
@@ -457,8 +457,8 @@ Section weakening.
     E1 ⊆+ E2 → L1 ⊆+ L2 →
     subtype E1 L1 ty1 ty2 → subtype E2 L2 ty1 ty2.
   Proof.
-    iIntros (HE12 ? Hsub) "#LFT HE HL".
-    iApply (Hsub with "LFT [HE] [HL]").
+    iIntros (HE12 ? Hsub) "HE HL".
+    iApply (Hsub with "[HE] [HL]").
     - rewrite /elctx_interp_0. by iApply big_sepL_submseteq.
     - iDestruct "HL" as %HL. iPureIntro. intros ??. apply HL.
       eauto using elem_of_submseteq.

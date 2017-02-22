@@ -39,7 +39,7 @@ Section join_handle.
   Global Instance join_handle_mono E L :
     Proper (subtype E L ==> subtype E L) join_handle.
   Proof.
-    iIntros (ty1 ty2 Hsub) "#? #? #?". iApply join_handle_subtype.
+    iIntros (ty1 ty2 Hsub) "#? #?". iApply join_handle_subtype.
     iApply Hsub; done.
   Qed.
   Global Instance join_handle_proper E L :
