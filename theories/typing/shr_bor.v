@@ -32,13 +32,14 @@ Section shr_bor.
     Proper (lctx_lft_eq E L ==> eqtype E L ==> eqtype E L) shr_bor.
   Proof. intros ??[] ??[]. by split; apply shr_mono. Qed.
 
-  Global Instance shr_contractive κ : Contractive (shr_bor κ).
+  Global Instance shr_type_contractive κ : TypeContractive (shr_bor κ).
   Proof.
-    intros n ?? EQ. apply ty_of_st_ne; constructor=> //=.
-    intros tid vl. destruct n as [n|]=>//=. repeat f_equiv. apply EQ.
+    intros n ???. apply: ty_of_st_type_ne. destruct n; first done.
+    solve_type_proper.
   Qed.
-  Global Instance shr_ne κ n : Proper (dist n ==> dist n) (shr_bor κ).
-  Proof. apply contractive_ne, _. Qed.
+
+  Global Instance shr_ne κ : NonExpansive (shr_bor κ).
+  Proof. apply type_contractive_ne, _. Qed.
 
   Global Instance shr_send κ ty :
     Sync ty → Send (shr_bor κ ty).

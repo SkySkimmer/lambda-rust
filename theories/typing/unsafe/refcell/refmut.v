@@ -86,14 +86,10 @@ Section refmut.
       iApply ty_shr_mono; try done. iApply lft_glb_mono. iApply lft_incl_refl. done.
   Qed.
 
-  Global Instance refmut_contractive α : Contractive (refmut α).
-  Proof.
-    intros n ?? EQ. unfold refmut. constructor=>//=.
-    - intros tid vl. destruct n as [|n]=>//=. repeat (f_contractive || f_equiv). apply EQ.
-    - intros κ tid l. repeat (f_contractive || f_equiv). apply EQ.
-  Qed.
-  Global Instance refmut_ne n α : Proper (dist n ==> dist n) (refmut α).
-  Proof. apply contractive_ne, _. Qed.
+  Global Instance refmut_type_contractive α : TypeContractive (refmut α).
+  Proof. solve_type_proper. Qed.
+  Global Instance refmut_ne α : NonExpansive (refmut α).
+  Proof. apply type_contractive_ne, _. Qed.
 
   Global Instance refmut_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> eqtype E L ==> subtype E L) refmut.

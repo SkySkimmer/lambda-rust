@@ -67,14 +67,9 @@ Section product.
     iSplitL "H1"; by iApply (ty_shr_mono with "H⊑").
   Qed.
 
-  Global Instance product2_ne n:
-    Proper (dist n ==> dist n ==> dist n) product2.
-  Proof.
-    intros ?? EQ1 ?? EQ2. constructor; simpl.
-    - by rewrite EQ1 EQ2.
-    - intros tid vs. destruct n as [|n]=>//=. by setoid_rewrite EQ1; setoid_rewrite EQ2.
-    - intros ???. by rewrite EQ1 EQ2. (* slow, FIXME *)
-  Qed.
+  Global Instance product2_type_ne n:
+    Proper (type_dist2 n ==> type_dist2 n ==> type_dist2 n) product2.
+  Proof. solve_type_proper. Qed.
 
   Global Instance product2_mono E L:
     Proper (subtype E L ==> subtype E L ==> subtype E L) product2.
@@ -144,7 +139,7 @@ Section product.
   Definition product := foldr product2 unit0.
   Definition unit := product [].
 
-  Global Instance product_ne n: Proper (dist n ==> dist n) product.
+  Global Instance product_type_ne n: Proper (Forall2 (type_dist2 n) ==> type_dist2 n) product.
   Proof. intros ??. induction 1=>//=. by f_equiv. Qed.
   Global Instance product_mono E L:
     Proper (Forall2 (subtype E L) ==> subtype E L) product.

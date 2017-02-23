@@ -25,20 +25,25 @@ Section fn.
   Global Instance fn_send E tys ty : Send (fn E tys ty).
   Proof. iIntros (tid1 tid2 vl). done. Qed.
 
-  Lemma fn_contractive n' E :
-    Proper (pointwise_relation A (dist_later n') ==>
-            pointwise_relation A (dist_later n') ==> dist n') (fn E).
+  Lemma fn_type_contractive n' E :
+    Proper (pointwise_relation A (B := vec type n) (Forall2 (type_dist2_later n')) ==>
+            pointwise_relation A (type_dist2_later n') ==> type_dist2 n') (fn E).
   Proof.
-    intros ?? Htys ?? Hty. apply ty_of_st_ne; constructor.
-    intros tid vl. destruct n' as [|n']; simpl; [done|]. unfold typed_body.
+    intros ?? Htys ?? Hty. apply ty_of_st_type_ne. destruct n'; first done.
+    constructor; simpl.
+    (* TODO: 'f_equiv' is slow here because reflexivity is slow. *)
+    (* The clean way to do this would be to have a metric on type contexts. Oh well. *)
+    intros tid vl. unfold typed_body.
     do 12 f_equiv. f_contractive. do 17 f_equiv.
     - rewrite !cctx_interp_singleton /=. do 5 f_equiv.
       rewrite !tctx_interp_singleton /tctx_elt_interp /=. repeat (apply Hty || f_equiv).
     - rewrite /tctx_interp !big_sepL_zip_with /=. do 3 f_equiv.
-      cut (∀ n tid p i, Proper (dist (S n) ==> dist n)
+      cut (∀ n tid p i, Proper (dist n ==> dist n)
         (λ (l : list _), ∀ ty, ⌜l !! i = Some ty⌝ → tctx_elt_interp tid (p ◁ ty))%I).
-      { intros Hprop. apply Hprop, list_fmap_ne, Htys. intros ty1 ty2 Hty12.
-        rewrite (ty_size_ne _ _ _ Hty12). by rewrite Hty12. }
+      { intros Hprop. apply Hprop, list_fmap_ne; last first.
+        - eapply Forall2_impl; first exact: Htys. intros.
+          apply dist_later_dist, type_dist2_dist_later. done.
+        - intros ty1 ty2 Hty12. rewrite (ty_size_ne _ _ _ Hty12). by rewrite Hty12. }
       clear. intros n tid p i x y. rewrite list_dist_lookup=>Hxy.
       specialize (Hxy i). destruct (x !! i) as [tyx|], (y !! i) as [tyy|];
         inversion_clear Hxy; last done.
@@ -52,15 +57,17 @@ Section fn.
         * iIntros "H". by iApply "H".
         * iIntros "H * #EQ". by iDestruct "EQ" as %[=->].
   Qed.
-  Global Existing Instance fn_contractive.
+  Global Existing Instance fn_type_contractive.
 
   Global Instance fn_ne n' E :
     Proper (pointwise_relation A (dist n') ==>
             pointwise_relation A (dist n') ==> dist n') (fn E).
   Proof.
-    intros ?? H1 ?? H2.
-    apply fn_contractive=>u; (destruct n'; [done|apply dist_S]);
-      [apply (H1 u)|apply (H2 u)].
+    intros ?? H1 ?? H2. apply dist_later_dist, type_dist2_dist_later.
+    apply fn_type_contractive=>u; simpl.
+    - eapply Forall2_impl; first exact: H1. intros. simpl.
+      apply type_dist_dist2. done.
+    - apply type_dist_dist2. apply H2.
   Qed.
 End fn.
 

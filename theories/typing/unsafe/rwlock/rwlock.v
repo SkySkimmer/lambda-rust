@@ -47,10 +47,9 @@ Section rwlock_inv.
       end)%I.
 
   Global Instance rwlock_inv_ne n tid l γ α :
-    Proper (dist n ==> dist n) (rwlock_inv tid l γ α).
-  Proof.
-    intros ty1 ty2 Hty. unfold rwlock_inv.
-    repeat (f_contractive || f_equiv || apply Hty || apply dist_S).
+    Proper (type_dist2 n ==> dist n) (rwlock_inv tid l γ α).
+  Proof. 
+    solve_proper_core ltac:(fun _ => exact: type_dist2_S || f_type_equiv || f_contractive || f_equiv).
   Qed.
 
   Lemma rwlock_inv_proper E L tid l γ α ty1 ty2 :
@@ -143,12 +142,10 @@ Section rwlock.
     iExists _, _. iFrame. iApply lft_incl_trans; auto.
   Qed.
 
-  Global Instance rwlock_ne n : Proper (dist n ==> dist n) rwlock.
+  Global Instance rwlock_type_ne : TypeNonExpansive rwlock.
   Proof.
-    move=>ty1 ty2 Hty. constructor; simpl.
-    - f_equiv. apply Hty.
-    - intros tid vl. destruct n as [|n]=>//=. repeat f_equiv. apply Hty.
-    - intros κ tid l. by repeat f_equiv.
+    constructor;
+      solve_proper_core ltac:(fun _ => exact: type_dist2_S || f_type_equiv || f_contractive || f_equiv).
   Qed.
 
   Global Instance rwlock_mono E L : Proper (eqtype E L ==> subtype E L) rwlock.

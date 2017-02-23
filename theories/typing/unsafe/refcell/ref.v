@@ -68,14 +68,10 @@ Section ref.
     - by iApply na_bor_shorten.
   Qed.
 
-  Global Instance ref_contractive α : Contractive (ref α).
-  Proof.
-    intros n ?? EQ. unfold ref. constructor=>//=.
-    - intros tid vl. destruct n as [|n]=>//=. repeat (f_contractive || f_equiv). apply EQ.
-    - intros κ tid l. repeat (f_contractive || f_equiv). apply EQ.
-  Qed.
-  Global Instance ref_ne n α : Proper (dist n ==> dist n) (ref α).
-  Proof. apply contractive_ne, _. Qed.
+  Global Instance ref_type_contractive α : TypeContractive (ref α).
+  Proof. solve_type_proper. Qed.
+  Global Instance ref_ne α : NonExpansive (ref α).
+  Proof. apply type_contractive_ne, _. Qed.
 
   Global Instance ref_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> subtype E L ==> subtype E L) ref.

@@ -1,63 +1,73 @@
 From lrust.lang Require Import proofmode.
 From lrust.typing Require Export lft_contexts type bool.
 Set Default Proof Using "Type".
+Import uPred.
+
+Section fixpoint_def.
+  Context `{typeG Σ}.
+  Context (T : type → type) {HT: TypeContractive T}.
+
+  Global Instance type_inhabited : Inhabited type := populate bool.
+  
+  Local Instance type_2_contractive : Contractive (Nat.iter 2 T).
+  Proof using Type*.
+    intros n ? **. simpl.
+    by apply dist_later_dist, type_dist2_dist_later, HT, HT, type_later_dist2_later.
+  Qed.
+
+  Definition type_fixpoint : type := fixpointK 2 T.
+End fixpoint_def.
 
 Section fixpoint.
   Context `{typeG Σ}.
-
-  Global Instance type_inhabited : Inhabited type := populate bool.
-
-  Context (T : type → type) `{Contractive T}.
+  Context (T : type → type) {HT: TypeContractive T}.
 
   Global Instance fixpoint_copy :
-    (∀ `(!Copy ty), Copy (T ty)) → Copy (fixpoint T).
+    (∀ `(!Copy ty), Copy (T ty)) → Copy (type_fixpoint T).
   Proof.
-    intros ?. apply fixpoint_ind.
-    - intros ??[EQsz%leibniz_equiv EQown EQshr].
-      specialize (λ tid vl, EQown tid vl). specialize (λ κ tid l, EQshr κ tid l).
-      simpl in *=>-[Hp Hsh]; (split; [intros ??|intros ???]).
-      + revert Hp. by rewrite /PersistentP -EQown.
-      + intros F l q. rewrite -EQsz -EQshr. setoid_rewrite <-EQown. auto.
+    intros ?. unfold type_fixpoint. apply fixpointK_ind.
+    - apply type_contractive_ne, _.
+    - apply copy_equiv.
     - exists bool. apply _.
     - done.
-    - intros c Hc. split.
-      + intros tid vl. apply uPred.equiv_entails, equiv_dist=>n.
-        by rewrite conv_compl uPred.always_always.
-      + intros κ tid E F l q ? ?.
-        apply uPred.entails_equiv_and, equiv_dist=>n. etrans.
-        { apply equiv_dist, uPred.entails_equiv_and, (copy_shr_acc κ tid E F)=>//.
-            by rewrite -conv_compl. }
-        symmetry.
-        do 2 f_equiv; first by rewrite conv_compl. set (cn:=c n).
-        repeat (apply (conv_compl n c) || f_contractive || f_equiv);
-          by rewrite conv_compl. (* slow, FIXME *)
+    - (* If Copy was an Iris assertion, this would be trivial -- we'd just
+         use entails_lim once.  However, on the Coq side, it is more convenient
+         as a record -- so this is where we pay. *)
+      intros c Hc. split.
+      + intros tid vl. rewrite /PersistentP. entails_lim c; [solve_proper..|].
+        intros. apply (Hc n).
+      + intros κ tid E F l q ? ?. entails_lim c; first solve_proper.
+        * solve_proper_core ltac:(fun _ => eapply ty_size_ne || f_equiv).
+        * intros n. apply (Hc n); first done. erewrite ty_size_ne; first done.
+          rewrite conv_compl. done.
   Qed.
 
   Global Instance fixpoint_send :
-    (∀ `(!Send ty), Send (T ty)) → Send (fixpoint T).
+    (∀ `(!Send ty), Send (T ty)) → Send (type_fixpoint T).
   Proof.
-    intros ?. apply fixpoint_ind.
-    - intros ?? EQ ????. by rewrite -EQ.
+    intros ?. unfold type_fixpoint. apply fixpointK_ind.
+    - apply type_contractive_ne, _.
+    - apply send_equiv.
     - exists bool. apply _.
     - done.
-    - intros c Hc ???. apply uPred.entails_equiv_and, equiv_dist=>n.
-      rewrite conv_compl. apply equiv_dist, uPred.entails_equiv_and; apply Hc.
+    - intros c Hc ???. entails_lim c; [solve_proper..|]. intros n. apply Hc.
   Qed.
 
   Global Instance fixpoint_sync :
-    (∀ `(!Sync ty), Sync (T ty)) → Sync (fixpoint T).
+    (∀ `(!Sync ty), Sync (T ty)) → Sync (type_fixpoint T).
   Proof.
-    intros ?. apply fixpoint_ind.
-    - intros ?? EQ ?????. by rewrite -EQ.
+    intros ?. unfold type_fixpoint. apply fixpointK_ind.
+    - apply type_contractive_ne, _.
+    - apply sync_equiv.
     - exists bool. apply _.
     - done.
-    - intros c Hc ????. apply uPred.entails_equiv_and, equiv_dist=>n.
-      rewrite conv_compl. apply equiv_dist, uPred.entails_equiv_and; apply Hc.
+    - intros c Hc ????. entails_lim c; [solve_proper..|]. intros n. apply Hc.
   Qed.
 
-  Lemma fixpoint_unfold_eqtype E L : eqtype E L (fixpoint T) (T (fixpoint T)).
+  Lemma fixpoint_unfold_eqtype E L : eqtype E L (type_fixpoint T) (T (type_fixpoint T)).
   Proof.
-    unfold eqtype, subtype, type_incl. setoid_rewrite <-fixpoint_unfold.
+    unfold eqtype, subtype, type_incl.
+    setoid_rewrite <-fixpointK_unfold; [| by apply type_contractive_ne, _..].
     split; iIntros "_ _"; (iSplit; first done); iSplit; iIntros "!#*$".
   Qed.
 End fixpoint.
@@ -66,87 +76,44 @@ Section subtyping.
   Context `{typeG Σ} (E : elctx) (L : llctx).
 
   (* TODO : is there a way to declare these as a [Proper] instances ? *)
-  Lemma fixpoint_mono T1 `{Contractive T1} T2 `{Contractive T2} :
+  Lemma fixpoint_mono T1 `{!TypeContractive T1} T2 `{!TypeContractive T2} :
     (∀ ty1 ty2, subtype E L ty1 ty2 → subtype E L (T1 ty1) (T2 ty2)) →
-    subtype E L (fixpoint T1) (fixpoint T2).
+    subtype E L (type_fixpoint T1) (type_fixpoint T2).
   Proof.
-    intros H12. apply fixpoint_ind.
+    intros H12. rewrite /type_fixpoint. apply fixpointK_ind.
+    - apply type_contractive_ne, _.
     - intros ?? EQ ?. etrans; last done. by apply equiv_subtype.
     - by eexists _.
-    - intros. rewrite (fixpoint_unfold_eqtype T2). by apply H12.
-    - intros c Hc.
-      assert (Hsz : lft_contexts.elctx_interp_0 E -∗
-                ⌜lft_contexts.llctx_interp_0 L⌝ -∗
-                ⌜(compl c).(ty_size) = (fixpoint T2).(ty_size)⌝).
-      { iIntros "HE HL". rewrite (conv_compl 0 c) /=.
-        iDestruct (Hc 0%nat with "HE HL") as "[$ _]". }
-      assert (Hown : lft_contexts.elctx_interp_0 E -∗
-                ⌜lft_contexts.llctx_interp_0 L⌝ -∗
-                □ (∀ tid vl, (compl c).(ty_own) tid vl -∗ (fixpoint T2).(ty_own) tid vl)).
-      { apply uPred.entails_equiv_and, equiv_dist=>n.
-        destruct (conv_compl (S n) c) as [_ Heq _]; simpl in *. setoid_rewrite Heq.
-        apply equiv_dist, uPred.entails_equiv_and. iIntros "HE HL".
-        iDestruct (Hc (S n) with "HE HL") as "[_ [$ _]]". }
-      assert (Hshr : lft_contexts.elctx_interp_0 E -∗
-                ⌜lft_contexts.llctx_interp_0 L⌝ -∗
-                □ (∀ κ tid l,
-                   (compl c).(ty_shr) κ tid l -∗ (fixpoint T2).(ty_shr) κ tid l)).
-      { apply uPred.entails_equiv_and, equiv_dist=>n.
-        destruct (conv_compl n c) as [_ _ Heq]; simpl in *. setoid_rewrite Heq.
-        apply equiv_dist, uPred.entails_equiv_and. iIntros "HE HL".
-        iDestruct (Hc n with "HE HL") as "[_ [_ $]]". }
-      iIntros "HE HL". iSplit; [|iSplit].
-      + iApply (Hsz with "HE HL").
-      + iApply (Hown with "HE HL").
-      + iApply (Hshr with "HE HL").
+    - intros. setoid_rewrite (fixpoint_unfold_eqtype T2). by apply H12.
+    - intros c Hc. rewrite /subtype. entails_lim c; [solve_proper..|].
+      intros n. apply Hc.
   Qed.
 
-  Lemma fixpoint_proper T1 `{Contractive T1} T2 `{Contractive T2} :
+  Lemma fixpoint_proper T1 `{TypeContractive T1} T2 `{TypeContractive T2} :
     (∀ ty1 ty2, eqtype E L ty1 ty2 → eqtype E L (T1 ty1) (T2 ty2)) →
-    eqtype E L (fixpoint T1) (fixpoint T2).
+    eqtype E L (type_fixpoint T1) (type_fixpoint T2).
   Proof.
-    intros H12. apply fixpoint_ind.
+    intros H12. rewrite /type_fixpoint. apply fixpointK_ind.
+    - apply type_contractive_ne, _.
     - intros ?? EQ ?. etrans; last done. by apply equiv_eqtype.
     - by eexists _.
-    - intros. rewrite (fixpoint_unfold_eqtype T2). by apply H12.
-    - intros c Hc. setoid_rewrite eqtype_unfold in Hc. rewrite eqtype_unfold.
-      assert (Hsz : lft_contexts.elctx_interp_0 E -∗
-                ⌜lft_contexts.llctx_interp_0 L⌝ -∗
-                ⌜(compl c).(ty_size) = (fixpoint T2).(ty_size)⌝).
-      { iIntros "HE HL". rewrite (conv_compl 0 c) /=.
-        iDestruct (Hc 0%nat with "HE HL") as "[$ _]". }
-      assert (Hown : lft_contexts.elctx_interp_0 E -∗
-                ⌜lft_contexts.llctx_interp_0 L⌝ -∗
-                □ (∀ tid vl, (compl c).(ty_own) tid vl ↔ (fixpoint T2).(ty_own) tid vl)).
-      { apply uPred.entails_equiv_and, equiv_dist=>n.
-        destruct (conv_compl (S n) c) as [_ Heq _]; simpl in *. setoid_rewrite Heq.
-        apply equiv_dist, uPred.entails_equiv_and. iIntros "HE HL".
-        iDestruct (Hc (S n) with "HE HL") as "[_ [$ _]]". }
-      assert (Hshr : lft_contexts.elctx_interp_0 E -∗
-                ⌜lft_contexts.llctx_interp_0 L⌝ -∗
-                □ (∀ κ tid l,
-                   (compl c).(ty_shr) κ tid l ↔ (fixpoint T2).(ty_shr) κ tid l)).
-      { apply uPred.entails_equiv_and, equiv_dist=>n.
-        destruct (conv_compl n c) as [_ _ Heq]. setoid_rewrite Heq.
-        apply equiv_dist, uPred.entails_equiv_and. iIntros "HE HL".
-        iDestruct (Hc n with "HE HL") as "[_ [_ $]]". }
-      iIntros "HE HL". iSplit; [|iSplit].
-      + iApply (Hsz with "HE HL").
-      + iApply (Hown with "HE HL").
-      + iApply (Hshr with "HE HL").
+    - intros. setoid_rewrite (fixpoint_unfold_eqtype T2). by apply H12.
+    - intros c Hc. split; rewrite /subtype; (entails_lim c; [solve_proper..|]);
+      intros n; apply Hc.
   Qed.
 
-  Lemma fixpoint_unfold_subtype_l ty T `{Contractive T} :
-    subtype E L ty (T (fixpoint T)) → subtype E L ty (fixpoint T).
+  (* FIXME: Some rewrites here are slower than one would expect. *)
+  Lemma fixpoint_unfold_subtype_l ty T `{TypeContractive T} :
+    subtype E L ty (T (type_fixpoint T)) → subtype E L ty (type_fixpoint T).
   Proof. intros. by rewrite fixpoint_unfold_eqtype. Qed.
-  Lemma fixpoint_unfold_subtype_r ty T `{Contractive T} :
-    subtype E L (T (fixpoint T)) ty → subtype E L (fixpoint T) ty.
+  Lemma fixpoint_unfold_subtype_r ty T `{TypeContractive T} :
+    subtype E L (T (type_fixpoint T)) ty → subtype E L (type_fixpoint T) ty.
   Proof. intros. by rewrite fixpoint_unfold_eqtype. Qed.
-  Lemma fixpoint_unfold_eqtype_l ty T `{Contractive T} :
-    eqtype E L ty (T (fixpoint T)) → eqtype E L ty (fixpoint T).
+  Lemma fixpoint_unfold_eqtype_l ty T `{TypeContractive T} :
+    eqtype E L ty (T (type_fixpoint T)) → eqtype E L ty (type_fixpoint T).
   Proof. intros. by rewrite fixpoint_unfold_eqtype. Qed.
-  Lemma fixpoint_unfold_eqtype_r ty T `{Contractive T} :
-    eqtype E L (T (fixpoint T)) ty → eqtype E L (fixpoint T) ty.
+  Lemma fixpoint_unfold_eqtype_r ty T `{TypeContractive T} :
+    eqtype E L (T (type_fixpoint T)) ty → eqtype E L (type_fixpoint T) ty.
   Proof. intros. by rewrite fixpoint_unfold_eqtype. Qed.
 End subtyping.
 

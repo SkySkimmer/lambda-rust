@@ -61,14 +61,14 @@ Section rwlockreadguard.
     iApply lft_incl_refl.
   Qed.
 
-  Global Instance rwlockreadguard_contractive α : Contractive (rwlockreadguard α).
+  Global Instance rwlockreadguard_type_contractive α : TypeContractive (rwlockreadguard α).
   Proof.
-    intros n ?? EQ. unfold rwlockreadguard. constructor=>//=.
-    - intros tid vl. destruct n as [|n]=>//=. by repeat f_equiv.
-    - intros κ tid l. repeat (f_contractive || f_equiv). apply EQ.
+    constructor;
+      solve_proper_core ltac:(fun _ => exact: type_dist2_S || (eapply rwlock_inv_ne; try reflexivity) ||
+                                              f_type_equiv || f_contractive || f_equiv).
   Qed.
-  Global Instance rwlockreadguard_ne n α : Proper (dist n ==> dist n) (rwlockreadguard α).
-  Proof. apply contractive_ne, _. Qed.
+  Global Instance rwlockreadguard_ne α : NonExpansive (rwlockreadguard α).
+  Proof. apply type_contractive_ne, _. Qed.
 
   (* The rust type is not covariant, although it probably could (cf. refcell).
      This would require changing the definition of the type, though. *)

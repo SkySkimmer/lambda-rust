@@ -21,11 +21,8 @@ Section cell.
     iIntros (ty ?? tid l) "#H⊑ H". by iApply (na_bor_shorten with "H⊑").
   Qed.
 
-  Global Instance cell_ne n : Proper (dist n ==> dist n) cell.
-  Proof.
-    intros ?? EQ. constructor; simpl; try apply EQ.
-    intros κ tid l. repeat (apply EQ || f_contractive || f_equiv).
-  Qed.
+  Global Instance cell_type_ne : TypeNonExpansive cell.
+  Proof. solve_type_proper. Qed.
 
   Global Instance cell_mono E L : Proper (eqtype E L ==> subtype E L) cell.
   Proof.

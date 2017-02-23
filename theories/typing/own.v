@@ -129,15 +129,11 @@ Section own.
     eqtype E L (own_ptr n1 ty1) (own_ptr n2 ty2).
   Proof. intros. by apply own_proper. Qed.
 
-  Global Instance own_contractive n : Contractive (own_ptr n).
-  Proof.
-    intros m ?? EQ. constructor; simpl.
-    - done.
-    - destruct m=>// tid vl /=. repeat (apply EQ || f_contractive || f_equiv).
-    - intros κ tid l. repeat (apply EQ || f_contractive || f_equiv).
-  Qed.
-  Global Instance own_ne n m : Proper (dist m ==> dist m) (own_ptr n).
-  Proof. apply contractive_ne, _. Qed.
+  Global Instance own_type_contractive n : TypeContractive (own_ptr n).
+  Proof. solve_type_proper. Qed.
+
+  Global Instance own_ne n : NonExpansive (own_ptr n).
+  Proof. apply type_contractive_ne, _. Qed.
 
   Global Instance own_send n ty :
     Send ty → Send (own_ptr n ty).
@@ -157,6 +153,7 @@ Section own.
   Qed.
 End own.
 
+(* TODO: Make box a proper type with subtyping, contractivity, ... *)
 Notation box ty := (own_ptr ty.(ty_size) ty).
 
 Section typing.

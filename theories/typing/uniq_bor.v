@@ -79,14 +79,11 @@ Section uniq_bor.
     Proper (lctx_lft_eq E L ==> eqtype E L ==> eqtype E L) uniq_bor.
   Proof. intros ??[]; split; by apply uniq_mono. Qed.
 
-  Global Instance uniq_contractive κ : Contractive (uniq_bor κ).
-  Proof.
-    intros n ?? EQ. constructor=> //=.
-    - destruct n=>// tid vl /=. repeat (apply EQ || f_contractive || f_equiv).
-    - intros κ' tid l. repeat (apply EQ || f_contractive || f_equiv).
-  Qed.
-  Global Instance uniq_ne κ n : Proper (dist n ==> dist n) (uniq_bor κ).
-  Proof. apply contractive_ne, _. Qed.
+  Global Instance uniq_type_contractive κ : TypeContractive (uniq_bor κ).
+  Proof. solve_type_proper. Qed.
+
+  Global Instance uniq_ne κ : NonExpansive (uniq_bor κ).
+  Proof. apply type_contractive_ne, _. Qed.
 
   Global Instance uniq_send κ ty :
     Send ty → Send (uniq_bor κ ty).

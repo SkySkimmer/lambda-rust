@@ -73,15 +73,14 @@ Section rwlockwriteguard.
       iApply ty_shr_mono; try done. iApply lft_glb_mono. iApply lft_incl_refl. done.
   Qed.
 
-  Global Instance rwlockwriteguard_contractive α : Contractive (rwlockwriteguard α).
+  Global Instance rwlockwriteguard_type_contractive α : TypeContractive (rwlockwriteguard α).
   Proof.
-    intros n ?? EQ. unfold rwlockwriteguard. constructor=>//=.
-    - intros tid vl. destruct n as [|n]=>//=.
-      do 9 f_equiv. solve_contractive. by repeat f_equiv.
-    - intros κ tid l. repeat (f_contractive || f_equiv). apply EQ.
+    constructor;
+      solve_proper_core ltac:(fun _ => exact: type_dist2_S || (eapply rwlock_inv_ne; try reflexivity) ||
+                                              f_type_equiv || f_contractive || f_equiv).
   Qed.
   Global Instance rwlockwriteguard_ne α : NonExpansive (rwlockwriteguard α).
-  Proof. apply contractive_ne, _. Qed.
+  Proof. apply type_contractive_ne, _. Qed.
 
   Global Instance rwlockwriteguard_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> eqtype E L ==> subtype E L) rwlockwriteguard.
