@@ -1,9 +1,11 @@
-From iris.proofmode Require Export tactics.
+From iris.proofmode Require Import tactics.
 From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
-Section option_as_mut.
+Section option.
   Context `{typeG Σ}.
+
+  Definition option (τ : type) := Σ[unit; τ]%T.
 
   Definition option_as_mut : val :=
     funrec: <> ["o"] :=
@@ -17,7 +19,7 @@ Section option_as_mut.
 
   Lemma option_as_mut_type τ :
     typed_instruction_ty [] [] [] option_as_mut
-        (fn(∀ α, [☀α]; &uniq{α} Σ[unit; τ]) → Σ[unit; &uniq{α}τ]).
+        (fn(∀ α, [☀α]; &uniq{α} (option τ)) → option (&uniq{α}τ)).
   Proof.
     iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret p).
       inv_vec p=>o. simpl_subst.
@@ -36,4 +38,30 @@ Section option_as_mut.
       iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing.
   Qed.
-End option_as_mut.
+
+  Definition option_unwrap_or τ : val :=
+    funrec: <> ["o"; "def"] :=
+      case: !"o" of
+      [ delete [ #(S τ.(ty_size)); "o"];;
+        "return" ["def"];
+
+        letalloc: "r" <-{τ.(ty_size)} !("o" +ₗ #1) in
+        delete [ #(S τ.(ty_size)); "o"];; delete [ #τ.(ty_size); "def"];;
+        "return" ["r"]].
+
+  Lemma option_unwrap_or_type τ :
+    typed_instruction_ty [] [] [] (option_unwrap_or τ)
+        (fn([]; option τ, τ) → τ).
+  Proof.
+    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([] ret p).
+      inv_vec p=>o def. simpl_subst.
+    iApply type_case_own; [solve_typing|]. constructor; last constructor; last constructor.
+    + right. iApply type_delete; [solve_typing..|].
+      iApply (type_jump [_]); solve_typing.
+    + left. iApply type_letalloc_n; [solve_typing|by apply read_own_move|]. iIntros (r).
+        simpl_subst.
+      iApply (type_delete (Π[uninit _;uninit _;uninit _])); [solve_typing..|].
+      iApply type_delete; [solve_typing..|].
+      iApply (type_jump [_]); solve_typing.
+  Qed.
+End option.

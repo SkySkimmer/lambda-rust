@@ -4,7 +4,7 @@ From iris.algebra Require Import auth csum frac agree.
 From iris.base_logic Require Import big_op fractional.
 From lrust.lang Require Import memcpy.
 From lrust.lifetime Require Import na_borrow.
-From lrust.typing Require Import typing.
+From lrust.typing Require Import typing option.
 From lrust.typing.unsafe.refcell Require Import refcell ref refmut.
 Set Default Proof Using "Type".
 
@@ -130,14 +130,14 @@ Section refcell_functions.
       let: "x'" := !"x" in
       let: "n" := !"x'" in
       if: "n" ≤ #-1 then
-        "r" <-{Σ 1} ();;
+        "r" <-{Σ 0} ();;
         "k" ["r"] (* FIXME RJ: this is very confusing, "k" does not even look like it is bound here... *)
       else
         "x'" <- "n" + #1;;
         let: "ref" := new [ #2 ] in
         "ref" <- "x'" +ₗ #1;;
         "ref" +ₗ #1 <- "x'";;
-        "r" <-{2,Σ 0} !"ref";;
+        "r" <-{2,Σ 1} !"ref";;
         delete [ #2; "ref"];;
         "k" ["r"]
       cont: "k" ["r"] :=
@@ -145,12 +145,12 @@ Section refcell_functions.
 
   Lemma refcell_try_borrow_type ty :
     typed_instruction_ty [] [] [] refcell_try_borrow
-        (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(refcell ty)]%T) (λ α, Σ[ref α ty; unit])%T).
+        (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(refcell ty)]%T) (λ α, option (ref α ty))%T).
   Proof.
     iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
       inv_vec arg=>x. simpl_subst.
     iApply (type_cont [_] [] (λ r, [x ◁ box (&shr{α} refcell ty);
-                                    r!!!0 ◁ box Σ[ref α ty; unit]])%TC);
+                                    r!!!0 ◁ box (option (ref α ty))])%TC);
       [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg=>r]; simpl_subst; last first.
     { iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing. }
@@ -171,7 +171,7 @@ Section refcell_functions.
               with "[] LFT Hna >[Hclose Hβtok1 Hβtok2] HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_assign_unit [ref α ty; unit]);
+      iApply (type_sum_assign_unit [unit; ref α ty]);
         [solve_typing..|by eapply write_own|]; first last.
       simpl. iApply (type_jump [_]); solve_typing.
     - wp_op. wp_write. wp_apply wp_new; [done..|].
@@ -223,7 +223,7 @@ Section refcell_functions.
         iFrame. iExists _, _, _, _, _. iFrame "∗#". iApply ty_shr_mono; try by auto.
         iApply lft_glb_mono. done. iApply lft_incl_refl. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_memcpy [ref α ty; unit]);
+      iApply (type_sum_memcpy [unit; ref α ty]);
         [solve_typing..|by eapply write_own|by eapply read_own_move|done|].
       simpl. iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing.
@@ -240,23 +240,23 @@ Section refcell_functions.
         let: "ref" := new [ #2 ] in
         "ref" <- "x'" +ₗ #1;;
         "ref" +ₗ #1 <- "x'";;
-        "r" <-{2,Σ 0} !"ref";;
+        "r" <-{2,Σ 1} !"ref";;
         delete [ #2; "ref"];;
         "k" ["r"]
       else
-        "r" <-{Σ 1} ();;
+        "r" <-{Σ 0} ();;
         "k" ["r"]
       cont: "k" ["r"] :=
         delete [ #1; "x"];; "return" ["r"].
 
   Lemma refcell_try_borrow_mut_type ty :
     typed_instruction_ty [] [] [] refcell_try_borrow_mut
-        (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(refcell ty)]%T) (λ α, Σ[refmut α ty; unit])%T).
+        (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(refcell ty)]%T) (λ α, option (refmut α ty))%T).
   Proof.
     iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
       inv_vec arg=>x. simpl_subst.
     iApply (type_cont [_] [] (λ r, [x ◁ box (&shr{α} refcell ty);
-                                    r!!!0 ◁ box Σ[refmut α ty; unit]])%TC);
+                                    r!!!0 ◁ box (option (refmut α ty))]%TC));
       [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg=>r];
       simpl_subst; last first.
     { iApply type_delete; [solve_typing..|].
@@ -295,7 +295,7 @@ Section refcell_functions.
         iFrame. iExists _, _, _, _. iFrame "#∗". iApply (bor_shorten with "[] [$Hb]").
         iApply lft_glb_mono; first done. iApply lft_incl_refl. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_memcpy [refmut α ty; unit]);
+      iApply (type_sum_memcpy [unit; refmut α ty]);
         [solve_typing..|by eapply write_own|by eapply read_own_move|done|].
       simpl. iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing.
@@ -306,7 +306,7 @@ Section refcell_functions.
               with "[] LFT Hna >[Hclose Hβtok] HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_assign_unit [refmut α ty; unit]);
+      iApply (type_sum_assign_unit [unit; refmut α ty]);
         [solve_typing..|by eapply write_own|].
       simpl. iApply (type_jump [_]); solve_typing.
   Qed.

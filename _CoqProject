@@ -45,6 +45,7 @@ theories/typing/fixpoint.v
 theories/typing/type_sum.v
 theories/typing/typing.v
 theories/typing/soundness.v
+theories/typing/option.v
 theories/typing/unsafe/cell.v
 theories/typing/unsafe/spawn.v
 theories/typing/unsafe/refcell/refcell.v
@@ -57,6 +58,5 @@ theories/typing/examples/get_x.v
 theories/typing/examples/rebor.v
 theories/typing/examples/unbox.v
 theories/typing/examples/init_prod.v
-theories/typing/examples/option_as_mut.v
 theories/typing/examples/unwrap_or.v
 theories/typing/examples/lazy_lft.v

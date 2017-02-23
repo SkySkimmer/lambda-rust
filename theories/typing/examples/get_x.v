@@ -1,4 +1,4 @@
-From iris.proofmode Require Export tactics.
+From iris.proofmode Require Import tactics.
 From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
