@@ -4,42 +4,43 @@ From lrust.lifetime Require Export lifetime.
 Set Default Proof Using "Type".
 
 (** Shared bors  *)
-Definition shr_bor `{invG Σ, lftG Σ} κ (P : iProp Σ) :=
-  (∃ i, &{κ,i}P ∗ inv lftN (∃ q, idx_bor_own q i))%I.
-Notation "&shr{ κ } P" := (shr_bor κ P)
-  (format "&shr{ κ }  P", at level 20, right associativity) : uPred_scope.
+(* TODO : update the TEX with the fact that we can chose the namespace. *)
+Definition shr_bor `{invG Σ, lftG Σ} κ N (P : iProp Σ) :=
+  (∃ i, &{κ,i}P ∗ inv N (∃ q, idx_bor_own q i))%I.
+Notation "&shr{ κ , N } P" := (shr_bor κ N P)
+  (format "&shr{ κ , N }  P", at level 20, right associativity) : uPred_scope.
 
 Section shared_bors.
-  Context `{invG Σ, lftG Σ} (P : iProp Σ).
+  Context `{invG Σ, lftG Σ} (P : iProp Σ) (N : namespace).
 
-  Global Instance shr_bor_ne κ n : Proper (dist n ==> dist n) (shr_bor κ).
+  Global Instance shr_bor_ne κ n : Proper (dist n ==> dist n) (shr_bor κ N).
   Proof. solve_proper. Qed.
-  Global Instance shr_bor_contractive κ : Contractive (shr_bor κ).
+  Global Instance shr_bor_contractive κ : Contractive (shr_bor κ N).
   Proof. solve_contractive. Qed.
-  Global Instance shr_bor_proper : Proper ((⊣⊢) ==> (⊣⊢)) (shr_bor κ).
+  Global Instance shr_bor_proper : Proper ((⊣⊢) ==> (⊣⊢)) (shr_bor κ N).
   Proof. solve_proper. Qed.
 
-  Lemma shr_bor_iff κ P' : ▷ □ (P ↔ P') -∗ &shr{κ} P -∗ &shr{κ} P'.
+  Lemma shr_bor_iff κ P' : ▷ □ (P ↔ P') -∗ &shr{κ, N} P -∗ &shr{κ, N} P'.
   Proof.
     iIntros "HPP' H". iDestruct "H" as (i) "[HP ?]". iExists i. iFrame.
     iApply (idx_bor_iff with "HPP' HP").
   Qed.
 
-  Global Instance shr_bor_persistent : PersistentP (&shr{κ} P) := _.
+  Global Instance shr_bor_persistent : PersistentP (&shr{κ, N} P) := _.
 
-  Lemma bor_share E κ : ↑lftN ⊆ E → &{κ}P ={E}=∗ &shr{κ}P.
+  Lemma bor_share E κ : ↑lftN ⊆ E → &{κ}P ={E}=∗ &shr{κ, N}P.
   Proof.
     iIntros (?) "HP". rewrite bor_unfold_idx. iDestruct "HP" as (i) "(#?&Hown)".
     iExists i. iFrame "#". iApply inv_alloc. auto.
   Qed.
 
   Lemma shr_bor_acc E κ :
-    ↑lftN ⊆ E →
-    lft_ctx -∗ &shr{κ}P ={E,E∖↑lftN}=∗ ▷P ∗ (▷P ={E∖↑lftN,E}=∗ True) ∨
+    ↑lftN ⊆ E → ↑N ⊆ E →
+    lft_ctx -∗ &shr{κ,N}P ={E,E∖↑lftN}=∗ ▷P ∗ (▷P ={E∖↑lftN,E}=∗ True) ∨
                [†κ] ∗ |={E∖↑lftN,E}=> True.
   Proof.
-    iIntros (?) "#LFT #HP". iDestruct "HP" as (i) "(#Hidx&#Hinv)".
-    iInv lftN as (q') ">[Hq'0 Hq'1]" "Hclose".
+    iIntros (??) "#LFT #HP". iDestruct "HP" as (i) "(#Hidx&#Hinv)".
+    iInv N as (q') ">[Hq'0 Hq'1]" "Hclose".
     iMod ("Hclose" with "[Hq'1]") as "_". by eauto.
     iMod (idx_bor_atomic_acc with "LFT Hidx Hq'0") as "[[HP Hclose]|[H† Hclose]]". done.
     - iLeft. iFrame. iIntros "!>HP". by iMod ("Hclose" with "HP").
@@ -47,22 +48,22 @@ Section shared_bors.
   Qed.
 
   Lemma shr_bor_acc_tok E q κ :
-    ↑lftN ⊆ E →
-    lft_ctx -∗ &shr{κ}P -∗ q.[κ] ={E,E∖↑lftN}=∗ ▷P ∗ (▷P ={E∖↑lftN,E}=∗ q.[κ]).
+    ↑lftN ⊆ E → ↑N ⊆ E →
+    lft_ctx -∗ &shr{κ,N}P -∗ q.[κ] ={E,E∖↑lftN}=∗ ▷P ∗ (▷P ={E∖↑lftN,E}=∗ q.[κ]).
   Proof.
-    iIntros (?) "#LFT #Hshr Hκ".
-    iMod (shr_bor_acc with "LFT Hshr") as "[[$ Hclose]|[H† _]]". done.
+    iIntros (??) "#LFT #Hshr Hκ".
+    iMod (shr_bor_acc with "LFT Hshr") as "[[$ Hclose]|[H† _]]"; try done.
     - iIntros "!>HP". by iMod ("Hclose" with "HP").
     - iDestruct (lft_tok_dead with "Hκ H†") as "[]".
   Qed.
 
-  Lemma shr_bor_shorten κ κ': κ ⊑ κ' -∗ &shr{κ'}P -∗ &shr{κ}P.
+  Lemma shr_bor_shorten κ κ': κ ⊑ κ' -∗ &shr{κ',N}P -∗ &shr{κ,N}P.
   Proof.
     iIntros "#H⊑ H". iDestruct "H" as (i) "[??]". iExists i. iFrame.
       by iApply (idx_bor_shorten with "H⊑").
   Qed.
 
-  Lemma shr_bor_fake E κ: ↑lftN ⊆ E → lft_ctx -∗ [†κ] ={E}=∗ &shr{κ}P.
+  Lemma shr_bor_fake E κ: ↑lftN ⊆ E → lft_ctx -∗ [†κ] ={E}=∗ &shr{κ,N}P.
   Proof.
     iIntros (?) "#LFT#H†". iApply (bor_share with ">"). done.
     by iApply (bor_fake with "LFT H†").
