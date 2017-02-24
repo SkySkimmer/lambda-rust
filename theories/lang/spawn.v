@@ -20,7 +20,8 @@ Definition finish : val :=
 Definition join : val :=
   rec: "join" ["c"] :=
     if: !ˢᶜ"c" then
-      let: "v" := !("c" +ₗ #1) in (* The thread finished, we can non-atomically load the data. *)
+      let: "v" := !("c" +ₗ #1) in
+      (* The thread finished, we can non-atomically load the data. *)
       Free #2 "c";;
       "v"
     else
@@ -39,10 +40,8 @@ Context `{!lrustG Σ, !spawnG Σ} (N : namespace).
 
 Definition spawn_inv (γf γj : gname) (c : loc) (Ψ : val → iProp Σ) : iProp Σ :=
   (own γf (Excl ()) ∗ own γj (Excl ()) ∨
-   ∃ b, c ↦ #(lit_of_bool b) ∗ 
-        match b with false => True%I 
-                   | true => ∃ v, shift_loc c 1 ↦ v ∗ Ψ v ∗ own γf (Excl ())
-        end)%I.
+   ∃ b, c ↦ #(lit_of_bool b) ∗
+        if b then ∃ v, shift_loc c 1 ↦ v ∗ Ψ v ∗ own γf (Excl ()) else True)%I.
 
 Definition finish_handle (c : loc) (Ψ : val → iProp Σ) : iProp Σ :=
   (∃ γf γj v, own γf (Excl ()) ∗ shift_loc c 1 ↦ v ∗ inv N (spawn_inv γf γj c Ψ))%I.
