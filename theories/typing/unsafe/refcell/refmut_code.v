@@ -10,8 +10,6 @@ Set Default Proof Using "Type".
 Section refmut_functions.
   Context `{typeG Σ, refcellG Σ}.
 
-  (* TODO : map, when we will have a nice story about closures. *)
-
   (* Turning a refmut into a shared borrow. *)
   Definition refmut_deref : val :=
     funrec: <> ["x"] :=
@@ -63,7 +61,7 @@ Section refmut_functions.
       delete [ #1; "x"];; "return" ["r"].
 
   Lemma refmut_derefmut_type ty :
-    typed_instruction_ty [] [] [] refmut_deref
+    typed_instruction_ty [] [] [] refmut_derefmut
       (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
           (fun '(α, β) => [# &uniq{α}(refmut β ty)]%T)
           (fun '(α, β) => &uniq{α}ty)%T).
