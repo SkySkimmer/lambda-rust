@@ -54,6 +54,12 @@ theories/typing/unsafe/refcell/refmut.v
 theories/typing/unsafe/refcell/refcell_code.v
 theories/typing/unsafe/refcell/ref_code.v
 theories/typing/unsafe/refcell/refmut_code.v
+theories/typing/unsafe/rwlock/rwlock.v
+theories/typing/unsafe/rwlock/rwlockreadguard.v
+theories/typing/unsafe/rwlock/rwlockwriteguard.v
+theories/typing/unsafe/rwlock/rwlock_code.v
+theories/typing/unsafe/rwlock/rwlockreadguard_code.v
+theories/typing/unsafe/rwlock/rwlockwriteguard_code.v
 theories/typing/examples/get_x.v
 theories/typing/examples/rebor.v
 theories/typing/examples/unbox.v
