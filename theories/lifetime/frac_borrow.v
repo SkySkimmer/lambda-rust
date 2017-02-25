@@ -44,14 +44,14 @@ Section frac_bor.
     iMod (bor_acc_atomic_strong with "LFT Hφ") as "[H|[H† Hclose]]". done.
     - iDestruct "H" as (κ') "(#Hκκ' & Hφ & Hclose)".
       iMod ("Hclose" with "[-] []") as "Hφ"; last first.
-      { iExists γ, κ'. iFrame "#". iApply (bor_share with "Hφ"). done. }
+      { iExists γ, κ'. iFrame "#". iApply (bor_share with "Hφ"); auto. }
       { iIntros "!>Hφ H†!>". iNext. iDestruct "Hφ" as (q') "(Hφ & _ & [%|Hκ])". by subst.
         iDestruct "Hκ" as (q'') "[_ Hκ]".
         iDestruct (lft_tok_dead with "Hκ H†") as "[]". }
       iExists 1%Qp. iFrame. eauto.
     - iMod "Hclose" as "_"; last first.
       iExists γ, κ. iSplitR. by iApply lft_incl_refl.
-      iMod (bor_fake with "LFT H†"). done. by iApply bor_share.
+      iMod (bor_fake with "LFT H†"). done. iApply bor_share; auto.
   Qed.
 
   Lemma frac_bor_atomic_acc E κ :
@@ -62,7 +62,7 @@ Section frac_bor.
     iIntros (?) "#LFT #Hφ". iDestruct "Hφ" as (γ κ') "[Hκκ' Hshr]".
     iMod (shr_bor_acc with "LFT Hshr") as "[[Hφ Hclose]|[H† Hclose]]"; try done.
     - iLeft. iDestruct "Hφ" as (q) "(Hφ & Hγ & H)". iExists q. iFrame.
-      iIntros "!>Hφ". iApply "Hclose". iExists q. iFrame.
+      rewrite difference_twice_L. iIntros "!>Hφ". iApply "Hclose". iExists q. iFrame.
     - iRight. iMod "Hclose" as "_". iMod (lft_incl_dead with "Hκκ' H†") as "$". done.
       iApply fupd_intro_mask. set_solver. done.
   Qed.
