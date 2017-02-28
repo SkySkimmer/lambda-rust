@@ -17,7 +17,7 @@ Lemma lft_kill (I : gmap lft lft_names) (K K' : gset lft) (κ : lft) :
     ([∗ set] κ' ∈ K', lft_inv_dead κ'))%I in
   (∀ κ', is_Some (I !! κ') → κ' ⊂ κ → κ' ∈ K) →
   (∀ κ', is_Some (I !! κ') → κ ⊂ κ' → κ' ∈ K') →
-  Iinv -∗ lft_inv_alive κ -∗ [†κ] ={⊤∖↑mgmtN}=∗ Iinv ∗ lft_inv_dead κ.
+  Iinv -∗ lft_inv_alive κ -∗ [†κ] ={↑borN ∪ ↑inhN}=∗ Iinv ∗ lft_inv_dead κ.
 Proof.
   iIntros (Iinv HK HK') "(HI & Halive & Hdead) Hlalive Hκ".
   rewrite lft_inv_alive_unfold;
@@ -34,12 +34,13 @@ Proof.
     rewrite /lft_inv_dead; iDestruct "Hdead" as (R) "(_ & Hcnt' & _)".
     iDestruct (own_cnt_valid_2 with "Hcnt' Hcnt")
       as %[?%nat_included _]%auth_valid_discrete_2; omega. }
-  iMod (box_empty with "Hbox") as "[HP Hbox]"=>//; first solve_ndisj.
+  iMod (box_empty with "Hbox") as "[HP Hbox]"=>//; first set_solver.
   { intros i s. by rewrite lookup_fmap fmap_Some=> -[? [/HB -> ->]]. }
   rewrite lft_vs_unfold; iDestruct "Hvs" as (n) "[Hcnt Hvs]".
   iDestruct (big_sepS_filter_acc (⊂ κ) _ _ (dom _ I) with "Halive")
     as "[Halive Halive']".
   { intros κ'. rewrite elem_of_dom. eauto. }
+  iApply fupd_trans. iApply fupd_mask_mono; first by apply union_subseteq_l.
   iMod ("Hvs" $! I with "[HI Halive Hbox Hbor] HP Hκ") as "(Hinv & HQ & Hcnt')".
   { rewrite lft_vs_inv_unfold. iFrame. rewrite /lft_bor_dead.
     iExists (dom _ B), P. rewrite !to_gmap_dom -map_fmap_compose.
@@ -50,7 +51,7 @@ Proof.
   iMod (own_cnt_update_2 with "Hcnt Hcnt'") as "?".
   { apply auth_update_dealloc, (nat_local_update _ _ 0 0); omega. }
   rewrite /Iinv. iFrame "Hdead Halive' HI".
-  iMod (lft_inh_kill with "[$Hinh $HQ]"); first solve_ndisj.
+  iModIntro. iMod (lft_inh_kill with "[$Hinh $HQ]"); first set_solver+.
   iModIntro. rewrite /lft_inv_dead. iExists Q. by iFrame.
 Qed.
 
@@ -60,7 +61,7 @@ Lemma lfts_kill A (I : gmap lft lft_names) (K K' : gset lft) :
   (∀ κ κ', κ ∈ K → lft_alive_in A κ → is_Some (I !! κ') →
     κ' ∉ K → κ' ⊂ κ → κ' ∈ K') →
   Iinv K' -∗ ([∗ set] κ ∈ K, lft_inv A κ ∗ [†κ])
-    ={⊤∖↑mgmtN}=∗ Iinv K' ∗ [∗ set] κ ∈ K, lft_inv_dead κ.
+    ={↑borN ∪ ↑inhN}=∗ Iinv K' ∗ [∗ set] κ ∈ K, lft_inv_dead κ.
 Proof.
   intros Iinv. revert K'.
   induction (collection_wf K) as [K _ IH]=> K' HK HK'.
@@ -132,7 +133,7 @@ Proof. intros κ [??]%elem_of_down_close. by apply elem_of_dom. Qed.
 
 Lemma lft_create E :
   ↑lftN ⊆ E →
-  lft_ctx ={E}=∗ ∃ κ, 1.[κ] ∗ □ (1.[κ] ={⊤,⊤∖↑lftN}▷=∗ [†κ]).
+  lft_ctx ={E}=∗ ∃ κ, 1.[κ] ∗ □ (1.[κ] ={↑lftN,∅}▷=∗ [†κ]).
 Proof.
   iIntros (?) "#LFT".
   iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
@@ -150,7 +151,7 @@ Proof.
   iModIntro; iExists {[ Λ ]}.
   rewrite {1}/lft_tok big_sepMS_singleton. iFrame "HΛ".
   clear I A HΛ. iIntros "!# HΛ".
-  iApply (step_fupd_mask_mono ⊤ _ _ (⊤∖↑mgmtN)); [solve_ndisj..|].
+  iApply (step_fupd_mask_mono (↑lftN) _ _ (↑lftN∖↑mgmtN));  [set_solver..|].
   iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
   rewrite /lft_tok big_sepMS_singleton.
   iDestruct (own_valid_2 with "HA HΛ")
@@ -169,14 +170,16 @@ Proof.
   { iApply (@big_sepS_impl with "[$HinvD]"); iIntros "!#".
     iIntros (κ Hκ) "?". iApply lft_inv_alive_in; last done.
     eauto using down_close_lft_alive_in. }
-  iAssert ([∗ set] κ ∈ K, lft_inv A κ ∗ [† κ])%I with "[HinvK]" as "HinvK". 
+  iAssert ([∗ set] κ ∈ K, lft_inv A κ ∗ [† κ])%I with "[HinvK]" as "HinvK".
   { iApply (@big_sepS_impl with "[$HinvK]"); iIntros "!#".
     iIntros (κ [? _]%elem_of_kill_set) "$". rewrite /lft_dead. eauto. }
+  iApply fupd_trans. iApply (fupd_mask_mono (↑borN ∪ ↑inhN));
+                       first by apply union_least; solve_ndisj.
   iMod (lfts_kill A I K K' with "[$HI $HinvD] HinvK") as "[[HI HinvD] HinvK]".
   { intros κ κ' [??]%elem_of_kill_set ??. apply elem_of_kill_set.
     split; last done. by eapply gmultiset_elem_of_subseteq. }
   { intros κ κ' ?????. apply elem_of_down_close; eauto 10. }
-  iMod ("Hclose" with "[-]") as "_"; last first.
+  iModIntro. iMod ("Hclose" with "[-]") as "_"; last first.
   { iModIntro. rewrite /lft_dead. iExists Λ.
     rewrite elem_of_singleton. auto. }
   iNext. iExists (<[Λ:=false]>A), I.

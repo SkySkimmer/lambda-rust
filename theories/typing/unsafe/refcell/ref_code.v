@@ -16,7 +16,7 @@ Section ref_functions.
     ∃ (q' : Qp) n, l ↦ #(Zpos n) ∗ ⌜(q ≤ q')%Qc⌝ ∗
             own γ (● Some (to_agree ν, Cinr (q', n)) ⋅ ◯ reading_st q ν) ∗
             ty.(ty_shr) (α ∪ ν) tid (shift_loc l 1) ∗
-            ((1).[ν] ={⊤,⊤ ∖ ↑lftN}▷=∗ &{α} shift_loc l 1 ↦∗: ty_own ty tid) ∗
+            ((1).[ν] ={↑lftN,∅}▷=∗ &{α} shift_loc l 1 ↦∗: ty_own ty tid) ∗
             ∃ q'', ⌜(q' + q'' = 1)%Qp⌝ ∗ q''.[ν].
   Proof.
     iIntros "INV H◯".
@@ -172,7 +172,7 @@ Section ref_functions.
     iDestruct (refcell_inv_reading_inv with "INV [$H◯]")
       as (q' n) "(H↦lrc & >% & H●◯ & Hshr & H† & Hq')". iDestruct "Hq'" as (q'') ">[% Hν']".
     wp_read. wp_let. wp_op. wp_write.
-    iAssert (|={⊤,⊤ ∖ ↑lftN}▷=> refcell_inv tid lrc γ β ty')%I
+    iAssert (|={↑lftN,∅}▷=> refcell_inv tid lrc γ β ty')%I
       with "[H↦lrc H●◯ Hν Hν' Hshr H†]" as "INV".
     { iDestruct (own_valid with "H●◯") as %[[ _ [Heq%(inj Cinr)|Hincl%csum_included]
         %Some_included]%Some_pair_included [_ Hv]]%auth_valid_discrete_2.
@@ -189,10 +189,11 @@ Section ref_functions.
         { apply auth_update_dealloc.
           rewrite -(agree_idemp (to_agree _)) -pair_op -Cinr_op -pair_op Some_op.
           apply (cancel_local_update_empty (reading_st q ν)), _. }
-        iExists ν. iFrame. iApply step_fupd_intro; first done. iIntros "!>".
+        iExists ν. iFrame. iApply step_fupd_intro; first set_solver. iIntros "!>".
         iSplitR; first done. iExists (q+q'')%Qp. iFrame.
         by rewrite assoc (comm _ q0 q). }
-    wp_bind Endlft. iApply (wp_fupd_step with "INV"); [done..|]. wp_seq.
+    wp_bind Endlft. iApply (wp_mask_mono (↑lftN)); first done.
+    iApply (wp_fupd_step with "INV"); [set_solver..|]. wp_seq.
     iIntros "INV !>". wp_seq. iMod ("Hcloseβ" with "[$INV] Hna") as "[Hβ Hna]".
     iMod ("Hcloseα" with "Hβ") as "Hα".
     iApply (type_type _ _ _ [ #lx ◁ box (uninit 2)]%TC with "[] LFT Hna [Hα] HL Hk");

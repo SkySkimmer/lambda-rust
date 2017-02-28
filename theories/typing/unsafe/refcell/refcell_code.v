@@ -204,6 +204,7 @@ Section refcell_functions.
             auth_update_alloc, (op_local_update_discrete _ _ (reading_st (1/2)%Qp ν)).
           rewrite right_id. iExists _, _. iFrame "Htok1 Hreading".
           iDestruct (lft_glb_acc with "Hβtok2 Htok2") as (q) "[Htok Hclose]".
+          iApply (fupd_mask_mono (↑lftN)); first done.
           iMod (rebor _ _ (β ∪ ν) with "LFT [] Hst") as "[Hst Hh]". done.
           { iApply lft_le_incl. apply gmultiset_union_subseteq_l. }
           iMod (ty_share with "LFT Hst Htok") as "[#Hshr Htok]". done. iFrame "Hshr".
@@ -280,9 +281,10 @@ Section refcell_functions.
       iMod (lft_create with "LFT") as (ν) "[Htok #Hhν]". done.
       iMod (own_update with "Hownst") as "[Hownst ?]".
       { by eapply auth_update_alloc, (op_local_update_discrete _ _ (writing_st ν)). }
+      iApply fupd_wp. iApply (fupd_mask_mono (↑lftN)); first done.
       iMod (rebor _ _ (β ∪ ν) with "LFT [] Hb") as "[Hb Hbh]". done.
       { iApply lft_le_incl. apply gmultiset_union_subseteq_l. }
-      iMod ("Hclose'" with "[Hlx Hownst Hbh] Hna") as "[Hβtok Hna]".
+      iModIntro. iMod ("Hclose'" with "[Hlx Hownst Hbh] Hna") as "[Hβtok Hna]".
       { iExists _. iFrame. iExists ν. iSplit; first by auto. iNext. iSplitL; last by auto.
         iIntros "Hν". iMod ("Hhν" with "Hν") as "Hν". iModIntro. iNext. iMod "Hν".
         iApply "Hbh". rewrite -lft_dead_or. auto. }

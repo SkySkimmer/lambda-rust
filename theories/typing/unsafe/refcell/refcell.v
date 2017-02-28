@@ -39,7 +39,7 @@ Section refcell_inv.
         &{α}(shift_loc l 1 ↦∗: ty.(ty_own) tid)
       | Some (agν, st) =>
         ∃ ν, agν ≡ to_agree ν ∗
-             (1.[ν] ={⊤, ⊤∖↑lftN}▷=∗ &{α}(shift_loc l 1 ↦∗: ty.(ty_own) tid)) ∗
+             (1.[ν] ={↑lftN,∅}▷=∗ &{α}(shift_loc l 1 ↦∗: ty.(ty_own) tid)) ∗
              match st with
              | Cinr (q, n) =>
                (* Immutably borrowed. *)
@@ -129,6 +129,7 @@ Section refcell.
     - iMod (lft_create with "LFT") as (ν) "[[Htok1 Htok2] #Hhν]". done.
       iMod (own_alloc (● Some (to_agree ν, Cinr ((1/2)%Qp, n)))) as (γ) "Hst".
       { by apply auth_auth_valid. }
+      iApply (fupd_mask_mono (↑lftN)); first done.
       iMod (rebor _ _ (κ ∪ ν) with "LFT [] Hvl") as "[Hvl Hh]". done.
       { iApply lft_le_incl. apply gmultiset_union_subseteq_l. }
       iDestruct (lft_glb_acc with "Htok' Htok1") as (q') "[Htok Hclose]".
@@ -141,7 +142,7 @@ Section refcell.
       iApply fupd_mask_mono; last iApply "Hh". done. rewrite -lft_dead_or. auto.
     - iMod (own_alloc (● writing_st static)) as (γ) "Hst". { by apply auth_auth_valid. }
       iFrame. iExists _, _. iFrame. iExists _. iSplitR; first by auto.
-      iIntros "!>!> _". iApply step_fupd_intro; auto.
+      iIntros "!>!> _". iApply step_fupd_intro; [set_solver|auto].
   Qed.
   Next Obligation.
     iIntros (?????) "#Hκ H". iDestruct "H" as (α γ) "[#??]".

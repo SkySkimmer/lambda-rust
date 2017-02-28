@@ -97,15 +97,13 @@ Section rwlockreadguard_functions.
           iDestruct "Hst" as (ν' q') "(>EQν & _ & Hh & _ & >Hq & >Hν')".
           rewrite -EQ. iDestruct "EQν" as %<-%(inj to_agree)%leibniz_equiv.
           iCombine "Hν" "Hν'" as "Hν". iDestruct "Hq" as %->.
-          (* FIXME : here, I REALLY need to end a lifetime while an
-             invariant is still open. *)
-          iAssert (|={⊤,⊤ ∖ ↑lftN}▷=> lx' ↦ #0 ==∗ rwlock_inv tid lx' γ β ty)%I
-            with "[-]" as "?"; last admit.
+          iApply (step_fupd_mask_mono (↑lftN ∪ (⊤ ∖ ↑rwlockN ∖ ↑lftN)));
+            last iApply (step_fupd_mask_frame_r _ ∅); [try set_solver..|];
+            [apply union_least; solve_ndisj|].
           iMod ("H†" with "Hν") as "H†". iModIntro. iNext. iMod "H†".
-          iApply fupd_mask_mono; last iMod ("Hh" with "H†") as "Hb". done.
-          iIntros "!> Hlx". iExists None. iFrame. iApply (own_update_2 with "H● H◯").
-          apply auth_update_dealloc. rewrite -(right_id None op (Some _)).
-          apply cancel_local_update_empty, _.
+          iMod ("Hh" with "H†") as "Hb". iIntros "!> Hlx". iExists None. iFrame.
+          iApply (own_update_2 with "H● H◯"). apply auth_update_dealloc.
+          rewrite -(right_id None op (Some _)). apply cancel_local_update_empty, _.
         - iApply step_fupd_intro. set_solver. iNext. iIntros "Hlx".
           apply csum_included in Hle.
           destruct Hle as [|[(?&?&[=]&?)|(?&[[agν q']n]&[=<-]&->&Hle%prod_included)]];
@@ -144,5 +142,5 @@ Section rwlockreadguard_functions.
                 tctx_hasty_val' //. iFrame. iExists _, _, _, _. iFrame "∗#". }
       { rewrite /elctx_interp big_sepL_singleton //. }
       iApply (type_jump []); solve_typing.
-  Admitted.
+  Qed.
 End rwlockreadguard_functions.

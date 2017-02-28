@@ -490,7 +490,7 @@ Qed.
 (* TODO RJ: Are there still places where this lemma
    is re-proven inline? *)
 Lemma lft_vs_cons q κ Pb Pb' Pi :
-  (lft_bor_dead κ ∗ ▷ Pb' ={⊤ ∖ ↑mgmtN}=∗ lft_bor_dead κ ∗ ▷ Pb) -∗
+  (lft_bor_dead κ ∗ ▷ Pb' ={↑borN}=∗ lft_bor_dead κ ∗ ▷ Pb) -∗
   ▷?q lft_vs κ Pb Pi -∗ ▷?q lft_vs κ Pb' Pi.
 Proof.
   iIntros "Hcons Hvs". iNext. rewrite !lft_vs_unfold.

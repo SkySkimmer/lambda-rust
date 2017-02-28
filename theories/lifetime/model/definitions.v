@@ -133,7 +133,7 @@ Section defs.
        own_cnt κ (● n) ∗
        ∀ I : gmap lft lft_names,
          lft_vs_inv_go κ lft_inv_alive I -∗ ▷ Pb -∗ lft_dead κ
-           ={⊤∖↑mgmtN}=∗
+           ={↑borN}=∗
          lft_vs_inv_go κ lft_inv_alive I ∗ ▷ Pi ∗ own_cnt κ (◯ n))%I.
 
   Definition lft_inv_alive_go (κ : lft)
@@ -263,7 +263,7 @@ Lemma lft_vs_unfold κ Pb Pi :
   lft_vs κ Pb Pi ⊣⊢ ∃ n : nat,
     own_cnt κ (● n) ∗
     ∀ I : gmap lft lft_names,
-      lft_vs_inv κ I -∗ ▷ Pb -∗ lft_dead κ ={⊤∖↑mgmtN}=∗
+      lft_vs_inv κ I -∗ ▷ Pb -∗ lft_dead κ ={↑borN}=∗
       lft_vs_inv κ I ∗ ▷ Pi ∗ own_cnt κ (◯ n).
 Proof. done. Qed.
 

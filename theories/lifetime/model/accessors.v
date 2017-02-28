@@ -56,13 +56,13 @@ Proof.
 Qed.
 
 Lemma add_vs Pb Pb' P Q Pi κ :
-  ▷ ▷ (Pb ≡ (P ∗ Pb')) -∗ ▷ lft_vs κ Pb Pi -∗ ▷ (▷ Q -∗ [†κ] ={⊤∖↑lftN}=∗ ▷ P) -∗
+  ▷ ▷ (Pb ≡ (P ∗ Pb')) -∗ ▷ lft_vs κ Pb Pi -∗ ▷ (▷ Q -∗ [†κ] ={∅}=∗ ▷ P) -∗
   ▷ lft_vs κ (Q ∗ Pb') Pi.
 Proof.
   iIntros "#HEQ Hvs HvsQ". iNext. rewrite !lft_vs_unfold.
   iDestruct "Hvs" as (n) "[Hcnt Hvs]". iExists n.
   iIntros "{$Hcnt}*Hinv[HQ HPb] #H†". iApply fupd_trans.
-  iApply fupd_mask_mono; last iMod ("HvsQ" with "HQ H†") as "HP". solve_ndisj.
+  iApply fupd_mask_mono; last iMod ("HvsQ" with "HQ H†") as "HP". set_solver.
   iModIntro. iAssert (▷ Pb)%I with "[HPb HP]" as "HPb".
   { iNext. iRewrite "HEQ". iFrame. }
   iApply ("Hvs" with "Hinv HPb H†").
@@ -152,7 +152,7 @@ Qed.
 Lemma bor_acc_strong E q κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ} P -∗ q.[κ] ={E}=∗ ∃ κ', κ ⊑ κ' ∗ ▷ P ∗
-    ∀ Q, ▷ Q -∗ ▷(▷ Q -∗ [†κ'] ={⊤∖↑lftN}=∗ ▷ P) ={E}=∗ &{κ'} Q ∗ q.[κ].
+    ∀ Q, ▷ Q -∗ ▷(▷ Q -∗ [†κ'] ={∅}=∗ ▷ P) ={E}=∗ &{κ'} Q ∗ q.[κ].
 Proof.
   unfold bor, raw_bor. iIntros (HE) "#LFT Hbor Htok".
   iDestruct "Hbor" as (κ'') "(#Hle & Htmp)". iDestruct "Htmp" as (s'') "(Hbor & #Hs)".
@@ -219,7 +219,7 @@ Lemma bor_acc_atomic_strong E κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ} P ={E,E∖↑lftN}=∗
    (∃ κ', κ ⊑ κ' ∗ ▷ P ∗
-      ∀ Q, ▷ Q -∗ ▷ (▷ Q -∗ [†κ'] ={⊤∖↑lftN}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ'} Q) ∨
+      ∀ Q, ▷ Q -∗ ▷ (▷ Q -∗ [†κ'] ={∅}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ'} Q) ∨
     ([†κ] ∗ |={E∖↑lftN,E}=> True).
 Proof.
   iIntros (HE) "#LFT Hbor". rewrite bor_unfold_idx /idx_bor /bor /raw_bor.
@@ -270,7 +270,7 @@ Qed.
 Lemma bor_acc_atomic_cons E κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ} P ={E,E∖↑lftN}=∗
-    (▷ P ∗ ∀ Q, ▷ Q -∗ ▷ (▷ Q ={⊤∖↑lftN}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ} Q) ∨
+    (▷ P ∗ ∀ Q, ▷ Q -∗ ▷ (▷ Q ={∅}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ} Q) ∨
     ([†κ] ∗ |={E∖↑lftN,E}=> True).
 Proof.
   iIntros (?) "#LFT HP".

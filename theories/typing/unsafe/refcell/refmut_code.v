@@ -137,8 +137,9 @@ Section refmut_functions.
     { by destruct (exclusive_included (Cinl (Excl ())) st'). }
     setoid_subst. iDestruct "INV" as (ν') "(Hνν' & H† & _)".
     iDestruct "Hνν'" as %<-%(inj to_agree)%leibniz_equiv.
-    wp_bind Endlft. iApply (wp_fupd_step with "[H† Hν]");
-      [done| |iApply ("H†" with "Hν")|]; first done.
+    wp_bind Endlft. iApply (wp_mask_mono (↑lftN)); first done.
+    iApply (wp_fupd_step with "[H† Hν]");
+      [done| |iApply ("H†" with "Hν")|]; first set_solver.
     wp_seq. iIntros "{Hb} Hb !>".
     iMod ("Hcloseβ" with ">[H↦lrc H● H◯ Hb] Hna") as "[Hβ Hna]".
     { iExists None. iFrame. iMod (own_update_2 with "H● H◯") as "$"; last done.

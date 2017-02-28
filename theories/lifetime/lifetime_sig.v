@@ -86,7 +86,7 @@ Module Type lifetime_sig.
   Parameter lft_dead_static : [† static] -∗ False.
 
   Parameter lft_create : ∀ E, ↑lftN ⊆ E →
-    lft_ctx ={E}=∗ ∃ κ, 1.[κ] ∗ □ (1.[κ] ={⊤,⊤∖↑lftN}▷=∗ [†κ]).
+    lft_ctx ={E}=∗ ∃ κ, 1.[κ] ∗ □ (1.[κ] ={↑lftN,∅}▷=∗ [†κ]).
   Parameter bor_create : ∀ E κ P,
     ↑lftN ⊆ E → lft_ctx -∗ ▷ P ={E}=∗ &{κ} P ∗ ([†κ] ={E}=∗ ▷ P).
   Parameter bor_fake : ∀ E κ P,
@@ -119,11 +119,11 @@ Module Type lifetime_sig.
                 ([†κ] ∗ |={E∖↑lftN,E}=> idx_bor_own q i).
   Parameter bor_acc_strong : ∀ E q κ P, ↑lftN ⊆ E →
     lft_ctx -∗ &{κ} P -∗ q.[κ] ={E}=∗ ∃ κ', κ ⊑ κ' ∗ ▷ P ∗
-      ∀ Q, ▷ Q -∗ ▷(▷ Q -∗ [†κ'] ={⊤∖↑lftN}=∗ ▷ P) ={E}=∗ &{κ'} Q ∗ q.[κ].
+      ∀ Q, ▷ Q -∗ ▷(▷ Q -∗ [†κ'] ={∅}=∗ ▷ P) ={E}=∗ &{κ'} Q ∗ q.[κ].
   Parameter bor_acc_atomic_strong : ∀ E κ P, ↑lftN ⊆ E →
     lft_ctx -∗ &{κ} P ={E,E∖↑lftN}=∗
       (∃ κ', κ ⊑ κ' ∗ ▷ P ∗
-         ∀ Q, ▷ Q -∗ ▷ (▷ Q -∗ [†κ'] ={⊤∖↑lftN}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ'} Q) ∨
+         ∀ Q, ▷ Q -∗ ▷ (▷ Q -∗ [†κ'] ={∅}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ'} Q) ∨
            ([†κ] ∗ |={E∖↑lftN,E}=> True).
 
   (* Because Coq's module system is horrible, we have to repeat properties of lft_incl here
@@ -148,7 +148,7 @@ Module Type lifetime_sig.
     ↑lftN ⊆ E → lft_ctx -∗ &{κ}(∃ x, Φ x) ={E}=∗ ∃ x, &{κ}Φ x.
   Parameter bor_acc_atomic_cons : ∀ E κ P,
     ↑lftN ⊆ E → lft_ctx -∗ &{κ} P ={E,E∖↑lftN}=∗
-      (▷ P ∗ ∀ Q, ▷ Q -∗ ▷ (▷ Q ={⊤∖↑lftN}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ} Q) ∨
+      (▷ P ∗ ∀ Q, ▷ Q -∗ ▷ (▷ Q ={∅}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ} Q) ∨
       ([†κ] ∗ |={E∖↑lftN,E}=> True).
   Parameter bor_acc_atomic : ∀ E κ P,
     ↑lftN ⊆ E → lft_ctx -∗ &{κ}P ={E,E∖↑lftN}=∗

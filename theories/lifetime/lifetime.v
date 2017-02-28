@@ -23,7 +23,7 @@ Implicit Types κ : lft.
 Lemma bor_acc_cons E q κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ} P -∗ q.[κ] ={E}=∗ ▷ P ∗
-    ∀ Q, ▷ Q -∗ ▷(▷ Q ={⊤∖↑lftN}=∗ ▷ P) ={E}=∗ &{κ} Q ∗ q.[κ].
+    ∀ Q, ▷ Q -∗ ▷(▷ Q ={∅}=∗ ▷ P) ={E}=∗ &{κ} Q ∗ q.[κ].
 Proof.
   iIntros (?) "#LFT HP Htok".
   iMod (bor_acc_strong with "LFT HP Htok") as (κ') "(#Hκκ' & $ & Hclose)"; first done.
