@@ -31,12 +31,19 @@ Section shared_bors.
   Global Instance shr_bor_persistent : PersistentP (&shr{κ, N} P) := _.
 
   Lemma bor_share E κ :
-    ↑lftN ⊆ E → N = lftN ∨ N ⊥ lftN → &{κ}P ={E}=∗ &shr{κ, N}P.
+    ↑lftN ⊆ E → N ⊥ lftN → &{κ}P ={E}=∗ &shr{κ, N}P.
   Proof.
     iIntros (? HN) "HP". rewrite bor_unfold_idx. iDestruct "HP" as (i) "(#?&Hown)".
-    iExists i. iFrame "#". destruct HN as [->|HN].
-    - iRight. iSplitR. done. by iMod (inv_alloc with "[Hown]") as "$"; auto.
-    - iLeft. iSplitR. done. by iMod (inv_alloc with "[Hown]") as "$"; auto.
+    iExists i. iFrame "#".
+    iLeft. iSplitR. done. by iMod (inv_alloc with "[Hown]") as "$"; auto.
+  Qed.
+
+  Lemma bor_share_lftN E κ :
+    ↑lftN ⊆ E → &{κ}P ={E}=∗ &shr{κ, lftN}P.
+  Proof.
+    iIntros (?) "HP". rewrite bor_unfold_idx. iDestruct "HP" as (i) "(#?&Hown)".
+    iExists i. iFrame "#". subst.
+    iRight. iSplitR. done. by iMod (inv_alloc with "[Hown]") as "$"; auto.
   Qed.
 
   Lemma shr_bor_acc E κ :
@@ -77,11 +84,24 @@ Section shared_bors.
   Qed.
 
   Lemma shr_bor_fake E κ:
-    ↑lftN ⊆ E → N = lftN ∨ N ⊥ lftN → lft_ctx -∗ [†κ] ={E}=∗ &shr{κ,N}P.
+    ↑lftN ⊆ E → N ⊥ lftN → lft_ctx -∗ [†κ] ={E}=∗ &shr{κ,N}P.
   Proof.
     iIntros (??) "#LFT#H†". iApply (bor_share with ">"); try done.
     by iApply (bor_fake with "LFT H†").
   Qed.
+
+  Lemma shr_bor_fake_lftN E κ:
+    ↑lftN ⊆ E → lft_ctx -∗ [†κ] ={E}=∗ &shr{κ,lftN}P.
+  Proof.
+    iIntros (?) "#LFT#H†". iApply (bor_share_lftN with ">"); try done.
+    by iApply (bor_fake with "LFT H†").
+  Qed.
 End shared_bors.
+
+Lemma shr_bor_acc_lftN `{invG Σ, lftG Σ} (P : iProp Σ) E κ :
+  ↑lftN ⊆ E →
+  lft_ctx -∗ &shr{κ,lftN}P ={E,E∖↑lftN}=∗ ▷P ∗ (▷P ={E∖↑lftN,E}=∗ True) ∨
+             [†κ] ∗ |={E∖↑lftN,E}=> True.
+Proof. intros. by rewrite (shr_bor_acc _ lftN) // difference_twice_L. Qed.
 
 Typeclasses Opaque shr_bor.
