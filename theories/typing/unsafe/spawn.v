@@ -10,7 +10,7 @@ Definition spawnN := lrustN .@ "spawn".
 Section join_handle.
   Context `{!typeG Σ, !spawnG Σ}.
 
-  Definition join_inv (ty : type) tid (v : val) :=
+  Definition join_inv tid (ty : type) (v : val) :=
     (box ty).(ty_own) tid [v].
 
   Program Definition join_handle (ty : type) :=
@@ -18,7 +18,7 @@ Section join_handle.
        ty_own tid vl :=
          match vl return _ with
          | [ #(LitLoc l) ] =>
-           ∃ ty', type_incl ty' ty ∗ join_handle spawnN l (join_inv ty' tid)
+           ∃ ty', ▷ type_incl ty' ty ∗ join_handle spawnN l (join_inv tid ty')
          | _ => False
          end%I;
        ty_shr κ tid l := True%I |}.
@@ -46,7 +46,13 @@ Section join_handle.
     Proper (eqtype E L ==> eqtype E L) join_handle.
   Proof. intros ??[]. by split; apply join_handle_mono. Qed.
 
-  (* TODO: Show that the type is contractive. *)
+  Global Instance join_handle_type_contractive : TypeContractive join_handle.
+  Proof.
+    constructor;
+      solve_proper_core ltac:(fun _ => exact: type_dist2_dist || f_type_equiv || f_contractive || f_equiv).
+  Qed.
+  Global Instance join_handle_ne : NonExpansive join_handle.
+  Proof. apply type_contractive_ne, _. Qed.
 End join_handle.
 
 Section spawn.
@@ -74,7 +80,7 @@ Section spawn.
     { (* The core of the proof: showing that spawn is safe. *)
       iIntros (tid qE) "#LFT $ $ $".
       rewrite tctx_interp_cons tctx_interp_singleton.
-      iIntros "[Hf' Henv]". iApply (spawn_spec _ (join_inv retty tid) with "[-]");
+      iIntros "[Hf' Henv]". iApply (spawn_spec _ (join_inv tid retty) with "[-]");
                               first solve_to_val; last first; last simpl_subst.
       { iIntros "!> *". rewrite tctx_interp_singleton tctx_hasty_val.
         iIntros "?". iExists retty. iFrame. iApply type_incl_refl. }
@@ -123,7 +129,7 @@ Section spawn.
     { iIntros (tid qE) "#LFT $ $ $".
       rewrite tctx_interp_singleton tctx_hasty_val. iIntros "Hc'".
       destruct c' as [[|c'|]|]; try done. iDestruct "Hc'" as (ty') "[#Hsub Hc']".
-      iApply (join_spec with "Hc'"). iIntros "!> * Hret".
+      iApply (join_spec with "Hc'"). iNext. iIntros "* Hret".
       rewrite tctx_interp_singleton tctx_hasty_val.
       iPoseProof "Hsub" as "Hsz". iDestruct "Hsz" as "[% _]".
       iDestruct (own_type_incl with "Hsub") as "(_ & Hincl & _)".
