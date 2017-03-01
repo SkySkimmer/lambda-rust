@@ -76,7 +76,7 @@ Section rwlockwriteguard.
   Global Instance rwlockwriteguard_type_contractive α : TypeContractive (rwlockwriteguard α).
   Proof.
     constructor;
-      solve_proper_core ltac:(fun _ => exact: type_dist2_S || (eapply rwlock_inv_ne; try reflexivity) ||
+      solve_proper_core ltac:(fun _ => exact: type_dist2_S || (eapply rwlock_inv_type_ne; try reflexivity) ||
                                               f_type_equiv || f_contractive || f_equiv).
   Qed.
   Global Instance rwlockwriteguard_ne α : NonExpansive (rwlockwriteguard α).

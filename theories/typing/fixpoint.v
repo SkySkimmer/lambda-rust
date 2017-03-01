@@ -18,6 +18,11 @@ Section fixpoint_def.
   Definition type_fixpoint : type := fixpointK 2 T.
 End fixpoint_def.
 
+Lemma type_fixpoint_ne `{typeG Σ} (T1 T2 : type → type)
+  `{!TypeContractive T1, !TypeContractive T2} n :
+  (∀ t, T1 t ≡{n}≡ T2 t) → type_fixpoint T1 ≡{n}≡ type_fixpoint T2.
+Proof. eapply fixpointK_ne; apply type_contractive_ne, _. Qed.
+
 Section fixpoint.
   Context `{typeG Σ}.
   Context (T : type → type) {HT: TypeContractive T}.

@@ -71,6 +71,13 @@ Section product.
     Proper (type_dist2 n ==> type_dist2 n ==> type_dist2 n) product2.
   Proof. solve_type_proper. Qed.
 
+  Global Instance product2_ne :
+    NonExpansive2 product2.
+  Proof.
+    constructor;
+      solve_proper_core ltac:(fun _ => (eapply ty_size_ne; try reflexivity) || f_equiv).
+  Qed.
+
   Global Instance product2_mono E L:
     Proper (subtype E L ==> subtype E L ==> subtype E L) product2.
   Proof.
@@ -140,6 +147,8 @@ Section product.
   Definition unit := product [].
 
   Global Instance product_type_ne n: Proper (Forall2 (type_dist2 n) ==> type_dist2 n) product.
+  Proof. intros ??. induction 1=>//=. by f_equiv. Qed.
+  Global Instance product_ne : NonExpansive product.
   Proof. intros ??. induction 1=>//=. by f_equiv. Qed.
   Global Instance product_mono E L:
     Proper (Forall2 (subtype E L) ==> subtype E L) product.

@@ -95,7 +95,7 @@ Section sum.
     - iApply ((nth i tyl ∅).(ty_shr_mono) with "Hord"); done.
   Qed.
 
-  Global Instance sum_type_ne n: Proper (Forall2 (type_dist2 n) ==> type_dist2 n) sum.
+  Global Instance sum_type_ne n : Proper (Forall2 (type_dist2 n) ==> type_dist2 n) sum.
   Proof.
     intros x y EQ.
     assert (EQmax : list_max (map ty_size x) = list_max (map ty_size y)).
@@ -111,6 +111,24 @@ Section sum.
       solve_proper_core ltac:(fun _ => exact:EQnth || f_type_equiv || f_equiv).
     - intros κ tid l. unfold is_pad. rewrite EQmax.
       solve_proper_core ltac:(fun _ => exact:EQnth || f_type_equiv || f_equiv).
+  Qed.
+
+  Global Instance sum_ne : NonExpansive sum.
+  Proof.
+    intros n x y EQ.
+    assert (EQmax : list_max (map ty_size x) = list_max (map ty_size y)).
+    { induction EQ as [|???? EQ _ IH]=>//=.
+      rewrite IH. f_equiv. apply EQ. }
+    (* TODO: If we had the right lemma relating nth, (Forall2 R) and R, we should
+       be able to make this more automatic. *)
+    assert (EQnth :∀ i, type_dist n (nth i x ∅) (nth i y ∅)).
+    { clear EQmax. induction EQ as [|???? EQ _ IH]=>-[|i] //=. }
+    constructor; simpl.
+    - by rewrite EQmax.
+    - intros tid vl. rewrite EQmax.
+      solve_proper_core ltac:(fun _ => exact:EQnth || f_equiv).
+    - intros κ tid l. unfold is_pad. rewrite EQmax.
+      solve_proper_core ltac:(fun _ => exact:EQnth || (eapply ty_size_ne; try reflexivity) || f_equiv).
   Qed.
 
   Global Instance sum_mono E L :

@@ -46,10 +46,15 @@ Section rwlock_inv.
       | _ => (* Locked for write. *) True
       end)%I.
 
-  Global Instance rwlock_inv_ne n tid l γ α :
+  Global Instance rwlock_inv_type_ne n tid l γ α :
     Proper (type_dist2 n ==> dist n) (rwlock_inv tid l γ α).
   Proof. 
     solve_proper_core ltac:(fun _ => exact: type_dist2_S || f_type_equiv || f_contractive || f_equiv).
+  Qed.
+
+  Global Instance rwlock_inv_ne tid l γ α : NonExpansive (rwlock_inv tid l γ α).
+  Proof.
+    intros n ???. eapply rwlock_inv_type_ne, type_dist_dist2. done.
   Qed.
 
   Lemma rwlock_inv_proper E L tid l γ α ty1 ty2 :
@@ -145,7 +150,13 @@ Section rwlock.
   Global Instance rwlock_type_ne : TypeNonExpansive rwlock.
   Proof.
     constructor;
-      solve_proper_core ltac:(fun _ => exact: type_dist2_S || f_type_equiv || f_contractive || f_equiv).
+      solve_proper_core ltac:(fun _ => exact: type_dist2_S || (eapply rwlock_inv_type_ne; try reflexivity) ||
+                                              f_type_equiv || f_contractive || f_equiv).
+  Qed.
+
+  Global Instance rwlock_ne : NonExpansive rwlock.
+  Proof.
+    constructor; solve_proper_core ltac:(fun _ => (eapply ty_size_ne; try reflexivity) || f_equiv).
   Qed.
 
   Global Instance rwlock_mono E L : Proper (eqtype E L ==> subtype E L) rwlock.

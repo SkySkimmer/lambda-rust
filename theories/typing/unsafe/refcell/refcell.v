@@ -49,10 +49,16 @@ Section refcell_inv.
              end
       end)%I.
 
-  Global Instance refcell_inv_ne n tid l γ α :
+  Global Instance refcell_inv_type_ne n tid l γ α :
     Proper (type_dist2 n ==> dist n) (refcell_inv tid l γ α).
   Proof. 
     solve_proper_core ltac:(fun _ => exact: type_dist2_S || f_type_equiv || f_contractive || f_equiv).
+  Qed.
+
+  Global Instance refcell_inv_ne tid l γ α : NonExpansive (refcell_inv tid l γ α).
+  Proof.
+    intros n ???. (* TODO: f_equiv takes forever here, what is going on? *)
+    eapply refcell_inv_type_ne, type_dist_dist2. done.
   Qed.
 
   Lemma refcell_inv_proper E L tid l γ α ty1 ty2 :
@@ -151,7 +157,13 @@ Section refcell.
   Global Instance refcell_type_ne : TypeNonExpansive refcell.
   Proof.
     constructor;
-      solve_proper_core ltac:(fun _ => exact: type_dist2_S || f_type_equiv || f_contractive || f_equiv).
+      solve_proper_core ltac:(fun _ => exact: type_dist2_S || (eapply refcell_inv_type_ne; try reflexivity) ||
+                                              f_type_equiv || f_contractive || f_equiv).
+  Qed.
+
+  Global Instance refcell_ne : NonExpansive refcell.
+  Proof.
+    constructor; solve_proper_core ltac:(fun _ => (eapply ty_size_ne; try reflexivity) || f_equiv).
   Qed.
 
   Global Instance refcell_mono E L : Proper (eqtype E L ==> subtype E L) refcell.

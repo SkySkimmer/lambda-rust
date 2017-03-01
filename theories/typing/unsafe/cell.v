@@ -24,6 +24,11 @@ Section cell.
   Global Instance cell_type_ne : TypeNonExpansive cell.
   Proof. solve_type_proper. Qed.
 
+  Global Instance cell_ne : NonExpansive cell.
+  Proof.
+    constructor; solve_proper_core ltac:(fun _ => (eapply ty_size_ne; try reflexivity) || f_equiv).
+  Qed.
+
   Global Instance cell_mono E L : Proper (eqtype E L ==> subtype E L) cell.
   Proof.
     iIntros (?? EQ%eqtype_unfold) "#HE #HL".
