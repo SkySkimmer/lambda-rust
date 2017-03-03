@@ -19,13 +19,13 @@ Section rwlockreadguard_functions.
       delete [ #1; "x"];; "return" ["r"].
 
   Lemma rwlockreadguard_deref_type ty :
-    typed_instruction_ty [] [] [] rwlockreadguard_deref
+    typed_val rwlockreadguard_deref
       (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
           (fun '(α, β) => [# &shr{α}(rwlockreadguard β ty)]%T)
           (fun '(α, β) => &shr{α}ty)%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([α β] ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
     iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
@@ -60,11 +60,11 @@ Section rwlockreadguard_functions.
          else "loop" []).
 
   Lemma rwlockreadguard_drop_type ty :
-    typed_instruction_ty [] [] [] rwlockreadguard_drop
-                         (fn(∀ α, [☀α]; rwlockreadguard α ty) → unit).
+    typed_val rwlockreadguard_drop
+                   (fn(∀ α, [☀α]; rwlockreadguard α ty) → unit).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|].
       iIntros (x'). simpl_subst.
     iApply (type_cont [] [] (λ _, [x ◁ _; x' ◁ _])%TC);

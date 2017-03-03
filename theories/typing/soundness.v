@@ -23,11 +23,10 @@ Proof. solve_inG. Qed.
 Section type_soundness.
   Definition exit_cont : val := λ: [<>], #().
 
-  Definition main_type `{typeG Σ} :=
-    (fn([]) → unit)%T.
+  Definition main_type `{typeG Σ} := (fn([]) → unit)%T.
 
   Theorem type_soundness `{typePreG Σ} (main : val) σ t :
-    (∀ `{typeG Σ}, typed_instruction_ty [] [] [] main main_type) →
+    (∀ `{typeG Σ}, typed_val main main_type) →
     rtc step ([main [exit_cont]%E], ∅) (t, σ) →
     nonracing_threadpool t σ ∧
     (∀ e, e ∈ t → is_Some (to_val e) ∨ reducible e σ).
@@ -40,7 +39,7 @@ Section type_soundness.
     iMod lft_init as (?) "#LFT". done.
     iMod na_alloc as (tid) "Htl". set (Htype := TypeG _ _ _ _ _).
     wp_bind (of_val main). iApply (wp_wand with "[Htl]").
-    iApply (Hmain _ $! tid 1%Qp with "LFT Htl [] [] []").
+    iApply (Hmain _ [] [] $! tid 1%Qp with "LFT Htl [] [] []").
     { by rewrite /elctx_interp big_sepL_nil. }
     { by rewrite /llctx_interp big_sepL_nil. }
     { by rewrite tctx_interp_nil. }
@@ -61,7 +60,7 @@ End type_soundness.
 (* Soundness theorem when no other CMRA is needed. *)
 
 Theorem type_soundness_closed (main : val) σ t :
-  (∀ `{typeG typeΣ}, typed_instruction_ty [] [] [] main main_type) →
+  (∀ `{typeG typeΣ}, typed_val main main_type) →
   rtc step ([main [exit_cont]%E], ∅) (t, σ) →
   nonracing_threadpool t σ ∧
   (∀ e, e ∈ t → is_Some (to_val e) ∨ reducible e σ).

@@ -19,13 +19,13 @@ Section rwlockwriteguard_functions.
       delete [ #1; "x"];; "return" ["r"].
 
   Lemma rwlockwriteguard_deref_type ty :
-    typed_instruction_ty [] [] [] rwlockwriteguard_deref
+    typed_val rwlockwriteguard_deref
       (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
           (fun '(α, β) => [# &shr{α}(rwlockwriteguard β ty)]%T)
           (fun '(α, β) => &shr{α}ty)%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([α β] ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
     iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
@@ -61,13 +61,13 @@ Section rwlockwriteguard_functions.
       delete [ #1; "x"];; "return" ["r"].
 
   Lemma rwlockwriteguard_derefmut_type ty :
-    typed_instruction_ty [] [] [] rwlockwriteguard_derefmut
+    typed_val rwlockwriteguard_derefmut
       (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
           (fun '(α, β) => [# &uniq{α}(rwlockwriteguard β ty)]%T)
           (fun '(α, β) => &uniq{α}ty)%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([α β] ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
     iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
@@ -109,11 +109,11 @@ Section rwlockwriteguard_functions.
       let: "r" := new [ #0] in "return" ["r"].
 
   Lemma rwlockwriteguard_drop_type ty :
-    typed_instruction_ty [] [] [] rwlockwriteguard_drop
-                         (fn(∀ α, [☀α]; rwlockwriteguard α ty) → unit).
+    typed_val rwlockwriteguard_drop
+                   (fn(∀ α, [☀α]; rwlockwriteguard α ty) → unit).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|].
       iIntros (x'). simpl_subst.
     iIntros (tid qE) "#LFT Hna Hα HL Hk HT".

@@ -13,10 +13,9 @@ Section init_prod.
        delete [ #1; "x"] ;; delete [ #1; "y"] ;; "return" ["r"].
 
   Lemma init_prod_type :
-    typed_instruction_ty [] [] [] init_prod
-        (fn([]; int, int) → Π[int;int]).
+    typed_val init_prod (fn([]; int, int) → Π[int;int]).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([] ret p).
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([] ret p).
       inv_vec p=>x y. simpl_subst.
     iApply type_deref; [solve_typing..|apply read_own_move|done|]. iIntros (x'). simpl_subst.
     iApply type_deref; [solve_typing..|apply read_own_move|done|]. iIntros (y'). simpl_subst.

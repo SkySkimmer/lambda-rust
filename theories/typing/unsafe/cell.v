@@ -26,7 +26,8 @@ Section cell.
 
   Global Instance cell_ne : NonExpansive cell.
   Proof.
-    constructor; solve_proper_core ltac:(fun _ => (eapply ty_size_ne; try reflexivity) || f_equiv).
+    constructor;
+      solve_proper_core ltac:(fun _ => (eapply ty_size_ne; try reflexivity) || f_equiv).
   Qed.
 
   Global Instance cell_mono E L : Proper (eqtype E L ==> subtype E L) cell.
@@ -84,11 +85,10 @@ Section typing.
   Definition cell_new : val := funrec: <> ["x"] := "return" ["x"].
 
   Lemma cell_new_type ty :
-    typed_instruction_ty [] [] [] cell_new
-        (fn([]; ty) → cell ty).
+    typed_val cell_new (fn([]; ty) → cell ty).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (_ ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
     iApply (type_jump [_]); first solve_typing.
     iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
@@ -97,11 +97,10 @@ Section typing.
   Definition cell_into_inner : val := funrec: <> ["x"] := "return" ["x"].
 
   Lemma cell_into_inner_type ty :
-    typed_instruction_ty [] [] [] cell_into_inner
-        (fn([]; cell ty) → ty).
+    typed_val cell_into_inner (fn([]; cell ty) → ty).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (_ ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
     iApply (type_jump [_]); first solve_typing.
     iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
@@ -110,11 +109,10 @@ Section typing.
     funrec: <> ["x"] := "return" ["x"].
 
   Lemma cell_get_mut_type ty :
-    typed_instruction_ty [] [] [] cell_get_mut
-      (fn(∀ α, [☀α]; &uniq{α} (cell ty)) → &uniq{α} ty).
+    typed_val cell_get_mut (fn(∀ α, [☀α]; &uniq{α} (cell ty)) → &uniq{α} ty).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
     iApply (type_jump [_]). solve_typing. rewrite /tctx_incl /=.
     iIntros (???) "_ $$". rewrite !tctx_interp_singleton /tctx_elt_interp /=.
     by iIntros "$".
@@ -128,11 +126,10 @@ Section typing.
       delete [ #1; "x"];; "return" ["r"].
 
   Lemma cell_get_type `(!Copy ty) :
-    typed_instruction_ty [] [] [] (cell_get ty)
-        (fn(∀ α, [☀α]; &shr{α} (cell ty)) → ty).
+    typed_val (cell_get ty) (fn(∀ α, [☀α]; &shr{α} (cell ty)) → ty).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing|apply read_own_move|done|]. iIntros (x'). simpl_subst.
     iApply type_letalloc_n; [solve_typing| |iIntros (r); simpl_subst].
     { apply (read_shr _ _ _ (cell ty)); solve_typing. }
@@ -149,11 +146,10 @@ Section typing.
       delete [ #1; "c"] ;; delete [ #ty.(ty_size); "x"] ;; "return" ["r"].
 
   Lemma cell_replace_type ty :
-    typed_instruction_ty [] [] [] (cell_replace ty)
-        (fn(∀ α, [☀α]; &shr{α} cell ty, ty) → ty).
+    typed_val (cell_replace ty) (fn(∀ α, [☀α]; &shr{α} cell ty, ty) → ty).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
-      inv_vec arg=>c x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ret arg). inv_vec arg=>c x. simpl_subst.
     iApply type_deref; [solve_typing|exact: read_own_move|done|]. iIntros (c'); simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r); simpl_subst.
     (* Drop to Iris level. *)

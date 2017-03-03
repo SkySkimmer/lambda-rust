@@ -18,10 +18,10 @@ Section option.
         delete [ #1; "o"];; "return" ["r"].
 
   Lemma option_as_mut_type τ :
-    typed_instruction_ty [] [] [] option_as_mut
-        (fn(∀ α, [☀α]; &uniq{α} (option τ)) → option (&uniq{α}τ)).
+    typed_val
+      option_as_mut (fn(∀ α, [☀α]; &uniq{α} (option τ)) → option (&uniq{α}τ)).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret p).
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret p).
       inv_vec p=>o. simpl_subst.
     iApply (type_cont [_] [] (λ r, [o ◁ _; r!!!0 ◁ _])%TC) ; [solve_typing..| |].
     - iIntros (k). simpl_subst.
@@ -50,10 +50,9 @@ Section option.
         "return" ["r"]].
 
   Lemma option_unwrap_or_type τ :
-    typed_instruction_ty [] [] [] (option_unwrap_or τ)
-        (fn([]; option τ, τ) → τ).
+    typed_val (option_unwrap_or τ) (fn([]; option τ, τ) → τ).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([] ret p).
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([] ret p).
       inv_vec p=>o def. simpl_subst.
     iApply type_case_own; [solve_typing|]. constructor; last constructor; last constructor.
     + right. iApply type_delete; [solve_typing..|].

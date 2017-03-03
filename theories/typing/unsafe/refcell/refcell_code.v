@@ -20,11 +20,11 @@ Section refcell_functions.
        delete [ #ty.(ty_size) ; "x"];; "return" ["r"].
 
   Lemma refcell_new_type ty :
-    typed_instruction_ty [] [] [] (refcell_new ty)
-        (fn (λ _, []) (λ _, [# ty]) (λ _:(), refcell ty)).
+    typed_val (refcell_new ty)
+      (fn (λ _, []) (λ _, [# ty]) (λ _:(), refcell ty)).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (_ ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_new; [solve_typing..|].
     iIntros (r tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite (Nat2Z.id (S ty.(ty_size))) tctx_interp_cons
@@ -58,11 +58,11 @@ Section refcell_functions.
        delete [ #(S ty.(ty_size)) ; "x"];; "return" ["r"].
 
   Lemma refcell_into_inner_type ty :
-    typed_instruction_ty [] [] [] (refcell_into_inner ty)
-        (fn (λ _, []) (λ _, [# refcell ty]) (λ _:(), ty)).
+    typed_val (refcell_into_inner ty)
+                   (fn (λ _, []) (λ _, [# refcell ty]) (λ _:(), ty)).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (_ ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_new; [solve_typing..|].
     iIntros (r tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite (Nat2Z.id (ty.(ty_size))) tctx_interp_cons
@@ -93,11 +93,11 @@ Section refcell_functions.
       "return" ["x"].
 
   Lemma refcell_get_mut_type ty :
-    typed_instruction_ty [] [] [] refcell_get_mut
+    typed_val refcell_get_mut
         (fn (λ α, [☀α])%EL (λ α, [# &uniq{α} (refcell ty)])%T (λ α, &uniq{α} ty)%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|by eapply read_own_move|done|].
       iIntros (x'). simpl_subst.
     iIntros (tid qE) "#LFT Hna HE HL HC HT".
@@ -144,11 +144,11 @@ Section refcell_functions.
         delete [ #1; "x"];; "return" ["r"].
 
   Lemma refcell_try_borrow_type ty :
-    typed_instruction_ty [] [] [] refcell_try_borrow
+    typed_val refcell_try_borrow
         (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(refcell ty)]%T) (λ α, option (ref α ty))%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
     iApply (type_cont [_] [] (λ r, [x ◁ box (&shr{α} refcell ty);
                                     r!!!0 ◁ box (option (ref α ty))])%TC);
       [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg=>r]; simpl_subst; last first.
@@ -251,11 +251,11 @@ Section refcell_functions.
         delete [ #1; "x"];; "return" ["r"].
 
   Lemma refcell_try_borrow_mut_type ty :
-    typed_instruction_ty [] [] [] refcell_try_borrow_mut
+    typed_val refcell_try_borrow_mut
         (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(refcell ty)]%T) (λ α, option (refmut α ty))%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
     iApply (type_cont [_] [] (λ r, [x ◁ box (&shr{α} refcell ty);
                                     r!!!0 ◁ box (option (refmut α ty))]%TC));
       [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg=>r];

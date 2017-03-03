@@ -19,13 +19,13 @@ Section refmut_functions.
       delete [ #1; "x"];; "return" ["r"].
 
   Lemma refmut_deref_type ty :
-    typed_instruction_ty [] [] [] refmut_deref
+    typed_val refmut_deref
       (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
           (fun '(α, β) => [# &shr{α}(refmut β ty)]%T)
           (fun '(α, β) => &shr{α}ty)%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([α β] ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
     iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
@@ -61,13 +61,13 @@ Section refmut_functions.
       delete [ #1; "x"];; "return" ["r"].
 
   Lemma refmut_derefmut_type ty :
-    typed_instruction_ty [] [] [] refmut_derefmut
+    typed_val refmut_derefmut
       (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
           (fun '(α, β) => [# &uniq{α}(refmut β ty)]%T)
           (fun '(α, β) => &uniq{α}ty)%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([α β] ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
     iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
@@ -117,10 +117,10 @@ Section refmut_functions.
       let: "r" := new [ #0] in "return" ["r"].
 
   Lemma refmut_drop_type ty :
-    typed_instruction_ty [] [] [] refmut_drop (fn(∀ α, [☀α]; refmut α ty) → unit).
+    typed_val refmut_drop (fn(∀ α, [☀α]; refmut α ty) → unit).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
     iIntros (tid qE) "#LFT Hna Hα HL Hk Hx".
     rewrite {1}/elctx_interp big_sepL_singleton tctx_interp_singleton tctx_hasty_val.
     destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
@@ -170,14 +170,14 @@ Section refmut_functions.
       "return" ["ref"].
 
   Lemma refmut_map_type ty1 ty2 envty E :
-    typed_instruction_ty [] [] [] refmut_map
+    typed_val refmut_map
       (fn(∀ β, [☀β] ++ E; refmut β ty1,
                           fn(∀ α, [☀α] ++ E; envty, &uniq{α} ty1) → &uniq{α} ty2,
                           envty)
        → refmut β ty2).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
-       inv_vec arg=>ref f env. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ret arg). inv_vec arg=>ref f env. simpl_subst.
     iIntros (tid qE) "#LFT Hna HE HL Hk HT".
     rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "(Href & Hf & Henv)".

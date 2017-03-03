@@ -55,12 +55,12 @@ Section ref_functions.
   (* FIXME : using λ instead of fun triggers an anomaly.
      See: https://coq.inria.fr/bugs/show_bug.cgi?id=5326 *)
   Lemma ref_clone_type ty :
-    typed_instruction_ty [] [] [] ref_clone
+    typed_val ref_clone
       (fn (fun '(α, β) => [☀α; ☀β])%EL (fun '(α, β) => [# &shr{α}(ref β ty)]%T)
                                        (fun '(α, β) => ref β ty)%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([α β] ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
     iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
@@ -116,13 +116,13 @@ Section ref_functions.
       delete [ #1; "x"];; "return" ["r"].
 
   Lemma ref_deref_type ty :
-    typed_instruction_ty [] [] [] ref_deref
+    typed_val ref_deref
       (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
           (fun '(α, β) => [# &shr{α}(ref β ty)]%T)
           (fun '(α, β) => &shr{α}ty)%T).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([α β] ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
     iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
@@ -156,10 +156,10 @@ Section ref_functions.
       let: "r" := new [ #0] in "return" ["r"].
 
   Lemma ref_drop_type ty :
-    typed_instruction_ty [] [] [] ref_drop (fn(∀ α, [☀α]; ref α ty) → unit).
+    typed_val ref_drop (fn(∀ α, [☀α]; ref α ty) → unit).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
-      inv_vec arg=>x. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
     iIntros (tid qE) "#LFT Hna Hα HL Hk Hx".
     rewrite {1}/elctx_interp big_sepL_singleton tctx_interp_singleton tctx_hasty_val.
     destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
@@ -220,11 +220,11 @@ Section ref_functions.
       "return" ["ref"].
 
   Lemma ref_map_type ty1 ty2 envty E :
-    typed_instruction_ty [] [] [] ref_map
+    typed_val ref_map
       (fn(∀ β, [☀β] ++ E; ref β ty1, fn(∀ α, [☀α] ++ E; envty, &shr{α}ty1) → &shr{α}ty2, envty)
        → ref β ty2).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
        inv_vec arg=>ref f env. simpl_subst.
     iIntros (tid qE) "#LFT Hna HE HL Hk HT".
     rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
@@ -265,7 +265,7 @@ Section ref_functions.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|].
       iIntros (x'). simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|].
-       iIntros (f'). simpl_subst.
+      iIntros (f'). simpl_subst.
     iApply type_letalloc_1; [solve_typing..|]. iIntros (x). simpl_subst.
     iApply (type_letcall); [simpl; solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_deref; [solve_typing|by eapply read_own_move|done|].

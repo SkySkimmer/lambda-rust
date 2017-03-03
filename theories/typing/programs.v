@@ -79,8 +79,10 @@ Section typing.
   Global Arguments typed_read _%EL _%LL _%T _%T _%T.
 End typing.
 
-Notation typed_instruction_ty E L T1 e ty :=
-  (typed_instruction E L T1 e (λ v : val, [v ◁ ty%list%T]%TC)).
+Notation typed_instruction_ty E L T e ty :=
+  (typed_instruction E L T e (λ v : val, [v ◁ ty%list%T]%TC)).
+
+Notation typed_val e ty := (∀ E L, typed_instruction_ty E L [] e ty).
 
 Section typing_rules.
   Context `{typeG Σ}.

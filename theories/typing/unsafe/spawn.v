@@ -68,11 +68,10 @@ Section spawn.
       delete [ #1; "f"];; "return" ["r"].
 
   Lemma spawn_type `(!Send envty, !Send retty) :
-    typed_instruction_ty [] [] [] spawn
-        (fn([]; fn([] ; envty) → retty, envty) → join_handle retty).
+    typed_val spawn (fn([]; fn([] ; envty) → retty, envty) → join_handle retty).
   Proof. (* FIXME: typed_instruction_ty is not used for printing. *)
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (_ ret arg).
-      inv_vec arg=>f env. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (_ ret arg). inv_vec arg=>f env. simpl_subst.
     iApply type_deref; [solve_typing..|exact: read_own_move|done|].
     iIntros (f'). simpl_subst.
     iApply (type_let _ _ _ _ ([f' ◁ _; env ◁ _]%TC)
@@ -117,11 +116,10 @@ Section spawn.
       delete [ #1; "c"];; "return" ["r"].
 
   Lemma join_type retty :
-    typed_instruction_ty [] [] [] join
-        (fn([]; join_handle retty) → retty).
+    typed_val join (fn([]; join_handle retty) → retty).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (_ ret arg).
-      inv_vec arg=>c. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (_ ret arg). inv_vec arg=>c. simpl_subst.
     iApply type_deref; [solve_typing..|exact: read_own_move|done|].
       iIntros (c'); simpl_subst.
     iApply (type_let _ _ _ _ ([c' ◁ _]%TC)

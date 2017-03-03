@@ -12,13 +12,12 @@ Section get_x.
        delete [ #1; "p"] ;; "return" ["r"].
 
   Lemma get_x_type :
-    typed_instruction_ty [] [] [] get_x
-        (fn(∀ α, [☀α]; &uniq{α} Π[int; int]) → &shr{α} int).
+    typed_val get_x (fn(∀ α, [☀α]; &uniq{α} Π[int; int]) → &shr{α} int).
   (* FIXME: The above is pretty-printed with some explicit scope annotations,
      and without using 'typed_instruction_ty'.  I think that's related to
      the list notation that we added to %TC. *)
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret p).
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret p).
     inv_vec p=>p. simpl_subst.
     iApply type_deref; [solve_typing..|by apply read_own_move|done|].
       iIntros (p'); simpl_subst.

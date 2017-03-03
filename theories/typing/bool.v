@@ -23,10 +23,9 @@ End bool.
 Section typing.
   Context `{typeG Σ}.
 
-  Lemma type_bool_instr (b : Datatypes.bool) E L :
-    typed_instruction_ty E L [] #b bool.
+  Lemma type_bool_instr (b : Datatypes.bool) : typed_val #b bool.
   Proof.
-    iIntros (tid qE) "_ $ $ $ _". wp_value.
+    iIntros (E L tid qE) "_ $ $ $ _". wp_value.
     rewrite tctx_interp_singleton tctx_hasty_val. by destruct b.
   Qed.
 

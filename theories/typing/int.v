@@ -22,10 +22,9 @@ End int.
 Section typing.
   Context `{typeG Σ}.
 
-  Lemma type_int_instr (z : Z) E L :
-    typed_instruction_ty E L [] #z int.
+  Lemma type_int_instr (z : Z) : typed_val #z int.
   Proof.
-    iIntros (tid qE) "_ $ $ $ _". wp_value.
+    iIntros (E L tid qE) "_ $ $ $ _". wp_value.
     by rewrite tctx_interp_singleton tctx_hasty_val.
   Qed.
 

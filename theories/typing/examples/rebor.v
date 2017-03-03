@@ -17,10 +17,9 @@ Section rebor.
                  delete [ #1; "x"] ;; "return" ["r"].
 
   Lemma rebor_type :
-    typed_instruction_ty [] [] [] rebor
-        (fn([]; Π[int; int], Π[int; int]) → int).
+    typed_val rebor (fn([]; Π[int; int], Π[int; int]) → int).
   Proof.
-    iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([] ret p).
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([] ret p).
        inv_vec p=>t1 t2. simpl_subst.
     iApply (type_newlft []). iIntros (α).
     iApply (type_letalloc_1 (&uniq{α}Π[int; int])); [solve_typing..|]. iIntros (x). simpl_subst.
