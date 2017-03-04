@@ -164,7 +164,7 @@ Section box.
 
   Global Instance box_mono E L :
     Proper (subtype E L ==> subtype E L) box.
-  Proof.    
+  Proof.
     intros ty1 ty2 Hincl. iIntros. iApply box_type_incl. iApply Hincl; auto.
   Qed.
   Lemma box_mono' E L ty1 ty2 :

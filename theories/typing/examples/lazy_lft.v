@@ -29,9 +29,8 @@ Section lazy_lft.
     iApply type_new; [solve_typing|]. iIntros (g). simpl_subst.
     iApply type_int. iIntros (v42). simpl_subst.
     iApply type_assign; [solve_typing|by eapply write_own|].
-    (* FIXME somehow this fails nowadays if we don't give the own_ptr hints. *)
-    iApply (type_assign (own_ptr _ _) (&shr{α} _)); [solve_typing..|by eapply write_own|].
-    iApply (type_assign (own_ptr _ _)); [solve_typing|by eapply write_own|].
+    iApply (type_assign _ (&shr{α} _)); [solve_typing..|by eapply write_own|].
+    iApply type_assign; [solve_typing|by eapply write_own|].
     iApply type_deref; [solve_typing|apply: read_own_copy|done|]. iIntros (t0'). simpl_subst.
     iApply type_letpath; [solve_typing|]. iIntros (dummy). simpl_subst.
     iApply type_int. iIntros (v23). simpl_subst.
@@ -39,10 +38,7 @@ Section lazy_lft.
     iApply (type_assign _ (&shr{α} int)); [solve_typing..|by eapply write_own|].
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_endlft; [solve_typing..|].
-    iApply (type_delete (Π[&shr{_}_;&shr{_}_])%T).
-    { (* FIXME how on earth has this ever worked? It's also really slow even now. *)
-      eapply tctx_extract_merge_own_prod; first done. solve_typing. }
-    { solve_typing. } { solve_typing. }
+    iApply (type_delete (Π[&shr{_}_;&shr{_}_])%T); [solve_typing..|].
     iApply type_delete; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
     iApply (type_jump [_]); solve_typing.
