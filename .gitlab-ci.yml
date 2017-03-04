@@ -21,6 +21,7 @@ lrust-coq8.6:
   only:
   - master
   - ci
+  - /^ralf/ci//
   artifacts:
     paths:
     - build-time.txt

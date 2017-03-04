@@ -346,5 +346,8 @@ Hint Opaque tctx_extract_ctx tctx_extract_hasty tctx_extract_blocked
 (* In general, we want reborrowing to be tried before subtyping, so
    that we get the extraction. However, in the case the types match
    exactly, we want to NOT use reborrowing. Therefore, we add
-   [tctx_extract_hasty_here_eq] as a hint with a very low cost. *)
-Hint Resolve tctx_extract_hasty_here_eq | 2 : lrust_typing.
+   [tctx_extract_hasty_here_eq] as a hint with a very low cost.
+   Furthermore, we add it as an external hint to get better unification
+   behavior. *)
+Hint Extern 2 (tctx_extract_hasty _ _ _ _ ((_ ◁ _) :: _) _) =>
+  apply tctx_extract_hasty_here_eq : lrust_typing.

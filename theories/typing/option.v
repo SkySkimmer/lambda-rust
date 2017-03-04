@@ -59,7 +59,10 @@ Section option.
       iApply (type_jump [_]); solve_typing.
     + left. iApply type_letalloc_n; [solve_typing|by apply read_own_move|]. iIntros (r).
         simpl_subst.
-      iApply (type_delete (Π[uninit _;uninit _;uninit _])); [solve_typing..|].
+      iApply (type_delete (Π[uninit _;uninit _;uninit _])).
+      { (* FIXME how on earth has this ever worked? *)
+        eapply tctx_extract_merge_own_prod; first done. solve_typing. }
+      { solve_typing. } { solve_typing. }
       iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing.
   Qed.

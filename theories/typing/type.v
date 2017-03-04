@@ -510,34 +510,8 @@ Section subtyping.
     - iApply (H23 with "[] []"); done.
   Qed.
 
-  (* Conditional equality (intended to be used with sizes) *)
-  (* TODO RJ: I'd really like to get rid of this definition. *)
-  Definition ctx_eq {A} (x1 x2 : A) : Prop :=
-    elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗ ⌜x1 = x2⌝.
-  Lemma ctx_eq_refl {A} (x : A) : ctx_eq x x.
-  Proof. by iIntros "_ _". Qed.
-  Global Instance ctx_eq_equivalent {A} : Equivalence (@ctx_eq A).
-  Proof.
-    split.
-    - by iIntros (?) "_ _".
-    - iIntros (x y Hxy) "HE HL". by iDestruct (Hxy with "HE HL") as %->.
-    - iIntros (x y z Hxy Hyz) "HE HL".
-      iDestruct (Hxy with "HE HL") as %->. by iApply (Hyz with "HE HL").
-  Qed.
-
   Lemma equiv_subtype ty1 ty2 : ty1 ≡ ty2 → subtype ty1 ty2.
   Proof. unfold subtype, type_incl=>EQ. setoid_rewrite EQ. apply subtype_refl. Qed.
-
-  Global Instance ty_size_subtype : Proper (subtype ==> ctx_eq) ty_size.
-  Proof. iIntros (?? Hst) "HE HL". iDestruct (Hst with "HE HL") as "[$ ?]". Qed.
-  Global Instance ty_size_subtype_flip : Proper (flip subtype ==> ctx_eq) ty_size.
-  Proof. by intros ?? ->. Qed.
-  Lemma ty_size_subtype' ty1 ty2 :
-    subtype ty1 ty2 → ctx_eq (ty_size ty1) (ty_size ty2).
-  Proof. apply ty_size_subtype. Qed.
-  Lemma ty_size_subtype_flip' ty1 ty2 :
-    subtype ty2 ty1 → ctx_eq (ty_size ty1) (ty_size ty2).
-  Proof. apply ty_size_subtype_flip. Qed.
 
   (* TODO: The prelude should have a symmetric closure. *)
   Definition eqtype (ty1 ty2 : type) : Prop :=
@@ -586,9 +560,6 @@ Section subtyping.
     - intros ??? H1 H2. split; etrans; (apply H1 || apply H2).
   Qed.
 
-  Global Instance ty_size_proper_eq : Proper (eqtype ==> ctx_eq) ty_size.
-  Proof. by intros ?? [-> _]. Qed.
-
   Lemma subtype_simple_type (st1 st2 : simple_type) :
     (∀ tid vl, elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
                  st1.(st_own) tid vl -∗ st2.(st_own) tid vl) →
@@ -617,6 +588,5 @@ Section weakening.
   Qed.
 End weakening.
 
-Hint Resolve subtype_refl eqtype_refl ctx_eq_refl ty_size_subtype'
-             ty_size_subtype_flip': lrust_typing.
-Hint Opaque ctx_eq subtype eqtype : lrust_typing.
+Hint Resolve subtype_refl eqtype_refl : lrust_typing.
+Hint Opaque subtype eqtype : lrust_typing.
