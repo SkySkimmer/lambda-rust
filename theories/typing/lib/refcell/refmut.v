@@ -24,7 +24,7 @@ Section refmut.
        ty_own tid vl :=
          match vl return _ with
          | [ #(LitLoc lv);  #(LitLoc lrc) ] =>
-           ∃ ν γ β ty', &{α ∪ ν}(lv ↦∗: ty.(ty_own) tid) ∗
+           ∃ ν γ β ty', &{α ⊓ ν}(lv ↦∗: ty.(ty_own) tid) ∗
              α ⊑ β ∗ &na{β, tid, refcell_invN}(refcell_inv tid lrc γ β ty') ∗
              1.[ν] ∗ own γ (◯ writing_st ν)
          | _ => False
@@ -32,8 +32,8 @@ Section refmut.
        ty_shr κ tid l :=
          ∃ (lv lrc : loc),
            &frac{κ} (λ q, l↦∗{q} [ #lv; #lrc]) ∗
-           □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[α ∪ κ]
-             ={F, F∖↑shrN∖↑lftN}▷=∗ ty.(ty_shr) (α ∪ κ) tid lv ∗ q.[α ∪ κ] |}%I.
+           □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[α ⊓ κ]
+             ={F, F∖↑shrN∖↑lftN}▷=∗ ty.(ty_shr) (α ⊓ κ) tid lv ∗ q.[α ⊓ κ] |}%I.
   Next Obligation.
     iIntros (???[|[[]|][|[[]|][]]]); try iIntros "[]". by iIntros "_".
   Qed.
@@ -58,7 +58,7 @@ Section refmut.
     iMod (bor_persistent_tok with "LFT Hαβ Htok") as "[#Hαβ $]". done.
     iExists _, _. iFrame "H↦". rewrite {1}bor_unfold_idx.
     iDestruct "Hb" as (i) "[#Hpb Hpbown]".
-    iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty (α ∪ κ) tid lv)%I
+    iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty (α ⊓ κ) tid lv)%I
           with "[Hpbown]") as "#Hinv"; first by eauto.
     iIntros "!> !# * % Htok". clear HE.
     iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
@@ -68,7 +68,7 @@ Section refmut.
       iModIntro. iNext. iMod "Hb".
       iMod (ty.(ty_share) with "LFT [Hb] Htok") as "[#Hshr $]". solve_ndisj.
       { iApply bor_shorten; last done. rewrite -assoc.
-        iApply lft_glb_mono; first by iApply lft_incl_refl.
+        iApply lft_intersect_mono; first by iApply lft_incl_refl.
         iApply lft_incl_glb; first done. iApply lft_incl_refl. }
       iMod ("Hclose" with "[]") as "_"; auto.
     - iMod ("Hclose" with "[]") as "_". by eauto.
@@ -80,10 +80,10 @@ Section refmut.
     - by iApply frac_bor_shorten.
     - iIntros "!# * % Htok".
       iMod (lft_incl_acc with "[] Htok") as (q') "[Htok Hclose]". set_solver.
-      { iApply lft_glb_mono. iApply lft_incl_refl. done. }
+      { iApply lft_intersect_mono. iApply lft_incl_refl. done. }
       iMod ("H" with "[] Htok") as "Hshr". done. iModIntro. iNext.
       iMod "Hshr" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
-      iApply ty_shr_mono; try done. iApply lft_glb_mono. iApply lft_incl_refl. done.
+      iApply ty_shr_mono; try done. iApply lft_intersect_mono. iApply lft_incl_refl. done.
   Qed.
 
   Global Instance refmut_type_contractive α : TypeContractive (refmut α).
@@ -104,17 +104,17 @@ Section refmut.
       iDestruct "H" as (ν γ β ty') "(Hb & #H⊑ & #Hinv & Hν & Hown)".
       iExists ν, γ, β, ty'. iFrame "∗#". iSplit.
       + iApply bor_shorten; last iApply bor_iff; last done.
-        * iApply lft_glb_mono; first done. iApply lft_incl_refl.
+        * iApply lft_intersect_mono; first done. iApply lft_incl_refl.
         * iSplit; iIntros "!>!# H"; iDestruct "H" as (vl) "[??]";
           iExists vl; iFrame; by iApply "Ho".
       + by iApply lft_incl_trans.
     - iIntros (κ tid l) "H". iDestruct "H" as (lv lrc) "H". iExists lv, lrc.
       iDestruct "H" as "[$ #H]". iIntros "!# * % Htok".
       iMod (lft_incl_acc with "[] Htok") as (q') "[Htok Hclose]". set_solver.
-      { iApply lft_glb_mono. done. iApply lft_incl_refl. }
+      { iApply lft_intersect_mono. done. iApply lft_incl_refl. }
       iMod ("H" with "[] Htok") as "Hshr". done. iModIntro. iNext.
       iMod "Hshr" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
-      iApply ty_shr_mono; try done. iApply lft_glb_mono. done. iApply lft_incl_refl.
+      iApply ty_shr_mono; try done. iApply lft_intersect_mono. done. iApply lft_incl_refl.
       by iApply "Hs".
   Qed.
   Global Instance refmut_mono_flip E L :

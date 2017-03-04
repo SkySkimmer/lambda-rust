@@ -104,8 +104,8 @@ Section lft_contexts.
   (* Local lifetime contexts. *)
 
   Definition llctx_elt_interp (x : llctx_elt) (q : Qp) : iProp Σ :=
-    let κ' := foldr (∪) static (x.2) in
-    (∃ κ0, ⌜x.1 = κ' ∪ κ0⌝ ∗ q.[κ0] ∗ □ (1.[κ0] ={↑lftN,∅}▷=∗ [†κ0]))%I.
+    let κ' := foldr lft_intersect static (x.2) in
+    (∃ κ0, ⌜x.1 = κ' ⊓ κ0⌝ ∗ q.[κ0] ∗ □ (1.[κ0] ={↑lftN,∅}▷=∗ [†κ0]))%I.
   Global Instance llctx_elt_interp_fractional x :
     Fractional (llctx_elt_interp x).
   Proof.
@@ -115,13 +115,13 @@ Section lft_contexts.
     - iDestruct "H" as "[Hq Hq']".
       iDestruct "Hq" as (κ0) "(% & Hq & #?)".
       iDestruct "Hq'" as (κ0') "(% & Hq' & #?)". simpl in *.
-      rewrite (inj (union (foldr (∪) static κs)) κ0' κ0); last congruence.
+      rewrite (inj (lft_intersect (foldr lft_intersect static κs)) κ0' κ0); last congruence.
       iExists κ0. by iFrame "∗%".
   Qed.
   Typeclasses Opaque llctx_elt_interp.
 
   Definition llctx_elt_interp_0 (x : llctx_elt) : Prop :=
-    let κ' := foldr (∪) static (x.2) in (∃ κ0, x.1 = κ' ∪ κ0).
+    let κ' := foldr lft_intersect static (x.2) in (∃ κ0, x.1 = κ' ⊓ κ0).
   Lemma llctx_elt_interp_persist x q :
     llctx_elt_interp x q -∗ ⌜llctx_elt_interp_0 x⌝.
   Proof.
@@ -164,8 +164,7 @@ Section lft_contexts.
     iMod (bor_fracture (λ q, (qL * q).[_])%I with "LFT [Hκ]") as "#Hκ"; first done.
     { rewrite Qp_mult_1_r. done. }
     iModIntro. subst κ1. iSplit.
-    - iApply lft_le_incl.
-      rewrite <-!gmultiset_union_subseteq_l. done.
+    - iApply lft_incl_trans; iApply lft_intersect_incl_l.
     - iApply (lft_incl_glb with "[]"); first iApply (lft_incl_glb with "[]").
       + iApply lft_incl_refl.
       + iApply lft_incl_static.
@@ -212,10 +211,10 @@ Section lft_contexts.
   Proof.
     iIntros (? Hκ'κs) "_ H". iDestruct "H" as %HL.
     edestruct HL as [κ0 EQ]. done. simpl in EQ; subst.
-    iApply lft_le_incl. etrans; last by apply gmultiset_union_subseteq_l.
+    iApply lft_incl_trans; first iApply lft_intersect_incl_l.
     clear -Hκ'κs. induction Hκ'κs.
-    - apply gmultiset_union_subseteq_l.
-    - etrans. done. apply gmultiset_union_subseteq_r.
+    - iApply lft_intersect_incl_l.
+    - iApply lft_incl_trans; last done. iApply lft_intersect_incl_r.
   Qed.
 
   Lemma lctx_lft_incl_local' κ κ' κ'' κs :
@@ -250,8 +249,8 @@ Section lft_contexts.
     iDestruct "HL" as "[HL1 HL2]". rewrite {2}/llctx_interp /llctx_elt_interp.
     iDestruct (big_sepL_lookup_acc with "HL2") as "[Hκ Hclose]". done.
     iDestruct "Hκ" as (κ0) "(EQ & Htok & #Hend)". simpl. iDestruct "EQ" as %->.
-    iAssert (∃ q', q'.[foldr union static κs] ∗
-      (q'.[foldr union static κs] ={F}=∗ elctx_interp E qE ∗ llctx_interp L (qL / 2)))%I
+    iAssert (∃ q', q'.[foldr lft_intersect static κs] ∗
+      (q'.[foldr lft_intersect static κs] ={F}=∗ elctx_interp E qE ∗ llctx_interp L (qL / 2)))%I
       with ">[HE HL1]" as "H".
     { move:(qL/2)%Qp=>qL'. clear HL. iClear "Hend".
       iInduction Hκs as [|κ κs Hκ ?] "IH" forall (qE qL').

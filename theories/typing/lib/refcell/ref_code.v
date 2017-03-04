@@ -15,7 +15,7 @@ Section ref_functions.
     own γ (◯ reading_st q ν) -∗
     ∃ (q' : Qp) n, l ↦ #(Zpos n) ∗ ⌜(q ≤ q')%Qc⌝ ∗
             own γ (● Some (to_agree ν, Cinr (q', n)) ⋅ ◯ reading_st q ν) ∗
-            ty.(ty_shr) (α ∪ ν) tid (shift_loc l 1) ∗
+            ty.(ty_shr) (α ⊓ ν) tid (shift_loc l 1) ∗
             ((1).[ν] ={↑lftN,∅}▷=∗ &{α} shift_loc l 1 ↦∗: ty_own ty tid) ∗
             ∃ q'', ⌜(q' + q'' = 1)%Qp⌝ ∗ q''.[ν].
   Proof.
@@ -240,10 +240,10 @@ Section ref_functions.
     iDestruct "HE" as "[HE HE']". iDestruct "Hν" as "[Hν Hν']".
     remember (RecV "k" [] (ret [ LitV lref])%E)%V as k eqn:EQk.
     iApply (wp_let' _ _ _ _ k). { subst. solve_to_val. } simpl_subst.
-    iApply (type_type ((☀ (α ∪ ν)) :: E)%EL []
-        [k ◁cont([], λ _:vec val 0, [ #lref ◁ own_ptr 2 (&shr{α ∪ ν}ty2)])]%CC
+    iApply (type_type ((☀ (α ⊓ ν)) :: E)%EL []
+        [k ◁cont([], λ _:vec val 0, [ #lref ◁ own_ptr 2 (&shr{α ⊓ ν}ty2)])]%CC
         [ f ◁ box (fn(∀ α, [☀α] ++ E; envty, &shr{α}ty1) → &shr{α}ty2);
-          #lref ◁ own_ptr 2 (&shr{α ∪ ν}ty1); env ◁ box envty ]%TC
+          #lref ◁ own_ptr 2 (&shr{α ⊓ ν}ty1); env ◁ box envty ]%TC
        with "[] LFT Hna [HE Hν] HL [Hk HE' Hν' Href↦2 Hγ Href†2]"); first last.
     { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
       iFrame. iApply tctx_hasty_val'. done. iFrame. iExists [_].

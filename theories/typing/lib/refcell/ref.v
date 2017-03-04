@@ -24,7 +24,7 @@ Section ref.
        ty_own tid vl :=
          match vl return _ with
          | [ #(LitLoc lv);  #(LitLoc lrc) ] =>
-           ∃ ν q γ β ty', ty.(ty_shr) (α ∪ ν) tid lv ∗
+           ∃ ν q γ β ty', ty.(ty_shr) (α ⊓ ν) tid lv ∗
              α ⊑ β ∗ &na{β, tid, refcell_invN}(refcell_inv tid lrc γ β ty') ∗
              q.[ν] ∗ own γ (◯ reading_st q ν)
          | _ => False
@@ -32,7 +32,7 @@ Section ref.
        ty_shr κ tid l :=
           ∃ ν q γ β ty' (lv lrc : loc),
              κ ⊑ ν ∗ &frac{κ} (λ q, l↦∗{q} [ #lv; #lrc]) ∗
-             ▷ ty.(ty_shr) (α ∪ ν) tid lv ∗
+             ▷ ty.(ty_shr) (α ⊓ ν) tid lv ∗
              ▷ (α ⊑ β) ∗ ▷ &na{β, tid, refcell_invN}(refcell_inv tid lrc γ β ty') ∗
              &na{κ, tid, refcell_refN}(own γ (◯ reading_st q ν)) |}%I.
   Next Obligation. iIntros (???[|[[]|][|[[]|][]]]) "?"; auto. Qed.
@@ -85,12 +85,12 @@ Section ref.
       iDestruct "H" as (ν q γ β ty') "(#Hshr & #H⊑ & #Hinv & Htok & Hown)".
       iExists ν, q, γ, β, ty'. iFrame "∗#". iSplit.
       + iApply ty_shr_mono; last by iApply "Hs".
-        iApply lft_glb_mono. done. iApply lft_incl_refl.
+        iApply lft_intersect_mono. done. iApply lft_incl_refl.
       + by iApply lft_incl_trans.
     - iIntros (κ tid l) "H". iDestruct "H" as (ν q γ β ty' lv lrc) "H".
       iExists ν, q, γ, β, ty', lv, lrc. iDestruct "H" as "#($&$&?&?&$&$)". iSplit.
       + iApply ty_shr_mono; last by iApply "Hs".
-        iApply lft_glb_mono. done. iApply lft_incl_refl.
+        iApply lft_intersect_mono. done. iApply lft_incl_refl.
       + by iApply lft_incl_trans.
   Qed.
   Global Instance ref_mono_flip E L :

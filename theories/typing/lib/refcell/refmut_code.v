@@ -35,7 +35,7 @@ Section refmut_functions.
     iDestruct "HE" as "([Hα1 Hα2] & Hβ & #Hαβ)".
     iMod (frac_bor_acc with "LFT Hfrac Hα1") as (qlx') "[H↦ Hcloseα1]". done.
     rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
-    iDestruct (lft_glb_acc with "Hβ Hα2") as (qβα) "[Hα2β Hcloseβα2]".
+    iDestruct (lft_intersect_acc with "Hβ Hα2") as (qβα) "[Hα2β Hcloseβα2]".
     wp_bind (!(LitV lx'))%E. iApply (wp_fupd_step with "[Hα2β]");
          [done| |by iApply ("Hshr" with "[] Hα2β")|]; first done.
     iMod "H↦" as "[H↦1 H↦2]". wp_read. iIntros "[#Hshr' Hα2β]!>". wp_let.
@@ -193,10 +193,10 @@ Section refmut_functions.
     iDestruct "HE" as "[HE HE']". iDestruct "Hν" as "[Hν Hν']".
     remember (RecV "k" [] (ret [ LitV lref])%E)%V as k eqn:EQk.
     iApply (wp_let' _ _ _ _ k). { subst. solve_to_val. } simpl_subst.
-    iApply (type_type ((☀ (α ∪ ν)) :: E)%EL []
-        [k ◁cont([], λ _:vec val 0, [ #lref ◁ own_ptr 2 (&uniq{α ∪ ν}ty2)])]%CC
+    iApply (type_type ((☀ (α ⊓ ν)) :: E)%EL []
+        [k ◁cont([], λ _:vec val 0, [ #lref ◁ own_ptr 2 (&uniq{α ⊓ ν}ty2)])]%CC
         [ f ◁ box (fn(∀ α, [☀α] ++ E; envty, &uniq{α}ty1) → &uniq{α}ty2);
-          #lref ◁ own_ptr 2 (&uniq{α ∪ ν}ty1); env ◁ box envty ]%TC
+          #lref ◁ own_ptr 2 (&uniq{α ⊓ ν}ty1); env ◁ box envty ]%TC
        with "[] LFT Hna [HE Hν] HL [Hk HE' Hν' Href↦2 Hγ Href†2]"); first last.
     { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
       iFrame. iApply tctx_hasty_val'. done. iFrame. iExists [_].

@@ -29,8 +29,8 @@ Section rwlockwriteguard.
        ty_shr κ tid l :=
          ∃ (l' : loc),
            &frac{κ} (λ q, l↦∗{q} [ #l']) ∗
-           □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[α ∪ κ] ={F, F∖↑shrN∖↑lftN}▷=∗
-               ty.(ty_shr) (α ∪ κ) tid (shift_loc l' 1) ∗ q.[α ∪ κ] |}%I.
+           □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[α ⊓ κ] ={F, F∖↑shrN∖↑lftN}▷=∗
+               ty.(ty_shr) (α ⊓ κ) tid (shift_loc l' 1) ∗ q.[α ⊓ κ] |}%I.
   Next Obligation. by iIntros (???[|[[]|][]]) "?". Qed.
   Next Obligation.
     iIntros (α ty E κ l tid q HE) "#LFT Hb Htok".
@@ -46,7 +46,7 @@ Section rwlockwriteguard.
     iMod (bor_persistent_tok with "LFT Hαβ Htok") as "[#Hαβ $]". done.
     iExists _. iFrame "H↦". rewrite {1}bor_unfold_idx.
     iDestruct "Hb" as (i) "[#Hpb Hpbown]".
-    iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty (α ∪ κ) tid (shift_loc l' 1))%I
+    iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty (α ⊓ κ) tid (shift_loc l' 1))%I
           with "[Hpbown]") as "#Hinv"; first by eauto.
     iIntros "!> !# * % Htok". clear HE.
     iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
@@ -55,7 +55,7 @@ Section rwlockwriteguard.
       { iApply bor_unfold_idx. eauto. }
       iModIntro. iNext. iMod "Hb".
       iMod (ty.(ty_share) with "LFT [Hb] Htok") as "[#Hshr $]". solve_ndisj.
-      { iApply (bor_shorten with "[] Hb"). iApply lft_glb_mono. done.
+      { iApply (bor_shorten with "[] Hb"). iApply lft_intersect_mono. done.
         iApply lft_incl_refl. }
       iMod ("Hclose" with "[]") as "_"; auto.
     - iMod ("Hclose" with "[]") as "_". by eauto.
@@ -67,10 +67,10 @@ Section rwlockwriteguard.
     - by iApply frac_bor_shorten.
     - iIntros "!# * % Htok".
       iMod (lft_incl_acc with "[] Htok") as (q') "[Htok Hclose]". set_solver.
-      { iApply lft_glb_mono. iApply lft_incl_refl. done. }
+      { iApply lft_intersect_mono. iApply lft_incl_refl. done. }
       iMod ("H" with "[] Htok") as "Hshr". done. iModIntro. iNext.
       iMod "Hshr" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
-      iApply ty_shr_mono; try done. iApply lft_glb_mono. iApply lft_incl_refl. done.
+      iApply ty_shr_mono; try done. iApply lft_intersect_mono. iApply lft_incl_refl. done.
   Qed.
 
   Global Instance rwlockwriteguard_type_contractive α : TypeContractive (rwlockwriteguard α).
@@ -103,10 +103,10 @@ Section rwlockwriteguard.
     - iIntros (κ tid l) "H". iDestruct "H" as (l') "H". iExists l'.
       iDestruct "H" as "[$ #H]". iIntros "!# * % Htok".
       iMod (lft_incl_acc with "[] Htok") as (q') "[Htok Hclose]". set_solver.
-      { iApply lft_glb_mono. done. iApply lft_incl_refl. }
+      { iApply lft_intersect_mono. done. iApply lft_incl_refl. }
       iMod ("H" with "[] Htok") as "Hshr". done. iModIntro. iNext.
       iMod "Hshr" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
-      iApply ty_shr_mono; try done. iApply lft_glb_mono. done. iApply lft_incl_refl.
+      iApply ty_shr_mono; try done. iApply lft_intersect_mono. done. iApply lft_incl_refl.
       by iApply "Hs".
   Qed.
   Global Instance rwlockwriteguard_mono_flip E L :

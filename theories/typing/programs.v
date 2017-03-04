@@ -154,8 +154,8 @@ Section typing_rules.
   Proof.
     iIntros (Hc) "He". iIntros (tid qE) "#LFT Htl HE HL HC HT".
     iMod (lft_create with "LFT") as (Λ) "[Htk #Hinh]"; first done.
-    set (κ' := foldr (∪) static κs). wp_seq.
-    iApply ("He" $! (κ' ∪ Λ) with "LFT Htl HE [HL Htk] HC HT").
+    set (κ' := foldr lft_intersect static κs). wp_seq.
+    iApply ("He" $! (κ' ⊓ Λ) with "LFT Htl HE [HL Htk] HC HT").
     rewrite /llctx_interp big_sepL_cons. iFrame "HL".
     iExists Λ. iSplit; first done. iFrame. done.
   Qed.
