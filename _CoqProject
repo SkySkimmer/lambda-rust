@@ -46,6 +46,7 @@ theories/typing/type_sum.v
 theories/typing/typing.v
 theories/typing/soundness.v
 theories/typing/option.v
+theories/typing/unsafe/fake_shared_box.v
 theories/typing/unsafe/cell.v
 theories/typing/unsafe/spawn.v
 theories/typing/unsafe/refcell/refcell.v
