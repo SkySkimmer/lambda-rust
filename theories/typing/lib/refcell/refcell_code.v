@@ -20,8 +20,7 @@ Section refcell_functions.
        delete [ #ty.(ty_size) ; "x"];; "return" ["r"].
 
   Lemma refcell_new_type ty :
-    typed_val (refcell_new ty)
-      (fn (λ _, []) (λ _, [# ty]) (λ _:(), refcell ty)).
+    typed_val (refcell_new ty) (fn([]; ty) → refcell ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
@@ -58,8 +57,7 @@ Section refcell_functions.
        delete [ #(S ty.(ty_size)) ; "x"];; "return" ["r"].
 
   Lemma refcell_into_inner_type ty :
-    typed_val (refcell_into_inner ty)
-                   (fn (λ _, []) (λ _, [# refcell ty]) (λ _:(), ty)).
+    typed_val (refcell_into_inner ty) (fn([]; refcell ty) → ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
@@ -93,8 +91,7 @@ Section refcell_functions.
       "return" ["x"].
 
   Lemma refcell_get_mut_type ty :
-    typed_val refcell_get_mut
-        (fn (λ α, [☀α])%EL (λ α, [# &uniq{α} (refcell ty)])%T (λ α, &uniq{α} ty)%T).
+    typed_val refcell_get_mut (fn(∀ α, [α]; &uniq{α} (refcell ty)) → &uniq{α} ty)%T.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
@@ -143,8 +140,7 @@ Section refcell_functions.
         delete [ #1; "x"];; "return" ["r"].
 
   Lemma refcell_try_borrow_type ty :
-    typed_val refcell_try_borrow
-        (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(refcell ty)]%T) (λ α, option (ref α ty))%T).
+    typed_val refcell_try_borrow (fn(∀ α, [α] ; &shr{α}(refcell ty)) → option (ref α ty)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
@@ -249,7 +245,7 @@ Section refcell_functions.
 
   Lemma refcell_try_borrow_mut_type ty :
     typed_val refcell_try_borrow_mut
-        (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(refcell ty)]%T) (λ α, option (refmut α ty))%T).
+              (fn(∀ α, [α]; &shr{α}(refcell ty)) → option (refmut α ty))%T.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.

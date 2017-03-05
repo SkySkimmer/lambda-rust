@@ -20,7 +20,7 @@ Section rwlock_functions.
        delete [ #ty.(ty_size) ; "x"];; "return" ["r"].
 
   Lemma rwlock_new_type ty :
-    typed_val (rwlock_new ty) (fn (λ _, []) (λ _, [# ty]) (λ _:(), rwlock ty)).
+    typed_val (rwlock_new ty) (fn([]; ty) → rwlock ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
@@ -56,8 +56,7 @@ Section rwlock_functions.
        delete [ #(S ty.(ty_size)) ; "x"];; "return" ["r"].
 
   Lemma rwlock_into_inner_type ty :
-    typed_val (rwlock_into_inner ty)
-        (fn (λ _, []) (λ _, [# rwlock ty]) (λ _:(), ty)).
+    typed_val (rwlock_into_inner ty) (fn([] ; rwlock ty) → ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
@@ -91,8 +90,7 @@ Section rwlock_functions.
       "return" ["x"].
 
   Lemma rwlock_get_mut_type ty :
-    typed_val rwlock_get_mut
-        (fn (λ α, [☀α])%EL (λ α, [# &uniq{α} (rwlock ty)])%T (λ α, &uniq{α} ty)%T).
+    typed_val rwlock_get_mut (fn(∀ α, [α]; &uniq{α} (rwlock ty)) → &uniq{α} ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
@@ -141,8 +139,7 @@ Section rwlock_functions.
 
   Lemma rwlock_try_read_type ty :
     typed_val rwlock_try_read
-        (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(rwlock ty)]%T)
-            (λ α, option (rwlockreadguard α ty))%T).
+        (fn(∀ α, [α]; &shr{α}(rwlock ty)) → option (rwlockreadguard α ty)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
@@ -257,8 +254,7 @@ Section rwlock_functions.
 
   Lemma rwlock_try_write_type ty :
     typed_val rwlock_try_write
-        (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(rwlock ty)]%T)
-            (λ α, option (rwlockwriteguard α ty))%T).
+        (fn(∀ α, [α]; &shr{α}(rwlock ty)) → option (rwlockwriteguard α ty)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.

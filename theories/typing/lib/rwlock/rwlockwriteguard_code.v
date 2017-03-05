@@ -20,9 +20,9 @@ Section rwlockwriteguard_functions.
 
   Lemma rwlockwriteguard_deref_type ty :
     typed_val rwlockwriteguard_deref
-      (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
-          (fun '(α, β) => [# &shr{α}(rwlockwriteguard β ty)]%T)
-          (fun '(α, β) => &shr{α}ty)%T).
+      (fn (fun '(α, β) => FP [# &shr{α}(rwlockwriteguard β ty)]
+                             (&shr{α}ty)
+                             [α; β; α ⊑ β]%EL)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
@@ -63,9 +63,9 @@ Section rwlockwriteguard_functions.
 
   Lemma rwlockwriteguard_derefmut_type ty :
     typed_val rwlockwriteguard_derefmut
-      (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
-          (fun '(α, β) => [# &uniq{α}(rwlockwriteguard β ty)]%T)
-          (fun '(α, β) => &uniq{α}ty)%T).
+      (fn (fun '(α, β) => FP [# &uniq{α}(rwlockwriteguard β ty)]
+                             (&uniq{α}ty)
+                             [α; β; α ⊑ β]%EL)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
@@ -111,7 +111,7 @@ Section rwlockwriteguard_functions.
 
   Lemma rwlockwriteguard_drop_type ty :
     typed_val rwlockwriteguard_drop
-                   (fn(∀ α, [☀α]; rwlockwriteguard α ty) → unit).
+              (fn(∀ α, [α]; rwlockwriteguard α ty) → unit).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.

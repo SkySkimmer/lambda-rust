@@ -16,7 +16,7 @@ Delimit Scope lrust_elctx_scope with EL.
    notations, so we have to use [Arguments] everywhere. *)
 Bind Scope lrust_elctx_scope with elctx_elt.
 
-Notation "☀ κ" := (ELCtx_Alive κ) (at level 70) : lrust_elctx_scope.
+Coercion ELCtx_Alive : lft >-> elctx_elt.
 Infix "⊑" := ELCtx_Incl (at level 70) : lrust_elctx_scope.
 
 Notation "a :: b" := (@cons elctx_elt a%EL b%EL)
@@ -48,7 +48,7 @@ Section lft_contexts.
   (* External lifetime contexts. *)
   Definition elctx_elt_interp (x : elctx_elt) (q : Qp) : iProp Σ :=
     match x with
-    | ☀ κ => q.[κ]%I
+    | ELCtx_Alive κ => q.[κ]%I
     | κ ⊑ κ' => (κ ⊑ κ')%I
     end%EL.
   Global Instance elctx_elt_interp_fractional x:
@@ -57,7 +57,7 @@ Section lft_contexts.
   Typeclasses Opaque elctx_elt_interp.
   Definition elctx_elt_interp_0 (x : elctx_elt) : iProp Σ :=
     match x with
-    | ☀ κ => True%I
+    | ELCtx_Alive κ => True%I
     | κ ⊑ κ' => (κ ⊑ κ')%I
     end%EL.
   Global Instance elctx_elt_interp_0_persistent x:
@@ -270,7 +270,7 @@ Section lft_contexts.
     rewrite /llctx_interp /llctx_elt_interp. iApply "Hclose". iExists κ0. iFrame. auto.
   Qed.
 
-  Lemma lctx_lft_alive_external κ: (☀κ)%EL ∈ E → lctx_lft_alive κ.
+  Lemma lctx_lft_alive_external κ: (ELCtx_Alive κ) ∈ E → lctx_lft_alive κ.
   Proof.
     iIntros ([i HE]%elem_of_list_lookup_1 F qE qL ?) "HE $ !>".
     rewrite /elctx_interp /elctx_elt_interp.
@@ -291,7 +291,7 @@ Section lft_contexts.
   Qed.
 
   Lemma lctx_lft_alive_external' κ κ':
-    (☀κ)%EL ∈ E → (κ ⊑ κ')%EL ∈ E → lctx_lft_alive κ'.
+    (ELCtx_Alive κ) ∈ E → (κ ⊑ κ')%EL ∈ E → lctx_lft_alive κ'.
   Proof.
     intros. eapply lctx_lft_alive_incl, lctx_lft_incl_external; last done.
     by apply lctx_lft_alive_external.
@@ -310,7 +310,7 @@ Section lft_contexts.
   Qed.
 
   Lemma elctx_sat_alive E' κ :
-    lctx_lft_alive κ → elctx_sat E' → elctx_sat ((☀κ) :: E')%EL.
+    lctx_lft_alive κ → elctx_sat E' → elctx_sat (κ :: E')%EL.
   Proof.
     iIntros (Hκ HE' qE qL F ?) "[HE1 HE2] [HL1 HL2]".
     iMod (Hκ with "HE1 HL1") as (q) "[Htok Hclose]". done.
@@ -430,7 +430,7 @@ Section elctx_incl.
    Qed.
 
   Lemma elctx_incl_lft_alive E1 E2 κ :
-    lctx_lft_alive E1 [] κ → elctx_incl E1 E2 → elctx_incl E1 ((☀κ) :: E2).
+    lctx_lft_alive E1 [] κ → elctx_incl E1 E2 → elctx_incl E1 (κ :: E2).
   Proof.
     intros Hκ HE2. rewrite (elctx_incl_dup E1).
     apply (elctx_incl_app_proper _ [_]); last done.
@@ -481,7 +481,7 @@ Hint Opaque elctx_incl elctx_sat lctx_lft_alive lctx_lft_incl : lrust_typing.
 
 Lemma elctx_incl_lft_incl_alive `{invG Σ, lftG Σ} E L E1 E2 κ κ' :
   lctx_lft_incl (E ++ E1) L κ κ' → elctx_incl E L E1 E2 →
-  elctx_incl E L ((☀κ) :: E1) ((☀κ') :: E2).
+  elctx_incl E L (κ :: E1) (κ' :: E2).
 Proof.
   move=> ? /elctx_incl_lft_incl -> //.
   apply (elctx_incl_app_proper _ _ [_; _] [_]); solve_typing.
