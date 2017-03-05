@@ -16,7 +16,7 @@ Section fn.
             □ typed_body (E x) []
                          [k◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
                          (zip_with (TCtx_hasty ∘ of_val) xl
-                                   ((λ ty, box ty) <$> (vec_to_list (tys x))))
+                                   (box <$> (vec_to_list (tys x))))
                          (subst_v (fb::kb::xb) (RecV fb (kb::xb) e:::k:::xl) e))%I |}.
   Next Obligation.
     iIntros (E tys ty tid vl) "H". iDestruct "H" as (fb kb xb e ?) "[% _]". by subst.
@@ -43,7 +43,7 @@ Section fn.
       { intros Hprop. apply Hprop, list_fmap_ne; last first.
         - eapply Forall2_impl; first exact: Htys. intros.
           apply dist_later_dist, type_dist2_dist_later. done.
-        - intros ty1 ty2 Hty12. rewrite (ty_size_ne _ _ _ Hty12). by rewrite Hty12. }
+        - apply _. }
       clear. intros n tid p i x y. rewrite list_dist_lookup=>Hxy.
       specialize (Hxy i). destruct (x !! i) as [tyx|], (y !! i) as [tyy|];
         inversion_clear Hxy; last done.
@@ -193,7 +193,7 @@ Section typing.
     elctx_sat E L (E' x) →
     typed_body E L [k ◁cont(L, λ v : vec _ 1, (v!!!0 ◁ box (ty x)) :: T)]
                ((p ◁ fn E' tys ty) ::
-                zip_with TCtx_hasty ps ((λ ty, box ty) <$> (vec_to_list (tys x))) ++
+                zip_with TCtx_hasty ps (box <$> (vec_to_list (tys x))) ++
                 T)
                (call: p ps → k).
   Proof.
@@ -236,7 +236,7 @@ Section typing.
     (p ◁ fn E' tys ty)%TC ∈ T →
     elctx_sat E L (E' x) →
     tctx_extract_ctx E L (zip_with TCtx_hasty ps
-                                   ((λ ty, box ty) <$> vec_to_list (tys x))) T T' →
+                                   (box <$> vec_to_list (tys x))) T T' →
     (k ◁cont(L, T''))%CC ∈ C →
     (∀ ret : val, tctx_incl E L ((ret ◁ box (ty x))::T') (T'' [# ret])) →
     typed_body E L C T (call: p ps → k).
@@ -255,7 +255,7 @@ Section typing.
     (p ◁ fn E' tys ty)%TC ∈ T →
     elctx_sat E L (E' x) →
     tctx_extract_ctx E L (zip_with TCtx_hasty ps
-                                   ((λ ty, box ty) <$> vec_to_list (tys x))) T T' →
+                                   (box <$> vec_to_list (tys x))) T T' →
     (∀ ret : val, typed_body E L C ((ret ◁ box (ty x))::T') (subst' b ret e)) -∗
     typed_body E L C T (letcall: b := p ps in e).
   Proof.
@@ -293,7 +293,7 @@ Section typing.
           typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
                      ((f ◁ fn E' tys ty) ::
                         zip_with (TCtx_hasty ∘ of_val) args
-                                 ((λ ty, box ty) <$> vec_to_list (tys x)) ++ T)
+                                 (box <$> vec_to_list (tys x)) ++ T)
                      (subst_v (fb :: BNamed "return" :: argsb) (f ::: k ::: args) e)) -∗
     typed_instruction_ty E L T ef (fn E' tys ty).
   Proof.
@@ -317,7 +317,7 @@ Section typing.
     □ (∀ x k (args : vec val (length argsb)),
         typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
                    (zip_with (TCtx_hasty ∘ of_val) args
-                             ((λ ty, box ty) <$> vec_to_list (tys x)) ++ T)
+                             (box <$> vec_to_list (tys x)) ++ T)
                    (subst_v (BNamed "return" :: argsb) (k ::: args) e)) -∗
     typed_instruction_ty E L T ef (fn E' tys ty).
   Proof.

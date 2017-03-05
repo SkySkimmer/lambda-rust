@@ -96,38 +96,35 @@ Section own.
     by iApply (ty.(ty_shr_mono) with "Hκ").
   Qed.
 
-  Lemma own_type_incl n ty1 ty2 :
-    type_incl ty1 ty2 -∗ type_incl (own_ptr n ty1) (own_ptr n ty2).
+  Lemma own_type_incl n m ty1 ty2 :
+    ▷ ⌜n = m⌝ -∗ ▷ type_incl ty1 ty2 -∗ type_incl (own_ptr n ty1) (own_ptr m ty2).
   Proof.
-    iIntros "(#Hsz & #Ho & #Hs)". iSplit; first done. iSplit; iAlways.
+    iIntros "#Heq (#Hsz & #Ho & #Hs)". iSplit; first done. iSplit; iAlways.
     - iIntros (?[|[[| |]|][]]) "H"; try done. simpl.
       iDestruct "H" as "[Hmt H†]". iDestruct "Hmt" as (vl') "[Hmt Hown]". iNext.
       iDestruct ("Ho" with "Hown") as "Hown". iDestruct ("Hsz") as %<-.
-      iFrame. iExists _. iFrame.
+      iDestruct "Heq" as %->. iFrame. iExists _. iFrame.
     - iIntros (???) "H". iDestruct "H" as (l') "[Hfb #Hvs]".
       iExists l'. iFrame. iIntros "!#". iIntros (F' q) "% Htok".
       iMod ("Hvs" with "[%] Htok") as "Hvs'". done. iModIntro. iNext.
       iMod "Hvs'" as "[Hshr $]". iApply ("Hs" with "Hshr").
   Qed.
 
-  Global Instance own_mono E L :
-    Proper (ctx_eq E L ==> subtype E L ==> subtype E L) own_ptr.
+  Global Instance own_mono E L n :
+    Proper (subtype E L ==> subtype E L) (own_ptr n).
   Proof.
-    intros n1 n2 Hn12 ty1 ty2 Hincl. iIntros.
-    iDestruct (Hn12 with "[] []") as %->; [done..|].
-    iApply own_type_incl. iApply Hincl; done.
+    intros ty1 ty2 Hincl. iIntros.
+    iApply own_type_incl; first by auto. iApply Hincl; auto.
   Qed.
   Lemma own_mono' E L n1 n2 ty1 ty2 :
-    ctx_eq E L n1 n2 → subtype E L ty1 ty2 →
-    subtype E L (own_ptr n1 ty1) (own_ptr n2 ty2).
-  Proof. intros. by apply own_mono. Qed.
-  Global Instance own_proper E L :
-    Proper (ctx_eq E L ==> eqtype E L ==> eqtype E L) own_ptr.
-  Proof. intros ??? ??[]; split; by apply own_mono. Qed.
+    n1 = n2 → subtype E L ty1 ty2 → subtype E L (own_ptr n1 ty1) (own_ptr n2 ty2).
+  Proof. intros -> *. by apply own_mono. Qed.
+  Global Instance own_proper E L n :
+    Proper (eqtype E L ==> eqtype E L) (own_ptr n).
+  Proof. intros ??[]; split; by apply own_mono. Qed.
   Lemma own_proper' E L n1 n2 ty1 ty2 :
-    ctx_eq E L n1 n2 → eqtype E L ty1 ty2 →
-    eqtype E L (own_ptr n1 ty1) (own_ptr n2 ty2).
-  Proof. intros. by apply own_proper. Qed.
+    n1 = n2 → eqtype E L ty1 ty2 → eqtype E L (own_ptr n1 ty1) (own_ptr n2 ty2).
+  Proof. intros -> *. by apply own_proper. Qed.
 
   Global Instance own_type_contractive n : TypeContractive (own_ptr n).
   Proof. solve_type_proper. Qed.
@@ -153,8 +150,48 @@ Section own.
   Qed.
 End own.
 
-(* TODO: Make box a proper type with subtyping, contractivity, ... *)
-Notation box ty := (own_ptr ty.(ty_size) ty).
+Section box.
+  Context `{typeG Σ}.
+
+  Definition box ty := own_ptr ty.(ty_size) ty.
+
+  Lemma box_type_incl ty1 ty2 :
+    ▷ type_incl ty1 ty2 -∗ type_incl (box ty1) (box ty2).
+  Proof.
+    iIntros "#Hincl". iApply own_type_incl; last done.
+    iDestruct "Hincl" as "(? & _ & _)". done.
+  Qed.
+
+  Global Instance box_mono E L :
+    Proper (subtype E L ==> subtype E L) box.
+  Proof.
+    intros ty1 ty2 Hincl. iIntros. iApply box_type_incl. iApply Hincl; auto.
+  Qed.
+  Lemma box_mono' E L ty1 ty2 :
+    subtype E L ty1 ty2 → subtype E L (box ty1) (box ty2).
+  Proof. intros. by apply box_mono. Qed.
+  Global Instance box_proper E L :
+    Proper (eqtype E L ==> eqtype E L) box.
+  Proof. intros ??[]; split; by apply box_mono. Qed.
+  Lemma box_proper' E L ty1 ty2 :
+    eqtype E L ty1 ty2 → eqtype E L (box ty1) (box ty2).
+  Proof. intros. by apply box_proper. Qed.
+
+  Global Instance box_type_contractive : TypeContractive box.
+  Proof. solve_type_proper. Qed.
+
+  Global Instance box_ne : NonExpansive box.
+  Proof. apply type_contractive_ne, _. Qed.
+
+(* For now, we use the instances inherited from own_ptr. *)
+(*  Global Instance box_send ty :
+    Send ty → Send (box ty).
+  Proof. apply _. Qed.
+
+  Global Instance box_sync ty :
+    Sync ty → Sync (box ty).
+  Proof. apply _. Qed. *)
+End box.
 
 Section typing.
   Context `{typeG Σ}.
@@ -203,7 +240,7 @@ Section typing.
     Closed (x :b: []) e →
     0 ≤ n →
     (∀ (v : val) (n' := Z.to_nat n),
-        typed_body E L C ((v ◁ box (uninit n')) :: T) (subst' x v e)) -∗
+        typed_body E L C ((v ◁ own_ptr n' (uninit n')) :: T) (subst' x v e)) -∗
     typed_body E L C T (let: x := new [ #n ] in e).
   Proof. iIntros. iApply type_let; [by apply type_new_instr|solve_typing..]. Qed.
 
@@ -222,7 +259,7 @@ Section typing.
 
   Lemma type_delete_instr {E L} ty (n : Z) p :
     Z.of_nat (ty.(ty_size)) = n →
-    typed_instruction E L [p ◁ box ty] (delete [ #n; p])%E (λ _, []).
+    typed_instruction E L [p ◁ own_ptr ty.(ty_size) ty] (delete [ #n; p])%E (λ _, []).
   Proof.
     iIntros (<- tid eq) "#LFT $ $ $ Hp". rewrite tctx_interp_singleton.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown"; try done.
@@ -298,7 +335,7 @@ Section typing.
   Qed.
 End typing.
 
-Hint Resolve own_mono' own_proper' : lrust_typing.
+Hint Resolve own_mono' own_proper' box_mono' box_proper' : lrust_typing.
 
 Hint Extern 100 (_ ≤ _) => simpl; lia : lrust_typing.
 Hint Extern 100 (@eq Z _ _) => simpl; lia : lrust_typing.

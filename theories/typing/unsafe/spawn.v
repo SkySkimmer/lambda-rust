@@ -27,7 +27,7 @@ Section join_handle.
   Next Obligation. iIntros (?) "**"; auto. Qed.
 
   Lemma join_handle_subtype ty1 ty2 :
-    type_incl ty1 ty2 -∗ type_incl (join_handle ty1) (join_handle ty2).
+    ▷ type_incl ty1 ty2 -∗ type_incl (join_handle ty1) (join_handle ty2).
   Proof.
     iIntros "#Hincl". iSplit; first done. iSplit; iAlways.
     - iIntros "* Hvl". destruct vl as [|[[|vl|]|] [|]]; try done.
@@ -129,9 +129,8 @@ Section spawn.
       destruct c' as [[|c'|]|]; try done. iDestruct "Hc'" as (ty') "[#Hsub Hc']".
       iApply (join_spec with "Hc'"). iNext. iIntros "* Hret".
       rewrite tctx_interp_singleton tctx_hasty_val.
-      iPoseProof "Hsub" as "Hsz". iDestruct "Hsz" as "[% _]".
-      iDestruct (own_type_incl with "Hsub") as "(_ & Hincl & _)".
-      iApply "Hincl". rewrite -H. done. }
+      iDestruct (box_type_incl with "[$Hsub]") as "(_ & Hincl & _)".
+      iApply "Hincl". done. }
     iIntros (r); simpl_subst. iApply type_delete; [solve_typing..|].
     iApply (type_jump [_]); solve_typing.
   Qed.
