@@ -98,16 +98,21 @@ End fn.
 
 Arguments fn_params {_ _} _.
 
-(* TODO: Once we depend on 8.6pl1, extend this to recursive binders so that
-   patterns like '(a, b) can be used. *)
-Notation "'fn(∀' x ',' E ';' T1 ',' .. ',' TN ')' '→' R" :=
-  (fn (λ x, FP (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T R%T E%EL))
-  (at level 99, R at level 200,
-   format "'fn(∀' x ','  E ';'  T1 ','  .. ','  TN ')'  '→'  R") : lrust_type_scope.
-Notation "'fn(∀' x ',' E ')' '→' R" :=
-  (fn (λ x, FP Vector.nil R%T E%EL))
-  (at level 99, R at level 200,
-   format "'fn(∀' x ','  E ')'  '→'  R") : lrust_type_scope.
+(* We use recursive notation for binders as well, to allow patterns
+   like '(a, b) to be used. In practice, only one binder is ever used,
+   but using recursive binders is the only way to make Coq accept
+   patterns. *)
+(* FIXME : because of a bug in Coq, such patterns only work for
+   printing. Once on 8.6pl1, this should work.  *)
+Notation "'fn(∀' x .. x' ',' E ';' T1 ',' .. ',' TN ')' '→' R" :=
+  (fn (λ x, (.. (λ x',
+      FP (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T R%T E%EL)..)))
+  (at level 99, R at level 200, x binder, x' binder,
+   format "'fn(∀'  x .. x' ','  E ';'  T1 ','  .. ','  TN ')'  '→'  R") : lrust_type_scope.
+Notation "'fn(∀' x .. x' ',' E ')' '→' R" :=
+  (fn (λ x, (.. (λ x', FP Vector.nil R%T E%EL)..)))
+  (at level 99, R at level 200, x binder, x' binder,
+   format "'fn(∀'  x .. x' ','  E ')'  '→'  R") : lrust_type_scope.
 Notation "'fn(' E ';' T1 ',' .. ',' TN ')' '→' R" :=
   (fn (λ _:(), FP (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..) R%T E%EL) )
   (at level 99, R at level 200,
