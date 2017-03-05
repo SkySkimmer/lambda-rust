@@ -20,8 +20,8 @@ Definition finish : val :=
 Definition join : val :=
   rec: "join" ["c"] :=
     if: !ˢᶜ"c" then
-      let: "v" := !("c" +ₗ #1) in
       (* The thread finished, we can non-atomically load the data. *)
+      let: "v" := !("c" +ₗ #1) in
       Free #2 "c";;
       "v"
     else
