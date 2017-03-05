@@ -292,3 +292,5 @@ Section typing_rules.
     typed_body E L C T (p1 <-{n} !p2;; e).
   Proof. iIntros. by iApply type_seq; first eapply (type_memcpy_instr ty ty1 ty1'). Qed.
 End typing_rules.
+
+Hint Opaque typed_read typed_write : lrust_typing.

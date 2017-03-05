@@ -298,7 +298,10 @@ Section typing.
   Qed.
 End typing.
 
-Hint Resolve own_mono' own_proper' : lrust_typing.
+Hint Resolve own_mono' own_proper' write_own read_own_copy : lrust_typing.
+(* By setting the priority high, we make sure copying is tryed before
+   moving. *)
+Hint Resolve read_own_move | 100 : lrust_typing.
 
 Hint Extern 100 (_ ≤ _) => simpl; lia : lrust_typing.
 Hint Extern 100 (@eq Z _ _) => simpl; lia : lrust_typing.

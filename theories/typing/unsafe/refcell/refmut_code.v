@@ -26,7 +26,7 @@ Section refmut_functions.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
+    iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
@@ -41,7 +41,7 @@ Section refmut_functions.
     iMod "H↦" as "[H↦1 H↦2]". wp_read. iIntros "[#Hshr' Hα2β]!>". wp_let.
     iDestruct ("Hcloseβα2" with "Hα2β") as "[Hβ Hα2]".
     iMod ("Hcloseα1" with "[$H↦1 $H↦2]") as "Hα1".
-    iApply (type_type _ _ _ [ x ◁ box (uninit 1); #lv ◁ &shr{α}ty]%TC
+    iApply (type_type _ _ _ [ x ◁ box (&shr{α} refmut β ty); #lv ◁ &shr{α}ty]%TC
             with "[] LFT Hna [Hα1 Hα2 Hβ Hαβ] HL Hk"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (ty_shr_mono with "[] Hshr'"). iApply lft_incl_glb; first done.
@@ -68,7 +68,7 @@ Section refmut_functions.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
+    iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']".
@@ -215,15 +215,12 @@ Section refmut_functions.
       rewrite (heap_mapsto_vec_cons _ _ _ [_]) !heap_mapsto_vec_singleton. iFrame.
       iExists ν. rewrite EQ1. eauto 10 with iFrame. }
     { rewrite /elctx_interp !big_sepL_cons /= -lft_tok_sep. iFrame. }
-    iApply type_deref; [solve_typing..|by apply read_own_move|done|].
-      iIntros (x'). simpl_subst.
-    iApply type_deref; [solve_typing..|by apply read_own_move|done|].
-       iIntros (f'). simpl_subst.
+    iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
+    iApply type_deref; [solve_typing..|]. iIntros (f'). simpl_subst.
     iApply type_letalloc_1; [solve_typing..|]. iIntros (x). simpl_subst.
     iApply (type_letcall); [simpl; solve_typing..|]. iIntros (r). simpl_subst.
-    iApply type_deref; [solve_typing|by eapply read_own_move|done|].
-      iIntros (r'). simpl_subst.
-    iApply type_assign; [solve_typing|by eapply write_own|].
+    iApply type_deref; [solve_typing..|]. iIntros (r'). simpl_subst.
+    iApply type_assign; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
     iApply (type_jump []); solve_typing.
   Qed.

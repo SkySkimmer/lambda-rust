@@ -61,7 +61,7 @@ Section ref_functions.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
+    iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
@@ -97,8 +97,8 @@ Section ref_functions.
         rewrite (comm Qp_plus) (assoc Qp_plus) Qp_div_2 (comm Qp_plus). auto. }
     iMod ("Hcloseβ" with "Hδ") as "Hβ". iMod ("Hcloseα1" with "[$H↦]") as "Hα1".
     iApply (type_type _ _ _
-        [ x ◁ box (uninit 1); #lr ◁ box(ref β ty)]%TC with "[] LFT Hna [Hα1 Hα2 Hβ] HL Hk");
-        first last.
+           [ x ◁ box (&shr{α} ref β ty); #lr ◁ box(ref β ty)]%TC
+        with "[] LFT Hna [Hα1 Hα2 Hβ] HL Hk"); first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       rewrite /= freeable_sz_full. iFrame. iExists _. iFrame. iExists _, _, _, _, _.
       iFrame "∗#". }
@@ -123,7 +123,7 @@ Section ref_functions.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
+    iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
@@ -135,8 +135,8 @@ Section ref_functions.
     iMod "H↦" as "[H↦1 H↦2]". wp_read. wp_let.
     iMod ("Hcloseα" with "[$H↦1 $H↦2]") as "Hα".
     iApply (type_type _ _ _
-        [ x ◁ box (uninit 1); #lv ◁ &shr{α}ty]%TC with "[] LFT Hna [Hα Hβ Hαβ] HL Hk");
-      first last.
+        [ x ◁ box (&shr{α} ref β ty); #lv ◁ &shr{α}ty]%TC
+        with "[] LFT Hna [Hα Hβ Hαβ] HL Hk"); first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (ty_shr_mono with "[] Hshr"). by iApply lft_incl_glb. }
     { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
@@ -262,15 +262,12 @@ Section ref_functions.
       rewrite (heap_mapsto_vec_cons _ _ _ [_]) !heap_mapsto_vec_singleton. iFrame.
       iExists ν, (q+qν')%Qp. eauto 10 with iFrame. }
     { rewrite /elctx_interp !big_sepL_cons /= -lft_tok_sep. iFrame. }
-    iApply type_deref; [solve_typing..|by apply read_own_move|done|].
-      iIntros (x'). simpl_subst.
-    iApply type_deref; [solve_typing..|by apply read_own_move|done|].
-      iIntros (f'). simpl_subst.
+    iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
+    iApply type_deref; [solve_typing..|]. iIntros (f'). simpl_subst.
     iApply type_letalloc_1; [solve_typing..|]. iIntros (x). simpl_subst.
     iApply (type_letcall); [simpl; solve_typing..|]. iIntros (r). simpl_subst.
-    iApply type_deref; [solve_typing|by eapply read_own_move|done|].
-      iIntros (r'). simpl_subst.
-    iApply type_assign; [solve_typing|by eapply write_own|].
+    iApply type_deref; [solve_typing..|]. iIntros (r'). simpl_subst.
+    iApply type_assign; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
     iApply (type_jump []); solve_typing.
   Qed.

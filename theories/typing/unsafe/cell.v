@@ -130,7 +130,7 @@ Section typing.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_deref; [solve_typing|apply read_own_move|done|]. iIntros (x'). simpl_subst.
+    iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
     iApply type_letalloc_n; [solve_typing| |iIntros (r); simpl_subst].
     { apply (read_shr _ _ _ (cell ty)); solve_typing. }
     iApply type_delete; [solve_typing..|].
@@ -150,7 +150,8 @@ Section typing.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>c x. simpl_subst.
-    iApply type_deref; [solve_typing|exact: read_own_move|done|]. iIntros (c'); simpl_subst.
+    iApply type_deref; [solve_typing..|].
+    iIntros (c'); simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r); simpl_subst.
     (* Drop to Iris level. *)
     iIntros (tid qE) "#LFT Htl HE HL HC".
@@ -171,15 +172,12 @@ Section typing.
     iIntros "[Hr↦ Hc'↦]". wp_seq.
     iDestruct "Hx" as "[Hx↦ Hx†]". iDestruct "Hx↦" as (vx) "[Hx↦ Hxown]".
     rewrite Nat2Z.id. iDestruct (ty_size_eq with "Hxown") as "#%".
-    wp_apply (wp_memcpy with "[$Hc'↦ $Hx↦]").
-    { f_equal. done. }
-    { f_equal. done. }
+    wp_apply (wp_memcpy with "[$Hc'↦ $Hx↦]"); try by f_equal.
     iIntros "[Hc'↦ Hx↦]". wp_seq.
-    iMod ("Hclose" with "[Hc'↦ Hxown] Htl") as "[HE Htl]".
-    { iExists _. iFrame. }
+    iMod ("Hclose" with "[Hc'↦ Hxown] Htl") as "[HE Htl]"; first by auto with iFrame.
     (* Now go back to typing level. *)
     iApply (type_type _ _ _
-           [c ◁ box (uninit 1); #x ◁ box (uninit ty.(ty_size)); #r ◁ box ty]%TC
+           [c ◁ box (&shr{α} cell ty); #x ◁ box (uninit ty.(ty_size)); #r ◁ box ty]%TC
     with "[] LFT Htl [HE] HL HC"); last first.
     { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
       iFrame "Hc". rewrite !tctx_hasty_val' //. iSplitL "Hx↦ Hx†".

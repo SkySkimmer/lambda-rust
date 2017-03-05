@@ -90,4 +90,4 @@ Section typing.
   Qed.
 End typing.
 
-Hint Resolve shr_mono' shr_proper' : lrust_typing.
+Hint Resolve shr_mono' shr_proper' read_shr : lrust_typing.

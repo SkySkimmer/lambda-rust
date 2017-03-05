@@ -210,7 +210,7 @@ Section typing.
   Qed.
 End typing.
 
-Hint Resolve uniq_mono' uniq_proper' : lrust_typing.
+Hint Resolve uniq_mono' uniq_proper' write_uniq read_uniq : lrust_typing.
 Hint Resolve tctx_extract_hasty_reborrow | 10 : lrust_typing.
 Hint Resolve tctx_extract_hasty_share | 10 : lrust_typing.
 Hint Resolve tctx_extract_hasty_share_samelft | 9 : lrust_typing.

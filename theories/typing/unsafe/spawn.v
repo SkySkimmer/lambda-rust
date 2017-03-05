@@ -72,8 +72,7 @@ Section spawn.
   Proof. (* FIXME: typed_instruction_ty is not used for printing. *)
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ret arg). inv_vec arg=>f env. simpl_subst.
-    iApply type_deref; [solve_typing..|exact: read_own_move|done|].
-    iIntros (f'). simpl_subst.
+    iApply type_deref; [solve_typing..|]. iIntros (f'). simpl_subst.
     iApply (type_let _ _ _ _ ([f' ◁ _; env ◁ _]%TC)
                      (λ j, [j ◁ join_handle retty]%TC)); try solve_typing; [|].
     { (* The core of the proof: showing that spawn is safe. *)
@@ -104,7 +103,7 @@ Section spawn.
         + rewrite !tctx_hasty_val. iApply @send_change_tid. done. }
     iIntros (v). simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
-    iApply type_assign; [solve_typing..|exact: write_own|].
+    iApply type_assign; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
     iApply (type_jump [_]); solve_typing.
   Qed.
@@ -120,8 +119,7 @@ Section spawn.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ret arg). inv_vec arg=>c. simpl_subst.
-    iApply type_deref; [solve_typing..|exact: read_own_move|done|].
-      iIntros (c'); simpl_subst.
+    iApply type_deref; [solve_typing..|]. iIntros (c'); simpl_subst.
     iApply (type_let _ _ _ _ ([c' ◁ _]%TC)
                              (λ r, [r ◁ box retty]%TC)); try solve_typing; [|].
     { iIntros (tid qE) "#LFT $ $ $".

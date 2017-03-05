@@ -26,7 +26,7 @@ Section rwlockreadguard_functions.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
+    iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
@@ -36,7 +36,8 @@ Section rwlockreadguard_functions.
     iMod (frac_bor_acc with "LFT Hfrac Hα") as (qlx') "[H↦ Hcloseα]". done.
     rewrite heap_mapsto_vec_singleton. wp_read. wp_op. wp_let.
     iMod ("Hcloseα" with "[$H↦]") as "Hα".
-    iApply (type_type _ _ _ [ x ◁ box (uninit 1); #(shift_loc l' 1) ◁ &shr{α}ty]%TC
+    iApply (type_type _ _ _ [ x ◁ box (&shr{α} rwlockreadguard β ty);
+                              #(shift_loc l' 1) ◁ &shr{α}ty]%TC
       with "[] LFT Hna [Hα Hβ Hαβ] HL Hk"); first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (ty_shr_mono with "[] Hshr"). iApply lft_incl_glb. done.
@@ -65,7 +66,7 @@ Section rwlockreadguard_functions.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_deref; [solve_typing..|by apply read_own_move|done|].
+    iApply type_deref; [solve_typing..|].
       iIntros (x'). simpl_subst.
     iApply (type_cont [] [] (λ _, [x ◁ _; x' ◁ _])%TC);
       [iIntros (loop)|iIntros "/= !#"; iIntros (loop arg); inv_vec arg];

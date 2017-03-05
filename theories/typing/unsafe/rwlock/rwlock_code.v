@@ -96,8 +96,7 @@ Section rwlock_functions.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_deref; [solve_typing..|by eapply read_own_move|done|].
-      iIntros (x'). simpl_subst.
+    iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
     iIntros (tid qE) "#LFT Hna HE HL HC HT".
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|];  try iDestruct "Hx'" as "[]".
@@ -117,7 +116,7 @@ Section rwlock_functions.
             with "[] LFT Hna HE HL HC [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //. iFrame.
       iNext. iExists _. rewrite uninit_own. iFrame. }
-    iApply type_assign; [solve_typing..|exact: write_own|].
+    iApply type_assign; [solve_typing..|].
     iApply (type_jump [ #_]); solve_typing.
   Qed.
 
@@ -154,8 +153,7 @@ Section rwlock_functions.
     { iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing. }
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
-    iApply type_deref; [solve_typing..|apply read_own_copy, _|done|].
-      iIntros (x'). simpl_subst.
+    iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
     iApply (type_cont [] [] (λ _, [x ◁ _; x' ◁ _; r ◁ _])%TC);
       [iIntros (loop)|iIntros "/= !#"; iIntros (loop arg); inv_vec arg];
       simpl_subst.
@@ -177,7 +175,7 @@ Section rwlock_functions.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
       iApply (type_sum_assign_unit [unit; rwlockreadguard α ty]);
-        [solve_typing..|by eapply write_own|]; first last.
+        [solve_typing..|]; first last.
       simpl. iApply (type_jump [_]); solve_typing.
     - wp_op. wp_bind (CAS _ _ _).
       iMod (shr_bor_acc_tok with "LFT Hinv Hβtok1") as "[INV Hclose']"; try done.
@@ -230,8 +228,7 @@ Section rwlock_functions.
           iExists _, _, _, _. iFrame "∗#". iApply ty_shr_mono; last done.
           iApply lft_glb_mono; first done. iApply lft_incl_refl. }
         { rewrite {1}/elctx_interp big_sepL_singleton //. }
-        iApply (type_sum_assign [unit; rwlockreadguard α ty]);
-          [solve_typing..|by eapply write_own|].
+        iApply (type_sum_assign [unit; rwlockreadguard α ty]); [solve_typing..|].
         simpl. iApply (type_jump [_]); solve_typing.
       + iApply (wp_cas_int_fail with "Hlx"); try done. iNext. iIntros "Hlx".
         iMod ("Hclose'" with "[Hlx Hownst Hst]") as "Hβtok1"; first by iExists _; iFrame.
@@ -271,7 +268,7 @@ Section rwlock_functions.
       simpl_subst; last first.
     { iApply type_delete; [solve_typing..|]. iApply (type_jump [_]); solve_typing. }
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
-    iApply type_deref; [solve_typing..|apply read_own_copy, _|done|].
+    iApply type_deref; [solve_typing..|].
     iIntros (x' tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "(Hx & Hx' & Hr)". destruct x' as [[|lx|]|]; try done.
@@ -291,7 +288,7 @@ Section rwlock_functions.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
       iApply (type_sum_assign_unit [unit; rwlockwriteguard α ty]);
-        [solve_typing..|by eapply write_own|]; first last.
+        [solve_typing..|]; first last.
       rewrite /option /=. iApply (type_jump [_]); solve_typing.
     - iApply (wp_cas_int_suc with "Hlx"). done. iIntros "!> Hlx".
       iMod (own_update with "Hownst") as "[Hownst ?]".
@@ -305,8 +302,7 @@ Section rwlock_functions.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val
                 tctx_hasty_val' //. iFrame.  iExists _, _. iFrame "∗#". }
       { rewrite {1}/elctx_interp big_sepL_singleton //. }
-      iApply (type_sum_assign [unit; rwlockwriteguard α ty]);
-        [solve_typing..|by eapply write_own|].
+      iApply (type_sum_assign [unit; rwlockwriteguard α ty]); [solve_typing..|].
       simpl. iApply (type_jump [_]); solve_typing.
   Qed.
 End rwlock_functions.

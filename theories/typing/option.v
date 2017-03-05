@@ -25,14 +25,13 @@ Section option.
       inv_vec p=>o. simpl_subst.
     iApply (type_cont [_] [] (λ r, [o ◁ _; r!!!0 ◁ _])%TC) ; [solve_typing..| |].
     - iIntros (k). simpl_subst.
-      iApply type_deref; [solve_typing|apply read_own_move|done|].
-        iIntros (o'). simpl_subst.
+      iApply type_deref; [solve_typing..|]. iIntros (o'). simpl_subst.
       iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
       iApply type_case_uniq; [solve_typing..|].
         constructor; last constructor; last constructor; left.
-      + iApply (type_sum_assign_unit [unit; &uniq{α}τ]%T); [solve_typing..|by apply write_own|].
+      + iApply (type_sum_assign_unit [unit; &uniq{α}τ]%T); [solve_typing..|].
         iApply (type_jump [_]); solve_typing.
-      + iApply (type_sum_assign [unit; &uniq{α}τ]%T); [solve_typing..|by apply write_own|].
+      + iApply (type_sum_assign [unit; &uniq{α}τ]%T); [solve_typing..|].
         iApply (type_jump [_]); solve_typing.
     - iIntros "/= !#". iIntros (k r). inv_vec r=>r. simpl_subst.
       iApply type_delete; [solve_typing..|].
@@ -57,8 +56,7 @@ Section option.
     iApply type_case_own; [solve_typing|]. constructor; last constructor; last constructor.
     + right. iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing.
-    + left. iApply type_letalloc_n; [solve_typing|by apply read_own_move|]. iIntros (r).
-        simpl_subst.
+    + left. iApply type_letalloc_n; [solve_typing..|]. iIntros (r). simpl_subst.
       iApply (type_delete (Π[uninit _;uninit _;uninit _])); [solve_typing..|].
       iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing.

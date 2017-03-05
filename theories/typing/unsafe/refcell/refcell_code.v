@@ -98,8 +98,7 @@ Section refcell_functions.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_deref; [solve_typing..|by eapply read_own_move|done|].
-      iIntros (x'). simpl_subst.
+    iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
     iIntros (tid qE) "#LFT Hna HE HL HC HT".
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|];  try iDestruct "Hx'" as "[]".
@@ -119,7 +118,7 @@ Section refcell_functions.
             with "[] LFT Hna HE HL HC [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //. iFrame.
       iNext. iExists _. rewrite uninit_own. iFrame. }
-    iApply type_assign; [solve_typing..|exact: write_own|].
+    iApply type_assign; [solve_typing..|].
     iApply (type_jump [ #_]); solve_typing.
   Qed.
 
@@ -155,7 +154,7 @@ Section refcell_functions.
     { iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing. }
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
-    iApply type_deref; [solve_typing..|apply read_own_copy, _|done|].
+    iApply type_deref; [solve_typing..|].
     iIntros (x' tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "(Hx & Hx' & Hr)". destruct x' as [[|lx|]|]; try done.
@@ -171,8 +170,7 @@ Section refcell_functions.
               with "[] LFT Hna >[Hclose Hβtok1 Hβtok2] HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_assign_unit [unit; ref α ty]);
-        [solve_typing..|by eapply write_own|]; first last.
+      iApply (type_sum_assign_unit [unit; ref α ty]); [solve_typing..|]; first last.
       simpl. iApply (type_jump [_]); solve_typing.
     - wp_op. wp_write. wp_apply wp_new; [done..|].
       iIntros (lref vl) "(EQ & H† & Hlref)". iDestruct "EQ" as %?%(inj Z.of_nat 2%nat).
@@ -224,8 +222,7 @@ Section refcell_functions.
         iFrame. iExists _, _, _, _, _. iFrame "∗#". iApply ty_shr_mono; try by auto.
         iApply lft_glb_mono. done. iApply lft_incl_refl. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_memcpy [unit; ref α ty]);
-        [solve_typing..|by eapply write_own|by eapply read_own_move|done|].
+      iApply (type_sum_memcpy [unit; ref α ty]); [solve_typing..|].
       simpl. iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing.
   Qed.
@@ -263,7 +260,7 @@ Section refcell_functions.
     { iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing. }
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
-    iApply type_deref; [solve_typing..|apply read_own_copy, _|done|].
+    iApply type_deref; [solve_typing..|].
     iIntros (x' tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "(Hx & Hx' & Hr)". destruct x' as [[|lx|]|]; try done.
@@ -297,8 +294,7 @@ Section refcell_functions.
         iFrame. iExists _, _, _, _. iFrame "#∗". iApply (bor_shorten with "[] [$Hb]").
         iApply lft_glb_mono; first done. iApply lft_incl_refl. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_memcpy [unit; refmut α ty]);
-        [solve_typing..|by eapply write_own|by eapply read_own_move|done|].
+      iApply (type_sum_memcpy [unit; refmut α ty]); [solve_typing..|].
       simpl. iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing.
     - iMod ("Hclose'" with "[Hlx Hownst Hb] Hna") as "[Hβtok Hna]";
@@ -308,8 +304,7 @@ Section refcell_functions.
               with "[] LFT Hna >[Hclose Hβtok] HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_assign_unit [unit; refmut α ty]);
-        [solve_typing..|by eapply write_own|].
+      iApply (type_sum_assign_unit [unit; refmut α ty]); [solve_typing..|].
       simpl. iApply (type_jump [_]); solve_typing.
   Qed.
 End refcell_functions.

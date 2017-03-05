@@ -26,7 +26,7 @@ Section rwlockwriteguard_functions.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
+    iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
@@ -41,7 +41,8 @@ Section rwlockwriteguard_functions.
     iMod "H↦" as "[H↦1 H↦2]". wp_read. iIntros "[#Hshr' Hα2β]!>". wp_op. wp_let.
     iDestruct ("Hcloseβα2" with "Hα2β") as "[Hβ Hα2]".
     iMod ("Hcloseα1" with "[$H↦1 $H↦2]") as "Hα1".
-    iApply (type_type _ _ _ [ x ◁ box (uninit 1); #(shift_loc l' 1) ◁ &shr{α}ty]%TC
+    iApply (type_type _ _ _ [ x ◁ box (&shr{α} rwlockwriteguard β ty);
+                              #(shift_loc l' 1) ◁ &shr{α}ty]%TC
             with "[] LFT Hna [Hα1 Hα2 Hβ Hαβ] HL Hk"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (ty_shr_mono with "[] Hshr'"). iApply lft_incl_glb; first done.
@@ -68,7 +69,7 @@ Section rwlockwriteguard_functions.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_deref; [solve_typing..|by apply read_own_move|done|]. iIntros (x').
+    iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']".
@@ -114,8 +115,7 @@ Section rwlockwriteguard_functions.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_deref; [solve_typing..|by apply read_own_move|done|].
-      iIntros (x'). simpl_subst.
+    iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
     iIntros (tid qE) "#LFT Hna Hα HL Hk HT".
     rewrite {1}/elctx_interp big_sepL_singleton tctx_interp_cons
             tctx_interp_singleton !tctx_hasty_val.

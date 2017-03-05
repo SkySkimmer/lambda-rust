@@ -16,8 +16,7 @@ Section unbox.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret b).
       inv_vec b=>b. simpl_subst.
-    iApply type_deref; [solve_typing..|by apply read_own_move|done|].
-    iIntros (b'); simpl_subst.
+    iApply type_deref; [solve_typing..|]. iIntros (b'); simpl_subst.
     iApply type_deref_uniq_own; [solve_typing..|]. iIntros (bx); simpl_subst.
     iApply type_letalloc_1; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_delete; [solve_typing..|].
