@@ -98,6 +98,12 @@ End fn.
 
 Arguments fn_params {_ _} _.
 
+(* The parameter of [FP] are in the wrong order in order to make sure
+   that type-checking is done in that order, so that the [ELCtx_Alive]
+   is taken as a coercion. We reestablish the intuitive order with
+   [FP'] *)
+Notation FP' E tys ty := (FP tys ty E).
+
 (* We use recursive notation for binders as well, to allow patterns
    like '(a, b) to be used. In practice, only one binder is ever used,
    but using recursive binders is the only way to make Coq accept
@@ -106,19 +112,19 @@ Arguments fn_params {_ _} _.
    printing. Once on 8.6pl1, this should work.  *)
 Notation "'fn(∀' x .. x' ',' E ';' T1 ',' .. ',' TN ')' '→' R" :=
   (fn (λ x, (.. (λ x',
-      FP (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T R%T E%EL)..)))
+      FP' E%EL (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T R%T)..)))
   (at level 99, R at level 200, x binder, x' binder,
    format "'fn(∀'  x .. x' ','  E ';'  T1 ','  .. ','  TN ')'  '→'  R") : lrust_type_scope.
 Notation "'fn(∀' x .. x' ',' E ')' '→' R" :=
-  (fn (λ x, (.. (λ x', FP Vector.nil R%T E%EL)..)))
+  (fn (λ x, (.. (λ x', FP' E%EL Vector.nil R%T)..)))
   (at level 99, R at level 200, x binder, x' binder,
    format "'fn(∀'  x .. x' ','  E ')'  '→'  R") : lrust_type_scope.
 Notation "'fn(' E ';' T1 ',' .. ',' TN ')' '→' R" :=
-  (fn (λ _:(), FP (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..) R%T E%EL) )
+  (fn (λ _:(), FP' E%EL (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..) R%T))
   (at level 99, R at level 200,
    format "'fn(' E ';'  T1 ','  .. ','  TN ')'  '→'  R") : lrust_type_scope.
 Notation "'fn(' E ')' '→' R" :=
-  (fn (λ _:(), FP Vector.nil R%T E%EL))
+  (fn (λ _:(), FP' E%EL Vector.nil R%T))
   (at level 99, R at level 200,
    format "'fn(' E ')'  '→'  R") : lrust_type_scope.
 

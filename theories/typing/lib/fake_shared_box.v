@@ -11,8 +11,8 @@ Section fake_shared_box.
 
   Lemma cell_replace_type ty :
     typed_val fake_shared_box
-      (fn (fun '(α, β) => FP [# &shr{α}(&shr{β} ty)]
-                             (&shr{α}box ty) [α; β; α ⊑ β]%EL)).
+      (fn (fun '(α, β) => FP' [α; β; α ⊑ β]%EL
+                              [# &shr{α}(&shr{β} ty)] (&shr{α}box ty))).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.

@@ -20,8 +20,8 @@ Section rwlockreadguard_functions.
 
   Lemma rwlockreadguard_deref_type ty :
     typed_val rwlockreadguard_deref
-      (fn (fun '(α, β) => FP [# &shr{α}(rwlockreadguard β ty)]
-                             (&shr{α}ty) [α; β; α ⊑ β]%EL)).
+      (fn (fun '(α, β) => FP' [α; β; α ⊑ β]%EL
+                              [# &shr{α}(rwlockreadguard β ty)] (&shr{α}ty))).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
