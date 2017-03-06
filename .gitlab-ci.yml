@@ -22,6 +22,7 @@ lrust-coq8.6:
   - master
   - ci
   - /^ralf/ci//
+  - jh/undiscriminated_hintdb
   artifacts:
     paths:
     - build-time.txt

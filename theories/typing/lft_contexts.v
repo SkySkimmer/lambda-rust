@@ -454,6 +454,9 @@ End elctx_incl.
 
 Arguments elctx_incl {_ _ _} _%EL _%LL _%EL _%EL.
 
+Create HintDb lrust_typing.
+Create HintDb lrust_typing_merge.
+
 (* We first try to solve everything without the merging rules, and
    then start from scratch with them.
 
@@ -463,8 +466,6 @@ Arguments elctx_incl {_ _ _} _%EL _%LL _%EL _%EL.
 Ltac solve_typing :=
   (typeclasses eauto with lrust_typing typeclass_instances core; fail) ||
   (typeclasses eauto with lrust_typing lrust_typing_merge typeclass_instances core; fail).
-Create HintDb lrust_typing discriminated.
-Create HintDb lrust_typing_merge discriminated.
 
 Hint Constructors Forall Forall2 elem_of_list : lrust_typing.
 Hint Resolve of_val_unlock : lrust_typing.
