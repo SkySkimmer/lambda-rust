@@ -3,7 +3,7 @@ From iris.algebra Require Import auth csum frac agree.
 From iris.base_logic Require Import big_op fractional.
 From lrust.lifetime Require Import na_borrow.
 From lrust.typing Require Import typing.
-From lrust.typing.unsafe.rwlock Require Import rwlock.
+From lrust.typing.lib.rwlock Require Import rwlock.
 Set Default Proof Using "Type".
 
 Section rwlockreadguard.

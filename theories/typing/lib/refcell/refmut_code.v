@@ -4,7 +4,7 @@ From iris.algebra Require Import auth csum frac agree.
 From iris.base_logic Require Import big_op fractional.
 From lrust.lifetime Require Import na_borrow.
 From lrust.typing Require Import typing.
-From lrust.typing.unsafe.refcell Require Import refcell refmut.
+From lrust.typing.lib.refcell Require Import refcell refmut.
 Set Default Proof Using "Type".
 
 Section refmut_functions.
