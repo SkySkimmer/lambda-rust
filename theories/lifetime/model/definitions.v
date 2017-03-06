@@ -6,6 +6,19 @@ From lrust.lifetime Require Export lifetime_sig.
 Set Default Proof Using "Type".
 Import uPred.
 
+Definition atomic_lft := positive.
+(* HACK : We need to make sure this is not in the top-level context,
+   so that it does not conflict with the *definition* of [lft] that we
+   use in lifetime.v. *)
+Module Export lft_notation.
+  Notation lft := (gmultiset atomic_lft).
+End lft_notation.
+
+Definition static : lft := (∅ : gmultiset _).
+Definition lft_intersect (κ κ' : lft) : lft := κ ∪ κ'.
+
+Infix "⊓" := lft_intersect (at level 40) : C_scope.
+
 Inductive bor_state :=
   | Bor_in
   | Bor_open (q : frac)
@@ -66,7 +79,6 @@ Definition to_lft_stateR (b : bool) : lft_stateR :=
 Definition to_alftUR : gmap atomic_lft bool → alftUR := fmap to_lft_stateR.
 Definition to_ilftUR : gmap lft lft_names → ilftUR := fmap to_agree.
 Definition to_borUR : gmap slice_name bor_state → borUR := fmap ((1%Qp,) ∘ to_agree).
-
 
 Section defs.
   Context `{invG Σ, lftG Σ}.

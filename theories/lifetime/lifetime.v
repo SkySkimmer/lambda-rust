@@ -5,6 +5,7 @@ From iris.proofmode Require Import tactics.
 Set Default Proof Using "Type".
 
 Module Export lifetime : lifetime_sig.
+  Definition lft := gmultiset positive.
   Include definitions.
   Include primitive.
   Include borrow.
@@ -13,6 +14,8 @@ Module Export lifetime : lifetime_sig.
   Include accessors.
   Include creation.
 End lifetime.
+
+Instance lft_inhabited : Inhabited lft := populate static.
 
 Canonical lftC := leibnizC lft.
 

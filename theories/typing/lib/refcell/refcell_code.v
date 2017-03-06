@@ -20,8 +20,7 @@ Section refcell_functions.
        delete [ #ty.(ty_size) ; "x"];; "return" ["r"].
 
   Lemma refcell_new_type ty :
-    typed_val (refcell_new ty)
-      (fn (λ _, []) (λ _, [# ty]) (λ _:(), refcell ty)).
+    typed_val (refcell_new ty) (fn([]; ty) → refcell ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
@@ -58,8 +57,7 @@ Section refcell_functions.
        delete [ #(S ty.(ty_size)) ; "x"];; "return" ["r"].
 
   Lemma refcell_into_inner_type ty :
-    typed_val (refcell_into_inner ty)
-                   (fn (λ _, []) (λ _, [# refcell ty]) (λ _:(), ty)).
+    typed_val (refcell_into_inner ty) (fn([]; refcell ty) → ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
@@ -93,8 +91,7 @@ Section refcell_functions.
       "return" ["x"].
 
   Lemma refcell_get_mut_type ty :
-    typed_val refcell_get_mut
-        (fn (λ α, [☀α])%EL (λ α, [# &uniq{α} (refcell ty)])%T (λ α, &uniq{α} ty)%T).
+    typed_val refcell_get_mut (fn(∀ α, [α]; &uniq{α} (refcell ty)) → &uniq{α} ty)%T.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
@@ -143,8 +140,7 @@ Section refcell_functions.
         delete [ #1; "x"];; "return" ["r"].
 
   Lemma refcell_try_borrow_type ty :
-    typed_val refcell_try_borrow
-        (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(refcell ty)]%T) (λ α, option (ref α ty))%T).
+    typed_val refcell_try_borrow (fn(∀ α, [α] ; &shr{α}(refcell ty)) → option (ref α ty)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
@@ -178,7 +174,7 @@ Section refcell_functions.
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
       iDestruct "Hlref" as "[Hlref0 Hlref1]". wp_op. wp_write. wp_op. wp_write.
       iAssert (∃ qν ν, (qβ / 2).[β] ∗ (qν).[ν] ∗
-                       ty_shr ty (β ∪ ν) tid (shift_loc lx 1) ∗
+                       ty_shr ty (β ⊓ ν) tid (shift_loc lx 1) ∗
                        own γ (◯ reading_st qν ν) ∗ refcell_inv tid lx γ β ty)%I
         with ">[Hlx Hownst Hst Hβtok2]" as (q' ν) "(Hβtok2 & Hν & Hshr & Hreading & INV)".
       { destruct st as [[agν [|[q n]|]]|]; try done.
@@ -201,10 +197,10 @@ Section refcell_functions.
           iMod (own_update with "Hownst") as "[Hownst Hreading]"; first by apply
             auth_update_alloc, (op_local_update_discrete _ _ (reading_st (1/2)%Qp ν)).
           rewrite right_id. iExists _, _. iFrame "Htok1 Hreading".
-          iDestruct (lft_glb_acc with "Hβtok2 Htok2") as (q) "[Htok Hclose]".
+          iDestruct (lft_intersect_acc with "Hβtok2 Htok2") as (q) "[Htok Hclose]".
           iApply (fupd_mask_mono (↑lftN)); first done.
-          iMod (rebor _ _ (β ∪ ν) with "LFT [] Hst") as "[Hst Hh]". done.
-          { iApply lft_le_incl. apply gmultiset_union_subseteq_l. }
+          iMod (rebor _ _ (β ⊓ ν) with "LFT [] Hst") as "[Hst Hh]". done.
+          { iApply lft_intersect_incl_l. }
           iMod (ty_share with "LFT Hst Htok") as "[#Hshr Htok]". done. iFrame "Hshr".
           iDestruct ("Hclose" with "Htok") as "[$ Htok2]". iExists _. iFrame.
           iExists _. iSplitR; first done. iFrame "Hshr". iSplitR "Htok2".
@@ -220,7 +216,7 @@ Section refcell_functions.
         rewrite tctx_hasty_val' //. rewrite /= freeable_sz_full. iFrame.
         iExists [_; _]. rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
         iFrame. iExists _, _, _, _, _. iFrame "∗#". iApply ty_shr_mono; try by auto.
-        iApply lft_glb_mono. done. iApply lft_incl_refl. }
+        iApply lft_intersect_mono. done. iApply lft_incl_refl. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
       iApply (type_sum_memcpy [unit; ref α ty]); [solve_typing..|].
       simpl. iApply type_delete; [solve_typing..|].
@@ -249,7 +245,7 @@ Section refcell_functions.
 
   Lemma refcell_try_borrow_mut_type ty :
     typed_val refcell_try_borrow_mut
-        (fn (λ α, [☀α])%EL (λ α, [# &shr{α}(refcell ty)]%T) (λ α, option (refmut α ty))%T).
+              (fn(∀ α, [α]; &shr{α}(refcell ty)) → option (refmut α ty))%T.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
@@ -279,8 +275,8 @@ Section refcell_functions.
       iMod (own_update with "Hownst") as "[Hownst ?]".
       { by eapply auth_update_alloc, (op_local_update_discrete _ _ (writing_st ν)). }
       iApply fupd_wp. iApply (fupd_mask_mono (↑lftN)); first done.
-      iMod (rebor _ _ (β ∪ ν) with "LFT [] Hb") as "[Hb Hbh]". done.
-      { iApply lft_le_incl. apply gmultiset_union_subseteq_l. }
+      iMod (rebor _ _ (β ⊓ ν) with "LFT [] Hb") as "[Hb Hbh]". done.
+      { iApply lft_intersect_incl_l. }
       iModIntro. iMod ("Hclose'" with "[Hlx Hownst Hbh] Hna") as "[Hβtok Hna]".
       { iExists _. iFrame. iExists ν. iSplit; first by auto. iNext. iSplitL; last by auto.
         iIntros "Hν". iMod ("Hhν" with "Hν") as "Hν". iModIntro. iNext. iMod "Hν".
@@ -292,7 +288,7 @@ Section refcell_functions.
         rewrite tctx_hasty_val' //. rewrite /= freeable_sz_full. iFrame.
         iExists [_; _]. rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
         iFrame. iExists _, _, _, _. iFrame "#∗". iApply (bor_shorten with "[] [$Hb]").
-        iApply lft_glb_mono; first done. iApply lft_incl_refl. }
+        iApply lft_intersect_mono; first done. iApply lft_incl_refl. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
       iApply (type_sum_memcpy [unit; refmut α ty]); [solve_typing..|].
       simpl. iApply type_delete; [solve_typing..|].

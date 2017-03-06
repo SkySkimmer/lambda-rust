@@ -218,7 +218,7 @@ Qed.
 Lemma lft_dead_in_insert_false' A κ Λ : Λ ∈ κ → lft_dead_in (<[Λ:=false]> A) κ.
 Proof. exists Λ. by rewrite lookup_insert. Qed.
 Lemma lft_dead_in_alive_in_union A κ κ' :
-  lft_dead_in A (κ ∪ κ') → lft_alive_in A κ → lft_dead_in A κ'.
+  lft_dead_in A (κ ⊓ κ') → lft_alive_in A κ → lft_dead_in A κ'.
 Proof.
   intros (Λ & [Hin|Hin]%elem_of_union & HΛ) Halive.
   - contradict HΛ. rewrite (Halive _ Hin). done.
@@ -261,13 +261,20 @@ Proof.
 Qed.
 
 (** Basic rules about lifetimes  *)
-Lemma lft_tok_sep q κ1 κ2 : q.[κ1] ∗ q.[κ2] ⊣⊢ q.[κ1 ∪ κ2].
+Instance lft_intersect_comm : Comm eq lft_intersect := _.
+Instance lft_intersect_assoc : Assoc eq lft_intersect := _.
+Instance lft_intersect_inj_1 κ : Inj eq eq (lft_intersect κ) := _.
+Instance lft_intersect_inj_2 κ : Inj eq eq (λ κ', lft_intersect κ' κ) := _.
+Instance lft_intersect_left_id : LeftId eq static lft_intersect := _.
+Instance lft_intersect_right_id : RightId eq static lft_intersect := _.
+
+Lemma lft_tok_sep q κ1 κ2 : q.[κ1] ∗ q.[κ2] ⊣⊢ q.[κ1 ⊓ κ2].
 Proof. by rewrite /lft_tok -big_sepMS_union. Qed.
 
-Lemma lft_dead_or κ1 κ2 : [†κ1] ∨ [†κ2] ⊣⊢ [† κ1 ∪ κ2].
+Lemma lft_dead_or κ1 κ2 : [†κ1] ∨ [†κ2] ⊣⊢ [† κ1 ⊓ κ2].
 Proof.
   rewrite /lft_dead -or_exist. apply exist_proper=> Λ.
-  rewrite -sep_or_r -pure_or. do 2 f_equiv. set_solver.
+  rewrite -sep_or_r -pure_or. do 2 f_equiv. unfold lft_intersect. set_solver.
 Qed.
 
 Lemma lft_tok_dead q κ : q.[κ] -∗ [† κ] -∗ False.
@@ -325,16 +332,19 @@ Lemma lft_incl_intro κ κ' :
       (lft_dead κ' ={↑lftN}=∗ lft_dead κ)) -∗ κ ⊑ κ'.
 Proof. reflexivity. Qed.
 
-Lemma lft_le_incl κ κ' : κ' ⊆ κ → (κ ⊑ κ')%I.
+Lemma lft_intersect_incl_l κ κ': (κ ⊓ κ' ⊑ κ)%I.
 Proof.
-  iIntros (->%gmultiset_union_difference) "!#". iSplitR.
+  iIntros "!#". iSplitR.
   - iIntros (q). rewrite <-lft_tok_sep. iIntros "[H Hf]". iExists q. iFrame.
     rewrite <-lft_tok_sep. by iIntros "!>{$Hf}$".
   - iIntros "? !>". iApply lft_dead_or. auto.
 Qed.
 
+Lemma lft_intersect_incl_r κ κ': (κ ⊓ κ' ⊑ κ')%I.
+Proof. rewrite comm. apply lft_intersect_incl_l. Qed.
+
 Lemma lft_incl_refl κ : (κ ⊑ κ)%I.
-Proof. by apply lft_le_incl. Qed.
+Proof. iIntros "!#"; iSplitR; auto 10 with iFrame. Qed.
 
 Lemma lft_incl_trans κ κ' κ'': κ ⊑ κ' -∗ κ' ⊑ κ'' -∗ κ ⊑ κ''.
 Proof.
@@ -347,8 +357,8 @@ Proof.
   - iIntros "H†". iMod ("H2†" with "H†"). by iApply "H1†".
 Qed.
 
-Lemma lft_glb_acc κ κ' q q' :
-  q.[κ] -∗ q'.[κ'] -∗ ∃ q'', q''.[κ ∪ κ'] ∗ (q''.[κ ∪ κ'] -∗ q.[κ] ∗ q'.[κ']).
+Lemma lft_intersect_acc κ κ' q q' :
+  q.[κ] -∗ q'.[κ'] -∗ ∃ q'', q''.[κ ⊓ κ'] ∗ (q''.[κ ⊓ κ'] -∗ q.[κ] ∗ q'.[κ']).
 Proof.
   iIntros "Hκ Hκ'".
   destruct (Qp_lower_bound q q') as (qq & q0 & q'0 & -> & ->).
@@ -356,27 +366,25 @@ Proof.
   iDestruct "Hκ" as "[$$]". iDestruct "Hκ'" as "[$$]". auto.
 Qed.
 
-Lemma lft_incl_glb κ κ' κ'' : κ ⊑ κ' -∗ κ ⊑ κ'' -∗ κ ⊑ κ' ∪ κ''.
+Lemma lft_incl_glb κ κ' κ'' : κ ⊑ κ' -∗ κ ⊑ κ'' -∗ κ ⊑ κ' ⊓ κ''.
 Proof.
   rewrite /lft_incl. iIntros "#[H1 H1†] #[H2 H2†]!#". iSplitR.
   - iIntros (q) "[Hκ'1 Hκ'2]".
     iMod ("H1" with "Hκ'1") as (q') "[Hκ' Hclose']".
     iMod ("H2" with "Hκ'2") as (q'') "[Hκ'' Hclose'']".
-    iDestruct (lft_glb_acc with "Hκ' Hκ''") as (qq) "[Hqq Hclose]".
+    iDestruct (lft_intersect_acc with "Hκ' Hκ''") as (qq) "[Hqq Hclose]".
     iExists qq. iFrame. iIntros "!> Hqq".
     iDestruct ("Hclose" with "Hqq") as "[Hκ' Hκ'']".
     iMod ("Hclose'" with "Hκ'") as "$". by iApply "Hclose''".
   - rewrite -lft_dead_or. iIntros "[H†|H†]". by iApply "H1†". by iApply "H2†".
 Qed.
 
-Lemma lft_glb_mono κ1 κ1' κ2 κ2' :
-  κ1 ⊑ κ1' -∗ κ2 ⊑ κ2' -∗ κ1 ∪ κ2 ⊑ κ1' ∪ κ2'.
+Lemma lft_intersect_mono κ1 κ1' κ2 κ2' :
+  κ1 ⊑ κ1' -∗ κ2 ⊑ κ2' -∗ κ1 ⊓ κ2 ⊑ κ1' ⊓ κ2'.
 Proof.
   iIntros "#H1 #H2". iApply (lft_incl_glb with "[]").
-  - iApply (lft_incl_trans with "[] H1").
-    iApply lft_le_incl. apply gmultiset_union_subseteq_l.
-  - iApply (lft_incl_trans with "[] H2").
-    iApply lft_le_incl. apply gmultiset_union_subseteq_r.
+  - iApply (lft_incl_trans with "[] H1"). iApply lft_intersect_incl_l.
+  - iApply (lft_incl_trans with "[] H2"). iApply lft_intersect_incl_r.
 Qed.
 
 (** Basic rules about borrows *)

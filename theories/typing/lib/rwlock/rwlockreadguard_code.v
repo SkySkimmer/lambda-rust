@@ -20,9 +20,8 @@ Section rwlockreadguard_functions.
 
   Lemma rwlockreadguard_deref_type ty :
     typed_val rwlockreadguard_deref
-      (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
-          (fun '(α, β) => [# &shr{α}(rwlockreadguard β ty)]%T)
-          (fun '(α, β) => &shr{α}ty)%T).
+      (fn (fun '(α, β) => FP' [α; β; α ⊑ β]%EL
+                              [# &shr{α}(rwlockreadguard β ty)] (&shr{α}ty))).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
@@ -62,7 +61,7 @@ Section rwlockreadguard_functions.
 
   Lemma rwlockreadguard_drop_type ty :
     typed_val rwlockreadguard_drop
-                   (fn(∀ α, [☀α]; rwlockreadguard α ty) → unit).
+              (fn(∀ α, [α]; rwlockreadguard α ty) → unit).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.

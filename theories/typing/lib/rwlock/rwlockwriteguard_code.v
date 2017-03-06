@@ -20,9 +20,8 @@ Section rwlockwriteguard_functions.
 
   Lemma rwlockwriteguard_deref_type ty :
     typed_val rwlockwriteguard_deref
-      (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
-          (fun '(α, β) => [# &shr{α}(rwlockwriteguard β ty)]%T)
-          (fun '(α, β) => &shr{α}ty)%T).
+      (fn (fun '(α, β) => FP' [α; β; α ⊑ β]%EL
+                              [# &shr{α}(rwlockwriteguard β ty)] (&shr{α}ty))).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
@@ -35,7 +34,7 @@ Section rwlockwriteguard_functions.
     iDestruct "HE" as "([Hα1 Hα2] & Hβ & #Hαβ)".
     iMod (frac_bor_acc with "LFT Hfrac Hα1") as (qlx') "[H↦ Hcloseα1]". done.
     rewrite heap_mapsto_vec_singleton.
-    iDestruct (lft_glb_acc with "Hβ Hα2") as (qβα) "[Hα2β Hcloseβα2]".
+    iDestruct (lft_intersect_acc with "Hβ Hα2") as (qβα) "[Hα2β Hcloseβα2]".
     wp_bind (!(LitV lx'))%E. iApply (wp_fupd_step with "[Hα2β]");
          [done| |by iApply ("Hshr" with "[] Hα2β")|]; first done.
     iMod "H↦" as "[H↦1 H↦2]". wp_read. iIntros "[#Hshr' Hα2β]!>". wp_op. wp_let.
@@ -63,9 +62,8 @@ Section rwlockwriteguard_functions.
 
   Lemma rwlockwriteguard_derefmut_type ty :
     typed_val rwlockwriteguard_derefmut
-      (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
-          (fun '(α, β) => [# &uniq{α}(rwlockwriteguard β ty)]%T)
-          (fun '(α, β) => &uniq{α}ty)%T).
+      (fn (fun '(α, β) => FP' [α; β; α ⊑ β]%EL
+                              [# &uniq{α}(rwlockwriteguard β ty)] (&uniq{α}ty))).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
@@ -111,7 +109,7 @@ Section rwlockwriteguard_functions.
 
   Lemma rwlockwriteguard_drop_type ty :
     typed_val rwlockwriteguard_drop
-                   (fn(∀ α, [☀α]; rwlockwriteguard α ty) → unit).
+              (fn(∀ α, [α]; rwlockwriteguard α ty) → unit).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.

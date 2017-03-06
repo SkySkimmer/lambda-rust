@@ -8,40 +8,66 @@ Set Default Proof Using "Type".
 Section fn.
   Context `{typeG Σ} {A : Type} {n : nat}.
 
-  Program Definition fn (E : A → elctx)
-          (tys : A → vec type n) (ty : A → type) : type :=
+  Record fn_params := FP { fp_tys : vec type n; fp_ty : type; fp_E : elctx }.
+
+  Program Definition fn (fp : A → fn_params) : type :=
     {| st_own tid vl := (∃ fb kb xb e H,
          ⌜vl = [@RecV fb (kb::xb) e H]⌝ ∗ ⌜length xb = n⌝ ∗
          ▷ ∀ (x : A) (k : val) (xl : vec val (length xb)),
-            □ typed_body (E x) []
-                         [k◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
+            □ typed_body (fp x).(fp_E) []
+                         [k◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (fp x).(fp_ty)])]
                          (zip_with (TCtx_hasty ∘ of_val) xl
-                                   (box <$> (vec_to_list (tys x))))
+                                   (box <$> (vec_to_list (fp x).(fp_tys))))
                          (subst_v (fb::kb::xb) (RecV fb (kb::xb) e:::k:::xl) e))%I |}.
   Next Obligation.
-    iIntros (E tys ty tid vl) "H". iDestruct "H" as (fb kb xb e ?) "[% _]". by subst.
+    iIntros (fp tid vl) "H". iDestruct "H" as (fb kb xb e ?) "[% _]". by subst.
   Qed.
 
-  Global Instance fn_send E tys ty : Send (fn E tys ty).
+  Global Instance fn_send fp : Send (fn fp).
   Proof. iIntros (tid1 tid2 vl). done. Qed.
 
-  Lemma fn_type_contractive n' E :
-    Proper (pointwise_relation A (B := vec type n) (Forall2 (type_dist2_later n')) ==>
-            pointwise_relation A (type_dist2_later n') ==> type_dist2 n') (fn E).
+  Definition fn_params_rel (ty_rel : relation type) : relation fn_params :=
+    λ fp1 fp2,
+      Forall2 ty_rel fp2.(fp_tys) fp1.(fp_tys) ∧ ty_rel fp1.(fp_ty) fp2.(fp_ty) ∧
+      fp1.(fp_E) = fp2.(fp_E).
+
+  Global Instance fp_tys_proper R :
+    Proper (flip (fn_params_rel R) ==> (Forall2 R : relation (vec _ _))) fp_tys.
+  Proof. intros ?? HR. apply HR. Qed.
+  Global Instance fp_tys_proper_flip R :
+    Proper (fn_params_rel R ==> flip (Forall2 R : relation (vec _ _))) fp_tys.
+  Proof. intros ?? HR. apply HR. Qed.
+
+  Global Instance fp_ty_proper R :
+    Proper (fn_params_rel R ==> R) fp_ty.
+  Proof. intros ?? HR. apply HR. Qed.
+
+  Global Instance fp_E_proper R :
+    Proper (fn_params_rel R ==> eq) fp_E.
+  Proof. intros ?? HR. apply HR. Qed.
+
+  Global Instance FP_proper R :
+    Proper (flip (Forall2 R : relation (vec _ _)) ==> R ==> eq ==> fn_params_rel R) FP.
+  Proof. by split; [|split]. Qed.
+
+  Global Instance fn_type_contractive n' :
+    Proper (pointwise_relation A (fn_params_rel (type_dist2_later n')) ==>
+            type_dist2 n') fn.
   Proof.
-    intros ?? Htys ?? Hty. apply ty_of_st_type_ne. destruct n'; first done.
+    intros fp1 fp2 Hfp. apply ty_of_st_type_ne. destruct n'; first done.
     constructor; simpl.
     (* TODO: 'f_equiv' is slow here because reflexivity is slow. *)
     (* The clean way to do this would be to have a metric on type contexts. Oh well. *)
     intros tid vl. unfold typed_body.
-    do 12 f_equiv. f_contractive. do 17 f_equiv.
+    do 12 f_equiv. f_contractive. do 17 (apply Hfp || f_equiv).
+    - f_equiv. apply Hfp.
     - rewrite !cctx_interp_singleton /=. do 5 f_equiv.
-      rewrite !tctx_interp_singleton /tctx_elt_interp /=. repeat (apply Hty || f_equiv).
+      rewrite !tctx_interp_singleton /tctx_elt_interp /=. repeat (apply Hfp || f_equiv).
     - rewrite /tctx_interp !big_sepL_zip_with /=. do 3 f_equiv.
       cut (∀ n tid p i, Proper (dist n ==> dist n)
         (λ (l : list _), ∀ ty, ⌜l !! i = Some ty⌝ → tctx_elt_interp tid (p ◁ ty))%I).
       { intros Hprop. apply Hprop, list_fmap_ne; last first.
-        - eapply Forall2_impl; first exact: Htys. intros.
+        - symmetry. eapply Forall2_impl; first apply Hfp. intros.
           apply dist_later_dist, type_dist2_dist_later. done.
         - apply _. }
       clear. intros n tid p i x y. rewrite list_dist_lookup=>Hxy.
@@ -57,52 +83,65 @@ Section fn.
         * iIntros "H". by iApply "H".
         * iIntros "H * #EQ". by iDestruct "EQ" as %[=->].
   Qed.
-  Global Existing Instance fn_type_contractive.
 
-  Global Instance fn_ne n' E :
-    Proper (pointwise_relation A (dist n') ==>
-            pointwise_relation A (dist n') ==> dist n') (fn E).
+  Global Instance fn_ne n' :
+    Proper (pointwise_relation A (fn_params_rel (dist n')) ==> dist n') fn.
   Proof.
-    intros ?? H1 ?? H2. apply dist_later_dist, type_dist2_dist_later.
-    apply fn_type_contractive=>u; simpl.
-    - eapply Forall2_impl; first exact: H1. intros. simpl.
+    intros ?? Hfp. apply dist_later_dist, type_dist2_dist_later.
+    apply fn_type_contractive=>u. split; last split.
+    - eapply Forall2_impl; first apply Hfp. intros. simpl.
       apply type_dist_dist2. done.
-    - apply type_dist_dist2. apply H2.
+    - apply type_dist_dist2. apply Hfp.
+    - apply Hfp.
   Qed.
 End fn.
 
-(* TODO: Once we depend on 8.6pl1, extend this to recursive binders so that
-   patterns like '(a, b) can be used. *)
-Notation "'fn(∀' x ',' E ';' T1 ',' .. ',' TN ')' '→' R" :=
-  (fn (λ x, E%EL) (λ x, (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T) (λ x, R%T))
-  (at level 99, R at level 200,
-   format "'fn(∀' x ','  E ';'  T1 ','  .. ','  TN ')'  '→'  R") : lrust_type_scope.
-Notation "'fn(∀' x ',' E ')' '→' R" :=
-  (fn (λ x, E%EL) (λ x, Vector.nil) (λ x, R%T))
-  (at level 99, R at level 200,
-   format "'fn(∀' x ','  E ')'  '→'  R") : lrust_type_scope.
+Arguments fn_params {_ _} _.
+
+(* The parameter of [FP] are in the wrong order in order to make sure
+   that type-checking is done in that order, so that the [ELCtx_Alive]
+   is taken as a coercion. We reestablish the intuitive order with
+   [FP'] *)
+Notation FP' E tys ty := (FP tys ty E).
+
+(* We use recursive notation for binders as well, to allow patterns
+   like '(a, b) to be used. In practice, only one binder is ever used,
+   but using recursive binders is the only way to make Coq accept
+   patterns. *)
+(* FIXME : because of a bug in Coq, such patterns only work for
+   printing. Once on 8.6pl1, this should work.  *)
+Notation "'fn(∀' x .. x' ',' E ';' T1 ',' .. ',' TN ')' '→' R" :=
+  (fn (λ x, (.. (λ x',
+      FP' E%EL (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T R%T)..)))
+  (at level 99, R at level 200, x binder, x' binder,
+   format "'fn(∀'  x .. x' ','  E ';'  T1 ','  .. ','  TN ')'  '→'  R") : lrust_type_scope.
+Notation "'fn(∀' x .. x' ',' E ')' '→' R" :=
+  (fn (λ x, (.. (λ x', FP' E%EL Vector.nil R%T)..)))
+  (at level 99, R at level 200, x binder, x' binder,
+   format "'fn(∀'  x .. x' ','  E ')'  '→'  R") : lrust_type_scope.
 Notation "'fn(' E ';' T1 ',' .. ',' TN ')' '→' R" :=
-  (fn (λ _:(), E%EL) (λ _, (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T) (λ _, R%T))
+  (fn (λ _:(), FP' E%EL (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..) R%T))
   (at level 99, R at level 200,
    format "'fn(' E ';'  T1 ','  .. ','  TN ')'  '→'  R") : lrust_type_scope.
 Notation "'fn(' E ')' '→' R" :=
-  (fn (λ _:(), E%EL) (λ _, Vector.nil) (λ _, R%T))
+  (fn (λ _:(), FP' E%EL Vector.nil R%T))
   (at level 99, R at level 200,
    format "'fn(' E ')'  '→'  R") : lrust_type_scope.
 
 Section typing.
   Context `{typeG Σ}.
 
-  Lemma fn_subtype_full {A n} E0 L0 E E' (tys tys' : A → vec type n) ty ty' :
-    (∀ x, elctx_incl E0 L0 (E x) (E' x)) →
-    (∀ x, Forall2 (subtype (E0 ++ E x) L0) (tys' x) (tys x)) →
-    (∀ x, subtype (E0 ++ E x) L0 (ty x) (ty' x)) →
-    subtype E0 L0 (fn E' tys ty) (fn E tys' ty').
+  Lemma fn_subtype {A n} E0 L0 (fp fp' : A → fn_params n) :
+    (∀ x, elctx_incl E0 L0 (fp' x).(fp_E) (fp x).(fp_E)) →
+    (∀ x, Forall2 (subtype (E0 ++ (fp' x).(fp_E)) L0)
+                  (fp' x).(fp_tys) (fp x).(fp_tys)) →
+    (∀ x, subtype (E0 ++ (fp' x).(fp_E)) L0 (fp x).(fp_ty) (fp' x).(fp_ty)) →
+    subtype E0 L0 (fn fp) (fn fp').
   Proof.
     intros HE Htys Hty. apply subtype_simple_type=>//= _ vl.
     iIntros "#HE0 #HL0 Hf". iDestruct "Hf" as (fb kb xb e ?) "[% [% #Hf]]". subst.
     iExists fb, kb, xb, e, _. iSplit. done. iSplit. done. iNext.
-    rewrite /typed_body. iIntros "* !# * #LFT Htl HE HL HC HT".
+    rewrite /typed_body. iIntros (x k xl) "!# * #LFT Htl HE HL HC HT".
     iDestruct (elctx_interp_persist with "HE") as "#HEp".
     iMod (HE with "HE0 HL0 HE") as (qE') "[HE' Hclose]". done.
     iApply ("Hf" with "LFT Htl HE' HL [HC Hclose] [HT]").
@@ -114,14 +153,15 @@ Section typing.
       { by apply elem_of_list_singleton. }
       rewrite /tctx_interp !big_sepL_singleton /=.
       iDestruct "HT" as (v) "[HP Hown]". iExists v. iFrame "HP".
-      assert (Hst : subtype (E0 ++ E x) L0 (box (ty x)) (box (ty' x)))
+      assert (Hst : subtype (E0 ++ (fp' x).(fp_E)) L0
+                            (box (fp x).(fp_ty)) (box (fp' x).(fp_ty)))
         by by rewrite ->Hty.
       iDestruct (Hst with "[HE0 HEp] HL0") as "(_ & Hty & _)".
       { rewrite /elctx_interp_0 big_sepL_app. by iSplit. }
       by iApply "Hty".
     - rewrite /tctx_interp
-         -(fst_zip (tys x) (tys' x)) ?vec_to_list_length //
-         -{1}(snd_zip (tys x) (tys' x)) ?vec_to_list_length //
+         -(fst_zip (fp x).(fp_tys) (fp' x).(fp_tys)) ?vec_to_list_length //
+         -{1}(snd_zip (fp x).(fp_tys) (fp' x).(fp_tys)) ?vec_to_list_length //
          !zip_with_fmap_r !(zip_with_zip (λ _ _, (_ ∘ _) _ _)) !big_sepL_fmap.
       iApply big_sepL_impl. iSplit; last done. iIntros "{HT}!#".
       iIntros (i [p [ty1' ty2']]) "#Hzip H /=".
@@ -129,58 +169,43 @@ Section typing.
       rewrite !lookup_zip_with.
       iDestruct "Hzip" as %(? & ? & ([? ?] & (? & Hty'1 &
         (? & Hty'2 & [=->->])%bind_Some)%bind_Some & [=->->->])%bind_Some)%bind_Some.
-      specialize (Htys x). eapply Forall2_lookup_lr in Htys; try done.
-      assert (Hst : subtype (E0 ++ E x) L0 (box ty2') (box ty1'))
+      eapply Forall2_lookup_lr in Htys; try done.
+      assert (Hst : subtype (E0 ++ (fp' x).(fp_E)) L0 (box ty2') (box ty1'))
         by by rewrite ->Htys.
       iDestruct (Hst with "[] []") as "(_ & #Ho & _)"; [ |done|].
       { rewrite /elctx_interp_0 big_sepL_app. by iSplit. }
       by iApply "Ho".
   Qed.
 
-  Lemma fn_subtype_ty {A n} E0 L0 E (tys1 tys2 : A → vec type n) ty1 ty2 :
-    (∀ x, Forall2 (subtype (E0 ++ E x) L0) (tys2 x) (tys1 x)) →
-    (∀ x, subtype (E0 ++ E x) L0 (ty1 x) (ty2 x)) →
-    subtype E0 L0 (fn E tys1 ty1) (fn E tys2 ty2).
-  Proof. intros. by apply fn_subtype_full. Qed.
-
   (* This proper and the next can probably not be inferred, but oh well. *)
-  Global Instance fn_subtype_ty' {A n} E0 L0 E :
-    Proper (flip (pointwise_relation A (λ (v1 v2 : vec type n), Forall2 (subtype E0 L0) v1 v2)) ==>
-            pointwise_relation A (subtype E0 L0) ==> subtype E0 L0) (fn E).
+  Global Instance fn_subtype' {A n} E0 L0 :
+    Proper (pointwise_relation A (fn_params_rel (n:=n) (subtype E0 L0)) ==>
+            subtype E0 L0) fn.
   Proof.
-    intros tys1 tys2 Htys ty1 ty2 Hty. apply fn_subtype_ty.
-    - intros. eapply Forall2_impl; first eapply Htys. intros ??.
+    intros fp1 fp2 Hfp. apply fn_subtype=>x; destruct (Hfp x) as (Htys & Hty & HE).
+    - by rewrite HE.
+    - eapply Forall2_impl; first eapply Htys. intros ??.
       eapply subtype_weaken; last done. by apply submseteq_inserts_r.
-    - intros. eapply subtype_weaken, Hty; last done. by apply submseteq_inserts_r.
+    - eapply subtype_weaken, Hty; last done. by apply submseteq_inserts_r.
   Qed.
 
-  Global Instance fn_eqtype_ty' {A n} E0 L0 E :
-    Proper (pointwise_relation A (λ (v1 v2 : vec type n), Forall2 (eqtype E0 L0) v1 v2) ==>
-            pointwise_relation A (eqtype E0 L0) ==> eqtype E0 L0) (fn E).
+  Global Instance fn_eqtype' {A n} E0 L0 :
+    Proper (pointwise_relation A (fn_params_rel (n:=n) (eqtype E0 L0)) ==>
+            eqtype E0 L0) fn.
   Proof.
-    intros tys1 tys2 Htys ty1 ty2 Hty. split; eapply fn_subtype_ty'; try (by intro; apply Hty);
-      intros x; (apply Forall2_flip + idtac); (eapply Forall2_impl; first by eapply (Htys x)); by intros ??[].
+    intros fp1 fp2 Hfp. split; eapply fn_subtype=>x; destruct (Hfp x) as (Htys & Hty & HE).
+    - by rewrite HE.
+    - eapply Forall2_impl; first eapply Htys. intros t1 t2 Ht.
+      eapply subtype_weaken; last apply Ht; last done. by apply submseteq_inserts_r.
+    - eapply subtype_weaken; last apply Hty; last done. by apply submseteq_inserts_r.
+    - by rewrite HE.
+    - symmetry in Htys. eapply Forall2_impl; first eapply Htys. intros t1 t2 Ht.
+      eapply subtype_weaken; last apply Ht; last done. by apply submseteq_inserts_r.
+    - eapply subtype_weaken; last apply Hty; last done. by apply submseteq_inserts_r.
   Qed.
 
-  Lemma fn_subtype_elctx_sat {A n} E0 L0 E E' (tys : A → vec type n) ty :
-    (∀ x, elctx_sat (E x) [] (E' x)) →
-    subtype E0 L0 (fn E' tys ty) (fn E tys ty).
-  Proof.
-    intros. apply fn_subtype_full; try done. by intros; apply elctx_sat_incl.
-  Qed.
-
-  Lemma fn_subtype_lft_incl {A n} E0 L0 E κ κ' (tys : A → vec type n) ty :
-    lctx_lft_incl E0 L0 κ κ' →
-    subtype E0 L0 (fn (λ x, (κ ⊑ κ') :: E x)%EL tys ty) (fn E tys ty).
-  Proof.
-    intros Hκκ'. apply fn_subtype_full; try done. intros.
-    apply elctx_incl_lft_incl; last by apply elctx_incl_refl.
-    iIntros "#HE #HL". iApply (Hκκ' with "[HE] HL").
-    rewrite /elctx_interp_0 big_sepL_app. iDestruct "HE" as "[$ _]".
-  Qed.
-
-  Lemma fn_subtype_specialize {A B n} (σ : A → B) E0 L0 E tys ty :
-    subtype E0 L0 (fn (n:=n) E tys ty) (fn (E ∘ σ) (tys ∘ σ) (ty ∘ σ)).
+  Lemma fn_subtype_specialize {A B n} (σ : A → B) E0 L0 fp :
+    subtype E0 L0 (fn (n:=n) fp) (fn (fp ∘ σ)).
   Proof.
     apply subtype_simple_type=>//= _ vl.
     iIntros "_ _ Hf". iDestruct "Hf" as (fb kb xb e ?) "[% [% #Hf]]". subst.
@@ -188,12 +213,12 @@ Section typing.
     rewrite /typed_body. iNext. iIntros "*". iApply "Hf".
   Qed.
 
-  Lemma type_call' {A} E L E' T p (ps : list path)
-                         (tys : A → vec type (length ps)) ty k x :
-    elctx_sat E L (E' x) →
-    typed_body E L [k ◁cont(L, λ v : vec _ 1, (v!!!0 ◁ box (ty x)) :: T)]
-               ((p ◁ fn E' tys ty) ::
-                zip_with TCtx_hasty ps (box <$> (vec_to_list (tys x))) ++
+  Lemma type_call' {A} E L T p (ps : list path)
+                         (fp : A → fn_params (length ps)) k x :
+    elctx_sat E L (fp x).(fp_E) →
+    typed_body E L [k ◁cont(L, λ v : vec _ 1, (v!!!0 ◁ box (fp x).(fp_ty)) :: T)]
+               ((p ◁ fn fp) ::
+                zip_with TCtx_hasty ps (box <$> (vec_to_list (fp x).(fp_tys))) ++
                 T)
                (call: p ps → k).
   Proof.
@@ -201,10 +226,10 @@ Section typing.
     rewrite tctx_interp_cons tctx_interp_app. iIntros "(Hf & Hargs & HT)".
     wp_apply (wp_hasty with "Hf"). iIntros (v) "% Hf".
     iApply (wp_app_vec _ _ (_::_) ((λ v, ⌜v = k⌝):::
-               vmap (λ ty (v : val), tctx_elt_interp tid (v ◁ box ty)) (tys x))%I
+               vmap (λ ty (v : val), tctx_elt_interp tid (v ◁ box ty)) (fp x).(fp_tys))%I
             with "[Hargs]"); first wp_done.
     - rewrite /= big_sepL_cons. iSplitR "Hargs"; first by iApply wp_value'.
-      clear dependent ty k p.
+      clear dependent k p.
       rewrite /tctx_interp vec_to_list_map !zip_with_fmap_r
               (zip_with_zip (λ e ty, (e, _))) zip_with_zip !big_sepL_fmap.
       iApply (big_sepL_mono' with "Hargs"). iIntros (i [p ty]) "HT/=".
@@ -212,8 +237,8 @@ Section typing.
     - simpl. change (@length expr ps) with (length ps).
       iIntros (vl'). inv_vec vl'=>kv vl. rewrite /= big_sepL_cons.
       iIntros "/= [% Hvl]". subst kv. iDestruct "Hf" as (fb kb xb e ?) "[EQ [EQl #Hf]]".
-      iDestruct "EQ" as %[=->]. iDestruct "EQl" as %EQl. revert vl tys.
-      rewrite <-EQl=>vl tys. iApply wp_rec; try done.
+      iDestruct "EQ" as %[=->]. iDestruct "EQl" as %EQl. revert vl fp HE.
+      rewrite <-EQl=>vl fp HE. iApply wp_rec; try done.
       { rewrite -fmap_cons Forall_fmap Forall_forall=>? _. rewrite /= to_of_val. eauto. }
       { rewrite -fmap_cons -(subst_v_eq (fb::kb::xb) (_:::k:::vl)) //. }
       iNext. iSpecialize ("Hf" $! x k vl).
@@ -231,14 +256,14 @@ Section typing.
         iApply (big_sepL_mono' with "Hvl"). by iIntros (i [v ty']).
   Qed.
 
-  Lemma type_call {A} x E L E' C T T' T'' p (ps : list path)
-                        (tys : A → vec type (length ps)) ty k :
-    (p ◁ fn E' tys ty)%TC ∈ T →
-    elctx_sat E L (E' x) →
+  Lemma type_call {A} x E L C T T' T'' p (ps : list path)
+                        (fp : A → fn_params (length ps)) k :
+    (p ◁ fn fp)%TC ∈ T →
+    elctx_sat E L (fp x).(fp_E) →
     tctx_extract_ctx E L (zip_with TCtx_hasty ps
-                                   (box <$> vec_to_list (tys x))) T T' →
+                                   (box <$> vec_to_list (fp x).(fp_tys))) T T' →
     (k ◁cont(L, T''))%CC ∈ C →
-    (∀ ret : val, tctx_incl E L ((ret ◁ box (ty x))::T') (T'' [# ret])) →
+    (∀ ret : val, tctx_incl E L ((ret ◁ box (fp x).(fp_ty))::T') (T'' [# ret])) →
     typed_body E L C T (call: p ps → k).
   Proof.
     intros Hfn HE HTT' HC HT'T''.
@@ -249,18 +274,18 @@ Section typing.
       apply copy_elem_of_tctx_incl; last done. apply _.
   Qed.
 
-  Lemma type_letcall {A} x E L E' C T T' p (ps : list path)
-                        (tys : A → vec type (length ps)) ty b e :
+  Lemma type_letcall {A} x E L C T T' p (ps : list path)
+                        (fp : A → fn_params (length ps)) b e :
     Closed (b :b: []) e → Closed [] p → Forall (Closed []) ps →
-    (p ◁ fn E' tys ty)%TC ∈ T →
-    elctx_sat E L (E' x) →
+    (p ◁ fn fp)%TC ∈ T →
+    elctx_sat E L (fp x).(fp_E) →
     tctx_extract_ctx E L (zip_with TCtx_hasty ps
-                                   (box <$> vec_to_list (tys x))) T T' →
-    (∀ ret : val, typed_body E L C ((ret ◁ box (ty x))::T') (subst' b ret e)) -∗
+                                   (box <$> vec_to_list (fp x).(fp_tys))) T T' →
+    (∀ ret : val, typed_body E L C ((ret ◁ box (fp x).(fp_ty))::T') (subst' b ret e)) -∗
     typed_body E L C T (letcall: b := p ps in e).
   Proof.
     iIntros (?? Hpsc ???) "He".
-    iApply (type_cont_norec [_] _ (λ r, (r!!!0 ◁ box (ty x)) :: T')%TC).
+    iApply (type_cont_norec [_] _ (λ r, (r!!!0 ◁ box (fp x).(fp_ty)) :: T')%TC).
     - (* TODO : make [solve_closed] work here. *)
       eapply is_closed_weaken; first done. set_solver+.
     - (* TODO : make [solve_closed] work here. *)
@@ -283,19 +308,19 @@ Section typing.
       apply incl_cctx_incl. set_solver+.
   Qed.
 
-  Lemma type_rec {A} E L E' fb (argsb : list binder) ef e n
-        (tys : A → vec type n) ty
-        T `{!CopyC T, !SendC T} :
+  Lemma type_rec {A} E L fb (argsb : list binder) ef e n
+        (fp : A → fn_params n) T `{!CopyC T, !SendC T} :
     ef = (funrec: fb argsb := e)%E →
     n = length argsb →
     Closed (fb :b: "return" :b: argsb +b+ []) e →
     □ (∀ x (f : val) k (args : vec val (length argsb)),
-          typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
-                     ((f ◁ fn E' tys ty) ::
+          typed_body (fp x).(fp_E) []
+                     [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (fp x).(fp_ty)])]
+                     ((f ◁ fn fp) ::
                         zip_with (TCtx_hasty ∘ of_val) args
-                                 (box <$> vec_to_list (tys x)) ++ T)
+                                 (box <$> vec_to_list (fp x).(fp_tys)) ++ T)
                      (subst_v (fb :: BNamed "return" :: argsb) (f ::: k ::: args) e)) -∗
-    typed_instruction_ty E L T ef (fn E' tys ty).
+    typed_instruction_ty E L T ef (fn fp).
   Proof.
     iIntros (-> -> Hc) "#Hbody". iIntros (tid qE) " #LFT $ $ $ #HT". iApply wp_value.
     { simpl. rewrite ->(decide_left Hc). done. }
@@ -308,23 +333,23 @@ Section typing.
     by iApply sendc_change_tid.
   Qed.
 
-  Lemma type_fn {A} E L E' (argsb : list binder) ef e n
-        (tys : A → vec type n) ty
-        T `{!CopyC T, !SendC T} :
+  Lemma type_fn {A} E L (argsb : list binder) ef e n
+        (fp : A → fn_params n) T `{!CopyC T, !SendC T} :
     ef = (funrec: <> argsb := e)%E →
     n = length argsb →
     Closed ("return" :b: argsb +b+ []) e →
     □ (∀ x k (args : vec val (length argsb)),
-        typed_body (E' x) [] [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (ty x)])]
+        typed_body (fp x).(fp_E) []
+                   [k ◁cont([], λ v : vec _ 1, [v!!!0 ◁ box (fp x).(fp_ty)])]
                    (zip_with (TCtx_hasty ∘ of_val) args
-                             (box <$> vec_to_list (tys x)) ++ T)
+                             (box <$> vec_to_list (fp x).(fp_tys)) ++ T)
                    (subst_v (BNamed "return" :: argsb) (k ::: args) e)) -∗
-    typed_instruction_ty E L T ef (fn E' tys ty).
+    typed_instruction_ty E L T ef (fn fp).
   Proof.
     iIntros (???) "#He". iApply type_rec; try done. iIntros "!# *".
-    (iApply typed_body_mono; last by iApply "He"); try done.
+    iApply typed_body_mono; last iApply "He"; try done.
     eapply contains_tctx_incl. by constructor.
   Qed.
 End typing.
 
-Hint Resolve fn_subtype_full : lrust_typing.
+Hint Resolve fn_subtype : lrust_typing.

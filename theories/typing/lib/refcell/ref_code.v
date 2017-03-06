@@ -15,7 +15,7 @@ Section ref_functions.
     own γ (◯ reading_st q ν) -∗
     ∃ (q' : Qp) n, l ↦ #(Zpos n) ∗ ⌜(q ≤ q')%Qc⌝ ∗
             own γ (● Some (to_agree ν, Cinr (q', n)) ⋅ ◯ reading_st q ν) ∗
-            ty.(ty_shr) (α ∪ ν) tid (shift_loc l 1) ∗
+            ty.(ty_shr) (α ⊓ ν) tid (shift_loc l 1) ∗
             ((1).[ν] ={↑lftN,∅}▷=∗ &{α} shift_loc l 1 ↦∗: ty_own ty tid) ∗
             ∃ q'', ⌜(q' + q'' = 1)%Qp⌝ ∗ q''.[ν].
   Proof.
@@ -56,8 +56,7 @@ Section ref_functions.
      See: https://coq.inria.fr/bugs/show_bug.cgi?id=5326 *)
   Lemma ref_clone_type ty :
     typed_val ref_clone
-      (fn (fun '(α, β) => [☀α; ☀β])%EL (fun '(α, β) => [# &shr{α}(ref β ty)]%T)
-                                       (fun '(α, β) => ref β ty)%T).
+      (fn (fun '(α, β) => FP' [α; β]%EL [# &shr{α}(ref β ty)]%T (ref β ty)%T)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
@@ -117,9 +116,7 @@ Section ref_functions.
 
   Lemma ref_deref_type ty :
     typed_val ref_deref
-      (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
-          (fun '(α, β) => [# &shr{α}(ref β ty)]%T)
-          (fun '(α, β) => &shr{α}ty)%T).
+      (fn (fun '(α, β) => FP' [α; β; α ⊑ β]%EL [# &shr{α}(ref β ty)]%T (&shr{α}ty)%T)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
@@ -156,7 +153,7 @@ Section ref_functions.
       let: "r" := new [ #0] in "return" ["r"].
 
   Lemma ref_drop_type ty :
-    typed_val ref_drop (fn(∀ α, [☀α]; ref α ty) → unit).
+    typed_val ref_drop (fn(∀ α, [α]; ref α ty) → unit).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
@@ -221,7 +218,8 @@ Section ref_functions.
 
   Lemma ref_map_type ty1 ty2 envty E :
     typed_val ref_map
-      (fn(∀ β, [☀β] ++ E; ref β ty1, fn(∀ α, [☀α] ++ E; envty, &shr{α}ty1) → &shr{α}ty2, envty)
+      (fn(∀ β, [β]%EL ++ E;
+            ref β ty1, fn(∀ α, [α]%EL ++ E; envty, &shr{α}ty1) → &shr{α}ty2, envty)
        → ref β ty2).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret arg).
@@ -240,10 +238,10 @@ Section ref_functions.
     iDestruct "HE" as "[HE HE']". iDestruct "Hν" as "[Hν Hν']".
     remember (RecV "k" [] (ret [ LitV lref])%E)%V as k eqn:EQk.
     iApply (wp_let' _ _ _ _ k). { subst. solve_to_val. } simpl_subst.
-    iApply (type_type ((☀ (α ∪ ν)) :: E)%EL []
-        [k ◁cont([], λ _:vec val 0, [ #lref ◁ own_ptr 2 (&shr{α ∪ ν}ty2)])]%CC
-        [ f ◁ box (fn(∀ α, [☀α] ++ E; envty, &shr{α}ty1) → &shr{α}ty2);
-          #lref ◁ own_ptr 2 (&shr{α ∪ ν}ty1); env ◁ box envty ]%TC
+    iApply (type_type ((α ⊓ ν) :: E)%EL []
+        [k ◁cont([], λ _:vec val 0, [ #lref ◁ own_ptr 2 (&shr{α ⊓ ν}ty2)])]%CC
+        [ f ◁ box (fn(∀ α, [α]%EL ++ E; envty, &shr{α}ty1) → &shr{α}ty2);
+          #lref ◁ own_ptr 2 (&shr{α ⊓ ν}ty1); env ◁ box envty ]%TC
        with "[] LFT Hna [HE Hν] HL [Hk HE' Hν' Href↦2 Hγ Href†2]"); first last.
     { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
       iFrame. iApply tctx_hasty_val'. done. iFrame. iExists [_].

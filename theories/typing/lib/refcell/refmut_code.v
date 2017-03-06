@@ -20,9 +20,7 @@ Section refmut_functions.
 
   Lemma refmut_deref_type ty :
     typed_val refmut_deref
-      (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
-          (fun '(α, β) => [# &shr{α}(refmut β ty)]%T)
-          (fun '(α, β) => &shr{α}ty)%T).
+      (fn (fun '(α, β) => FP' [α; β; α ⊑ β]%EL [# &shr{α}(refmut β ty)]%T (&shr{α}ty))).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
@@ -35,7 +33,7 @@ Section refmut_functions.
     iDestruct "HE" as "([Hα1 Hα2] & Hβ & #Hαβ)".
     iMod (frac_bor_acc with "LFT Hfrac Hα1") as (qlx') "[H↦ Hcloseα1]". done.
     rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
-    iDestruct (lft_glb_acc with "Hβ Hα2") as (qβα) "[Hα2β Hcloseβα2]".
+    iDestruct (lft_intersect_acc with "Hβ Hα2") as (qβα) "[Hα2β Hcloseβα2]".
     wp_bind (!(LitV lx'))%E. iApply (wp_fupd_step with "[Hα2β]");
          [done| |by iApply ("Hshr" with "[] Hα2β")|]; first done.
     iMod "H↦" as "[H↦1 H↦2]". wp_read. iIntros "[#Hshr' Hα2β]!>". wp_let.
@@ -62,10 +60,9 @@ Section refmut_functions.
 
   Lemma refmut_derefmut_type ty :
     typed_val refmut_derefmut
-      (fn (fun '(α, β) => [☀α; ☀β; α ⊑ β])%EL
-          (fun '(α, β) => [# &uniq{α}(refmut β ty)]%T)
-          (fun '(α, β) => &uniq{α}ty)%T).
-  Proof.
+      (fn (fun '(α, β) => FP' [α; β; α ⊑ β]%EL [# &uniq{α}(refmut β ty)]%T
+                              (&uniq{α}ty)%T)).
+   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x').
@@ -117,7 +114,7 @@ Section refmut_functions.
       let: "r" := new [ #0] in "return" ["r"].
 
   Lemma refmut_drop_type ty :
-    typed_val refmut_drop (fn(∀ α, [☀α]; refmut α ty) → unit).
+    typed_val refmut_drop (fn(∀ α, [α]; refmut α ty) → unit).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
@@ -171,9 +168,9 @@ Section refmut_functions.
 
   Lemma refmut_map_type ty1 ty2 envty E :
     typed_val refmut_map
-      (fn(∀ β, [☀β] ++ E; refmut β ty1,
-                          fn(∀ α, [☀α] ++ E; envty, &uniq{α} ty1) → &uniq{α} ty2,
-                          envty)
+      (fn(∀ β, [β]%EL ++ E; refmut β ty1,
+                         fn(∀ α, [α]%EL ++ E; envty, &uniq{α} ty1) → &uniq{α} ty2,
+                         envty)
        → refmut β ty2).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
@@ -193,10 +190,10 @@ Section refmut_functions.
     iDestruct "HE" as "[HE HE']". iDestruct "Hν" as "[Hν Hν']".
     remember (RecV "k" [] (ret [ LitV lref])%E)%V as k eqn:EQk.
     iApply (wp_let' _ _ _ _ k). { subst. solve_to_val. } simpl_subst.
-    iApply (type_type ((☀ (α ∪ ν)) :: E)%EL []
-        [k ◁cont([], λ _:vec val 0, [ #lref ◁ own_ptr 2 (&uniq{α ∪ ν}ty2)])]%CC
-        [ f ◁ box (fn(∀ α, [☀α] ++ E; envty, &uniq{α}ty1) → &uniq{α}ty2);
-          #lref ◁ own_ptr 2 (&uniq{α ∪ ν}ty1); env ◁ box envty ]%TC
+    iApply (type_type ((α ⊓ ν) :: E)%EL []
+        [k ◁cont([], λ _:vec val 0, [ #lref ◁ own_ptr 2 (&uniq{α ⊓ ν}ty2)])]%CC
+        [ f ◁ box (fn(∀ α, [α]%EL ++ E; envty, &uniq{α}ty1) → &uniq{α}ty2);
+          #lref ◁ own_ptr 2 (&uniq{α ⊓ ν}ty1); env ◁ box envty ]%TC
        with "[] LFT Hna [HE Hν] HL [Hk HE' Hν' Href↦2 Hγ Href†2]"); first last.
     { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
       iFrame. iApply tctx_hasty_val'. done. iFrame. iExists [_].

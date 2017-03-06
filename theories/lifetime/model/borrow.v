@@ -136,9 +136,9 @@ Lemma bor_combine E κ P Q :
 Proof.
   iIntros (?) "#LFT HP HQ". rewrite {1 2}/bor.
   iDestruct "HP" as (κ1) "[#Hκ1 Hbor1]". iDestruct "HQ" as (κ2) "[#Hκ2 Hbor2]".
-  iMod (raw_rebor _ _ (κ1 ∪ κ2) with "LFT Hbor1") as "[Hbor1 _]".
+  iMod (raw_rebor _ _ (κ1 ⊓ κ2) with "LFT Hbor1") as "[Hbor1 _]".
     done. by apply gmultiset_union_subseteq_l.
-  iMod (raw_rebor _ _ (κ1 ∪ κ2) with "LFT Hbor2") as "[Hbor2 _]".
+  iMod (raw_rebor _ _ (κ1 ⊓ κ2) with "LFT Hbor2") as "[Hbor2 _]".
     done. by apply gmultiset_union_subseteq_r.
   iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose". unfold raw_bor, idx_bor_own.
   iDestruct "Hbor1" as (j1) "[Hbor1 Hslice1]". iDestruct "Hbor2" as (j2) "[Hbor2 Hslice2]".
@@ -177,7 +177,7 @@ Proof.
                 -fmap_None -lookup_fmap !fmap_delete //. }
     rewrite own_bor_op. iDestruct "Hbor" as "[H● H◯]".
     iAssert (&{κ}(P ∗ Q))%I with "[H◯ Hslice]" as "$".
-    { rewrite /bor /raw_bor /idx_bor_own. iExists (κ1 ∪ κ2).
+    { rewrite /bor /raw_bor /idx_bor_own. iExists (κ1 ⊓ κ2).
       iSplit; first by iApply (lft_incl_glb with "Hκ1 Hκ2").
       iExists γ. iFrame. iExists _. iFrame. iNext. iAlways.
       by iSplit; iIntros "[HP HQ]"; iSplitL "HP"; (iApply "HPP'" || iApply "HQQ'"). }

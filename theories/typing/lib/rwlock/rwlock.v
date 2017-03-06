@@ -41,7 +41,7 @@ Section rwlock_inv.
         ∃ (ν : lft) q', agν ≡ to_agree ν ∗
                 □ (1.[ν] ={↑lftN,∅}▷=∗ [†ν]) ∗
                 ([†ν] ={↑lftN}=∗ &{α}(shift_loc l 1 ↦∗: ty.(ty_own) tid)) ∗
-                ty.(ty_shr) (α ∪ ν) tid (shift_loc l 1) ∗
+                ty.(ty_shr) (α ⊓ ν) tid (shift_loc l 1) ∗
                 ⌜(q + q')%Qp = 1%Qp⌝ ∗ q'.[ν]
       | _ => (* Locked for write. *) True
       end)%I.
@@ -131,9 +131,9 @@ Section rwlock.
     - iMod (lft_create with "LFT") as (ν) "[[Htok1 Htok2] #Hhν]". done.
       iMod (own_alloc (● Some (Cinr (to_agree ν, (1/2)%Qp, n)))) as (γ) "Hst".
       { by apply auth_auth_valid. }
-      iMod (rebor _ _ (κ ∪ ν) with "LFT [] Hvl") as "[Hvl Hh]". done.
-      { iApply lft_le_incl. apply gmultiset_union_subseteq_l. }
-      iDestruct (lft_glb_acc with "Htok' Htok1") as (q') "[Htok Hclose]".
+      iMod (rebor _ _ (κ ⊓ ν) with "LFT [] Hvl") as "[Hvl Hh]". done.
+      { iApply lft_intersect_incl_l. }
+      iDestruct (lft_intersect_acc with "Htok' Htok1") as (q') "[Htok Hclose]".
       iMod (ty_share with "LFT Hvl Htok") as "[Hshr Htok]". done.
       iDestruct ("Hclose" with "Htok") as "[$ Htok]".
       iExists γ, _. iFrame "Hst Hn". iExists _, _. iIntros "{$Hshr}".

@@ -19,7 +19,7 @@ Section option.
 
   Lemma option_as_mut_type τ :
     typed_val
-      option_as_mut (fn(∀ α, [☀α]; &uniq{α} (option τ)) → option (&uniq{α}τ)).
+      option_as_mut (fn(∀ α, [α]; &uniq{α} (option τ)) → option (&uniq{α}τ)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret p).
       inv_vec p=>o. simpl_subst.

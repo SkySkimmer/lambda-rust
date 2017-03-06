@@ -27,10 +27,10 @@ Lemma rebor E κ κ' P :
   lft_ctx -∗ κ' ⊑ κ -∗ &{κ}P ={E}=∗ &{κ'}P ∗ ([†κ'] ={E}=∗ &{κ}P).
 Proof.
   iIntros (?) "#LFT #H⊑". rewrite {1}/bor; iDestruct 1 as (κ'') "[#H⊑' Hκ'']".
-  iMod (raw_rebor _ _ (κ' ∪ κ'') with "LFT Hκ''") as "[Hκ'' Hclose]"; first done.
+  iMod (raw_rebor _ _ (κ' ⊓ κ'') with "LFT Hκ''") as "[Hκ'' Hclose]"; first done.
   { apply gmultiset_union_subseteq_r. }
   iModIntro. iSplitL "Hκ''".
-  - rewrite /bor. iExists (κ' ∪ κ''). iFrame "Hκ''".
+  - rewrite /bor. iExists (κ' ⊓ κ''). iFrame "Hκ''".
     iApply (lft_incl_glb with "[]"); first iApply lft_incl_refl.
     by iApply (lft_incl_trans with "H⊑").
   - iIntros "Hκ†". iMod ("Hclose" with "[Hκ†]") as "Hκ''".
@@ -40,7 +40,7 @@ Qed.
 
 Lemma bor_unnest E κ κ' P :
   ↑lftN ⊆ E →
-  lft_ctx -∗ &{κ'} &{κ} P ={E, E∖↑lftN}▷=∗ &{κ ∪ κ'} P.
+  lft_ctx -∗ &{κ'} &{κ} P ={E, E∖↑lftN}▷=∗ &{κ ⊓ κ'} P.
 Proof.
   iIntros (?) "#LFT Hκ". rewrite {2}/bor.
   iMod (bor_exists with "LFT Hκ") as (κ0) "Hκ"; first done.
@@ -50,7 +50,7 @@ Proof.
   { iModIntro. iNext. iMod "Hclose" as "_". iApply (bor_fake with "LFT"); first done.
     iApply lft_dead_or. iRight. done. }
   iMod ("Hclose" with "Hκ⊑") as "_".
-  set (κ'' := κ0 ∪ κ0').
+  set (κ'' := κ0 ⊓ κ0').
   iMod (raw_rebor _ _ κ'' with "LFT Hκ") as "[Hκ _]"; first done.
   { apply gmultiset_union_subseteq_r. }
   iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
@@ -68,7 +68,7 @@ Proof.
     iNext. iMod "Hclose" as "_".
     iApply (bor_fake with "LFT >"); first done.
     iApply (lft_incl_dead with "[] H†"); first done.
-    by iApply (lft_glb_mono with "Hκ⊑"). }
+    by iApply (lft_intersect_mono with "Hκ⊑"). }
   rewrite {1}/raw_bor /idx_bor_own /=; iDestruct "Hκ" as (i) "[Hi #Hislice]".
   iDestruct "Hislice" as (P') "[#HPP' Hislice]".
   rewrite lft_inv_alive_unfold;
@@ -100,6 +100,6 @@ Proof.
     iFrame. rewrite /lft_inv lft_inv_alive_unfold. iLeft.
     iFrame "%". iExists Pb'', Pi. iFrame. }
   iModIntro. rewrite /bor. iExists κ''. iFrame. subst κ''.
-  by iApply (lft_glb_mono with "Hκ⊑").
+  by iApply (lft_intersect_mono with "Hκ⊑").
 Qed.
 End reborrow.

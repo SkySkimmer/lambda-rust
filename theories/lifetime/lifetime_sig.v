@@ -9,13 +9,10 @@ Definition borN : namespace := lftN .@ "bor".
 Definition inhN : namespace := lftN .@ "inh".
 Definition mgmtN : namespace := lftN .@ "mgmt".
 
-Definition atomic_lft := positive.
-Notation lft := (gmultiset positive).
-Definition static : lft := ∅.
-
 Module Type lifetime_sig.
   (** CMRAs needed by the lifetime logic  *)
-  (* We can't instantie the module parameters with inductive types, so we have aliases here. *)
+  (* We can't instantie the module parameters with inductive types, so we
+     have aliases here. *)
   Parameter lftG' : gFunctors → Set.
   Global Notation lftG := lftG'.
   Existing Class lftG'.
@@ -24,6 +21,10 @@ Module Type lifetime_sig.
   Existing Class lftPreG'.
 
   (** Definitions *)
+  Parameter lft : Type.
+  Parameter static : lft.
+  Parameter lft_intersect : lft → lft → lft.
+
   Parameter lft_ctx : ∀ `{invG, lftG Σ}, iProp Σ.
 
   Parameter lft_tok : ∀ `{lftG Σ} (q : Qp) (κ : lft), iProp Σ.
@@ -47,11 +48,19 @@ Module Type lifetime_sig.
     (format "&{ κ , i }  P", at level 20, right associativity) : uPred_scope.
 
   Infix "⊑" := lft_incl (at level 70) : uPred_scope.
+  Infix "⊓" := lft_intersect (at level 40) : C_scope.
 
   Section properties.
   Context `{invG, lftG Σ}.
 
   (** Instances *)
+  Global Declare Instance lft_intersect_comm : Comm eq lft_intersect.
+  Global Declare Instance lft_intersect_assoc : Assoc eq lft_intersect.
+  Global Declare Instance lft_intersect_inj_1 κ : Inj eq eq (lft_intersect κ).
+  Global Declare Instance lft_intersect_inj_2 κ : Inj eq eq (λ κ', lft_intersect κ' κ).
+  Global Declare Instance lft_intersect_left_id : LeftId eq static lft_intersect.
+  Global Declare Instance lft_intersect_right_id : RightId eq static lft_intersect.
+
   Global Declare Instance lft_ctx_persistent : PersistentP lft_ctx.
   Global Declare Instance lft_dead_persistent κ : PersistentP (lft_dead κ).
   Global Declare Instance lft_incl_persistent κ κ' : PersistentP (κ ⊑ κ').
@@ -79,8 +88,8 @@ Module Type lifetime_sig.
     AsFractional (idx_bor_own q i) (λ q, idx_bor_own q i)%I q.
 
   (** Laws *)
-  Parameter lft_tok_sep : ∀ q κ1 κ2, q.[κ1] ∗ q.[κ2] ⊣⊢ q.[κ1 ∪ κ2].
-  Parameter lft_dead_or : ∀ κ1 κ2, [†κ1] ∨ [†κ2] ⊣⊢ [† κ1 ∪ κ2].
+  Parameter lft_tok_sep : ∀ q κ1 κ2, q.[κ1] ∗ q.[κ2] ⊣⊢ q.[κ1 ⊓ κ2].
+  Parameter lft_dead_or : ∀ κ1 κ2, [†κ1] ∨ [†κ2] ⊣⊢ [† κ1 ⊓ κ2].
   Parameter lft_tok_dead : ∀ q κ, q.[κ] -∗ [† κ] -∗ False.
   Parameter lft_tok_static : ∀ q, q.[static]%I.
   Parameter lft_dead_static : [† static] -∗ False.
@@ -103,7 +112,7 @@ Module Type lifetime_sig.
   Parameter rebor : ∀ E κ κ' P,
     ↑lftN ⊆ E → lft_ctx -∗ κ' ⊑ κ -∗ &{κ}P ={E}=∗ &{κ'}P ∗ ([†κ'] ={E}=∗ &{κ}P).
   Parameter bor_unnest : ∀ E κ κ' P,
-    ↑lftN ⊆ E → lft_ctx -∗ &{κ'} &{κ} P ={E, E∖↑lftN}▷=∗ &{κ ∪ κ'} P.
+    ↑lftN ⊆ E → lft_ctx -∗ &{κ'} &{κ} P ={E, E∖↑lftN}▷=∗ &{κ ⊓ κ'} P.
 
   Parameter bor_unfold_idx : ∀ κ P, &{κ}P ⊣⊢ ∃ i, &{κ,i}P ∗ idx_bor_own 1 i.
 
@@ -128,14 +137,15 @@ Module Type lifetime_sig.
 
   (* Because Coq's module system is horrible, we have to repeat properties of lft_incl here
      unless we want to prove them twice (both here and in model.primitive) *)
-  Parameter lft_glb_acc : ∀ κ κ' q q', q.[κ] -∗ q'.[κ'] -∗
-    ∃ q'', q''.[κ ∪ κ'] ∗ (q''.[κ ∪ κ'] -∗ q.[κ] ∗ q'.[κ']).
-  Parameter lft_le_incl : ∀ κ κ', κ' ⊆ κ → (κ ⊑ κ')%I.
+  Parameter lft_intersect_acc : ∀ κ κ' q q', q.[κ] -∗ q'.[κ'] -∗
+    ∃ q'', q''.[κ ⊓ κ'] ∗ (q''.[κ ⊓ κ'] -∗ q.[κ] ∗ q'.[κ']).
+  Parameter lft_intersect_incl_l : ∀ κ κ', (κ ⊓ κ' ⊑ κ)%I.
+  Parameter lft_intersect_incl_r : ∀ κ κ', (κ ⊓ κ' ⊑ κ')%I.
   Parameter lft_incl_refl : ∀ κ, (κ ⊑ κ)%I.
   Parameter lft_incl_trans : ∀ κ κ' κ'', κ ⊑ κ' -∗ κ' ⊑ κ'' -∗ κ ⊑ κ''.
-  Parameter lft_incl_glb : ∀ κ κ' κ'', κ ⊑ κ' -∗ κ ⊑ κ'' -∗ κ ⊑ κ' ∪ κ''.
-  Parameter lft_glb_mono : ∀ κ1 κ1' κ2 κ2',
-    κ1 ⊑ κ1' -∗ κ2 ⊑ κ2' -∗ κ1 ∪ κ2 ⊑ κ1' ∪ κ2'.
+  Parameter lft_incl_glb : ∀ κ κ' κ'', κ ⊑ κ' -∗ κ ⊑ κ'' -∗ κ ⊑ κ' ⊓ κ''.
+  Parameter lft_intersect_mono : ∀ κ1 κ1' κ2 κ2',
+    κ1 ⊑ κ1' -∗ κ2 ⊑ κ2' -∗ κ1 ⊓ κ2 ⊑ κ1' ⊓ κ2'.
   Parameter lft_incl_acc : ∀ E κ κ' q,
     ↑lftN ⊆ E → κ ⊑ κ' -∗ q.[κ] ={E}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={E}=∗ q.[κ]).
   Parameter lft_incl_dead : ∀ E κ κ', ↑lftN ⊆ E → κ ⊑ κ' -∗ [†κ'] ={E}=∗ [†κ].

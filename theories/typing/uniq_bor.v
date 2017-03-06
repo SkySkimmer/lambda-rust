@@ -17,8 +17,8 @@ Section uniq_bor.
          end%I;
        ty_shr κ' tid l :=
          (∃ l':loc, &frac{κ'}(λ q', l ↦{q'} #l') ∗
-            □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ∪κ']
-                ={F, F∖↑shrN∖↑lftN}▷=∗ ty.(ty_shr) (κ∪κ') tid l' ∗ q.[κ∪κ'])%I
+            □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ⊓κ']
+                ={F, F∖↑shrN∖↑lftN}▷=∗ ty.(ty_shr) (κ⊓κ') tid l' ∗ q.[κ⊓κ'])%I
     |}.
   Next Obligation. by iIntros (q ty tid [|[[]|][]]) "H". Qed.
   Next Obligation.
@@ -29,7 +29,7 @@ Section uniq_bor.
     iFrame. iExists l'. subst. rewrite heap_mapsto_vec_singleton.
     iMod (bor_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "$". set_solver.
     rewrite {1}bor_unfold_idx. iDestruct "Hb2" as (i) "[#Hpb Hpbown]".
-    iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty (κ∪κ') tid l')%I
+    iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty (κ⊓κ') tid l')%I
           with "[Hpbown]") as "#Hinv"; first by eauto.
     iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
@@ -43,8 +43,8 @@ Section uniq_bor.
   Qed.
   Next Obligation.
     intros κ0 ty κ κ' tid l. iIntros "#Hκ #H".
-    iDestruct "H" as (l') "[Hfb Hvs]". iAssert (κ0∪κ' ⊑ κ0∪κ)%I as "#Hκ0".
-    { iApply lft_glb_mono. iApply lft_incl_refl. done. }
+    iDestruct "H" as (l') "[Hfb Hvs]". iAssert (κ0⊓κ' ⊑ κ0⊓κ)%I as "#Hκ0".
+    { iApply lft_intersect_mono. iApply lft_incl_refl. done. }
     iExists l'. iSplit. by iApply (frac_bor_shorten with "[]").
     iIntros "!# * % Htok".
     iApply (step_fupd_mask_mono F _ _ (F∖↑shrN∖↑lftN)); try set_solver.
@@ -64,8 +64,8 @@ Section uniq_bor.
       iApply (bor_shorten with "Hκ"). iApply bor_iff; last done.
       iSplit; iIntros "!>!# H"; iDestruct "H" as (vl) "[??]";
       iExists vl; iFrame; by iApply "Ho".
-    - iIntros (κ ??) "H". iAssert (κ2 ∪ κ ⊑ κ1 ∪ κ)%I as "#Hincl'".
-      { iApply lft_glb_mono. done. iApply lft_incl_refl. }
+    - iIntros (κ ??) "H". iAssert (κ2 ⊓ κ ⊑ κ1 ⊓ κ)%I as "#Hincl'".
+      { iApply lft_intersect_mono. done. iApply lft_incl_refl. }
       iDestruct "H" as (l') "[Hbor #Hupd]". iExists l'. iIntros "{$Hbor}!# %%% Htok".
       iMod (lft_incl_acc with "Hincl' Htok") as (q') "[Htok Hclose]"; first set_solver.
       iMod ("Hupd" with "[%] Htok") as "Hupd'"; try done. iModIntro. iNext.

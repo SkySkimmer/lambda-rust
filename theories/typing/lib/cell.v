@@ -109,7 +109,7 @@ Section typing.
     funrec: <> ["x"] := "return" ["x"].
 
   Lemma cell_get_mut_type ty :
-    typed_val cell_get_mut (fn(∀ α, [☀α]; &uniq{α} (cell ty)) → &uniq{α} ty).
+    typed_val cell_get_mut (fn(∀ α, [α]; &uniq{α} (cell ty)) → &uniq{α} ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
@@ -126,7 +126,7 @@ Section typing.
       delete [ #1; "x"];; "return" ["r"].
 
   Lemma cell_get_type `(!Copy ty) :
-    typed_val (cell_get ty) (fn(∀ α, [☀α]; &shr{α} (cell ty)) → ty).
+    typed_val (cell_get ty) (fn(∀ α, [α]; &shr{α} (cell ty)) → ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
@@ -146,7 +146,7 @@ Section typing.
       delete [ #1; "c"] ;; delete [ #ty.(ty_size); "x"] ;; "return" ["r"].
 
   Lemma cell_replace_type ty :
-    typed_val (cell_replace ty) (fn(∀ α, [☀α]; &shr{α} cell ty, ty) → ty).
+    typed_val (cell_replace ty) (fn(∀ α, [α]; &shr{α} cell ty, ty) → ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>c x. simpl_subst.

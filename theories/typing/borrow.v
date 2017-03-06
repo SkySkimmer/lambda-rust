@@ -144,7 +144,7 @@ Section borrow.
     wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hshr"; try done.
     iDestruct "Hshr" as (l') "[H↦ Hown]".
     iMod (frac_bor_acc with "LFT H↦ Htok1") as (q'') "[>H↦ Hclose']". done.
-    iAssert (κ ⊑ κ' ∪ κ)%I as "#Hincl'".
+    iAssert (κ ⊑ κ' ⊓ κ)%I as "#Hincl'".
     { iApply (lft_incl_glb with "Hincl []"). iApply lft_incl_refl. }
     iMod (lft_incl_acc with "Hincl' Htok2") as (q2) "[Htok2 Hclose'']". solve_ndisj.
     iApply (wp_fupd_step _ (_∖_) with "[Hown Htok2]"); try done.

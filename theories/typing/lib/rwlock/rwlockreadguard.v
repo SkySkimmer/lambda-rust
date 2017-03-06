@@ -20,7 +20,7 @@ Section rwlockreadguard.
        ty_own tid vl :=
          match vl return _ with
          | [ #(LitLoc l) ] =>
-           ∃ ν q γ β, ty.(ty_shr) (α ∪ ν) tid (shift_loc l 1) ∗
+           ∃ ν q γ β, ty.(ty_shr) (α ⊓ ν) tid (shift_loc l 1) ∗
              α ⊑ β ∗ &shr{β,rwlockN}(rwlock_inv tid l γ β ty) ∗
              q.[ν] ∗ own γ (◯ reading_st q ν) ∗
              (1.[ν] ={↑lftN,∅}▷=∗ [†ν])
@@ -29,7 +29,7 @@ Section rwlockreadguard.
        ty_shr κ tid l :=
          ∃ (l' : loc),
            &frac{κ} (λ q, l↦∗{q} [ #l']) ∗
-           ▷ ty.(ty_shr) (α ∪ κ) tid (shift_loc l' 1) |}%I.
+           ▷ ty.(ty_shr) (α ⊓ κ) tid (shift_loc l' 1) |}%I.
   Next Obligation. intros α ty tid [|[[]|] []]; auto. Qed.
   Next Obligation.
     iIntros (α ty E κ l tid q ?) "#LFT Hb Htok".
@@ -52,12 +52,12 @@ Section rwlockreadguard.
     iDestruct (frac_bor_lft_incl with "LFT >[Hκν]") as "#Hκν".
     { iApply bor_fracture; try done. by rewrite Qp_mult_1_r. }
     iExists _. iFrame "#". iApply ty_shr_mono; last done.
-    iApply lft_glb_mono; last done. iApply lft_incl_refl.
+    iApply lft_intersect_mono; last done. iApply lft_incl_refl.
   Qed.
   Next Obligation.
     iIntros (α ty κ κ' tid l) "#Hκ'κ H". iDestruct "H" as (l') "[#Hf #Hshr]".
     iExists l'. iSplit; first by iApply frac_bor_shorten.
-    iApply ty_shr_mono; last done. iApply lft_glb_mono; last done.
+    iApply ty_shr_mono; last done. iApply lft_intersect_mono; last done.
     iApply lft_incl_refl.
   Qed.
 
@@ -84,13 +84,13 @@ Section rwlockreadguard.
       iDestruct "H" as (ν q γ β) "(#Hshr & #H⊑ & #Hinv & Htok & Hown)".
       iExists ν, q, γ, β. iFrame "∗#". iSplit; last iSplit.
       + iApply ty_shr_mono; last by iApply "Hs".
-        iApply lft_glb_mono. done. iApply lft_incl_refl.
+        iApply lft_intersect_mono. done. iApply lft_incl_refl.
       + by iApply lft_incl_trans.
       + iApply (shr_bor_iff with "[] Hinv").
         iIntros "!>!#"; iSplit; iIntros "H"; by iApply rwlock_inv_proper.
     - iIntros (κ tid l) "H". iDestruct "H" as (l') "[Hf Hshr]". iExists l'.
       iFrame. iApply ty_shr_mono; last by iApply "Hs".
-      iApply lft_glb_mono. done. iApply lft_incl_refl.
+      iApply lft_intersect_mono. done. iApply lft_incl_refl.
   Qed.
   Global Instance rwlockreadguard_mono_flip E L :
     Proper (lctx_lft_incl E L ==> eqtype E L ==> flip (subtype E L))

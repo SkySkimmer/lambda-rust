@@ -43,7 +43,7 @@ Section refcell_inv.
              match st with
              | Cinr (q, n) =>
                (* Immutably borrowed. *)
-               ty.(ty_shr) (α ∪ ν) tid (shift_loc l 1) ∗
+               ty.(ty_shr) (α ⊓ ν) tid (shift_loc l 1) ∗
                ∃ q', ⌜(q + q')%Qp = 1%Qp⌝ ∗ q'.[ν]
              | _ => (* Mutably borrowed. *) True
              end
@@ -51,8 +51,9 @@ Section refcell_inv.
 
   Global Instance refcell_inv_type_ne n tid l γ α :
     Proper (type_dist2 n ==> dist n) (refcell_inv tid l γ α).
-  Proof. 
-    solve_proper_core ltac:(fun _ => exact: type_dist2_S || f_type_equiv || f_contractive || f_equiv).
+  Proof.
+    solve_proper_core
+      ltac:(fun _ => exact: type_dist2_S || f_type_equiv || f_contractive || f_equiv).
   Qed.
 
   Global Instance refcell_inv_ne tid l γ α : NonExpansive (refcell_inv tid l γ α).
@@ -135,9 +136,9 @@ Section refcell.
       iMod (own_alloc (● Some (to_agree ν, Cinr ((1/2)%Qp, n)))) as (γ) "Hst".
       { by apply auth_auth_valid. }
       iApply (fupd_mask_mono (↑lftN)); first done.
-      iMod (rebor _ _ (κ ∪ ν) with "LFT [] Hvl") as "[Hvl Hh]". done.
-      { iApply lft_le_incl. apply gmultiset_union_subseteq_l. }
-      iDestruct (lft_glb_acc with "Htok' Htok1") as (q') "[Htok Hclose]".
+      iMod (rebor _ _ (κ ⊓ ν) with "LFT [] Hvl") as "[Hvl Hh]". done.
+      { iApply lft_intersect_incl_l. }
+      iDestruct (lft_intersect_acc with "Htok' Htok1") as (q') "[Htok Hclose]".
       iMod (ty_share with "LFT Hvl Htok") as "[Hshr Htok]". done.
       iDestruct ("Hclose" with "Htok") as "[$ Htok]".
       iExists γ, _. iFrame "Hst Hn". iExists _. iIntros "{$Hshr}".
