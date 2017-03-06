@@ -48,8 +48,9 @@ Section rwlock_inv.
 
   Global Instance rwlock_inv_type_ne n tid l γ α :
     Proper (type_dist2 n ==> dist n) (rwlock_inv tid l γ α).
-  Proof. 
-    solve_proper_core ltac:(fun _ => exact: type_dist2_S || f_type_equiv || f_contractive || f_equiv).
+  Proof.
+    solve_proper_core
+      ltac:(fun _ => exact: type_dist2_S || f_type_equiv || f_contractive || f_equiv).
   Qed.
 
   Global Instance rwlock_inv_ne tid l γ α : NonExpansive (rwlock_inv tid l γ α).
