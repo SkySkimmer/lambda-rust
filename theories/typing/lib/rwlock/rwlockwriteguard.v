@@ -2,7 +2,7 @@ From iris.proofmode Require Import tactics.
 From iris.algebra Require Import auth csum frac agree.
 From iris.base_logic Require Import big_op fractional.
 From lrust.lifetime Require Import na_borrow.
-From lrust.typing Require Import typing.
+From lrust.typing Require Import util typing.
 From lrust.typing.lib.rwlock Require Import rwlock.
 Set Default Proof Using "Type".
 
@@ -44,22 +44,10 @@ Section rwlockwriteguard.
     iMod (bor_sep with "LFT Hb") as "[Hb H]". done.
     iMod (bor_sep with "LFT H") as "[Hαβ _]". done.
     iMod (bor_persistent_tok with "LFT Hαβ Htok") as "[#Hαβ $]". done.
-    iExists _. iFrame "H↦". rewrite {1}bor_unfold_idx.
-    iDestruct "Hb" as (i) "[#Hpb Hpbown]".
-    iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty (α ⊓ κ) tid (shift_loc l' 1))%I
-          with "[Hpbown]") as "#Hinv"; first by eauto.
-    iIntros "!> !# * % Htok". clear HE.
-    iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
-    iDestruct "INV" as "[>Hbtok|#Hshr]".
-    - iMod (bor_unnest with "LFT [Hbtok]") as "Hb". solve_ndisj.
-      { iApply bor_unfold_idx. eauto. }
-      iModIntro. iNext. iMod "Hb".
-      iMod (ty.(ty_share) with "LFT [Hb] Htok") as "[#Hshr $]". solve_ndisj.
-      { iApply (bor_shorten with "[] Hb"). iApply lft_intersect_mono. done.
-        iApply lft_incl_refl. }
-      iMod ("Hclose" with "[]") as "_"; auto.
-    - iMod ("Hclose" with "[]") as "_". by eauto.
-      iApply step_fupd_intro. set_solver. auto.
+    iExists _. iFrame "H↦". iApply delay_sharing_nested; try done.
+    (* FIXME: "iApply lft_intersect_mono" only preserves the later on the last
+       goal, as does "iApply (lft_intersect_mono with ">")". *)
+    iNext. iApply lft_intersect_mono. done. iApply lft_incl_refl.
   Qed.
   Next Obligation.
     iIntros (??????) "#? H". iDestruct "H" as (l') "[#Hf #H]".

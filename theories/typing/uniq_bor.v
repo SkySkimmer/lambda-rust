@@ -2,7 +2,7 @@ From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
 From lrust.lang Require Import heap.
 From lrust.typing Require Export type.
-From lrust.typing Require Import lft_contexts type_context shr_bor programs.
+From lrust.typing Require Import util lft_contexts type_context shr_bor programs.
 Set Default Proof Using "Type".
 
 Section uniq_bor.
@@ -28,18 +28,7 @@ Section uniq_bor.
       try (iMod (bor_persistent_tok with "LFT Hb2 Htok") as "[>[] _]"; set_solver).
     iFrame. iExists l'. subst. rewrite heap_mapsto_vec_singleton.
     iMod (bor_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "$". set_solver.
-    rewrite {1}bor_unfold_idx. iDestruct "Hb2" as (i) "[#Hpb Hpbown]".
-    iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty (κ⊓κ') tid l')%I
-          with "[Hpbown]") as "#Hinv"; first by eauto.
-    iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
-    iDestruct "INV" as "[>Hbtok|#Hshr]".
-    - iMod (bor_unnest with "LFT [Hbtok]") as "Hb". solve_ndisj.
-      { iApply bor_unfold_idx. eauto. }
-      iModIntro. iNext. iMod "Hb".
-      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#Hshr $]". solve_ndisj.
-      iMod ("Hclose" with "[]") as "_"; auto.
-    - iMod ("Hclose" with "[]") as "_". by eauto.
-      iApply step_fupd_intro. set_solver. auto.
+    iApply delay_sharing_nested; try done. iApply lft_incl_refl.
   Qed.
   Next Obligation.
     intros κ0 ty κ κ' tid l. iIntros "#Hκ #H".

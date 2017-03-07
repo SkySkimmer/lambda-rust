@@ -25,6 +25,7 @@ theories/lang/races.v
 theories/lang/tactics.v
 theories/lang/spawn.v
 theories/typing/type.v
+theories/typing/util.v
 theories/typing/lft_contexts.v
 theories/typing/type_context.v
 theories/typing/cont_context.v

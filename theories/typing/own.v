@@ -4,7 +4,7 @@ From iris.base_logic Require Import big_op.
 From lrust.lang Require Export new_delete.
 From lrust.lang Require Import memcpy.
 From lrust.typing Require Export type.
-From lrust.typing Require Import uninit type_context programs.
+From lrust.typing Require Import util uninit type_context programs.
 Set Default Proof Using "Type".
 
 Section own.
@@ -72,18 +72,7 @@ Section own.
     iFrame. iExists l'. rewrite heap_mapsto_vec_singleton.
     iMod (bor_sep with "LFT Hb2") as "[Hb2 _]". set_solver.
     iMod (bor_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "$". set_solver.
-    rewrite bor_unfold_idx. iDestruct "Hb2" as (i) "(#Hpb&Hpbown)".
-    iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty κ tid l')%I
-          with "[Hpbown]") as "#Hinv"; first by eauto.
-    iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]". set_solver.
-    iDestruct "INV" as "[>Hbtok|#Hshr]".
-    - iMod (bor_later with "LFT [Hbtok]") as "Hb"; first solve_ndisj.
-      { rewrite bor_unfold_idx. eauto. }
-      iModIntro. iNext. iMod "Hb".
-      iMod (ty.(ty_share) with "LFT Hb Htok") as "[#$ $]"; first solve_ndisj.
-      iApply "Hclose". auto.
-    - iMod fupd_intro_mask' as "Hclose'"; last iModIntro. set_solver.
-      iNext. iMod "Hclose'" as "_". iMod ("Hclose" with "[]") as "_"; by eauto.
+    iApply delay_sharing_later; done.
   Qed.
   Next Obligation.
     intros _ ty κ κ' tid l. iIntros "#Hκ #H".
