@@ -116,7 +116,7 @@ Section ref_functions.
 
   Lemma ref_deref_type ty :
     typed_val ref_deref
-      (fn (fun '(α, β) => FP' [α; β; α ⊑ β]%EL [# &shr{α}(ref β ty)]%T (&shr{α}ty)%T)).
+      (fn (fun '(α, β) => FP [α; β; α ⊑ β]%EL [# &shr{α}(ref β ty)]%T (&shr{α}ty)%T)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
