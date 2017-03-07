@@ -20,7 +20,7 @@ Section rwlockwriteguard_functions.
 
   Lemma rwlockwriteguard_deref_type ty :
     typed_val rwlockwriteguard_deref
-      (fn (fun '(α, β) => FP' [α; β; α ⊑ β]%EL
+      (fn (fun '(α, β) => FP [α; β; α ⊑ β]%EL
                               [# &shr{α}(rwlockwriteguard β ty)] (&shr{α}ty))).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
@@ -62,7 +62,7 @@ Section rwlockwriteguard_functions.
 
   Lemma rwlockwriteguard_derefmut_type ty :
     typed_val rwlockwriteguard_derefmut
-      (fn (fun '(α, β) => FP' [α; β; α ⊑ β]%EL
+      (fn (fun '(α, β) => FP [α; β; α ⊑ β]%EL
                               [# &uniq{α}(rwlockwriteguard β ty)] (&uniq{α}ty))).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".

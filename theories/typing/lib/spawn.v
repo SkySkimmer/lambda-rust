@@ -84,7 +84,7 @@ Section spawn.
         iIntros "?". iExists retty. iFrame. iApply type_incl_refl. }
       iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let.
       (* FIXME this is horrible. *)
-      assert (Hcall := type_call' [] [] [] f' [env:expr] (λ _:(), FP' [] [# envty] retty)).
+      assert (Hcall := type_call' [] [] [] f' [env:expr] (λ _:(), FP [] [# envty] retty)).
       specialize (Hcall (rec: "_k" ["r"] := finish [ #c; "r"])%V ()).
       erewrite of_val_unlock in Hcall; last done.
       iApply (Hcall $! _ 1%Qp with "LFT Htl [] [] [Hfin]").

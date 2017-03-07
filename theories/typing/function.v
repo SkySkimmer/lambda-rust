@@ -8,7 +8,7 @@ Set Default Proof Using "Type".
 Section fn.
   Context `{typeG Σ} {A : Type} {n : nat}.
 
-  Record fn_params := FP { fp_tys : vec type n; fp_ty : type; fp_E : elctx }.
+  Record fn_params := FP' { fp_tys : vec type n; fp_ty : type; fp_E : elctx }.
 
   Program Definition fn (fp : A → fn_params) : type :=
     {| st_own tid vl := (∃ fb kb xb e H,
@@ -47,7 +47,7 @@ Section fn.
   Proof. intros ?? HR. apply HR. Qed.
 
   Global Instance FP_proper R :
-    Proper (flip (Forall2 R : relation (vec _ _)) ==> R ==> eq ==> fn_params_rel R) FP.
+    Proper (flip (Forall2 R : relation (vec _ _)) ==> R ==> eq ==> fn_params_rel R) FP'.
   Proof. by split; [|split]. Qed.
 
   Global Instance fn_type_contractive n' :
@@ -98,11 +98,11 @@ End fn.
 
 Arguments fn_params {_ _} _.
 
-(* The parameter of [FP] are in the wrong order in order to make sure
+(* The parameter of [FP'] are in the wrong order in order to make sure
    that type-checking is done in that order, so that the [ELCtx_Alive]
    is taken as a coercion. We reestablish the intuitive order with
-   [FP'] *)
-Notation FP' E tys ty := (FP tys ty E).
+   [FP] *)
+Notation FP E tys ty := (FP' tys ty E).
 
 (* We use recursive notation for binders as well, to allow patterns
    like '(a, b) to be used. In practice, only one binder is ever used,
@@ -112,19 +112,19 @@ Notation FP' E tys ty := (FP tys ty E).
    printing. Once on 8.6pl1, this should work.  *)
 Notation "'fn(∀' x .. x' ',' E ';' T1 ',' .. ',' TN ')' '→' R" :=
   (fn (λ x, (.. (λ x',
-      FP' E%EL (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T R%T)..)))
+      FP E%EL (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T R%T)..)))
   (at level 99, R at level 200, x binder, x' binder,
    format "'fn(∀'  x .. x' ','  E ';'  T1 ','  .. ','  TN ')'  '→'  R") : lrust_type_scope.
 Notation "'fn(∀' x .. x' ',' E ')' '→' R" :=
-  (fn (λ x, (.. (λ x', FP' E%EL Vector.nil R%T)..)))
+  (fn (λ x, (.. (λ x', FP E%EL Vector.nil R%T)..)))
   (at level 99, R at level 200, x binder, x' binder,
    format "'fn(∀'  x .. x' ','  E ')'  '→'  R") : lrust_type_scope.
 Notation "'fn(' E ';' T1 ',' .. ',' TN ')' '→' R" :=
-  (fn (λ _:(), FP' E%EL (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..) R%T))
+  (fn (λ _:(), FP E%EL (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..) R%T))
   (at level 99, R at level 200,
    format "'fn(' E ';'  T1 ','  .. ','  TN ')'  '→'  R") : lrust_type_scope.
 Notation "'fn(' E ')' '→' R" :=
-  (fn (λ _:(), FP' E%EL Vector.nil R%T))
+  (fn (λ _:(), FP E%EL Vector.nil R%T))
   (at level 99, R at level 200,
    format "'fn(' E ')'  '→'  R") : lrust_type_scope.
 
