@@ -2,6 +2,7 @@ From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import fractional.
 From lrust.lang Require Import proofmode.
+From lrust.typing Require Export base.
 From lrust.lifetime Require Import frac_borrow.
 Set Default Proof Using "Type".
 
@@ -452,19 +453,6 @@ Section elctx_incl.
 End elctx_incl.
 
 Arguments elctx_incl {_ _ _} _%EL _%LL _%EL _%EL.
-
-Create HintDb lrust_typing.
-Create HintDb lrust_typing_merge.
-
-(* We first try to solve everything without the merging rules, and
-   then start from scratch with them.
-
-   The reason is that we want we want the search proof search for
-   [tctx_extract_hasty] to suceed even if the type is an evar, and
-   merging makes it diverge in this case. *)
-Ltac solve_typing :=
-  (typeclasses eauto with lrust_typing typeclass_instances core; fail) ||
-  (typeclasses eauto with lrust_typing lrust_typing_merge typeclass_instances core; fail).
 
 Hint Constructors Forall Forall2 elem_of_list : lrust_typing.
 Hint Resolve of_val_unlock : lrust_typing.

@@ -24,6 +24,7 @@ theories/lang/proofmode.v
 theories/lang/races.v
 theories/lang/tactics.v
 theories/lang/spawn.v
+theories/typing/base.v
 theories/typing/type.v
 theories/typing/util.v
 theories/typing/lft_contexts.v

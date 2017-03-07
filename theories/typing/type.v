@@ -2,6 +2,7 @@ From iris.base_logic.lib Require Export na_invariants.
 From iris.base_logic Require Import big_op.
 From lrust.lang Require Export proofmode notation.
 From lrust.lifetime Require Export frac_borrow.
+From lrust.typing Require Export base.
 From lrust.typing Require Import lft_contexts.
 Set Default Proof Using "Type".
 
