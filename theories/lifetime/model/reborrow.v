@@ -18,7 +18,7 @@ Proof.
   iIntros (?) "#LFT Hb".
   iMod (bor_acc_atomic_cons with "LFT Hb") as "[H|[H† >_]]"; first done.
   - iDestruct "H" as "[HΦ Hclose]". iDestruct "HΦ" as (x) "HΦ".
-    iExists x. iApply ("Hclose" with "HΦ"). iIntros "!> ?"; eauto.
+    iExists x. iApply ("Hclose" with "[] HΦ"). iIntros "!> ?"; eauto.
   - iExists inhabitant. by iApply (bor_fake with "LFT").
 Qed.
 

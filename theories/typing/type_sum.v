@@ -77,19 +77,19 @@ Section case.
     iDestruct (ty.(ty_size_eq) with "Hown") as %EQlenvl'.
     destruct Hety as [Hety|Hety].
     - iMod ("Hclose'" $! (shift_loc l 1 ↦∗: ty.(ty_own) tid)%I
-            with "[H↦vl' Hown] [H↦i H↦vl'']") as "[Hb Htok]".
-      { iExists vl'. iFrame. }
+            with "[H↦i H↦vl''] [H↦vl' Hown]") as "[Hb Htok]".
       { iIntros "!>Hown". iDestruct "Hown" as (vl'2) "[H↦ Hown]".
         iExists (#i::vl'2++vl''). iIntros "!>". iNext.
         iDestruct (ty.(ty_size_eq) with "Hown") as %EQlenvl'2.
         rewrite heap_mapsto_vec_cons heap_mapsto_vec_app EQlenvl' EQlenvl'2.
         iFrame. iExists _, _, _. iSplit. by auto.
         rewrite /= -EQlen !app_length EQlenvl' EQlenvl'2 nth_lookup EQty /=. auto. }
+      { iExists vl'. iFrame. }
       iMod ("Hclose" with "Htok") as "[HE HL]".
       iApply (Hety with "LFT Hna HE HL HC").
       rewrite !tctx_interp_cons !tctx_hasty_val' /= ?Hv //. iFrame.
-    - iMod ("Hclose'" with "[H↦i H↦vl' H↦vl'' Hown] []") as "[Hb Htok]";
-        [|by iIntros "!>$"|].
+    - iMod ("Hclose'" with "[] [H↦i H↦vl' H↦vl'' Hown]") as "[Hb Htok]";
+        [by iIntros "!>$"| |].
       { iExists (#i::vl'++vl'').
         rewrite heap_mapsto_vec_cons heap_mapsto_vec_app -EQlen. iFrame. iNext.
         iExists i, vl', vl''. rewrite nth_lookup EQty. auto. }

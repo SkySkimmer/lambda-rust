@@ -12,6 +12,15 @@ Section util.
      TODO: Figure out a nice way to generalize that; the two proofs below are too
      similar. *)
 
+  (* This is somewhat the general pattern here... but it doesn't seem easy to make
+     this usable in Coq, with the arbitrary quantifiers and things.  Also, it actually works
+     not just for borrows but for anything that you can split into a timeless and a persistent part.
+  Lemma delay_borrow_step :
+    lfeE ⊆ N → (∀ x, PersistentP (Post x)) →
+    lft_ctx -∗ &{κ} P -∗
+      □ (∀ x, &{κ} P -∗ Pre x -∗ Frame x ={F1,F2}▷=∗ Post x ∗ Frame x) ={N}=∗ 
+      □ (∀ x, Pre x -∗ Frame x ={F1,F2}▷=∗ Post x ∗ Frame x).
+   *)
 
   Lemma delay_sharing_later N κ l ty tid :
     lftE ⊆ N →
@@ -38,11 +47,11 @@ Section util.
     lftE ⊆ N →
     lft_ctx -∗ ▷ (κ'' ⊑ κ ⊓ κ') -∗ &{κ'} &{κ} l ↦∗: ty_own ty tid ={N}=∗
        □ ∀ (F : coPset) (q : Qp),
-       ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ (q).[κ''] ={F,F ∖ ↑shrN ∖ ↑lftN}▷=∗ ty.(ty_shr) (κ'') tid l ∗ (q).[κ''].
+       ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ (q).[κ''] ={F,F ∖ ↑shrN ∖ ↑lftN}▷=∗ ty.(ty_shr) κ'' tid l ∗ (q).[κ''].
   Proof.
     iIntros (?) "#LFT #Hincl Hbor". rewrite bor_unfold_idx.
     iDestruct "Hbor" as (i) "(#Hpb&Hpbown)".
-    iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty (κ'') tid l)%I
+    iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty κ'' tid l)%I
           with "[Hpbown]") as "#Hinv"; first by eauto.
     iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]"; first set_solver.
     iDestruct "INV" as "[>Hbtok|#Hshr]".

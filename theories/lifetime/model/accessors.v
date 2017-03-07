@@ -152,7 +152,7 @@ Qed.
 Lemma bor_acc_strong E q κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ} P -∗ q.[κ] ={E}=∗ ∃ κ', κ ⊑ κ' ∗ ▷ P ∗
-    ∀ Q, ▷ Q -∗ ▷(▷ Q -∗ [†κ'] ={∅}=∗ ▷ P) ={E}=∗ &{κ'} Q ∗ q.[κ].
+    ∀ Q, ▷(▷ Q -∗ [†κ'] ={∅}=∗ ▷ P) -∗ ▷ Q ={E}=∗ &{κ'} Q ∗ q.[κ].
 Proof.
   unfold bor, raw_bor. iIntros (HE) "#LFT Hbor Htok".
   iDestruct "Hbor" as (κ'') "(#Hle & Htmp)". iDestruct "Htmp" as (s'') "(Hbor & #Hs)".
@@ -170,7 +170,7 @@ Proof.
     iMod ("Hclose'" with "[-Hbor Hclose]") as "_".
     { iExists _, _. iFrame. rewrite big_sepS_later. iApply "Hclose''".
       iLeft. iFrame "%". iExists _, _. iFrame. }
-    iExists κ''. iFrame "#". iIntros "!>*HQ HvsQ". clear -HE.
+    iExists κ''. iFrame "#". iIntros "!>* HvsQ HQ". clear -HE.
     iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose'".
     iDestruct (own_bor_auth with "HI Hbor") as %Hκ'.
     rewrite big_sepS_later big_sepS_elem_of_acc ?elem_of_dom //
@@ -219,7 +219,7 @@ Lemma bor_acc_atomic_strong E κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ} P ={E,E∖↑lftN}=∗
    (∃ κ', κ ⊑ κ' ∗ ▷ P ∗
-      ∀ Q, ▷ Q -∗ ▷ (▷ Q -∗ [†κ'] ={∅}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ'} Q) ∨
+      ∀ Q, ▷ (▷ Q -∗ [†κ'] ={∅}=∗ ▷ P) -∗ ▷ Q ={E∖↑lftN,E}=∗ &{κ'} Q) ∨
     ([†κ] ∗ |={E∖↑lftN,E}=> True).
 Proof.
   iIntros (HE) "#LFT Hbor". rewrite bor_unfold_idx /idx_bor /bor /raw_bor.
@@ -238,7 +238,7 @@ Proof.
       as %[EQB%to_borUR_included _]%auth_valid_discrete_2.
     iMod (slice_delete_full _ _ true with "Hs Hbox") as (Pb') "(HP' & EQ & Hbox)".
       solve_ndisj. by rewrite lookup_fmap EQB. iDestruct ("HPP'" with "HP'") as "$".
-    iMod fupd_intro_mask' as "Hclose"; last iIntros "!>*HQ HvsQ". solve_ndisj.
+    iMod fupd_intro_mask' as "Hclose"; last iIntros "!>* HvsQ HQ". solve_ndisj.
     iMod "Hclose" as "_". iDestruct (add_vs with "EQ Hvs [HvsQ]") as "Hvs".
     { iNext. iIntros "HQ H†". iApply "HPP'". iApply ("HvsQ" with "HQ H†"). }
     iMod (slice_insert_full _ _ true with "HQ Hbox") as (j) "(% & #Hs' & Hbox)".
@@ -270,13 +270,13 @@ Qed.
 Lemma bor_acc_atomic_cons E κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ} P ={E,E∖↑lftN}=∗
-    (▷ P ∗ ∀ Q, ▷ Q -∗ ▷ (▷ Q ={∅}=∗ ▷ P) ={E∖↑lftN,E}=∗ &{κ} Q) ∨
+    (▷ P ∗ ∀ Q, ▷ (▷ Q ={∅}=∗ ▷ P) -∗ ▷ Q ={E∖↑lftN,E}=∗ &{κ} Q) ∨
     ([†κ] ∗ |={E∖↑lftN,E}=> True).
 Proof.
   iIntros (?) "#LFT HP".
   iMod (bor_acc_atomic_strong with "LFT HP") as "[H|[??]]"; first done.
-  - iLeft. iDestruct "H" as (κ') "(#Hκκ' & $ & Hclose)". iIntros "!>*HQ HPQ".
-    iMod ("Hclose" with "HQ [HPQ]") as "Hb".
+  - iLeft. iDestruct "H" as (κ') "(#Hκκ' & $ & Hclose)". iIntros "!>* HPQ HQ".
+    iMod ("Hclose" with "[HPQ] HQ") as "Hb".
     + iNext. iIntros "? _". by iApply "HPQ".
     + iApply (bor_shorten with "Hκκ' Hb").
   - iRight. by iFrame.
@@ -289,7 +289,7 @@ Lemma bor_acc_atomic E κ P :
 Proof.
   iIntros (?) "#LFT HP".
   iMod (bor_acc_atomic_cons with "LFT HP") as "[[HP Hclose]|[? ?]]"; first done.
-  - iLeft. iIntros "!> {$HP} HP". iMod ("Hclose" with "HP []"); auto.
+  - iLeft. iIntros "!> {$HP} HP". iMod ("Hclose" with "[] HP"); auto.
   - iRight. by iFrame.
 Qed.
 End accessors.

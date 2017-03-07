@@ -43,12 +43,12 @@ Section frac_bor.
     iIntros (?) "#LFT Hφ". iMod (own_alloc 1%Qp) as (γ) "?". done.
     iMod (bor_acc_atomic_strong with "LFT Hφ") as "[H|[H† Hclose]]". done.
     - iDestruct "H" as (κ') "(#Hκκ' & Hφ & Hclose)".
-      iMod ("Hclose" with "[-] []") as "Hφ"; last first.
+      iMod ("Hclose" with "[] [-]") as "Hφ"; last first.
       { iExists γ, κ'. iFrame "#". iApply (bor_share_lftN with "Hφ"); auto. }
-      { iIntros "!>Hφ H†!>". iNext. iDestruct "Hφ" as (q') "(Hφ & _ & [%|Hκ])". by subst.
-        iDestruct "Hκ" as (q'') "[_ Hκ]".
-        iDestruct (lft_tok_dead with "Hκ H†") as "[]". }
-      iExists 1%Qp. iFrame. eauto.
+      { iExists 1%Qp. iFrame. eauto. }
+      iIntros "!>Hφ H†!>". iNext. iDestruct "Hφ" as (q') "(Hφ & _ & [%|Hκ])". by subst.
+      iDestruct "Hκ" as (q'') "[_ Hκ]".
+      iDestruct (lft_tok_dead with "Hκ H†") as "[]".
     - iMod "Hclose" as "_"; last first.
       iExists γ, κ. iSplitR. by iApply lft_incl_refl.
       by iApply shr_bor_fake_lftN.

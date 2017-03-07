@@ -115,17 +115,17 @@ Section refcell.
     iDestruct "H" as ([|[[| |n]|]vl]) "[H↦ H]"; try iDestruct "H" as ">[]".
     iDestruct "H" as "[>% Hown]".
     iMod ("Hclose" $! ((∃ n:Z, l ↦ #n ∗ ⌜-1 ≤ n⌝) ∗
-            shift_loc l 1 ↦∗: ty.(ty_own) tid) with "[-] []")%I as "[H [Htok Htok']]".
-    { iNext. rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[Hn Hvl]".
-      iSplitL "Hn"; [eauto|iExists _; iFrame]. }
+            shift_loc l 1 ↦∗: ty.(ty_own) tid) with "[] [-]")%I as "[H [Htok Htok']]".
     { iIntros "!> [Hn Hvl] !>". iDestruct "Hn" as (n') "[Hn >%]".
       iDestruct "Hvl" as (vl') "[H↦ Hvl]".
       iExists (#n'::vl'). rewrite heap_mapsto_vec_cons. iFrame "∗%". }
+    { iNext. rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[Hn Hvl]".
+      iSplitL "Hn"; [eauto|iExists _; iFrame]. }
     iMod (bor_sep with "LFT H") as "[Hn Hvl]". done.
     iMod (bor_acc_cons with "LFT Hn Htok") as "[H Hclose]". done.
     iAssert ((q / 2).[κ] ∗ ▷ ∃ γ, refcell_inv tid l γ κ ty)%I with ">[-Hclose]"
       as "[$ HQ]"; last first.
-    { iMod ("Hclose" with "HQ []") as "[Hb $]".
+    { iMod ("Hclose" with "[] HQ") as "[Hb $]".
       - iIntros "!> H !>". iNext. iDestruct "H" as (γ st) "(? & _ & _)".
         iExists _. iIntros "{$H}!%". destruct st as [[?[|[]|]]|]; simpl; lia.
       - iMod (bor_exists with "LFT Hb") as (γ) "Hb". done.

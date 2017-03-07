@@ -55,14 +55,14 @@ Section borrow.
     iDestruct "H↦" as ([|[[|l'|]|][]]) "[>H↦ Hown]"; try iDestruct "Hown" as ">[]".
       iDestruct "Hown" as "[Hown H†]". rewrite heap_mapsto_vec_singleton -wp_fupd. wp_read.
     iMod ("Hclose'" $! (l↦#l' ∗ freeable_sz n (ty_size ty) l' ∗ _)%I
-          with "[H↦ Hown H†][]") as "[Hbor Htok]"; last 1 first.
+          with "[] [H↦ Hown H†]") as "[Hbor Htok]"; last 1 first.
     - iMod (bor_sep with "LFT Hbor") as "[_ Hbor]". done.
       iMod (bor_sep with "LFT Hbor") as "[_ Hbor]". done.
       iMod ("Hclose" with "Htok") as "($ & $)".
       by rewrite tctx_interp_singleton tctx_hasty_val' //=.
-    - iFrame.
     - iIntros "!>(?&?&?)!>". iNext. iExists _.
       rewrite -heap_mapsto_vec_singleton. iFrame. by iFrame.
+    - iFrame.
   Qed.
 
   Lemma type_deref_uniq_own {E L} κ x p e n ty C T T' :

@@ -26,11 +26,11 @@ Implicit Types κ : lft.
 Lemma bor_acc_cons E q κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ} P -∗ q.[κ] ={E}=∗ ▷ P ∗
-    ∀ Q, ▷ Q -∗ ▷(▷ Q ={∅}=∗ ▷ P) ={E}=∗ &{κ} Q ∗ q.[κ].
+    ∀ Q, ▷ (▷ Q ={∅}=∗ ▷ P) -∗ ▷ Q ={E}=∗ &{κ} Q ∗ q.[κ].
 Proof.
   iIntros (?) "#LFT HP Htok".
   iMod (bor_acc_strong with "LFT HP Htok") as (κ') "(#Hκκ' & $ & Hclose)"; first done.
-  iIntros "!>*HQ HPQ". iMod ("Hclose" with "HQ [HPQ]") as "[Hb $]".
+  iIntros "!>* HPQ HQ". iMod ("Hclose" with "[HPQ] HQ") as "[Hb $]".
   - iNext. iIntros "? _". by iApply "HPQ".
   - iApply (bor_shorten with "Hκκ' Hb").
 Qed.
@@ -41,7 +41,7 @@ Lemma bor_acc E q κ P :
 Proof.
   iIntros (?) "#LFT HP Htok".
   iMod (bor_acc_cons with "LFT HP Htok") as "($ & Hclose)"; first done.
-  iIntros "!>HP". iMod ("Hclose" with "HP []") as "[$ $]"; auto.
+  iIntros "!>HP". iMod ("Hclose" with "[] HP") as "[$ $]"; auto.
 Qed.
 
 Lemma bor_or E κ P Q :
@@ -59,7 +59,7 @@ Proof.
   iIntros (?) "#LFT Hb".
   iMod (bor_acc_atomic_cons with "LFT Hb") as "[H|[H† Hclose]]"; first done.
   - iDestruct "H" as "[HP  Hclose]". iModIntro. iNext.
-    iApply ("Hclose" with "HP"). by iIntros "!> $".
+    iApply ("Hclose" with "[] HP"). by iIntros "!> $".
   - iIntros "!> !>". iMod "Hclose" as "_". by iApply (bor_fake with "LFT").
 Qed.
 
@@ -83,7 +83,7 @@ Lemma bor_later_tok E q κ P :
 Proof.
   iIntros (?) "#LFT Hb Htok".
   iMod (bor_acc_cons with "LFT Hb Htok") as "[HP Hclose]"; first done.
-  iModIntro. iNext. iApply ("Hclose" with "HP []"). by iIntros "!> $".
+  iModIntro. iNext. iApply ("Hclose" with "[] HP"). by iIntros "!> $".
 Qed.
 
 Lemma bor_persistent P `{!PersistentP P} E κ :
