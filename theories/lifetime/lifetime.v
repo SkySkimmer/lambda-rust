@@ -63,6 +63,20 @@ Proof.
   - iIntros "!> !>". iMod "Hclose" as "_". by iApply (bor_fake with "LFT").
 Qed.
 
+Lemma later_bor_static E P :
+  ↑lftN ⊆ E →
+  lft_ctx -∗ ▷ P ={E}=∗ &{static} P.
+Proof.
+  iIntros (?) "#LFT HP". iMod (bor_create with "LFT HP") as "[$ _]"; done.
+Qed.
+Lemma bor_static_later E P :
+  ↑lftN ⊆ E →
+  lft_ctx -∗ &{static} P ={E}=∗ ▷ P.
+Proof.
+  iIntros (?) "LFT HP". iMod (bor_acc _ 1%Qp with "LFT HP []") as "[$ _]"; try done.
+  iApply lft_tok_static.
+Qed.
+
 Lemma bor_later_tok E q κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ}(▷ P) -∗ q.[κ] ={E}▷=∗ &{κ}P ∗ q.[κ].
