@@ -17,7 +17,7 @@ Section refcell_functions.
       let: "r" := new [ #(S ty.(ty_size))] in
       "r" +ₗ #0 <- #0;;
       "r" +ₗ #1 <-{ty.(ty_size)} !"x";;
-       delete [ #ty.(ty_size) ; "x"];; "return" ["r"].
+      delete [ #ty.(ty_size) ; "x"];; "return" ["r"].
 
   Lemma refcell_new_type ty :
     typed_val (refcell_new ty) (fn([]; ty) → refcell ty).

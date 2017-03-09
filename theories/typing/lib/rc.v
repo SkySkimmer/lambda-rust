@@ -119,3 +119,51 @@ Section rc.
     - by iApply ty_shr_mono.
   Qed.
 End rc.
+
+Section code.
+  Context `{!typeG Σ, !rcG Σ}.
+
+  Definition rc_new ty : val :=
+    funrec: <> ["x"] :=
+      let: "rcbox" := new [ #(S ty.(ty_size))] in
+      let: "rc" := new [ #1 ] in
+      "rcbox" +ₗ #0 <- #1;;
+      "rcbox" +ₗ #1 <-{ty.(ty_size)} !"x";;
+      "rc" +ₗ #0 <- "rcbox";;
+      delete [ #ty.(ty_size) ; "x"];; "return" ["rc"].
+
+  Lemma rc_new_type ty :
+    typed_val (rc_new ty) (fn([]; ty) → rc ty).
+  Proof.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (rcbox); simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (rc); simpl_subst.
+    iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
+    rewrite (Nat2Z.id (S ty.(ty_size))) 2!tctx_interp_cons
+            tctx_interp_singleton !tctx_hasty_val.
+    iDestruct "HT" as "[Hrc [Hrcbox Hx]]". destruct x as [[|lx|]|]; try done.
+    iDestruct "Hx" as "[Hx Hx†]". iDestruct "Hx" as (vl) "[Hx↦ Hx]".
+    destruct rcbox as [[|lrcbox|]|]; try done. iDestruct "Hrcbox" as "[Hrcbox Hrcbox†]".
+    iDestruct "Hrcbox" as (vl') "Hrcbox". rewrite uninit_own.
+    iDestruct "Hrcbox" as "[>Hrcbox↦ >SZ]". destruct vl' as [|]; iDestruct "SZ" as %[=].
+    rewrite heap_mapsto_vec_cons. iDestruct "Hrcbox↦" as "[Hrcbox↦0 Hrcbox↦1]".
+    destruct rc as [[|lrc|]|]; try done. iDestruct "Hrc" as "[Hrc Hrc†]".
+    iDestruct "Hrc" as (vl'') "Hrc". rewrite uninit_own.
+    iDestruct "Hrc" as "[>Hrc↦ >SZ]". destruct vl'' as [|]; iDestruct "SZ" as %[=].
+    destruct vl'' as [|]; last done. rewrite heap_mapsto_vec_singleton.
+    (* All right, we are done preparing our context. Let's get going. *)
+    wp_op. rewrite shift_loc_0. wp_write. wp_op. iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
+    wp_apply (wp_memcpy with "[$Hrcbox↦1 $Hx↦]"); [done||lia..|].
+    iIntros "[Hrcbox↦1 Hx↦]". wp_seq. wp_op. rewrite shift_loc_0. wp_write.
+    iApply (type_type _ _ _ [ #lx ◁ box (uninit (ty_size ty)); #lrc ◁ box (rc ty)]%TC
+        with "[] LFT Hna HE HL Hk [-]"); last first.
+    { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //=. iFrame.
+      iSplitL "Hx↦".
+      { iExists _. rewrite uninit_own. auto. }
+      iNext. iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame. iFrame. iLeft.
+      rewrite freeable_sz_full_S. iFrame. iExists _. iFrame.  }
+    iApply type_delete; [solve_typing..|].
+    iApply (type_jump [ #_]); solve_typing.
+  Qed.
+End code.

@@ -21,13 +21,16 @@ Section own.
   Global Instance freable_sz_timeless n sz l : TimelessP (freeable_sz n sz l).
   Proof. destruct sz, n; apply _. Qed.
 
-  Lemma freeable_sz_full n l : freeable_sz n n l ⊣⊢ (†{1}l…n ∨ ⌜Z.of_nat n = 0⌝)%I.
+  Lemma freeable_sz_full n l : freeable_sz n n l ⊣⊢ †{1}l…n ∨ ⌜Z.of_nat n = 0⌝.
   Proof.
     destruct n.
     - iSplit; iIntros "H /="; auto.
     - assert (Z.of_nat (S n) = 0 ↔ False) as -> by done. rewrite right_id.
       rewrite /freeable_sz (proj2 (Qp_eq (mk_Qp _ _) 1)) //= Qcmult_inv_r //.
   Qed.
+
+  Lemma freeable_sz_full_S n l : freeable_sz (S n) (S n) l ⊣⊢ †{1}l…(S n).
+  Proof. rewrite freeable_sz_full. iSplit; auto. iIntros "[$|%]"; done. Qed.
 
   Lemma freeable_sz_split n sz1 sz2 l :
     freeable_sz n sz1 l ∗ freeable_sz n sz2 (shift_loc l sz1) ⊣⊢
