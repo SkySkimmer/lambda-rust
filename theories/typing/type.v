@@ -152,23 +152,16 @@ Section ofe.
 
   Global Instance type_cofe : Cofe typeC.
   Proof.
-    apply: (iso_cofe_subtype P type_pack type_unpack).
+    apply (iso_cofe_subtype' P type_pack type_unpack).
+    - by intros [].
     - split; [by destruct 1|by intros [[??] ?]; constructor].
     - by intros [].
-    - intros ? c. rewrite /P /=. split_and!.
-      (* TODO: Can we do these proofs without effectively going into the model? *)
-      + intros κ tid l. apply uPred.entails_equiv_and, equiv_dist=>n.
-        setoid_rewrite conv_compl; simpl.
-        apply equiv_dist, uPred.entails_equiv_and, ty_shr_persistent.
-      + intros tid vl. apply uPred.entails_equiv_and, equiv_dist=>n.
-        repeat setoid_rewrite conv_compl at 1. simpl.
-        apply equiv_dist, uPred.entails_equiv_and, ty_size_eq.
-      + intros E κ l tid q ?. apply uPred.entails_equiv_and, equiv_dist=>n.
-        setoid_rewrite conv_compl; simpl.
-        by apply equiv_dist, uPred.entails_equiv_and, ty_share.
-      + intros κ κ' tid l. apply uPred.entails_equiv_and, equiv_dist=>n.
-        setoid_rewrite conv_compl; simpl.
-        apply equiv_dist, uPred.entails_equiv_and, ty_shr_mono.
+    - (* TODO: automate this *)
+      repeat apply limit_preserving_and; repeat (apply limit_preserving_forall; intros ?).
+      + apply uPred.limit_preserving_PersistentP=> n ty1 ty2 Hty; apply Hty.
+      + apply uPred.limit_preserving_entails=> n ty1 ty2 Hty. apply Hty. by rewrite Hty.
+      + apply uPred.limit_preserving_entails=> n ty1 ty2 Hty; repeat f_equiv; apply Hty.
+      + apply uPred.limit_preserving_entails=> n ty1 ty2 Hty; repeat f_equiv; apply Hty.
   Qed.
 
   Inductive st_equiv' (ty1 ty2 : simple_type) : Prop :=
