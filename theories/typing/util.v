@@ -18,15 +18,15 @@ Section util.
   Lemma delay_borrow_step :
     lfeE ⊆ N → (∀ x, PersistentP (Post x)) →
     lft_ctx -∗ &{κ} P -∗
-      □ (∀ x, &{κ} P -∗ Pre x -∗ Frame x ={F1,F2}▷=∗ Post x ∗ Frame x) ={N}=∗ 
-      □ (∀ x, Pre x -∗ Frame x ={F1,F2}▷=∗ Post x ∗ Frame x).
+      □ (∀ x, &{κ} P -∗ Pre x -∗ Frame x ={F1 x,F2 x}▷=∗ Post x ∗ Frame x) ={N}=∗ 
+      □ (∀ x, Pre x -∗ Frame x ={F1 x,F2 x}▷=∗ Post x ∗ Frame x).
    *)
 
   Lemma delay_sharing_later N κ l ty tid :
     lftE ⊆ N →
     lft_ctx -∗ &{κ} ▷ l ↦∗: ty_own ty tid ={N}=∗
        □ ∀ (F : coPset) (q : Qp),
-       ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ (q).[κ] ={F,F ∖ ↑shrN ∖ ↑lftN}▷=∗ ty.(ty_shr) κ tid l ∗ (q).[κ].
+       ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ (q).[κ] ={F,F ∖ ↑shrN}▷=∗ ty.(ty_shr) κ tid l ∗ (q).[κ].
   Proof.
     iIntros (?) "#LFT Hbor". rewrite bor_unfold_idx.
     iDestruct "Hbor" as (i) "(#Hpb&Hpbown)".
@@ -34,9 +34,9 @@ Section util.
           with "[Hpbown]") as "#Hinv"; first by eauto.
     iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]"; first set_solver.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
-    - iMod (bor_later with "LFT [Hbtok]") as "Hb"; first solve_ndisj.
+    - iMod (bor_later_tok with "LFT [Hbtok] Htok") as "Hdelay"; first solve_ndisj.
       { rewrite bor_unfold_idx. eauto. }
-      iModIntro. iNext. iMod "Hb".
+      iModIntro. iNext. iMod "Hdelay" as "[Hb Htok]".
       iMod (ty.(ty_share) with "LFT Hb Htok") as "[#$ $]"; first solve_ndisj.
       iApply "Hclose". auto.
     - iMod fupd_intro_mask' as "Hclose'"; last iModIntro. set_solver.

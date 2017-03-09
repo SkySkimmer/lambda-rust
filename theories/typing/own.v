@@ -63,7 +63,7 @@ Section own.
          end%I;
        ty_shr κ tid l :=
          (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ∗
-            □ (∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ] ={F,F∖↑shrN∖↑lftN}▷=∗ ty.(ty_shr) κ tid l' ∗ q.[κ]))%I
+            □ (∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ] ={F,F∖↑shrN}▷=∗ ty.(ty_shr) κ tid l' ∗ q.[κ]))%I
     |}.
   Next Obligation. by iIntros (q ty tid [|[[]|][]]) "H". Qed.
   Next Obligation.
@@ -81,7 +81,7 @@ Section own.
     intros _ ty κ κ' tid l. iIntros "#Hκ #H".
     iDestruct "H" as (l') "[Hfb #Hvs]".
     iExists l'. iSplit. by iApply (frac_bor_shorten with "[]"). iIntros "!# *% Htok".
-    iApply (step_fupd_mask_mono F _ _ (F∖↑shrN∖↑lftN)). set_solver. set_solver.
+    iApply (step_fupd_mask_mono F _ _ (F∖↑shrN)). set_solver. set_solver.
     iMod (lft_incl_acc with "Hκ Htok") as (q') "[Htok Hclose]"; first set_solver.
     iMod ("Hvs" with "[%] Htok") as "Hvs'". set_solver. iModIntro. iNext.
     iMod "Hvs'" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".

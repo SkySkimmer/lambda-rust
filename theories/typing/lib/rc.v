@@ -45,7 +45,7 @@ Section rc.
        ty_shr κ tid l :=
          ∃ (l' : loc), &frac{κ} (λ q, l↦∗{q} [ #l']) ∗
            □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ]
-             ={F, F∖↑shrN∖↑lftN}▷=∗ q.[κ] ∗ ∃ γ ν q',
+             ={F, F∖↑shrN}▷=∗ q.[κ] ∗ ∃ γ ν q',
                 na_inv tid rc_invN (rc_inv tid ν γ l' ty) ∗
                 &na{κ, tid, rc_invN}(own γ (◯ Some (q', 1%positive))) ∗
                 ty.(ty_shr) κ tid (shift_loc l' 1)
@@ -70,9 +70,7 @@ Section rc.
       iClear "H↦ Hinv Hpb".
       iMod (bor_acc_cons with "LFT Hb Htok") as "[HP Hclose2]"; first solve_ndisj.
       set (X := (∃ _ _ _, _)%I).
-      (* TODO: Would be nice to have a lemma for the next two lines. *)
-      iMod fupd_intro_mask' as "Hclose3"; last iModIntro; first solve_ndisj. iNext.
-      iMod "Hclose3" as "_". iAssert (|={F ∖ ↑shrN}=> X )%I with "[HP]" as ">HX".
+      iModIntro. iNext. iAssert (|={F ∖ ↑shrN}=> X )%I with "[HP]" as ">HX".
       { iDestruct "HP" as "[[Hl' [H† Hown]]|$]"; last done.
         iMod (lft_create with "LFT") as (ν) "[[Hν1 Hν2] #Hν†]"; first solve_ndisj.
         (* TODO: We should consider changing the statement of bor_create to dis-entangle the two masks such that this is no longer necessary. *)
