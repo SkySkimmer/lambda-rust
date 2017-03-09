@@ -214,8 +214,19 @@ Lemma wp_fork E e :
   {{{ ▷ WP e {{ _, True }} }}} Fork e @ E {{{ RET LitV LitUnit; True }}}.
 Proof.
   iIntros (?) "?HΦ". iApply wp_lift_pure_det_head_step; eauto.
-  by intros; inv_head_step; eauto. iNext.
+  by intros; inv_head_step; eauto. iApply step_fupd_intro; first done. iNext.
   rewrite big_sepL_singleton. iFrame. iApply wp_value. done. by iApply "HΦ".
+Qed.
+
+Lemma wp_rec_step_fupd E E' e f xl erec erec' el Φ :
+  e = Rec f xl erec →
+  Forall (λ ei, is_Some (to_val ei)) el →
+  Closed (f :b: xl +b+ []) erec →
+  subst_l (f::xl) (e::el) erec = Some erec' →
+  (|={E,E'}▷=> WP erec' @ E {{ Φ }}) -∗ WP App e el @ E {{ Φ }}.
+Proof.
+  iIntros (-> ???) "H". iApply wp_lift_pure_det_head_step_no_fork; subst; eauto.
+  by intros; inv_head_step; eauto.
 Qed.
 
 Lemma wp_rec E e f xl erec erec' el Φ :
@@ -225,8 +236,8 @@ Lemma wp_rec E e f xl erec erec' el Φ :
   subst_l (f::xl) (e::el) erec = Some erec' →
   ▷ WP erec' @ E {{ Φ }} -∗ WP App e el @ E {{ Φ }}.
 Proof.
-  iIntros (-> ???) "?". iApply wp_lift_pure_det_head_step; subst; eauto.
-  by intros; inv_head_step; eauto. iNext. rewrite big_sepL_nil. by iFrame.
+  iIntros (-> ???) "?". iApply wp_rec_step_fupd; [done..|].
+  iApply step_fupd_intro; done.
 Qed.
 
 (* TODO: wp_eq for locations, if needed.
@@ -249,11 +260,10 @@ Lemma wp_bin_op_pure E op l1 l2 l' :
 Proof.
   iIntros (? Φ) "HΦ". iApply wp_lift_pure_head_step; eauto.
   { intros. by inv_head_step. }
-  iNext. iIntros (e2 efs σ Hs).
+  iApply step_fupd_intro; first done. iNext. iIntros (e2 efs σ Hs).
   inv_head_step; rewrite big_sepL_nil right_id.
   rewrite -wp_value //. iApply "HΦ". eauto.
 Qed.
-
 
 Lemma wp_le E (n1 n2 : Z) P Φ :
   (n1 ≤ n2 → P -∗ ▷ Φ (LitV $  true)) →
@@ -309,8 +319,8 @@ Lemma wp_case E i e el Φ :
   el !! (Z.to_nat i) = Some e →
   ▷ WP e @ E {{ Φ }} -∗ WP Case (Lit $ LitInt i) el @ E {{ Φ }}.
 Proof.
-  iIntros (??) "?". iApply wp_lift_pure_det_head_step; eauto.
-  by intros; inv_head_step; eauto. iNext. rewrite big_sepL_nil. by iFrame.
+  iIntros (??) "?". iApply wp_lift_pure_det_head_step_no_fork'; eauto.
+  by intros; inv_head_step; eauto.
 Qed.
 
 Lemma wp_if E (b : bool) e1 e2 Φ :

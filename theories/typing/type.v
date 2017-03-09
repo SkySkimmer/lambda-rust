@@ -51,7 +51,7 @@ Instance: Params (@ty_size) 2.
 Instance: Params (@ty_own) 2.
 Instance: Params (@ty_shr) 2.
 
-Arguments ty_own {_ _} !_ _ !_ /.
+Arguments ty_own {_ _} _ _ !_ /.
 
 Record simple_type `{typeG Σ} :=
   { st_own : thread_id → list val → iProp Σ;
