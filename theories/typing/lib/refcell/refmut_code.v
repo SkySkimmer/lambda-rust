@@ -210,7 +210,7 @@ Section refmut_functions.
       iDestruct "Href" as ([|[[|lv'|]|] [|]]) "[H↦ Href]"; auto.
       iExists [ #lv'; #lrc].
       rewrite (heap_mapsto_vec_cons _ _ _ [_]) !heap_mapsto_vec_singleton. iFrame.
-      iExists ν. rewrite EQ1. eauto 10 with iFrame. }
+      iExists ν. rewrite /= EQ1. eauto 20 with iFrame. }
     { rewrite /elctx_interp !big_sepL_cons /= -lft_tok_sep. iFrame. }
     iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (f'). simpl_subst.

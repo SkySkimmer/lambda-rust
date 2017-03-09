@@ -41,7 +41,7 @@ Section case.
         iFrame. iExists _. iFrame. rewrite uninit_own. auto.
     - rewrite -EQlen app_length -(Nat.add_1_l (_+_)) -!freeable_sz_split. iFrame.
       iExists (#i :: vl' ++ vl''). iNext. rewrite heap_mapsto_vec_cons heap_mapsto_vec_app.
-      iFrame. iExists i, vl', vl''. rewrite /= app_length nth_lookup EQty. auto.
+      iFrame. iExists i, vl', vl''. rewrite /= -EQlen app_length nth_lookup EQty /=. auto.
   Qed.
 
   Lemma type_case_own E L C T T' p n tyl el :
@@ -91,7 +91,7 @@ Section case.
     - iMod ("Hclose'" with "[] [H↦i H↦vl' H↦vl'' Hown]") as "[Hb Htok]";
         [by iIntros "!>$"| |].
       { iExists (#i::vl'++vl'').
-        rewrite heap_mapsto_vec_cons heap_mapsto_vec_app -EQlen. iFrame. iNext.
+        rewrite heap_mapsto_vec_cons heap_mapsto_vec_app /= -EQlen. iFrame. iNext.
         iExists i, vl', vl''. rewrite nth_lookup EQty. auto. }
       iMod ("Hclose" with "Htok") as "[HE HL]".
       iApply (Hety with "LFT Hna HE HL HC").

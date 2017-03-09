@@ -42,7 +42,7 @@ Section rwlock_functions.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //=. iFrame.
       iSplitL "Hx↦".
       - iExists _. rewrite uninit_own. auto.
-      - iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame. auto. }
+      - iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame. simpl. iFrame. auto. }
     iApply type_delete; [solve_typing..|].
     iApply (type_jump [ #_]); solve_typing.
   Qed.
@@ -193,7 +193,7 @@ Section rwlock_functions.
               (op_local_update_discrete _ _ (reading_st (q'/2)%Qp ν))=>-[Hagv _].
               split; [split|].
               - by rewrite /= Hag agree_idemp.
-              - change ((q'/2+q)%Qp ≤ 1%Qp)%Qc. rewrite -Hqq' comm -{2}(Qp_div_2 q').
+              - apply frac_valid'. rewrite -Hqq' comm -{2}(Qp_div_2 q').
                 apply Qcplus_le_mono_l. rewrite -{1}(Qcplus_0_l (q'/2)%Qp).
                 apply Qcplus_le_mono_r, Qp_ge_0.
               - done. }

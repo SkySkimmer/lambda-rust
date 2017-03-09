@@ -49,7 +49,7 @@ Section cell.
   Global Instance cell_copy :
     Copy ty → Copy (cell ty).
   Proof.
-    intros ty Hcopy. split; first by intros; simpl; apply _.
+    intros ty Hcopy. split; first by intros; simpl; unfold ty_own; apply _.
     iIntros (κ tid E F l q ??) "#LFT #Hshr Htl Htok". iExists 1%Qp. simpl in *.
     (* Size 0 needs a special case as we can't keep the thread-local invariant open. *)
     destruct (ty_size ty) as [|sz] eqn:Hsz; simpl in *.

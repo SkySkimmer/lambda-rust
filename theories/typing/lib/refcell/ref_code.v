@@ -81,7 +81,7 @@ Section ref_functions.
          (op_local_update_discrete _ _ (reading_st (q''/2)%Qp ν))=>-[Hagv _].
       split; [|split; last done].
       - by rewrite /= agree_idemp.
-      - change ((q''/2+q')%Qp ≤ 1%Qp)%Qc. rewrite -Hq'q'' comm -{2}(Qp_div_2 q'').
+      - apply frac_valid'. rewrite -Hq'q'' comm -{2}(Qp_div_2 q'').
         apply Qcplus_le_mono_l. rewrite -{1}(Qcplus_0_l (q''/2)%Qp).
         apply Qcplus_le_mono_r, Qp_ge_0. }
     wp_apply wp_new; [done..|]. iIntros (lr ?) "(%&?&Hlr)".

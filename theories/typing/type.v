@@ -51,6 +51,8 @@ Instance: Params (@ty_size) 2.
 Instance: Params (@ty_own) 2.
 Instance: Params (@ty_shr) 2.
 
+Arguments ty_own {_ _} !_ _ !_ /.
+
 Record simple_type `{typeG Σ} :=
   { st_own : thread_id → list val → iProp Σ;
     st_size_eq tid vl : st_own tid vl -∗ ⌜length vl = 1%nat⌝;
@@ -316,7 +318,7 @@ Section type_contractive.
   Proof.
     intros ???. constructor.
     - done.
-    - intros. destruct n; first done; simpl. by f_equiv.
+    - intros. destruct n; first done; simpl. f_equiv. f_equiv. done.
     - intros. solve_contractive.
   Qed.
 End type_contractive.

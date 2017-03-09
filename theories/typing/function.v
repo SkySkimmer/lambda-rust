@@ -55,7 +55,7 @@ Section fn.
             type_dist2 n') fn.
   Proof.
     intros fp1 fp2 Hfp. apply ty_of_st_type_ne. destruct n'; first done.
-    constructor; simpl.
+    constructor; unfold ty_own; simpl.
     (* TODO: 'f_equiv' is slow here because reflexivity is slow. *)
     (* The clean way to do this would be to have a metric on type contexts. Oh well. *)
     intros tid vl. unfold typed_body.

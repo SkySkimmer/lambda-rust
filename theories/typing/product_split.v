@@ -116,7 +116,7 @@ Section product_split.
     iDestruct "H↦1" as (vl1) "[H↦1 H1]". iDestruct "H↦2" as (vl2) "[H↦2 H2]".
     iExists (vl1 ++ vl2). rewrite heap_mapsto_vec_app. iFrame.
     iDestruct (ty_size_eq with "H1") as "#>EQ". iDestruct "EQ" as %->.
-    auto 10 with iFrame.
+    rewrite {3}/ty_own /=. auto 10 with iFrame.
   Qed.
 
   Lemma tctx_split_own_prod E L n tyl p :

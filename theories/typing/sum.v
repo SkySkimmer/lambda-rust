@@ -107,7 +107,7 @@ Section sum.
     { clear EQmax. induction EQ as [|???? EQ _ IH]=>-[|i] //=. }
     constructor; simpl.
     - by rewrite EQmax.
-    - intros tid vl. destruct n as [|n]=> //=. rewrite EQmax.
+    - intros tid vl. destruct n as [|n]=> //=. rewrite /ty_own /= EQmax.
       solve_proper_core ltac:(fun _ => exact:EQnth || f_type_equiv || f_equiv).
     - intros κ tid l. unfold is_pad. rewrite EQmax.
       solve_proper_core ltac:(fun _ => exact:EQnth || f_type_equiv || f_equiv).
@@ -125,7 +125,7 @@ Section sum.
     { clear EQmax. induction EQ as [|???? EQ _ IH]=>-[|i] //=. }
     constructor; simpl.
     - by rewrite EQmax.
-    - intros tid vl. rewrite EQmax.
+    - intros tid vl. rewrite /ty_own /= EQmax.
       solve_proper_core ltac:(fun _ => exact:EQnth || f_equiv).
     - intros κ tid l. unfold is_pad. rewrite EQmax.
       solve_proper_core ltac:(fun _ => exact:EQnth || (eapply ty_size_ne; try reflexivity) || f_equiv).
