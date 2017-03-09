@@ -333,16 +333,56 @@ Ltac solve_type_proper :=
   constructor;
   solve_proper_core ltac:(fun _ => f_type_equiv || f_contractive || f_equiv).
 
+
+Fixpoint shr_locsE (l : loc) (n : nat) : coPset :=
+  match n with
+  | 0%nat => ∅
+  | S n => ↑shrN.@l ∪ shr_locsE (shift_loc l 1%nat) n
+  end.
+
+Class Copy `{typeG Σ} (t : type) := {
+  copy_persistent tid vl : PersistentP (t.(ty_own) tid vl);
+  copy_shr_acc κ tid E F l q :
+    lftE ∪ ↑shrN ⊆ E → shr_locsE l (t.(ty_size) + 1) ⊆ F →
+    lft_ctx -∗ t.(ty_shr) κ tid l -∗ na_own tid F -∗ q.[κ] ={E}=∗
+       ∃ q', na_own tid (F ∖ shr_locsE l t.(ty_size)) ∗
+         ▷(l ↦∗{q'}: t.(ty_own) tid) ∗
+      (na_own tid (F ∖ shr_locsE l t.(ty_size)) -∗ ▷l ↦∗{q'}: t.(ty_own) tid
+                                  ={E}=∗ na_own tid F ∗ q.[κ])
+}.
+Existing Instances copy_persistent.
+Instance: Params (@Copy) 2.
+
+Class LstCopy `{typeG Σ} (tys : list type) := lst_copy : Forall Copy tys.
+Instance: Params (@LstCopy) 2.
+Global Instance lst_copy_nil `{typeG Σ} : LstCopy [] := List.Forall_nil _.
+Global Instance lst_copy_cons `{typeG Σ} ty tys :
+  Copy ty → LstCopy tys → LstCopy (ty :: tys) := List.Forall_cons _ _ _.
+
+Class Send `{typeG Σ} (t : type) :=
+  send_change_tid tid1 tid2 vl : t.(ty_own) tid1 vl -∗ t.(ty_own) tid2 vl.
+Instance: Params (@Send) 2.
+
+Class LstSend `{typeG Σ} (tys : list type) := lst_send : Forall Send tys.
+Instance: Params (@LstSend) 2.
+Global Instance lst_send_nil `{typeG Σ} : LstSend [] := List.Forall_nil _.
+Global Instance lst_send_cons `{typeG Σ} ty tys :
+  Send ty → LstSend tys → LstSend (ty :: tys) := List.Forall_cons _ _ _.
+
+Class Sync `{typeG Σ} (t : type) :=
+  sync_change_tid κ tid1 tid2 l : t.(ty_shr) κ tid1 l -∗ t.(ty_shr) κ tid2 l.
+Instance: Params (@Sync) 2.
+
+Class LstSync `{typeG Σ} (tys : list type) := lst_sync : Forall Sync tys.
+Instance: Params (@LstSync) 2.
+Global Instance lst_sync_nil `{typeG Σ} : LstSync [] := List.Forall_nil _.
+Global Instance lst_sync_cons `{typeG Σ} ty tys :
+  Sync ty → LstSync tys → LstSync (ty :: tys) := List.Forall_cons _ _ _.
+
 Section type.
   Context `{typeG Σ}.
 
   (** Copy types *)
-  Fixpoint shr_locsE (l : loc) (n : nat) : coPset :=
-    match n with
-    | 0%nat => ∅
-    | S n => ↑shrN.@l ∪ shr_locsE (shift_loc l 1%nat) n
-    end.
-
   Lemma shr_locsE_shift l n m :
     shr_locsE l (n + m) = shr_locsE l n ∪ shr_locsE (shift_loc l n) m.
   Proof.
@@ -386,31 +426,13 @@ Section type.
     rewrite shr_locsE_shift na_own_union //. apply shr_locsE_disj.
   Qed.
 
-  Class Copy (t : type) := {
-    copy_persistent tid vl : PersistentP (t.(ty_own) tid vl);
-    copy_shr_acc κ tid E F l q :
-      lftE ∪ ↑shrN ⊆ E → shr_locsE l (t.(ty_size) + 1) ⊆ F →
-      lft_ctx -∗ t.(ty_shr) κ tid l -∗ na_own tid F -∗ q.[κ] ={E}=∗
-         ∃ q', na_own tid (F ∖ shr_locsE l t.(ty_size)) ∗
-           ▷(l ↦∗{q'}: t.(ty_own) tid) ∗
-        (na_own tid (F ∖ shr_locsE l t.(ty_size)) -∗ ▷l ↦∗{q'}: t.(ty_own) tid
-                                    ={E}=∗ na_own tid F ∗ q.[κ])
-  }.
-  Global Existing Instances copy_persistent.
-
-  Global Instance copy_equiv :
-    Proper (equiv ==> impl) Copy.
+  Global Instance copy_equiv : Proper (equiv ==> impl) Copy.
   Proof.
     intros ty1 ty2 [EQsz%leibniz_equiv EQown EQshr] Hty1. split.
     - intros. rewrite -EQown. apply _.
     - intros *. rewrite -EQsz -EQshr. setoid_rewrite <-EQown.
       apply copy_shr_acc.
   Qed.
-
-  Class LstCopy (tys : list type) := lst_copy : Forall Copy tys.
-  Global Instance lst_copy_nil : LstCopy [] := List.Forall_nil _.
-  Global Instance lst_copy_cons ty tys :
-    Copy ty → LstCopy tys → LstCopy (ty::tys) := List.Forall_cons _ _ _.
 
   Global Program Instance ty_of_st_copy st : Copy (ty_of_st st).
   Next Obligation.
@@ -430,38 +452,19 @@ Section type.
   Qed.
 
   (** Send and Sync types *)
-  Class Send (t : type) :=
-    send_change_tid tid1 tid2 vl : t.(ty_own) tid1 vl -∗ t.(ty_own) tid2 vl.
-
-  Global Instance send_equiv :
-    Proper (equiv ==> impl) Send.
+  Global Instance send_equiv : Proper (equiv ==> impl) Send.
   Proof.
     intros ty1 ty2 [EQsz%leibniz_equiv EQown EQshr] Hty1.
     rewrite /Send=>???. rewrite -!EQown. auto.
   Qed.
 
-  Class LstSend (tys : list type) := lst_send : Forall Send tys.
-  Global Instance lst_send_nil : LstSend [] := List.Forall_nil _.
-  Global Instance lst_send_cons ty tys :
-    Send ty → LstSend tys → LstSend (ty::tys) := List.Forall_cons _ _ _.
-
-  Class Sync (t : type) :=
-    sync_change_tid κ tid1 tid2 l : t.(ty_shr) κ tid1 l -∗ t.(ty_shr) κ tid2 l.
-
-  Global Instance sync_equiv :
-    Proper (equiv ==> impl) Sync.
+  Global Instance sync_equiv : Proper (equiv ==> impl) Sync.
   Proof.
     intros ty1 ty2 [EQsz%leibniz_equiv EQown EQshr] Hty1.
     rewrite /Send=>????. rewrite -!EQshr. auto.
   Qed.
 
-  Class LstSync (tys : list type) := lst_sync : Forall Sync tys.
-  Global Instance lst_sync_nil : LstSync [] := List.Forall_nil _.
-  Global Instance lst_sync_cons ty tys :
-    Sync ty → LstSync tys → LstSync (ty::tys) := List.Forall_cons _ _ _.
-
-  Global Instance ty_of_st_sync st :
-    Send (ty_of_st st) → Sync (ty_of_st st).
+  Global Instance ty_of_st_sync st : Send (ty_of_st st) → Sync (ty_of_st st).
   Proof.
     iIntros (Hsend κ tid1 tid2 l). iDestruct 1 as (vl) "[Hm Hown]".
     iExists vl. iFrame "Hm". iNext. by iApply Hsend.
