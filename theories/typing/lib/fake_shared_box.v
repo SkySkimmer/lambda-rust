@@ -7,7 +7,7 @@ Section fake_shared_box.
   Context `{typeG Σ}.
 
   Definition fake_shared_box : val :=
-    funrec: <> ["x"] := Skip ;; "return" ["x"].
+    funrec: <> ["x"] := Skip ;; return: ["x"].
 
   Lemma cell_replace_type ty :
     typed_val fake_shared_box

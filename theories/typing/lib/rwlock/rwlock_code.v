@@ -17,7 +17,7 @@ Section rwlock_functions.
       let: "r" := new [ #(S ty.(ty_size))] in
       "r" +ₗ #0 <- #0;;
       "r" +ₗ #1 <-{ty.(ty_size)} !"x";;
-       delete [ #ty.(ty_size) ; "x"];; "return" ["r"].
+       delete [ #ty.(ty_size) ; "x"];; return: ["r"].
 
   Lemma rwlock_new_type ty :
     typed_val (rwlock_new ty) (fn([]; ty) → rwlock ty).
@@ -53,7 +53,7 @@ Section rwlock_functions.
     funrec: <> ["x"] :=
       let: "r" := new [ #ty.(ty_size)] in
       "r" <-{ty.(ty_size)} !("x" +ₗ #1);;
-       delete [ #(S ty.(ty_size)) ; "x"];; "return" ["r"].
+       delete [ #(S ty.(ty_size)) ; "x"];; return: ["r"].
 
   Lemma rwlock_into_inner_type ty :
     typed_val (rwlock_into_inner ty) (fn([] ; rwlock ty) → ty).
@@ -87,7 +87,7 @@ Section rwlock_functions.
     funrec: <> ["x"] :=
       let: "x'" := !"x" in
       "x" <- "x'" +ₗ #1;;
-      "return" ["x"].
+      return: ["x"].
 
   Lemma rwlock_get_mut_type ty :
     typed_val rwlock_get_mut (fn(∀ α, [α]; &uniq{α} (rwlock ty)) → &uniq{α} ty).
@@ -135,7 +135,7 @@ Section rwlock_functions.
              "k" ["r"]
            else "loop" [])
       cont: "k" ["r"] :=
-        delete [ #1; "x"];; "return" ["r"].
+        delete [ #1; "x"];; return: ["r"].
 
   Lemma rwlock_try_read_type ty :
     typed_val rwlock_try_read
@@ -250,7 +250,7 @@ Section rwlock_functions.
         "r" <-{Σ 0} ();;
         "k" ["r"]
       cont: "k" ["r"] :=
-        delete [ #1; "x"];; "return" ["r"].
+        delete [ #1; "x"];; return: ["r"].
 
   Lemma rwlock_try_write_type ty :
     typed_val rwlock_try_write

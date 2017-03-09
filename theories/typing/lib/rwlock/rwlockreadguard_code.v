@@ -16,7 +16,7 @@ Section rwlockreadguard_functions.
       let: "x'" := !"x" in
       let: "r'" := !"x'" +ₗ #1 in
       letalloc: "r" <- "r'" in
-      delete [ #1; "x"];; "return" ["r"].
+      delete [ #1; "x"];; return: ["r"].
 
   Lemma rwlockreadguard_deref_type ty :
     typed_val rwlockreadguard_deref
@@ -56,7 +56,7 @@ Section rwlockreadguard_functions.
          let: "n" := !ˢᶜ"x'" in
          if: CAS "x'" "n" ("n" - #1) then
            delete [ #1; "x"];;
-           let: "r" := new [ #0] in "return" ["r"]
+           let: "r" := new [ #0] in return: ["r"]
          else "loop" []).
 
   Lemma rwlockreadguard_drop_type ty :

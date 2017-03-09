@@ -60,11 +60,12 @@ Notation "λ: xl , e" := (Lam xl%RustB e%E)
   (at level 102, xl at level 1, e at level 200) : expr_scope.
 Notation "λ: xl , e" := (locked (LamV xl%RustB e%E))
   (at level 102, xl at level 1, e at level 200) : val_scope.
-(* RJ TODO: let the user pick the name of the return continuation. *)
+
 Notation "'funrec:' f xl := e" := (rec: f ("return"::xl) := e)%E
   (only parsing, at level 102, f, xl at level 1, e at level 200) : expr_scope.
 Notation "'funrec:' f xl := e" := (rec: f ("return"::xl) := e)%V
   (only parsing, at level 102, f, xl at level 1, e at level 200) : val_scope.
+Notation "'return:'" := "return" : expr_scope.
 
 Notation "'let:' x := e1 'in' e2" :=
   ((Lam (@cons binder x%RustB nil) e2%E) (@cons expr e1%E nil))

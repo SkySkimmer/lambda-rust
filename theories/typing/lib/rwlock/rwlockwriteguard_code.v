@@ -16,7 +16,7 @@ Section rwlockwriteguard_functions.
       let: "x'" := !"x" in
       let: "r'" := !"x'" +ₗ #1 in
       letalloc: "r" <- "r'" in
-      delete [ #1; "x"];; "return" ["r"].
+      delete [ #1; "x"];; return: ["r"].
 
   Lemma rwlockwriteguard_deref_type ty :
     typed_val rwlockwriteguard_deref
@@ -58,7 +58,7 @@ Section rwlockwriteguard_functions.
       let: "x'" := !"x" in
       let: "r'" := !"x'" +ₗ #1 in
       letalloc: "r" <- "r'" in
-      delete [ #1; "x"];; "return" ["r"].
+      delete [ #1; "x"];; return: ["r"].
 
   Lemma rwlockwriteguard_derefmut_type ty :
     typed_val rwlockwriteguard_derefmut
@@ -105,7 +105,7 @@ Section rwlockwriteguard_functions.
       let: "x'" := !"x" in
       "x'" <-ˢᶜ #0;;
       delete [ #1; "x"];;
-      let: "r" := new [ #0] in "return" ["r"].
+      let: "r" := new [ #0] in return: ["r"].
 
   Lemma rwlockwriteguard_drop_type ty :
     typed_val rwlockwriteguard_drop

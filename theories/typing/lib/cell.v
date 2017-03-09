@@ -82,7 +82,7 @@ Section typing.
   Arguments ty_own : simpl never.
 
   (* Constructing a cell. *)
-  Definition cell_new : val := funrec: <> ["x"] := "return" ["x"].
+  Definition cell_new : val := funrec: <> ["x"] := return: ["x"].
 
   Lemma cell_new_type ty :
     typed_val cell_new (fn([]; ty) → cell ty).
@@ -94,7 +94,7 @@ Section typing.
   Qed.
 
   (* The other direction: getting ownership out of a cell. *)
-  Definition cell_into_inner : val := funrec: <> ["x"] := "return" ["x"].
+  Definition cell_into_inner : val := funrec: <> ["x"] := return: ["x"].
 
   Lemma cell_into_inner_type ty :
     typed_val cell_into_inner (fn([]; cell ty) → ty).
@@ -106,7 +106,7 @@ Section typing.
   Qed.
 
   Definition cell_get_mut : val :=
-    funrec: <> ["x"] := "return" ["x"].
+    funrec: <> ["x"] := return: ["x"].
 
   Lemma cell_get_mut_type ty :
     typed_val cell_get_mut (fn(∀ α, [α]; &uniq{α} (cell ty)) → &uniq{α} ty).
@@ -123,7 +123,7 @@ Section typing.
     funrec: <> ["x"] :=
       let: "x'" := !"x" in
       letalloc: "r" <-{ty.(ty_size)} !"x'" in
-      delete [ #1; "x"];; "return" ["r"].
+      delete [ #1; "x"];; return: ["r"].
 
   Lemma cell_get_type `(!Copy ty) :
     typed_val (cell_get ty) (fn(∀ α, [α]; &shr{α} (cell ty)) → ty).
@@ -143,7 +143,7 @@ Section typing.
       let: "c'" := !"c" in
       letalloc: "r" <-{ty.(ty_size)} !"c'" in
       "c'" <-{ty.(ty_size)} !"x";;
-      delete [ #1; "c"] ;; delete [ #ty.(ty_size); "x"] ;; "return" ["r"].
+      delete [ #1; "c"] ;; delete [ #ty.(ty_size); "x"] ;; return: ["r"].
 
   Lemma cell_replace_type ty :
     typed_val (cell_replace ty) (fn(∀ α, [α]; &shr{α} cell ty, ty) → ty).

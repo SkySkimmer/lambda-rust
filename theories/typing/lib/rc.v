@@ -123,12 +123,12 @@ Section code.
 
   Definition rc_new ty : val :=
     funrec: <> ["x"] :=
-      let: "rcbox" := new [ #(S ty.(ty_size))] in
+      let: "rcbox" := new [ #(S ty.(ty_size)) ] in
       let: "rc" := new [ #1 ] in
       "rcbox" +ₗ #0 <- #1;;
       "rcbox" +ₗ #1 <-{ty.(ty_size)} !"x";;
       "rc" +ₗ #0 <- "rcbox";;
-      delete [ #ty.(ty_size) ; "x"];; "return" ["rc"].
+      delete [ #ty.(ty_size); "x"];; return: ["rc"].
 
   Lemma rc_new_type ty :
     typed_val (rc_new ty) (fn([]; ty) → rc ty).

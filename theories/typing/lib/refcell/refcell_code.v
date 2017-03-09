@@ -17,7 +17,7 @@ Section refcell_functions.
       let: "r" := new [ #(S ty.(ty_size))] in
       "r" +ₗ #0 <- #0;;
       "r" +ₗ #1 <-{ty.(ty_size)} !"x";;
-      delete [ #ty.(ty_size) ; "x"];; "return" ["r"].
+      delete [ #ty.(ty_size) ; "x"];; return: ["r"].
 
   Lemma refcell_new_type ty :
     typed_val (refcell_new ty) (fn([]; ty) → refcell ty).
@@ -54,7 +54,7 @@ Section refcell_functions.
       "r" <-{ty.(ty_size)} !("x" +ₗ #1);;
           (* TODO RJ: Can we make it so that the parenthesis above are mandatory?
              Leaving them away is inconsistent with `let ... := !"x" +ₗ #1`. *)
-       delete [ #(S ty.(ty_size)) ; "x"];; "return" ["r"].
+       delete [ #(S ty.(ty_size)) ; "x"];; return: ["r"].
 
   Lemma refcell_into_inner_type ty :
     typed_val (refcell_into_inner ty) (fn([]; refcell ty) → ty).
@@ -88,7 +88,7 @@ Section refcell_functions.
     funrec: <> ["x"] :=
       let: "x'" := !"x" in
       "x" <- "x'" +ₗ #1;;
-      "return" ["x"].
+      return: ["x"].
 
   Lemma refcell_get_mut_type ty :
     typed_val refcell_get_mut (fn(∀ α, [α]; &uniq{α} (refcell ty)) → &uniq{α} ty)%T.
@@ -137,7 +137,7 @@ Section refcell_functions.
         delete [ #2; "ref"];;
         "k" ["r"]
       cont: "k" ["r"] :=
-        delete [ #1; "x"];; "return" ["r"].
+        delete [ #1; "x"];; return: ["r"].
 
   Lemma refcell_try_borrow_type ty :
     typed_val refcell_try_borrow (fn(∀ α, [α] ; &shr{α}(refcell ty)) → option (ref α ty)).
@@ -241,7 +241,7 @@ Section refcell_functions.
         "r" <-{Σ 0} ();;
         "k" ["r"]
       cont: "k" ["r"] :=
-        delete [ #1; "x"];; "return" ["r"].
+        delete [ #1; "x"];; return: ["r"].
 
   Lemma refcell_try_borrow_mut_type ty :
     typed_val refcell_try_borrow_mut

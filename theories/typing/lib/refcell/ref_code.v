@@ -50,7 +50,7 @@ Section ref_functions.
       let: "n" := !"rc" in
       "rc" <- "n" + #1;;
       letalloc: "r" <-{2} !"x'" in
-      delete [ #1; "x"];; "return" ["r"].
+      delete [ #1; "x"];; return: ["r"].
 
   (* FIXME : using λ instead of fun triggers an anomaly.
      See: https://coq.inria.fr/bugs/show_bug.cgi?id=5326 *)
@@ -112,7 +112,7 @@ Section ref_functions.
       let: "x'" := !"x" in
       let: "r'" := !"x'" in
       letalloc: "r" <- "r'" in
-      delete [ #1; "x"];; "return" ["r"].
+      delete [ #1; "x"];; return: ["r"].
 
   Lemma ref_deref_type ty :
     typed_val ref_deref
@@ -150,7 +150,7 @@ Section ref_functions.
       "rc" <- "n" - #1;;
       Endlft;;
       delete [ #2; "x"];;
-      let: "r" := new [ #0] in "return" ["r"].
+      let: "r" := new [ #0] in return: ["r"].
 
   Lemma ref_drop_type ty :
     typed_val ref_drop (fn(∀ α, [α]; ref α ty) → unit).
@@ -214,7 +214,7 @@ Section ref_functions.
       "ref" <- "r'";;
       delete [ #1; "f"];; "k" []
     cont: "k" [] :=
-      "return" ["ref"].
+      return: ["ref"].
 
   Lemma ref_map_type ty1 ty2 envty E :
     typed_val ref_map

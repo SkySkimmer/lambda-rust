@@ -65,7 +65,7 @@ Section spawn.
                             letcall: "r" := "f'" ["env":expr] in
                             finish ["c"; "r"]] in
       letalloc: "r" <- "join" in
-      delete [ #1; "f"];; "return" ["r"].
+      delete [ #1; "f"];; return: ["r"].
 
   Lemma spawn_type `(!Send envty, !Send retty) :
     typed_val spawn (fn([]; fn([] ; envty) → retty, envty) → join_handle retty).
@@ -111,7 +111,7 @@ Section spawn.
     funrec: <> ["c"] :=
       let: "c'" := !"c" in
       let: "r" := join ["c'"] in
-      delete [ #1; "c"];; "return" ["r"].
+      delete [ #1; "c"];; return: ["r"].
 
   Lemma join_type retty :
     typed_val join (fn([]; join_handle retty) → retty).

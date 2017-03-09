@@ -16,7 +16,7 @@ Section refmut_functions.
       let: "x'" := !"x" in
       let: "r'" := !"x'" in
       letalloc: "r" <- "r'" in
-      delete [ #1; "x"];; "return" ["r"].
+      delete [ #1; "x"];; return: ["r"].
 
   Lemma refmut_deref_type ty :
     typed_val refmut_deref
@@ -56,7 +56,7 @@ Section refmut_functions.
       let: "x'" := !"x" in
       let: "r'" := !"x'" in
       letalloc: "r" <- "r'" in
-      delete [ #1; "x"];; "return" ["r"].
+      delete [ #1; "x"];; return: ["r"].
 
   Lemma refmut_derefmut_type ty :
     typed_val refmut_derefmut
@@ -111,7 +111,7 @@ Section refmut_functions.
       "rc" <- #0;;
       Endlft;;
       delete [ #2; "x"];;
-      let: "r" := new [ #0] in "return" ["r"].
+      let: "r" := new [ #0] in return: ["r"].
 
   Lemma refmut_drop_type ty :
     typed_val refmut_drop (fn(∀ α, [α]; refmut α ty) → unit).
@@ -164,7 +164,7 @@ Section refmut_functions.
       "ref" <- "r'";;
       delete [ #1; "f"];; "k" []
     cont: "k" [] :=
-      "return" ["ref"].
+      return: ["ref"].
 
   Lemma refmut_map_type ty1 ty2 envty E :
     typed_val refmut_map

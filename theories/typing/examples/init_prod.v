@@ -10,7 +10,7 @@ Section init_prod.
        let: "x'" := !"x" in let: "y'" := !"y" in
        let: "r" := new [ #2] in
        "r" +ₗ #0 <- "x'";; "r" +ₗ #1 <- "y'";;
-       delete [ #1; "x"] ;; delete [ #1; "y"] ;; "return" ["r"].
+       delete [ #1; "x"] ;; delete [ #1; "y"] ;; return: ["r"].
 
   Lemma init_prod_type :
     typed_val init_prod (fn([]; int, int) → Π[int;int]).

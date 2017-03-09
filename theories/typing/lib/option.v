@@ -15,7 +15,7 @@ Section option.
         [ "r" <-{Σ 0} ();; "k" ["r"];
           "r" <-{Σ 1} "o'" +ₗ #1;; "k" ["r"] ]
       cont: "k" ["r"] :=
-        delete [ #1; "o"];; "return" ["r"].
+        delete [ #1; "o"];; return: ["r"].
 
   Lemma option_as_mut_type τ :
     typed_val
@@ -42,11 +42,11 @@ Section option.
     funrec: <> ["o"; "def"] :=
       case: !"o" of
       [ delete [ #(S τ.(ty_size)); "o"];;
-        "return" ["def"];
+        return: ["def"];
 
         letalloc: "r" <-{τ.(ty_size)} !("o" +ₗ #1) in
         delete [ #(S τ.(ty_size)); "o"];; delete [ #τ.(ty_size); "def"];;
-        "return" ["r"]].
+        return: ["r"]].
 
   Lemma option_unwrap_or_type τ :
     typed_val (option_unwrap_or τ) (fn([]; option τ, τ) → τ).
