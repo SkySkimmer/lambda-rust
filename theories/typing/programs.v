@@ -82,7 +82,7 @@ End typing.
 Notation typed_instruction_ty E L T e ty :=
   (typed_instruction E L T e (λ v : val, [v ◁ ty%list%T]%TC)).
 
-Notation typed_val e ty := (∀ E L, typed_instruction_ty E L [] e ty).
+Notation typed_val v ty := (∀ E L, typed_instruction_ty E L [] (of_val v) ty).
 
 Section typing_rules.
   Context `{typeG Σ}.
