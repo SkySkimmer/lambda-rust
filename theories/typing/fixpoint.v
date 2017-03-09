@@ -8,7 +8,7 @@ Section fixpoint_def.
   Context (T : type → type) {HT: TypeContractive T}.
 
   Global Instance type_inhabited : Inhabited type := populate bool.
-  
+
   Local Instance type_2_contractive : Contractive (Nat.iter 2 T).
   Proof using Type*.
     intros n ? **. simpl.
@@ -19,7 +19,7 @@ Section fixpoint_def.
 End fixpoint_def.
 
 Lemma type_fixpoint_ne `{typeG Σ} (T1 T2 : type → type)
-  `{!TypeContractive T1, !TypeContractive T2} n :
+    `{!TypeContractive T1, !TypeContractive T2} n :
   (∀ t, T1 t ≡{n}≡ T2 t) → type_fixpoint T1 ≡{n}≡ type_fixpoint T2.
 Proof. eapply fixpointK_ne; apply type_contractive_ne, _. Qed.
 
@@ -107,7 +107,6 @@ Section subtyping.
       intros n; apply Hc.
   Qed.
 
-  (* FIXME: Some rewrites here are slower than one would expect. *)
   Lemma fixpoint_unfold_subtype_l ty T `{TypeContractive T} :
     subtype E L ty (T (type_fixpoint T)) → subtype E L ty (type_fixpoint T).
   Proof. intros. by rewrite fixpoint_unfold_eqtype. Qed.
