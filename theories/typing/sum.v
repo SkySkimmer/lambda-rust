@@ -7,8 +7,6 @@ Set Default Proof Using "Type".
 Section sum.
   Context `{typeG Σ}.
 
-  Local Obligation Tactic := idtac.
-
   Program Definition emp : type :=
     {| ty_size := 1%nat;
        ty_own tid vl := False%I;
