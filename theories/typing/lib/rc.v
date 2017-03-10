@@ -483,4 +483,10 @@ Section code.
       iApply (type_jump []); solve_typing.
   Qed.
 
+  (* TODO: * fn make_mut(this: &mut Rc<T>) -> &mut T
+             Needs a Clone bound, how do we model this?
+           * fn try_unwrap(this: Rc<T>) -> Result<T, Rc<T>>
+           * Weak references?
+   *)
+
 End code.
