@@ -29,7 +29,7 @@ Section option.
       iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
       iApply type_case_uniq; [solve_typing..|].
         constructor; last constructor; last constructor; left.
-      + iApply (type_sum_assign_unit [unit; &uniq{α}τ]%T); [solve_typing..|].
+      + iApply (type_sum_unit [unit; &uniq{α}τ]%T); [solve_typing..|].
         iApply (type_jump [_]); solve_typing.
       + iApply (type_sum_assign [unit; &uniq{α}τ]%T); [solve_typing..|].
         iApply (type_jump [_]); solve_typing.

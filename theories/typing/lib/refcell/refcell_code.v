@@ -166,7 +166,7 @@ Section refcell_functions.
               with "[] LFT Hna >[Hclose Hβtok1 Hβtok2] HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_assign_unit [unit; ref α ty]); [solve_typing..|]; first last.
+      iApply (type_sum_unit [unit; ref α ty]); [solve_typing..|]; first last.
       simpl. iApply (type_jump [_]); solve_typing.
     - wp_op. wp_write. wp_apply wp_new; [done..|].
       iIntros (lref vl) "(EQ & H† & Hlref)". iDestruct "EQ" as %?%(inj Z.of_nat 2%nat).
@@ -300,7 +300,7 @@ Section refcell_functions.
               with "[] LFT Hna >[Hclose Hβtok] HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_assign_unit [unit; refmut α ty]); [solve_typing..|].
+      iApply (type_sum_unit [unit; refmut α ty]); [solve_typing..|].
       simpl. iApply (type_jump [_]); solve_typing.
   Qed.
 End refcell_functions.

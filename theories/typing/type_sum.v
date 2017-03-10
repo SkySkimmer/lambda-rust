@@ -180,7 +180,7 @@ Section case.
     iApply type_seq; [by eapply type_sum_assign_instr|done|done].
   Qed.
 
-  Lemma type_sum_assign_unit_instr {E L} (i : nat) tyl ty1 ty2 p :
+  Lemma type_sum_unit_instr {E L} (i : nat) tyl ty1 ty2 p :
     tyl !! i = Some unit →
     typed_write E L ty1 (sum tyl) ty2 →
     typed_instruction E L [p ◁ ty1] (p <-{Σ i} ()) (λ _, [p ◁ ty2]%TC).
@@ -195,7 +195,7 @@ Section case.
     iExists i, [], _. rewrite -Hlen nth_lookup Hty. auto.
   Qed.
 
-  Lemma type_sum_assign_unit {E L} tyl i ty1 ty1' C T T' p e:
+  Lemma type_sum_unit {E L} tyl i ty1 ty1' C T T' p e:
     Closed [] e →
     0 ≤ i →
     tctx_extract_hasty E L p ty1 T T' →
@@ -205,7 +205,7 @@ Section case.
     typed_body E L C T (p <-{Σ i} () ;; e).
   Proof.
     iIntros. rewrite -(Z2Nat.id i) //.
-    iApply type_seq; [by eapply type_sum_assign_unit_instr|solve_typing|done].
+    iApply type_seq; [by eapply type_sum_unit_instr|solve_typing|done].
   Qed.
 
   Lemma type_sum_memcpy_instr {E L} (i : nat) tyl ty1 ty1' ty2 ty2' ty p1 p2 :

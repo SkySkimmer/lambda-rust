@@ -190,7 +190,7 @@ Section ref_functions.
         iSplitR; first done. iExists (q+q'')%Qp. iFrame.
         by rewrite assoc (comm _ q0 q). }
     wp_bind Endlft. iApply (wp_mask_mono (↑lftN)); first done.
-    iApply (wp_fupd_step with "INV"); [set_solver..|]. wp_seq.
+    iApply (wp_step_fupd with "INV"); [set_solver..|]. wp_seq.
     iIntros "INV !>". wp_seq. iMod ("Hcloseβ" with "[$INV] Hna") as "[Hβ Hna]".
     iMod ("Hcloseα" with "Hβ") as "Hα".
     iApply (type_type _ _ _ [ #lx ◁ box (uninit 2)]%TC with "[] LFT Hna [Hα] HL Hk");

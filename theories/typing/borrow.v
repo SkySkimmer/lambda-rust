@@ -83,7 +83,7 @@ Section borrow.
     wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown"; try done.
     iDestruct "Hown" as (l') "#[H↦b #Hown]".
     iMod (frac_bor_acc with "LFT H↦b Htok1") as (q''') "[>H↦ Hclose']". done.
-    iApply (wp_fupd_step _ (_∖_) with "[Hown Htok2]"); try done.
+    iApply (wp_step_fupd _ (_∖_) with "[Hown Htok2]"); try done.
     - iApply ("Hown" with "[%] Htok2"). set_solver+.
     - iApply wp_fupd. wp_read. iIntros "!>[#Hshr Htok2]".
       iMod ("Hclose'" with "[H↦]") as "Htok1"; first by auto.
@@ -115,7 +115,7 @@ Section borrow.
       try by iMod (bor_persistent_tok with "LFT Hbor Htok") as "[>[] _]".
     iMod (bor_acc with "LFT H↦ Htok") as "[>H↦ Hclose']". done.
     rewrite heap_mapsto_vec_singleton.
-    iApply (wp_fupd_step  _ (⊤∖↑lftN) with "[Hbor]"); try done.
+    iApply (wp_step_fupd  _ (⊤∖↑lftN) with "[Hbor]"); try done.
       by iApply (bor_unnest with "LFT Hbor").
     iApply wp_fupd. wp_read. iIntros "!> Hbor".
     iMod ("Hclose'" with "[H↦]") as "[H↦ Htok]"; first by auto.
@@ -147,7 +147,7 @@ Section borrow.
     iAssert (κ ⊑ κ' ⊓ κ)%I as "#Hincl'".
     { iApply (lft_incl_glb with "Hincl []"). iApply lft_incl_refl. }
     iMod (lft_incl_acc with "Hincl' Htok2") as (q2) "[Htok2 Hclose'']". solve_ndisj.
-    iApply (wp_fupd_step _ (_∖_) with "[Hown Htok2]"); try done.
+    iApply (wp_step_fupd _ (_∖_) with "[Hown Htok2]"); try done.
     - iApply ("Hown" with "[%] Htok2"). set_solver+.
     - iApply wp_fupd. wp_read. iIntros "!>[#Hshr Htok2]".
       iMod ("Hclose''" with "Htok2") as "Htok2".

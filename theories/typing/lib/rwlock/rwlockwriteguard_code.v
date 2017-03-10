@@ -35,7 +35,7 @@ Section rwlockwriteguard_functions.
     iMod (frac_bor_acc with "LFT Hfrac Hα1") as (qlx') "[H↦ Hcloseα1]". done.
     rewrite heap_mapsto_vec_singleton.
     iDestruct (lft_intersect_acc with "Hβ Hα2") as (qβα) "[Hα2β Hcloseβα2]".
-    wp_bind (!(LitV lx'))%E. iApply (wp_fupd_step with "[Hα2β]");
+    wp_bind (!(LitV lx'))%E. iApply (wp_step_fupd with "[Hα2β]");
          [done| |by iApply ("Hshr" with "[] Hα2β")|]; first done.
     iMod "H↦" as "[H↦1 H↦2]". wp_read. iIntros "[#Hshr' Hα2β]!>". wp_op. wp_let.
     iDestruct ("Hcloseβα2" with "Hα2β") as "[Hβ Hα2]".
@@ -84,7 +84,7 @@ Section rwlockwriteguard_functions.
     iMod (bor_sep with "LFT H") as "[Hβδ _]". done.
     iMod (bor_persistent_tok with "LFT Hβδ Hα") as "[#Hβδ Hα]". done.
     iMod (bor_acc with "LFT H↦ Hα") as "[H↦ Hcloseα]". done.
-    wp_bind (!(LitV lx'))%E. iApply (wp_fupd_step with "[Hb]");
+    wp_bind (!(LitV lx'))%E. iApply (wp_step_fupd with "[Hb]");
       [done| |by iApply (bor_unnest with "LFT Hb")|]; first done.
     wp_read. iIntros "Hb !>". wp_op. wp_let.
     iMod ("Hcloseα" with "[$H↦]") as "[_ Hα]".
