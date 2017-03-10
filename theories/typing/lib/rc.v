@@ -90,7 +90,7 @@ Section rc.
         iExists _, _, _. iFrame. done. }
       iDestruct "HX" as (γ ν q') "(#Hinv & Hrc & Htok & #Hshr)".
       iMod ("Hclose2" with "[] [Hrc Htok]") as "[HX Htok]".
-      { iNext. iIntros "HX". iModIntro. (* FIXME: iNext here doesn't strip of the next from in front of the evar. *)
+      { iNext. iIntros "HX". iModIntro. iNext.
         iRight. iExists γ, ν, q'. iExact "HX". }
       { iNext. by iFrame "#∗". }
       iAssert (|={F ∖ ↑shrN}=> C)%I with "[HX]" as ">#HC".

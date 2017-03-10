@@ -8,7 +8,7 @@ Section fixpoint_def.
   Context (T : type → type) {HT: TypeContractive T}.
 
   Global Instance type_inhabited : Inhabited type := populate bool.
-  
+
   Local Instance type_2_contractive : Contractive (Nat.iter 2 T).
   Proof using Type*.
     intros n ? **. simpl.
@@ -19,7 +19,7 @@ Section fixpoint_def.
 End fixpoint_def.
 
 Lemma type_fixpoint_ne `{typeG Σ} (T1 T2 : type → type)
-  `{!TypeContractive T1, !TypeContractive T2} n :
+    `{!TypeContractive T1, !TypeContractive T2} n :
   (∀ t, T1 t ≡{n}≡ T2 t) → type_fixpoint T1 ≡{n}≡ type_fixpoint T2.
 Proof. eapply fixpointK_ne; apply type_contractive_ne, _. Qed.
 
@@ -36,15 +36,14 @@ Section fixpoint.
     - exists bool. apply _.
     - done.
     - (* If Copy was an Iris assertion, this would be trivial -- we'd just
-         use entails_lim once.  However, on the Coq side, it is more convenient
-         as a record -- so this is where we pay. *)
-      intros c Hc. split.
-      + intros tid vl. rewrite /PersistentP. entails_lim c; [solve_proper..|].
-        intros. apply (Hc n).
-      + intros κ tid E F l q ? ?. entails_lim c; first solve_proper.
-        * solve_proper_core ltac:(fun _ => eapply ty_size_ne || f_equiv).
-        * intros n. apply (Hc n); first done. erewrite ty_size_ne; first done.
-          rewrite conv_compl. done.
+         use limit_preserving_and directly. However, on the Coq side, it is
+         more convenient as a record -- so this is where we pay. *)
+      eapply (limit_preserving_ext (λ _, _ ∧ _)).
+      { split; (intros [H1 H2]; split; [apply H1|apply H2]). }
+      apply limit_preserving_and; repeat (apply limit_preserving_forall=> ?).
+      { apply uPred.limit_preserving_PersistentP; solve_proper. }
+      apply limit_preserving_impl, uPred.limit_preserving_entails;
+        solve_proper_core ltac:(fun _ => eapply ty_size_ne || f_equiv).
   Qed.
 
   Global Instance fixpoint_send :
@@ -55,7 +54,8 @@ Section fixpoint.
     - apply send_equiv.
     - exists bool. apply _.
     - done.
-    - intros c Hc ???. entails_lim c; [solve_proper..|]. intros n. apply Hc.
+    - repeat (apply limit_preserving_forall=> ?).
+      apply uPred.limit_preserving_entails; solve_proper.
   Qed.
 
   Global Instance fixpoint_sync :
@@ -66,7 +66,8 @@ Section fixpoint.
     - apply sync_equiv.
     - exists bool. apply _.
     - done.
-    - intros c Hc ????. entails_lim c; [solve_proper..|]. intros n. apply Hc.
+    - repeat (apply limit_preserving_forall=> ?).
+      apply uPred.limit_preserving_entails; solve_proper.
   Qed.
 
   Lemma fixpoint_unfold_eqtype E L : eqtype E L (type_fixpoint T) (T (type_fixpoint T)).
@@ -90,8 +91,8 @@ Section subtyping.
     - intros ?? EQ ?. etrans; last done. by apply equiv_subtype.
     - by eexists _.
     - intros. setoid_rewrite (fixpoint_unfold_eqtype T2). by apply H12.
-    - intros c Hc. rewrite /subtype. entails_lim c; [solve_proper..|].
-      intros n. apply Hc.
+    - repeat (apply limit_preserving_forall=> ?).
+      apply uPred.limit_preserving_entails; solve_proper.
   Qed.
 
   Lemma fixpoint_proper T1 `{TypeContractive T1} T2 `{TypeContractive T2} :
@@ -103,11 +104,10 @@ Section subtyping.
     - intros ?? EQ ?. etrans; last done. by apply equiv_eqtype.
     - by eexists _.
     - intros. setoid_rewrite (fixpoint_unfold_eqtype T2). by apply H12.
-    - intros c Hc. split; rewrite /subtype; (entails_lim c; [solve_proper..|]);
-      intros n; apply Hc.
+    - apply limit_preserving_and; repeat (apply limit_preserving_forall=> ?);
+        apply uPred.limit_preserving_entails; solve_proper.
   Qed.
 
-  (* FIXME: Some rewrites here are slower than one would expect. *)
   Lemma fixpoint_unfold_subtype_l ty T `{TypeContractive T} :
     subtype E L ty (T (type_fixpoint T)) → subtype E L ty (type_fixpoint T).
   Proof. intros. by rewrite fixpoint_unfold_eqtype. Qed.

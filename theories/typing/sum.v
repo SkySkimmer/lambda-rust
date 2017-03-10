@@ -7,8 +7,6 @@ Set Default Proof Using "Type".
 Section sum.
   Context `{typeG Σ}.
 
-  Local Obligation Tactic := idtac.
-
   Program Definition emp : type :=
     {| ty_size := 1%nat;
        ty_own tid vl := False%I;
@@ -207,11 +205,10 @@ Section sum.
       { rewrite <-HF. simpl. rewrite <-union_subseteq_r.
         apply shr_locsE_subseteq. omega. }
       iDestruct (na_own_acc with "Htl") as "[$ Htlclose]".
-      { (* Really, we don't even have a lemma for anti-monotonicity of difference...? *)
-        cut (shr_locsE (shift_loc l 1) (ty_size (nth i tyl ∅)) ⊆
-                  shr_locsE (shift_loc l 1) (list_max (map ty_size tyl))).
-        - simpl. set_solver+.
-        - apply shr_locsE_subseteq. omega. }
+      { apply difference_mono_l.
+        trans (shr_locsE (shift_loc l 1) (list_max (map ty_size tyl))).
+        - apply shr_locsE_subseteq. omega.
+        - set_solver+. }
       destruct (Qp_lower_bound q'1 q'2) as (q' & q'01 & q'02 & -> & ->).
       rewrite -(heap_mapsto_pred_op _ q' q'02); last (by intros; apply ty_size_eq).
       rewrite (fractional (Φ := λ q, _ ↦{q} _ ∗ _ ↦∗{q}: _)%I).

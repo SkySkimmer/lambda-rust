@@ -152,23 +152,16 @@ Section ofe.
 
   Global Instance type_cofe : Cofe typeC.
   Proof.
-    apply: (iso_cofe_subtype P type_pack type_unpack).
+    apply (iso_cofe_subtype' P type_pack type_unpack).
+    - by intros [].
     - split; [by destruct 1|by intros [[??] ?]; constructor].
     - by intros [].
-    - intros ? c. rewrite /P /=. split_and!.
-      (* TODO: Can we do these proofs without effectively going into the model? *)
-      + intros κ tid l. apply uPred.entails_equiv_and, equiv_dist=>n.
-        setoid_rewrite conv_compl; simpl.
-        apply equiv_dist, uPred.entails_equiv_and, ty_shr_persistent.
-      + intros tid vl. apply uPred.entails_equiv_and, equiv_dist=>n.
-        repeat setoid_rewrite conv_compl at 1. simpl.
-        apply equiv_dist, uPred.entails_equiv_and, ty_size_eq.
-      + intros E κ l tid q ?. apply uPred.entails_equiv_and, equiv_dist=>n.
-        setoid_rewrite conv_compl; simpl.
-        by apply equiv_dist, uPred.entails_equiv_and, ty_share.
-      + intros κ κ' tid l. apply uPred.entails_equiv_and, equiv_dist=>n.
-        setoid_rewrite conv_compl; simpl.
-        apply equiv_dist, uPred.entails_equiv_and, ty_shr_mono.
+    - (* TODO: automate this *)
+      repeat apply limit_preserving_and; repeat (apply limit_preserving_forall; intros ?).
+      + apply uPred.limit_preserving_PersistentP=> n ty1 ty2 Hty; apply Hty.
+      + apply uPred.limit_preserving_entails=> n ty1 ty2 Hty. apply Hty. by rewrite Hty.
+      + apply uPred.limit_preserving_entails=> n ty1 ty2 Hty; repeat f_equiv; apply Hty.
+      + apply uPred.limit_preserving_entails=> n ty1 ty2 Hty; repeat f_equiv; apply Hty.
   Qed.
 
   Inductive st_equiv' (ty1 ty2 : simple_type) : Prop :=
@@ -333,16 +326,56 @@ Ltac solve_type_proper :=
   constructor;
   solve_proper_core ltac:(fun _ => f_type_equiv || f_contractive || f_equiv).
 
+
+Fixpoint shr_locsE (l : loc) (n : nat) : coPset :=
+  match n with
+  | 0%nat => ∅
+  | S n => ↑shrN.@l ∪ shr_locsE (shift_loc l 1%nat) n
+  end.
+
+Class Copy `{typeG Σ} (t : type) := {
+  copy_persistent tid vl : PersistentP (t.(ty_own) tid vl);
+  copy_shr_acc κ tid E F l q :
+    lftE ∪ ↑shrN ⊆ E → shr_locsE l (t.(ty_size) + 1) ⊆ F →
+    lft_ctx -∗ t.(ty_shr) κ tid l -∗ na_own tid F -∗ q.[κ] ={E}=∗
+       ∃ q', na_own tid (F ∖ shr_locsE l t.(ty_size)) ∗
+         ▷(l ↦∗{q'}: t.(ty_own) tid) ∗
+      (na_own tid (F ∖ shr_locsE l t.(ty_size)) -∗ ▷l ↦∗{q'}: t.(ty_own) tid
+                                  ={E}=∗ na_own tid F ∗ q.[κ])
+}.
+Existing Instances copy_persistent.
+Instance: Params (@Copy) 2.
+
+Class LstCopy `{typeG Σ} (tys : list type) := lst_copy : Forall Copy tys.
+Instance: Params (@LstCopy) 2.
+Global Instance lst_copy_nil `{typeG Σ} : LstCopy [] := List.Forall_nil _.
+Global Instance lst_copy_cons `{typeG Σ} ty tys :
+  Copy ty → LstCopy tys → LstCopy (ty :: tys) := List.Forall_cons _ _ _.
+
+Class Send `{typeG Σ} (t : type) :=
+  send_change_tid tid1 tid2 vl : t.(ty_own) tid1 vl -∗ t.(ty_own) tid2 vl.
+Instance: Params (@Send) 2.
+
+Class LstSend `{typeG Σ} (tys : list type) := lst_send : Forall Send tys.
+Instance: Params (@LstSend) 2.
+Global Instance lst_send_nil `{typeG Σ} : LstSend [] := List.Forall_nil _.
+Global Instance lst_send_cons `{typeG Σ} ty tys :
+  Send ty → LstSend tys → LstSend (ty :: tys) := List.Forall_cons _ _ _.
+
+Class Sync `{typeG Σ} (t : type) :=
+  sync_change_tid κ tid1 tid2 l : t.(ty_shr) κ tid1 l -∗ t.(ty_shr) κ tid2 l.
+Instance: Params (@Sync) 2.
+
+Class LstSync `{typeG Σ} (tys : list type) := lst_sync : Forall Sync tys.
+Instance: Params (@LstSync) 2.
+Global Instance lst_sync_nil `{typeG Σ} : LstSync [] := List.Forall_nil _.
+Global Instance lst_sync_cons `{typeG Σ} ty tys :
+  Sync ty → LstSync tys → LstSync (ty :: tys) := List.Forall_cons _ _ _.
+
 Section type.
   Context `{typeG Σ}.
 
   (** Copy types *)
-  Fixpoint shr_locsE (l : loc) (n : nat) : coPset :=
-    match n with
-    | 0%nat => ∅
-    | S n => ↑shrN.@l ∪ shr_locsE (shift_loc l 1%nat) n
-    end.
-
   Lemma shr_locsE_shift l n m :
     shr_locsE l (n + m) = shr_locsE l n ∪ shr_locsE (shift_loc l n) m.
   Proof.
@@ -386,31 +419,13 @@ Section type.
     rewrite shr_locsE_shift na_own_union //. apply shr_locsE_disj.
   Qed.
 
-  Class Copy (t : type) := {
-    copy_persistent tid vl : PersistentP (t.(ty_own) tid vl);
-    copy_shr_acc κ tid E F l q :
-      lftE ∪ ↑shrN ⊆ E → shr_locsE l (t.(ty_size) + 1) ⊆ F →
-      lft_ctx -∗ t.(ty_shr) κ tid l -∗ na_own tid F -∗ q.[κ] ={E}=∗
-         ∃ q', na_own tid (F ∖ shr_locsE l t.(ty_size)) ∗
-           ▷(l ↦∗{q'}: t.(ty_own) tid) ∗
-        (na_own tid (F ∖ shr_locsE l t.(ty_size)) -∗ ▷l ↦∗{q'}: t.(ty_own) tid
-                                    ={E}=∗ na_own tid F ∗ q.[κ])
-  }.
-  Global Existing Instances copy_persistent.
-
-  Global Instance copy_equiv :
-    Proper (equiv ==> impl) Copy.
+  Global Instance copy_equiv : Proper (equiv ==> impl) Copy.
   Proof.
     intros ty1 ty2 [EQsz%leibniz_equiv EQown EQshr] Hty1. split.
     - intros. rewrite -EQown. apply _.
     - intros *. rewrite -EQsz -EQshr. setoid_rewrite <-EQown.
       apply copy_shr_acc.
   Qed.
-
-  Class LstCopy (tys : list type) := lst_copy : Forall Copy tys.
-  Global Instance lst_copy_nil : LstCopy [] := List.Forall_nil _.
-  Global Instance lst_copy_cons ty tys :
-    Copy ty → LstCopy tys → LstCopy (ty::tys) := List.Forall_cons _ _ _.
 
   Global Program Instance ty_of_st_copy st : Copy (ty_of_st st).
   Next Obligation.
@@ -430,50 +445,43 @@ Section type.
   Qed.
 
   (** Send and Sync types *)
-  Class Send (t : type) :=
-    send_change_tid tid1 tid2 vl : t.(ty_own) tid1 vl -∗ t.(ty_own) tid2 vl.
-
-  Global Instance send_equiv :
-    Proper (equiv ==> impl) Send.
+  Global Instance send_equiv : Proper (equiv ==> impl) Send.
   Proof.
     intros ty1 ty2 [EQsz%leibniz_equiv EQown EQshr] Hty1.
     rewrite /Send=>???. rewrite -!EQown. auto.
   Qed.
 
-  Class LstSend (tys : list type) := lst_send : Forall Send tys.
-  Global Instance lst_send_nil : LstSend [] := List.Forall_nil _.
-  Global Instance lst_send_cons ty tys :
-    Send ty → LstSend tys → LstSend (ty::tys) := List.Forall_cons _ _ _.
-
-  Class Sync (t : type) :=
-    sync_change_tid κ tid1 tid2 l : t.(ty_shr) κ tid1 l -∗ t.(ty_shr) κ tid2 l.
-
-  Global Instance sync_equiv :
-    Proper (equiv ==> impl) Sync.
+  Global Instance sync_equiv : Proper (equiv ==> impl) Sync.
   Proof.
     intros ty1 ty2 [EQsz%leibniz_equiv EQown EQshr] Hty1.
     rewrite /Send=>????. rewrite -!EQshr. auto.
   Qed.
 
-  Class LstSync (tys : list type) := lst_sync : Forall Sync tys.
-  Global Instance lst_sync_nil : LstSync [] := List.Forall_nil _.
-  Global Instance lst_sync_cons ty tys :
-    Sync ty → LstSync tys → LstSync (ty::tys) := List.Forall_cons _ _ _.
-
-  Global Instance ty_of_st_sync st :
-    Send (ty_of_st st) → Sync (ty_of_st st).
+  Global Instance ty_of_st_sync st : Send (ty_of_st st) → Sync (ty_of_st st).
   Proof.
     iIntros (Hsend κ tid1 tid2 l). iDestruct 1 as (vl) "[Hm Hown]".
     iExists vl. iFrame "Hm". iNext. by iApply Hsend.
   Qed.
 End type.
 
-Section subtyping.
-  Context `{typeG Σ}.
-  Definition type_incl (ty1 ty2 : type) : iProp Σ :=
+Definition type_incl `{typeG Σ} (ty1 ty2 : type) : iProp Σ :=
     (⌜ty1.(ty_size) = ty2.(ty_size)⌝ ∗
      (□ ∀ tid vl, ty1.(ty_own) tid vl -∗ ty2.(ty_own) tid vl) ∗
      (□ ∀ κ tid l, ty1.(ty_shr) κ tid l -∗ ty2.(ty_shr) κ tid l))%I.
+Instance: Params (@type_incl) 2.
+(* Typeclasses Opaque type_incl. *)
+
+Definition subtype `{typeG Σ} (E : elctx) (L : llctx) (ty1 ty2 : type) : Prop :=
+  elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗ type_incl ty1 ty2.
+Instance: Params (@subtype) 4.
+
+(* TODO: The prelude should have a symmetric closure. *)
+Definition eqtype `{typeG Σ} (E : elctx) (L : llctx) (ty1 ty2 : type) : Prop :=
+  subtype E L ty1 ty2 ∧ subtype E L ty2 ty1.
+Instance: Params (@eqtype) 4.
+
+Section subtyping.
+  Context `{typeG Σ}.
 
   Global Instance type_incl_ne : NonExpansive2 type_incl.
   Proof.
@@ -482,7 +490,6 @@ Section subtyping.
   Qed.
 
   Global Instance type_incl_persistent ty1 ty2 : PersistentP (type_incl ty1 ty2) := _.
-  (*  Typeclasses Opaque type_incl. *)
 
   Lemma type_incl_refl ty : type_incl ty ty.
   Proof. iSplit; first done. iSplit; iAlways; iIntros; done. Qed.
@@ -497,31 +504,20 @@ Section subtyping.
     - iApply "Hs23". iApply "Hs12". done.
   Qed.
 
-  Context (E : elctx) (L : llctx).
-
-  Definition subtype (ty1 ty2 : type) : Prop :=
-    elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗ type_incl ty1 ty2.
-
-  Lemma subtype_refl ty : subtype ty ty.
+  Lemma subtype_refl E L ty : subtype E L ty ty.
   Proof. iIntros. iApply type_incl_refl. Qed.
-  Global Instance subtype_preorder : PreOrder subtype.
+  Global Instance subtype_preorder E L : PreOrder (subtype E L).
   Proof.
     split; first by intros ?; apply subtype_refl.
     intros ty1 ty2 ty3 H12 H23. iIntros.
-    iApply (type_incl_trans with "[] []").
-    - iApply (H12 with "[] []"); done.
-    - iApply (H23 with "[] []"); done.
+    iApply type_incl_trans. by iApply H12. by iApply H23.
   Qed.
 
-  Lemma equiv_subtype ty1 ty2 : ty1 ≡ ty2 → subtype ty1 ty2.
+  Lemma equiv_subtype E L ty1 ty2 : ty1 ≡ ty2 → subtype E L ty1 ty2.
   Proof. unfold subtype, type_incl=>EQ. setoid_rewrite EQ. apply subtype_refl. Qed.
 
-  (* TODO: The prelude should have a symmetric closure. *)
-  Definition eqtype (ty1 ty2 : type) : Prop :=
-    subtype ty1 ty2 ∧ subtype ty2 ty1.
-
-  Lemma eqtype_unfold ty1 ty2 :
-    eqtype ty1 ty2 ↔
+  Lemma eqtype_unfold E L ty1 ty2 :
+    eqtype E L ty1 ty2 ↔
     (elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
       (⌜ty1.(ty_size) = ty2.(ty_size)⌝ ∗
       (□ ∀ tid vl, ty1.(ty_own) tid vl ↔ ty2.(ty_own) tid vl) ∗
@@ -545,17 +541,17 @@ Section subtyping.
       + iIntros "!#* H". by iApply "Hshr".
   Qed.
 
-  Lemma eqtype_refl ty : eqtype ty ty.
+  Lemma eqtype_refl E L ty : eqtype E L ty ty.
   Proof. by split. Qed.
 
-  Lemma equiv_eqtype ty1 ty2 : ty1 ≡ ty2 → eqtype ty1 ty2.
+  Lemma equiv_eqtype E L ty1 ty2 : ty1 ≡ ty2 → eqtype E L ty1 ty2.
   Proof. by split; apply equiv_subtype. Qed.
 
-  Global Instance subtype_proper :
-    Proper (eqtype ==> eqtype ==> iff) subtype.
+  Global Instance subtype_proper E L :
+    Proper (eqtype E L ==> eqtype E L ==> iff) (subtype E L).
   Proof. intros ??[] ??[]. split; intros; by etrans; [|etrans]. Qed.
 
-  Global Instance eqtype_equivalence : Equivalence eqtype.
+  Global Instance eqtype_equivalence E L : Equivalence (eqtype E L).
   Proof.
     split.
     - by split.
@@ -563,21 +559,16 @@ Section subtyping.
     - intros ??? H1 H2. split; etrans; (apply H1 || apply H2).
   Qed.
 
-  Lemma subtype_simple_type (st1 st2 : simple_type) :
+  Lemma subtype_simple_type E L (st1 st2 : simple_type) :
     (∀ tid vl, elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
                  st1.(st_own) tid vl -∗ st2.(st_own) tid vl) →
-    subtype st1 st2.
+    subtype E L st1 st2.
   Proof.
     intros Hst. iIntros. iSplit; first done. iSplit; iAlways.
     - iIntros. iApply Hst; done.
-    - iIntros (???) "H".
-      iDestruct "H" as (vl) "[Hf Hown]". iExists vl. iFrame "Hf".
+    - iIntros (???). iDestruct 1 as (vl) "[Hf Hown]". iExists vl. iFrame "Hf".
       by iApply Hst.
   Qed.
-End subtyping.
-
-Section weakening.
-  Context `{typeG Σ}.
 
   Lemma subtype_weaken E1 E2 L1 L2 ty1 ty2 :
     E1 ⊆+ E2 → L1 ⊆+ L2 →
@@ -589,7 +580,7 @@ Section weakening.
     - iDestruct "HL" as %HL. iPureIntro. intros ??. apply HL.
       eauto using elem_of_submseteq.
   Qed.
-End weakening.
+End subtyping.
 
 Hint Resolve subtype_refl eqtype_refl : lrust_typing.
 Hint Opaque subtype eqtype : lrust_typing.
