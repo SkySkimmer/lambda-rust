@@ -12,8 +12,8 @@ Section option.
       let: "o'" := !"o" in
       let: "r" := new [ #2 ] in
       case: !"o'" of
-        [ "r" <-{Σ 0} ();; "k" ["r"];
-          "r" <-{Σ 1} "o'" +ₗ #1;; "k" ["r"] ]
+        [ "r" <-{Σ 0} ();; "k" [];
+          "r" <-{Σ 1} "o'" +ₗ #1;; "k" [] ]
       cont: "k" ["r"] :=
         delete [ #1; "o"];; return: ["r"].
 

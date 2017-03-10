@@ -5,7 +5,7 @@ From iris.base_logic Require Import big_op.
 From lrust.lang Require Import memcpy.
 From lrust.lifetime Require Import na_borrow.
 From lrust.typing Require Export type.
-From lrust.typing Require Import typing.
+From lrust.typing Require Import typing option.
 Set Default Proof Using "Type".
 
 Definition rc_stR :=
@@ -275,5 +275,26 @@ Section code.
     iApply type_delete; [solve_typing..|].
     iApply (type_jump [ #_ ]); solve_typing.
   Qed.
+
+  Definition rc_drop ty : val :=
+    funrec: <> ["rc"] :=
+      let: "x" := new [ #(option ty).(ty_size) ] in
+      let: "rc'" := !"rc" in
+      let: "count" := (!"rc'" +ₗ #0) in
+      "rc'" +ₗ #0 <- "count" - #1;;
+      if: "count" = #1 then
+        (* Return content, delete Rc heap allocation. *)
+        "x" <-{ty.(ty_size),Σ 1} !("rc'" +ₗ #1);;
+        delete [ #(S ty.(ty_size)); "rc'" ];;
+        "k" ["x"]
+      else
+        "x" <-{Σ 0} ();;
+        "k" ["x"]
+      cont: "k" ["x"] :=
+        delete [ #1; "rc"];; return: ["x"].
+
+  Lemma rc_drop_type ty :
+    typed_val (rc_drop ty) (fn([]; rc ty) → option ty).
+  Proof. Abort.
 
 End code.
