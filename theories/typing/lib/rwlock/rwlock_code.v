@@ -127,11 +127,11 @@ Section rwlock_functions.
        cont: "loop" [] :=
          let: "n" := !ˢᶜ"x'" in
          if: "n" ≤ #-1 then
-           "r" <-{Σ 0} ();;
+           "r" <-{Σ none} ();;
            "k" ["r"]
          else
            if: CAS "x'" "n" ("n" + #1) then
-             "r" <-{Σ 1} "x'";;
+             "r" <-{Σ some} "x'";;
              "k" ["r"]
            else "loop" [])
       cont: "k" ["r"] :=
@@ -171,7 +171,7 @@ Section rwlock_functions.
               with "[] LFT Hna >[Hclose Hβtok1 Hβtok2] HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_unit [unit; rwlockreadguard α ty]);
+      iApply (type_sum_unit (option $ rwlockreadguard α ty));
         [solve_typing..|]; first last.
       simpl. iApply (type_jump [_]); solve_typing.
     - wp_op. wp_bind (CAS _ _ _).
@@ -225,7 +225,7 @@ Section rwlock_functions.
           iExists _, _, _, _. iFrame "∗#". iApply ty_shr_mono; last done.
           iApply lft_intersect_mono; first done. iApply lft_incl_refl. }
         { rewrite {1}/elctx_interp big_sepL_singleton //. }
-        iApply (type_sum_assign [unit; rwlockreadguard α ty]); [solve_typing..|].
+        iApply (type_sum_assign (option $ rwlockreadguard α ty)); [solve_typing..|].
         simpl. iApply (type_jump [_]); solve_typing.
       + iApply (wp_cas_int_fail with "Hlx"); try done. iNext. iIntros "Hlx".
         iMod ("Hclose'" with "[Hlx Hownst Hst]") as "Hβtok1"; first by iExists _; iFrame.
@@ -244,10 +244,10 @@ Section rwlock_functions.
       let: "r" := new [ #2 ] in
       let: "x'" := !"x" in
       if: CAS "x'" #0 #(-1) then
-        "r" <-{Σ 1} "x'";;
+        "r" <-{Σ some} "x'";;
         "k" ["r"]
       else
-        "r" <-{Σ 0} ();;
+        "r" <-{Σ none} ();;
         "k" ["r"]
       cont: "k" ["r"] :=
         delete [ #1; "x"];; return: ["r"].
@@ -283,7 +283,7 @@ Section rwlock_functions.
               with "[] LFT Hna >[Hclose Hβtok] HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_unit [unit; rwlockwriteguard α ty]);
+      iApply (type_sum_unit (option $ rwlockwriteguard α ty));
         [solve_typing..|]; first last.
       rewrite /option /=. iApply (type_jump [_]); solve_typing.
     - iApply (wp_cas_int_suc with "Hlx"). done. iIntros "!> Hlx".
@@ -298,7 +298,7 @@ Section rwlock_functions.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val
                 tctx_hasty_val' //. iFrame.  iExists _, _. iFrame "∗#". }
       { rewrite {1}/elctx_interp big_sepL_singleton //. }
-      iApply (type_sum_assign [unit; rwlockwriteguard α ty]); [solve_typing..|].
+      iApply (type_sum_assign (option $ rwlockwriteguard α ty)); [solve_typing..|].
       simpl. iApply (type_jump [_]); solve_typing.
   Qed.
 End rwlock_functions.

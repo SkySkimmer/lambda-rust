@@ -126,14 +126,14 @@ Section refcell_functions.
       let: "x'" := !"x" in
       let: "n" := !"x'" in
       if: "n" ≤ #-1 then
-        "r" <-{Σ 0} ();;
+        "r" <-{Σ none} ();;
         "k" ["r"] (* FIXME RJ: this is very confusing, "k" does not even look like it is bound here... *)
       else
         "x'" <- "n" + #1;;
         let: "ref" := new [ #2 ] in
         "ref" <- "x'" +ₗ #1;;
         "ref" +ₗ #1 <- "x'";;
-        "r" <-{2,Σ 1} !"ref";;
+        "r" <-{2,Σ some} !"ref";;
         delete [ #2; "ref"];;
         "k" ["r"]
       cont: "k" ["r"] :=
@@ -166,7 +166,7 @@ Section refcell_functions.
               with "[] LFT Hna >[Hclose Hβtok1 Hβtok2] HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_unit [unit; ref α ty]); [solve_typing..|]; first last.
+      iApply (type_sum_unit (option $ ref α ty)); [solve_typing..|]; first last.
       simpl. iApply (type_jump [_]); solve_typing.
     - wp_op. wp_write. wp_apply wp_new; [done..|].
       iIntros (lref vl) "(EQ & H† & Hlref)". iDestruct "EQ" as %?%(inj Z.of_nat 2%nat).
@@ -218,7 +218,7 @@ Section refcell_functions.
         iFrame. iExists _, _, _, _, _. iFrame "∗#". iApply ty_shr_mono; try by auto.
         iApply lft_intersect_mono. done. iApply lft_incl_refl. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_memcpy [unit; ref α ty]); [solve_typing..|].
+      iApply (type_sum_memcpy (option $ ref α ty)); [solve_typing..|].
       simpl. iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing.
   Qed.
@@ -234,11 +234,11 @@ Section refcell_functions.
         let: "ref" := new [ #2 ] in
         "ref" <- "x'" +ₗ #1;;
         "ref" +ₗ #1 <- "x'";;
-        "r" <-{2,Σ 1} !"ref";;
+        "r" <-{2,Σ some} !"ref";;
         delete [ #2; "ref"];;
         "k" ["r"]
       else
-        "r" <-{Σ 0} ();;
+        "r" <-{Σ none} ();;
         "k" ["r"]
       cont: "k" ["r"] :=
         delete [ #1; "x"];; return: ["r"].
@@ -290,7 +290,7 @@ Section refcell_functions.
         iFrame. iExists _, _, _, _. iFrame "#∗". iApply (bor_shorten with "[] [$Hb]").
         iApply lft_intersect_mono; first done. iApply lft_incl_refl. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_memcpy [unit; refmut α ty]); [solve_typing..|].
+      iApply (type_sum_memcpy (option $ refmut α ty)); [solve_typing..|].
       simpl. iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing.
     - iMod ("Hclose'" with "[Hlx Hownst Hb] Hna") as "[Hβtok Hna]";
@@ -300,7 +300,7 @@ Section refcell_functions.
               with "[] LFT Hna >[Hclose Hβtok] HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
-      iApply (type_sum_unit [unit; refmut α ty]); [solve_typing..|].
+      iApply (type_sum_unit (option $ refmut α ty)); [solve_typing..|].
       simpl. iApply (type_jump [_]); solve_typing.
   Qed.
 End refcell_functions.

@@ -290,11 +290,11 @@ Section code.
       "rc'" +ₗ #0 <- "count" - #1;;
       if: "count" = #1 then
         (* Return content, delete Rc heap allocation. *)
-        "x" <-{ty.(ty_size),Σ 1} !("rc'" +ₗ #1);;
+        "x" <-{ty.(ty_size),Σ some} !("rc'" +ₗ #1);;
         delete [ #(S ty.(ty_size)); "rc'" ];;
         "k" []
       else
-        "x" <-{Σ 0} ();;
+        "x" <-{Σ none} ();;
         "k" []
       cont: "k" [] :=
         delete [ #1; "rc"];; return: ["x"]).
@@ -384,7 +384,7 @@ Section code.
         iDestruct "Hrc†" as "[Hrc†1 Hrc†2]". iFrame.
         rewrite shift_loc_0. iFrame. iExists [_]. rewrite uninit_own heap_mapsto_vec_singleton.
         auto with iFrame. }
-      iApply (type_sum_memcpy [unit;_]); [solve_typing..|].
+      iApply (type_sum_memcpy (option _)); [solve_typing..|].
       iApply (type_delete (Π[uninit _; uninit _])); [solve_typing..|].
       iApply (type_jump []); solve_typing.
     - iDestruct "Hproto" as (γ ν q q') "(#Hinv & Hrctok & Hrc● & Hν & _ & Hclose)".
@@ -404,7 +404,7 @@ Section code.
         with "[] LFT Hna HE HL Hk [-]"); last first.
       { rewrite tctx_interp_cons tctx_interp_singleton.
         rewrite !tctx_hasty_val. unlock. iFrame. }
-      iApply (type_sum_unit [unit;ty]); [solve_typing..|].
+      iApply (type_sum_unit (option ty)); [solve_typing..|].
       iApply (type_jump []); solve_typing.
   Qed.
 

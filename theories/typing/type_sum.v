@@ -167,16 +167,17 @@ Section case.
     iExists i, [_], _. rewrite -Hlen nth_lookup Hty. auto.
   Qed.
 
-  Lemma type_sum_assign {E L} tyl i ty1 ty ty1' C T T' p1 p2 e:
+  Lemma type_sum_assign {E L} sty tyl i ty1 ty ty1' C T T' p1 p2 e:
     Closed [] e →
     0 ≤ i →
+    sty = sum tyl →
     tctx_extract_ctx E L [p1 ◁ ty1; p2 ◁ ty] T T' →
     tyl !! (Z.to_nat i) = Some ty →
-    typed_write E L ty1 (sum tyl) ty1' →
+    typed_write E L ty1 sty ty1' →
     typed_body E L C ((p1 ◁ ty1') :: T') e -∗
     typed_body E L C T (p1 <-{Σ i} p2 ;; e).
   Proof.
-    iIntros. rewrite -(Z2Nat.id i) //.
+    iIntros (??->) "* **". rewrite -(Z2Nat.id i) //.
     iApply type_seq; [by eapply type_sum_assign_instr|done|done].
   Qed.
 
@@ -195,16 +196,17 @@ Section case.
     iExists i, [], _. rewrite -Hlen nth_lookup Hty. auto.
   Qed.
 
-  Lemma type_sum_unit {E L} tyl i ty1 ty1' C T T' p e:
+  Lemma type_sum_unit {E L} sty tyl i ty1 ty1' C T T' p e:
     Closed [] e →
     0 ≤ i →
+    sty = sum tyl →
     tctx_extract_hasty E L p ty1 T T' →
     tyl !! (Z.to_nat i) = Some unit →
-    typed_write E L ty1 (sum tyl) ty1' →
+    typed_write E L ty1 sty ty1' →
     typed_body E L C ((p ◁ ty1') :: T') e -∗
     typed_body E L C T (p <-{Σ i} () ;; e).
   Proof.
-    iIntros. rewrite -(Z2Nat.id i) //.
+    iIntros (??->) "* **". rewrite -(Z2Nat.id i) //.
     iApply type_seq; [by eapply type_sum_unit_instr|solve_typing|done].
   Qed.
 
@@ -245,18 +247,19 @@ Section case.
     - iExists _. iFrame.
   Qed.
 
-  Lemma type_sum_memcpy {E L} tyl i ty1 ty2 ty n ty1' ty2' C T T' p1 p2 e:
+  Lemma type_sum_memcpy {E L} sty tyl i ty1 ty2 ty n ty1' ty2' C T T' p1 p2 e:
     Closed [] e →
     0 ≤ i →
+    sty = sum tyl →
     tctx_extract_ctx E L [p1 ◁ ty1; p2 ◁ ty2] T T' →
     tyl !! (Z.to_nat i) = Some ty →
-    typed_write E L ty1 (sum tyl) ty1' →
+    typed_write E L ty1 sty ty1' →
     typed_read E L ty2 ty ty2' →
     Z.of_nat (ty.(ty_size)) = n →
     typed_body E L C ((p1 ◁ ty1') :: (p2 ◁ ty2') :: T') e -∗
     typed_body E L C T (p1 <-{n,Σ i} !p2 ;; e).
   Proof.
-    iIntros (????? Hr ?) "?". subst. rewrite -(Z2Nat.id i) //.
+    iIntros (?? -> ??? Hr ?) "?". subst. rewrite -(Z2Nat.id i) //.
     by iApply type_seq; [eapply type_sum_memcpy_instr, Hr|done|done].
   Qed.
 End case.
