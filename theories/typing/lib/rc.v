@@ -44,7 +44,7 @@ Section rc.
                      ty.(ty_shr) ν tid (shift_loc l 1))
          | _ => False end;
        ty_shr κ tid l :=
-         ∃ (l' : loc), &frac{κ} (λ q, l↦∗{q} [ #l']) ∗
+         ∃ (l' : loc), &frac{κ} (λ q, l ↦∗{q} [ #l']) ∗
            □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ]
              ={F, F∖↑shrN}▷=∗ q.[κ] ∗ ∃ γ ν q', κ ⊑ ν ∗
                 na_inv tid rc_invN (rc_inv tid ν γ l' ty) ∗
@@ -56,6 +56,8 @@ Section rc.
     iIntros (ty E κ l tid q ?) "#LFT Hb Htok".
     iMod (bor_exists with "LFT Hb") as (vl) "Hb"; first done.
     iMod (bor_sep with "LFT Hb") as "[H↦ Hb]"; first done.
+    (* Ideally, we'd change ty_shr to say "l ↦{q} #l" in the fractured borrow,
+       but that would be additional work here... *)
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦"; first done.
     destruct vl as [|[[|l'|]|][|]];
       try by iMod (bor_persistent_tok with "LFT Hb Htok") as "[>[] _]".
@@ -189,8 +191,8 @@ Section code.
     iIntros "[Hx [Hrc' Hrc2]]". rewrite [[x]]lock.
     destruct rc' as [[|lrc|]|]; try done. iDestruct "Hrc'" as (l') "[#Hlrc #Hshr]".
     destruct rc2 as [[|lrc2|]|]; try done. iDestruct "Hrc2" as "[Hrc2 Hrc2†]".
-    iDestruct "Hrc2" as (vl) "Hrc2". rewrite uninit_own.
-    iDestruct "Hrc2" as "[>Hrc2↦ >SZ]". destruct vl as [|]; iDestruct "SZ" as %[=].
+    iDestruct "Hrc2" as (vl) "[>Hrc2 >SZ]". rewrite uninit_own.
+    destruct vl as [|]; iDestruct "SZ" as %[=].
     destruct vl as [|]; last done. rewrite heap_mapsto_vec_singleton.
     (* All right, we are done preparing our context. Let's get going. *)
     rewrite {1}/elctx_interp big_sepL_singleton.
@@ -224,10 +226,54 @@ Section code.
     iApply (type_type _ _ _ [ x ◁ box (&shr{α} rc ty); #lrc2 ◁ box (rc ty)]%TC
         with "[] LFT Hna [Hα1 Hα2] HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
-      unlock. iFrame "Hx". iFrame "Hrc2†". iExists _. erewrite heap_mapsto_vec_singleton.
-      iFrame "Hrc2↦". iNext. iRight. iExists _, ν, _. iFrame "#∗". }
+      unlock. iFrame "Hx". iFrame "Hrc2†". iExists [_]. rewrite heap_mapsto_vec_singleton.
+      iFrame "Hrc2". iNext. iRight. iExists _, ν, _. iFrame "#∗". }
     { rewrite /elctx_interp big_sepL_singleton. iFrame. }
     iApply type_delete; [solve_typing..|].
     iApply (type_jump [ #_ ]); solve_typing.
   Qed.
+
+  Definition rc_deref : val :=
+    funrec: <> ["rc"] :=
+      let: "x" := new [ #1 ] in
+      let: "rc'" := !"rc" in
+      "x" <- (!"rc'" +ₗ #1);;
+      delete [ #1; "rc" ];; return: ["x"].
+
+  Lemma rc_deref_type ty :
+    typed_val rc_deref (fn(∀ α, [α]; &shr{α} rc ty) → &shr{α} ty).
+  Proof.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ret arg). inv_vec arg=>rcx. simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst. rewrite (Nat2Z.id 1).
+    iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
+    iIntros (tid qE) "#LFT Hna HE HL Hk".
+    rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
+    iIntros "[Hrcx [Hrc' Hx]]".
+    destruct x as [[|x|]|]; try done.
+    (* FIXME why is x printed in the code as "LitV x", not "#x"? *)
+    iDestruct "Hx" as "[Hx Hx†]". iDestruct "Hx" as (vl) "[>Hx >SZ]".
+    rewrite uninit_own. destruct vl as [|]; iDestruct "SZ" as %[=].
+    destruct vl as [|]; last done. rewrite heap_mapsto_vec_singleton.
+    rewrite [[rcx]]lock. destruct rc' as [[|rc'|]|]; try done. simpl.
+    iDestruct "Hrc'" as (l') "[#Hrc' #Hdelay]".
+    (* All right, we are done preparing our context. Let's get going. *)
+    rewrite {1}/elctx_interp big_sepL_singleton. iDestruct "HE" as "[Hα1 Hα2]". wp_bind (!_)%E.
+    iSpecialize ("Hdelay" with "[] Hα1"); last iApply (wp_fupd_step with "Hdelay"); [done..|].
+    iMod (frac_bor_acc with "LFT Hrc' Hα2") as (q') "[Hrc'↦ Hclose]"; first solve_ndisj.
+    rewrite heap_mapsto_vec_singleton. iApply wp_fupd. wp_read.
+    iMod ("Hclose" with "[$Hrc'↦]") as "Hα2". iIntros "!> [Hα1 Hproto]".
+    iDestruct "Hproto" as (γ ν q'') "(#Hincl & #Hinv & #Hrctokb & #Hshr)". iModIntro.
+    wp_op. wp_write.
+    (* Finish up the proof. *)
+    iApply (type_type _ _ _ [ rcx ◁ box (&shr{α} rc ty); #x ◁ box (&shr{α} ty)]%TC
+        with "[] LFT Hna [Hα1 Hα2] HL Hk [-]"); last first.
+    { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val !tctx_hasty_val' //.
+      unlock. iFrame "Hrcx". iFrame "Hx†". iExists [_]. rewrite heap_mapsto_vec_singleton.
+      iFrame "Hx". iNext. iApply ty_shr_mono; done. }
+    { rewrite /elctx_interp big_sepL_singleton. iFrame. }
+    iApply type_delete; [solve_typing..|].
+    iApply (type_jump [ #_ ]); solve_typing.
+  Qed.
+
 End code.
