@@ -44,7 +44,7 @@ Section rwlockreadguard_functions.
     { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
     iApply (type_letalloc_1 (&shr{α}ty)); [solve_typing..|].
     iIntros (r). simpl_subst. iApply type_delete; [solve_typing..|].
-    iApply (type_jump [_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 
   (* Dropping a rwlockreadguard and releasing the corresponding lock. *)
@@ -71,7 +71,7 @@ Section rwlockreadguard_functions.
     iApply (type_cont [] [] (λ _, [x ◁ _; x' ◁ _])%TC);
       [iIntros (loop)|iIntros "/= !#"; iIntros (loop arg); inv_vec arg];
       simpl_subst.
-    { iApply (type_jump []); solve_typing. }
+    { iApply type_jump; solve_typing. }
     iIntros (tid qE) "#LFT Hna Hα HL Hk HT".
     rewrite {1}/elctx_interp big_sepL_singleton tctx_interp_cons
             tctx_interp_singleton !tctx_hasty_val.
@@ -133,7 +133,7 @@ Section rwlockreadguard_functions.
       { rewrite /elctx_interp big_sepL_singleton //. }
       iApply type_delete; [solve_typing..|].
       iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
-      iApply (type_jump [_]); solve_typing.
+      iApply type_jump; solve_typing.
     + iApply (wp_cas_int_fail with "Hlx"); try done. iNext. iIntros "Hlx".
       iMod ("Hcloseβ" with "[Hlx H● Hst]") as "Hβ". by iExists _; iFrame.
       iMod ("Hcloseα" with "Hβ") as "HE". iApply (wp_if _ false). iIntros "!> !>".
@@ -142,6 +142,6 @@ Section rwlockreadguard_functions.
       { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val
                 tctx_hasty_val' //. iFrame. iExists _, _, _, _. iFrame "∗#". }
       { rewrite /elctx_interp big_sepL_singleton //. }
-      iApply (type_jump []); solve_typing.
+      iApply type_jump; solve_typing.
   Qed.
 End rwlockreadguard_functions.

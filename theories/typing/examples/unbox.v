@@ -20,6 +20,6 @@ Section unbox.
     iApply type_deref_uniq_own; [solve_typing..|]. iIntros (bx); simpl_subst.
     iApply type_letalloc_1; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_delete; [solve_typing..|].
-    iApply (type_jump [_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 End unbox.

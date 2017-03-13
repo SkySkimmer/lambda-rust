@@ -22,6 +22,6 @@ Section get_x.
     iApply type_deref; [solve_typing..|]. iIntros (p'); simpl_subst.
     iApply (type_letalloc_1 (&shr{α}int)); [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_delete; [solve_typing..|].
-    iApply (type_jump [_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 End get_x.

@@ -32,6 +32,6 @@ Section rebor.
     iApply type_delete; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
-    iApply (type_jump [_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 End rebor.

@@ -169,7 +169,7 @@ Section code.
       iNext. iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame. iFrame. iLeft.
       rewrite freeable_sz_full_S. iFrame. iExists _. iFrame.  }
     iApply type_delete; [solve_typing..|].
-    iApply (type_jump [ #_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 
   Definition rc_clone : val :=
@@ -236,7 +236,7 @@ Section code.
       iFrame "Hrc2". iNext. iRight. iExists _, ν, _. iFrame "#∗". }
     { rewrite /elctx_interp big_sepL_singleton. iFrame. }
     iApply type_delete; [solve_typing..|].
-    iApply (type_jump [ #_ ]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 
   Definition rc_deref : val :=
@@ -279,7 +279,7 @@ Section code.
       iFrame "Hx". iNext. iApply ty_shr_mono; done. }
     { rewrite /elctx_interp big_sepL_singleton. iFrame. }
     iApply type_delete; [solve_typing..|].
-    iApply (type_jump [ #_ ]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 
   Definition rc_drop ty : val :=
@@ -362,7 +362,7 @@ Section code.
     iApply (type_cont [] [] (λ _, [rcx ◁ box (uninit 1); x ◁ box (option ty)])%TC) ; [solve_typing..| |]; last first.
     { simpl. iAlways. iIntros (k arg). inv_vec arg. simpl_subst.
       iApply type_delete; [solve_typing..|].
-      iApply (type_jump [_]); solve_typing. }
+      iApply type_jump; solve_typing. }
     iIntros (k). simpl_subst.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
     iIntros (tid qE) "#LFT Hna HE HL Hk".
@@ -388,7 +388,7 @@ Section code.
         auto with iFrame. }
       iApply (type_sum_memcpy (option _)); [solve_typing..|].
       iApply (type_delete (Π[uninit _; uninit _])); [solve_typing..|].
-      iApply (type_jump []); solve_typing.
+      iApply type_jump; solve_typing.
     - iDestruct "Hproto" as (γ ν q q') "(#Hinv & Hrctok & Hrc● & Hν & _ & _ & Hclose)".
       (* FIXME: linebreaks in "Hclose" do not look as expected. *)
       wp_write. wp_op; intros Hc.
@@ -407,7 +407,7 @@ Section code.
       { rewrite tctx_interp_cons tctx_interp_singleton.
         rewrite !tctx_hasty_val. unlock. iFrame. }
       iApply (type_sum_unit (option ty)); [solve_typing..|].
-      iApply (type_jump []); solve_typing.
+      iApply type_jump; solve_typing.
   Qed.
 
   Definition rc_get_mut : val :=
@@ -435,7 +435,7 @@ Section code.
     iApply (type_cont [] [] (λ r, [rcx ◁ box (uninit 1); x ◁ box (option $ &uniq{α} ty)])%TC) ; [solve_typing..| |]; last first.
     { simpl. iAlways. iIntros (k arg). inv_vec arg. simpl_subst.
       iApply type_delete; [solve_typing..|].
-      iApply (type_jump [_]); solve_typing. }
+      iApply type_jump; solve_typing. }
     iIntros (k). simpl_subst.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
     iIntros (tid qE) "#LFT Hna HE HL Hk".
@@ -466,7 +466,7 @@ Section code.
         unlock. iFrame. }
       { rewrite /elctx_interp big_sepL_singleton. done. }
       iApply (type_sum_assign (option (&uniq{_} _))); [solve_typing..|].
-      iApply (type_jump []); solve_typing.
+      iApply type_jump; solve_typing.
     - wp_if. iDestruct "Hc" as "[(% & _)|(% & Hna & Hproto)]".
       { exfalso. subst c. done. }
       iDestruct "Hproto" as (γ ν q q') "(#Hinv & Hrctok & Hrc● & Hν & #Hshr & #Hν† & Hclose2)".
@@ -482,7 +482,7 @@ Section code.
         unlock. iFrame. }
       { rewrite /elctx_interp big_sepL_singleton. done. }
       iApply (type_sum_unit (option (&uniq{_} _))); [solve_typing..|].
-      iApply (type_jump []); solve_typing.
+      iApply type_jump; solve_typing.
   Qed.
 
   (* TODO: * fn make_mut(this: &mut Rc<T>) -> &mut T

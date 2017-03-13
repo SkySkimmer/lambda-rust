@@ -35,12 +35,12 @@ Section option.
       iApply type_case_uniq; [solve_typing..|].
         constructor; last constructor; last constructor; left.
       + iApply (type_sum_unit (option $ &uniq{α}τ)%T); [solve_typing..|].
-        iApply (type_jump []); solve_typing.
+        iApply type_jump; solve_typing.
       + iApply (type_sum_assign (option $ &uniq{α}τ)%T); [solve_typing..|].
-        iApply (type_jump []); solve_typing.
+        iApply type_jump; solve_typing.
     - iIntros "/= !#". iIntros (k args). inv_vec args. simpl_subst.
       iApply type_delete; [solve_typing..|].
-      iApply (type_jump [_]); solve_typing.
+      iApply type_jump; solve_typing.
   Qed.
 
   Definition option_unwrap_or τ : val :=
@@ -60,10 +60,10 @@ Section option.
       inv_vec p=>o def. simpl_subst.
     iApply type_case_own; [solve_typing|]. constructor; last constructor; last constructor.
     + right. iApply type_delete; [solve_typing..|].
-      iApply (type_jump [_]); solve_typing.
+      iApply type_jump; solve_typing.
     + left. iApply type_letalloc_n; [solve_typing..|]. iIntros (r). simpl_subst.
       iApply (type_delete (Π[uninit _;uninit _;uninit _])); [solve_typing..|].
       iApply type_delete; [solve_typing..|].
-      iApply (type_jump [_]); solve_typing.
+      iApply type_jump; solve_typing.
   Qed.
 End option.

@@ -25,6 +25,6 @@ Section init_prod.
     iApply type_assign; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
-    iApply (type_jump [_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 End init_prod.

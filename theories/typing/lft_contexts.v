@@ -356,6 +356,26 @@ Arguments lctx_lft_eq {_ _ _} _%EL _%LL _ _.
 Arguments lctx_lft_alive {_ _ _} _%EL _%LL _.
 Arguments elctx_sat {_ _ _} _%EL _%LL _%EL.
 
+Lemma elctx_sat_cons_weaken `{invG Σ, lftG Σ} e0 E E' L :
+  elctx_sat E L E' → elctx_sat (e0 :: E) L E'.
+Proof.
+  iIntros (HE' ????). rewrite /elctx_interp. setoid_rewrite big_sepL_cons.
+  iIntros "[? HE] HL". iMod (HE' with "HE HL") as (?) "[H Hclose]". done.
+  auto 10 with iFrame.
+Qed.
+
+Lemma elctx_sat_app_weaken_l `{invG Σ, lftG Σ} E0 E E' L :
+  elctx_sat E L E' → elctx_sat (E0 ++ E) L E'.
+Proof. induction E0=>//= ?. auto using elctx_sat_cons_weaken. Qed.
+
+Lemma elctx_sat_app_weaken_r `{invG Σ, lftG Σ} E0 E E' L :
+  elctx_sat E L E' → elctx_sat (E ++ E0) L E'.
+Proof.
+  intros ?????. rewrite /elctx_sat /elctx_interp.
+  setoid_rewrite (big_opL_permutation _ (E++E0)); try apply Permutation_app_comm.
+  by apply elctx_sat_app_weaken_l.
+Qed.
+
 Section elctx_incl.
   (* External lifetime context inclusion, in a persistent context.
      (Used for function types subtyping).
@@ -463,7 +483,8 @@ Hint Resolve
      elctx_sat_nil elctx_sat_alive elctx_sat_lft_incl elctx_sat_app elctx_sat_refl
      elctx_incl_refl elctx_incl_nil elctx_incl_lft_alive elctx_incl_lft_incl
   : lrust_typing.
-Hint Resolve lctx_lft_alive_external' | 100 : lrust_typing.
+Hint Resolve elctx_sat_cons_weaken elctx_sat_app_weaken_l elctx_sat_app_weaken_r
+             lctx_lft_alive_external' | 100 : lrust_typing.
 
 Hint Opaque elctx_incl elctx_sat lctx_lft_alive lctx_lft_incl : lrust_typing.
 

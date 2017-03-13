@@ -34,6 +34,6 @@ Section fake_shared_box.
             with "[] LFT Hna [Hα Hβ Hαβ] HL Hk [HT]"); last first.
     { by rewrite tctx_interp_singleton tctx_hasty_val. }
     { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
-    iApply (type_jump [_]); simpl; solve_typing.
+    iApply type_jump; simpl; solve_typing.
   Qed.
 End fake_shared_box.

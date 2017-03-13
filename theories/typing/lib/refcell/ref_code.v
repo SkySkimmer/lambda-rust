@@ -103,7 +103,7 @@ Section ref_functions.
       iFrame "∗#". }
     { rewrite /elctx_interp big_sepL_cons big_sepL_singleton. iFrame. }
     iApply type_delete; [solve_typing..|].
-    iApply (type_jump [ #_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 
   (* Turning a ref into a shared borrow. *)
@@ -139,7 +139,7 @@ Section ref_functions.
     { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
     iApply (type_letalloc_1 (&shr{α}ty)); [solve_typing..|].
     iIntros (r). simpl_subst. iApply type_delete; [solve_typing..|].
-    iApply (type_jump [_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 
   (* Dropping a ref and decrement the count in the corresponding refcell. *)
@@ -200,7 +200,7 @@ Section ref_functions.
     { by rewrite /elctx_interp big_sepL_singleton. }
     iApply type_delete; [solve_typing..|].
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
-    iApply (type_jump [_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 
   (* Apply a function within the ref, typically for accessing a component. *)
@@ -268,6 +268,6 @@ Section ref_functions.
     iApply type_deref; [solve_typing..|]. iIntros (r'). simpl_subst.
     iApply type_assign; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
-    iApply (type_jump []); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 End ref_functions.
