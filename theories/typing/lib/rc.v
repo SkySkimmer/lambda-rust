@@ -342,17 +342,66 @@ Section code.
       let: "rc'" := !"rc" in
       let: "count" := !("rc'" +ₗ #0) in
       if: "count" = #1 then
+        (* Return content, delete Rc heap allocation. *)
         "r" <-{ty.(ty_size),Σ 0} !("rc'" +ₗ #1);;
+        delete [ #(S ty.(ty_size)); "rc'" ];;
         "k" []
       else
-        "r" <-{(rc ty).(ty_size),Σ 1} !"rc";;
+        "r" <-{Σ 1} "rc'";;
         "k" []
     cont: "k" [] :=
       delete [ #1; "rc"];; return: ["r"].
 
   Lemma rc_try_unwrap_type ty :
     typed_val (rc_try_unwrap ty) (fn([]; rc ty) → Σ[ ty; rc ty ]).
-  Proof. Abort.
+  Proof.
+    (* TODO: There is a *lot* of duplication between this proof and the one for drop. *)
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (_ ret arg). inv_vec arg=>rcx. simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst. rewrite (Nat2Z.id (Σ[ ty; rc ty ]).(ty_size)).
+    iApply (type_cont [] [] (λ _, [rcx ◁ box (uninit 1); x ◁ box (Σ[ ty; rc ty ])])%TC) ; [solve_typing..| |]; last first.
+    { simpl. iAlways. iIntros (k arg). inv_vec arg. simpl_subst.
+      iApply type_delete; [solve_typing..|].
+      iApply type_jump; solve_typing. }
+    iIntros (k). simpl_subst.
+    iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
+    iIntros (tid qE) "#LFT Hna HE HL Hk".
+    rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
+    iIntros "[Hrcx [Hrc' Hx]]".
+    destruct rc' as [[|rc'|]|]; try done. rewrite [[rcx]]lock [[x]]lock [[ #rc' ]]lock.
+    wp_op. rewrite shift_loc_0. rewrite -(lock [ #rc' ]).
+    wp_apply (rc_check_unique with "[$Hna $Hrc']"); first solve_ndisj.
+    iIntros (c) "(Hrc & Hc)". wp_let.
+    iDestruct "Hc" as "[(% & Hrc† & Hna & Hown)|(% & Hna & Hproto)]".
+    - subst c. wp_op=>[_|?]; last done. wp_if.
+      iApply (type_type _ _ _ [ x ◁ own_ptr (ty_size Σ[ ty; rc ty ]) (uninit _);
+                                rcx ◁ box (uninit 1);
+                                #rc' +ₗ #1 ◁ own_ptr (S ty.(ty_size)) ty;
+                                #rc' +ₗ #0 ◁ own_ptr (S ty.(ty_size)) (uninit 1%nat)]%TC
+        with "[] LFT Hna HE HL Hk [-]"); last first.
+      { unlock. rewrite 3!tctx_interp_cons tctx_interp_singleton.
+        rewrite 2!tctx_hasty_val tctx_hasty_val' // tctx_hasty_val' //.
+        rewrite -freeable_sz_full_S -(freeable_sz_split _ 1%nat).
+        iDestruct "Hrc†" as "[Hrc†1 Hrc†2]". iFrame.
+        rewrite shift_loc_0. iFrame. iExists [_]. rewrite uninit_own heap_mapsto_vec_singleton.
+        auto with iFrame. }
+      iApply (type_sum_memcpy Σ[ ty; rc ty ]); [solve_typing..|].
+      iApply (type_delete (Π[uninit _; uninit _])); [solve_typing..|].
+      iApply type_jump; solve_typing.
+    - iDestruct "Hproto" as (γ ν q q') "(#Hinv & Hrctok & Hrc● & Hν & #Hν† & #Hshr & Hclose)".
+      wp_op; intros Hc.
+      { exfalso. move:Hc. move/Zpos_eq_iff. intros ->. exact: Pos.lt_irrefl. }
+      wp_if. iMod ("Hclose" with ">[$Hrc● $Hrc $Hna]") as "Hna"; first by eauto.
+      iApply (type_type _ _ _ [ x ◁ own_ptr (ty_size Σ[ ty; rc ty ]) (uninit _);
+                                rcx ◁ box (uninit 1);
+                                #rc' ◁ rc ty ]%TC
+        with "[] LFT Hna HE HL Hk [-]"); last first.
+      { rewrite 2!tctx_interp_cons tctx_interp_singleton.
+        rewrite !tctx_hasty_val tctx_hasty_val' //. unlock. iFrame.
+        iRight. iExists _, _, _. iFrame "∗#". by iAlways. }
+      iApply (type_sum_assign Σ[ ty; rc ty ]); [solve_typing..|].
+      iApply type_jump; solve_typing.
+  Qed.
 
   Definition rc_drop ty : val :=
     funrec: <> ["rc"] :=
@@ -409,7 +458,6 @@ Section code.
       iApply (type_delete (Π[uninit _; uninit _])); [solve_typing..|].
       iApply type_jump; solve_typing.
     - iDestruct "Hproto" as (γ ν q q') "(#Hinv & Hrctok & Hrc● & Hν & _ & _ & Hclose)".
-      (* FIXME: linebreaks in "Hclose" do not look as expected. *)
       wp_write. wp_op; intros Hc.
       { exfalso. move:Hc. move/Zpos_eq_iff. intros ->. exact: Pos.lt_irrefl. }
       wp_if. iMod ("Hclose" $! (c-1)%positive q' with ">[Hrc● Hrctok Hrc Hν $Hna]") as "Hna".
@@ -506,7 +554,6 @@ Section code.
 
   (* TODO: * fn make_mut(this: &mut Rc<T>) -> &mut T
              Needs a Clone bound, how do we model this?
-           * fn try_unwrap(this: Rc<T>) -> Result<T, Rc<T>>
            * Weak references?
    *)
 
