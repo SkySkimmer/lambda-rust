@@ -8,15 +8,21 @@ Section typing.
   Context `{typeG Σ}.
 
   (** Jumping to and defining a continuation. *)
-  Lemma type_jump args E L C T k T' :
+  Lemma type_jump args argsv E L C T k T' :
+    (* We use this rather complicated way to state that
+         args = of_val <$> argsv, only because then solve_typing
+         is able to prove it easily. *)
+    Forall2 (λ a av, to_val a = Some av ∨ a = of_val av) args argsv →
     (k ◁cont(L, T'))%CC ∈ C →
-    tctx_incl E L T (T' (list_to_vec args)) →
-    typed_body E L C T (k (of_val <$> args)).
+    tctx_incl E L T (T' (list_to_vec argsv)) →
+    typed_body E L C T (k args).
   Proof.
-    iIntros (HC Hincl tid qE) "#LFT Htl HE HL HC HT".
+    iIntros (Hargs HC Hincl tid qE) "#LFT Hna HE HL HC HT".
     iMod (Hincl with "LFT HE HL HT") as "(HE & HL & HT)".
     iSpecialize ("HC" with "HE []"); first done.
-    rewrite -{3}(vec_to_list_of_list args). iApply ("HC" with "Htl HL HT").
+    assert (args = of_val <$> argsv) as ->.
+    { clear -Hargs. induction Hargs as [|a av ?? [<-%of_to_val| ->] _ ->]=>//=. }
+    rewrite -{3}(vec_to_list_of_list argsv). iApply ("HC" with "Hna HL HT").
   Qed.
 
   Lemma type_cont argsb L1 (T' : vec val (length argsb) → _) E L2 C T econt e2 kb :

@@ -104,7 +104,7 @@ Section spawn.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_assign; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
-    iApply (type_jump [_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 
   Definition join : val :=
@@ -129,6 +129,6 @@ Section spawn.
       iDestruct (box_type_incl with "[$Hsub]") as "(_ & Hincl & _)".
       iApply "Hincl". done. }
     iIntros (r); simpl_subst. iApply type_delete; [solve_typing..|].
-    iApply (type_jump [_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 End spawn.

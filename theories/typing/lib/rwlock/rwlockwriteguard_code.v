@@ -49,7 +49,7 @@ Section rwlockwriteguard_functions.
     { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
     iApply (type_letalloc_1 (&shr{α}ty)); [solve_typing..|].
     iIntros (r). simpl_subst. iApply type_delete; [solve_typing..|].
-    iApply (type_jump [_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 
   (* Turning a rwlockwriteguard into a unique borrow. *)
@@ -96,7 +96,7 @@ Section rwlockwriteguard_functions.
     { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
     iApply (type_letalloc_1 (&uniq{α}ty)); [solve_typing..|].
     iIntros (r). simpl_subst. iApply type_delete; [solve_typing..|].
-    iApply (type_jump [_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 
   (* Drop a rwlockwriteguard and release the lock. *)
@@ -139,6 +139,6 @@ Section rwlockwriteguard_functions.
     { rewrite /elctx_interp big_sepL_singleton //. }
     iApply type_delete; [solve_typing..|].
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
-    iApply (type_jump [_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 End rwlockwriteguard_functions.

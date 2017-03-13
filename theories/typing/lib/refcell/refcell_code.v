@@ -44,7 +44,7 @@ Section refcell_functions.
       - iExists _. rewrite uninit_own. auto.
       - iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame. simpl. iFrame. auto. }
     iApply type_delete; [solve_typing..|].
-    iApply (type_jump [ #_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 
   (* The other direction: getting ownership out of a refcell. *)
@@ -81,7 +81,7 @@ Section refcell_functions.
       - iExists (_::_). rewrite heap_mapsto_vec_cons uninit_own -Hsz. iFrame. auto.
       - iExists vl. iFrame. }
     iApply type_delete; [solve_typing..|].
-    iApply (type_jump [ #_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 
   Definition refcell_get_mut : val :=
@@ -116,7 +116,7 @@ Section refcell_functions.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //. iFrame.
       iNext. iExists _. rewrite uninit_own. iFrame. }
     iApply type_assign; [solve_typing..|].
-    iApply (type_jump [ #_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 
   (* Shared borrowing. *)
@@ -148,7 +148,7 @@ Section refcell_functions.
                                     r!!!0 ◁ box (option (ref α ty))])%TC);
       [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg=>r]; simpl_subst; last first.
     { iApply type_delete; [solve_typing..|].
-      iApply (type_jump [_]); solve_typing. }
+      iApply type_jump; solve_typing. }
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_deref; [solve_typing..|].
     iIntros (x' tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
@@ -167,7 +167,7 @@ Section refcell_functions.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
       iApply (type_sum_unit (option $ ref α ty)); [solve_typing..|]; first last.
-      simpl. iApply (type_jump [_]); solve_typing.
+      simpl. iApply type_jump; solve_typing.
     - wp_op. wp_write. wp_apply wp_new; [done..|].
       iIntros (lref vl) "(EQ & H† & Hlref)". iDestruct "EQ" as %?%(inj Z.of_nat 2%nat).
       destruct vl as [|?[|?[]]]; try done. wp_let.
@@ -220,7 +220,7 @@ Section refcell_functions.
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
       iApply (type_sum_memcpy (option $ ref α ty)); [solve_typing..|].
       simpl. iApply type_delete; [solve_typing..|].
-      iApply (type_jump [_]); solve_typing.
+      iApply type_jump; solve_typing.
   Qed.
 
   (* Unique borrowing. *)
@@ -254,7 +254,7 @@ Section refcell_functions.
       [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg=>r];
       simpl_subst; last first.
     { iApply type_delete; [solve_typing..|].
-      iApply (type_jump [_]); solve_typing. }
+      iApply type_jump; solve_typing. }
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_deref; [solve_typing..|].
     iIntros (x' tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
@@ -292,7 +292,7 @@ Section refcell_functions.
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
       iApply (type_sum_memcpy (option $ refmut α ty)); [solve_typing..|].
       simpl. iApply type_delete; [solve_typing..|].
-      iApply (type_jump [_]); solve_typing.
+      iApply type_jump; solve_typing.
     - iMod ("Hclose'" with "[Hlx Hownst Hb] Hna") as "[Hβtok Hna]";
         first by iExists st; iFrame.
       iApply (type_type _ _ _
@@ -301,6 +301,6 @@ Section refcell_functions.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
       iApply (type_sum_unit (option $ refmut α ty)); [solve_typing..|].
-      simpl. iApply (type_jump [_]); solve_typing.
+      simpl. iApply type_jump; solve_typing.
   Qed.
 End refcell_functions.

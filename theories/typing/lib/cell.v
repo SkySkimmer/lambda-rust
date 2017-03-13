@@ -89,7 +89,7 @@ Section typing.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
-    iApply (type_jump [_]); first solve_typing.
+    iApply type_jump; [solve_typing..|].
     iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
 
@@ -101,7 +101,7 @@ Section typing.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
-    iApply (type_jump [_]); first solve_typing.
+    iApply type_jump; [solve_typing..|].
     iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
 
@@ -113,7 +113,7 @@ Section typing.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
-    iApply (type_jump [_]). solve_typing. rewrite /tctx_incl /=.
+    iApply type_jump; [solve_typing..|]. rewrite /tctx_incl /=.
     iIntros (???) "_ $$". rewrite !tctx_interp_singleton /tctx_elt_interp /=.
     by iIntros "$".
   Qed.
@@ -134,7 +134,7 @@ Section typing.
     iApply type_letalloc_n; [solve_typing| |iIntros (r); simpl_subst].
     { apply (read_shr _ _ _ (cell ty)); solve_typing. }
     iApply type_delete; [solve_typing..|].
-    iApply (type_jump [_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 
   (* Writing to a cell *)
@@ -186,7 +186,7 @@ Section typing.
     { rewrite /elctx_interp big_opL_singleton. done. }
     iApply type_delete; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
-    iApply (type_jump [ #_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 End typing.
 

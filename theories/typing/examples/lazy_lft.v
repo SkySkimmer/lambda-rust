@@ -41,6 +41,6 @@ Section lazy_lft.
     iApply (type_delete (Π[&shr{_}_;&shr{_}_])%T); [solve_typing..|].
     iApply type_delete; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
-    iApply (type_jump [_]); solve_typing.
+    iApply type_jump; solve_typing.
   Qed.
 End lazy_lft.
