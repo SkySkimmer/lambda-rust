@@ -123,19 +123,21 @@ Section rwlock_functions.
     funrec: <> ["x"] :=
       let: "r" := new [ #2 ] in
       let: "x'" := !"x" in
-      ("loop" []
-       cont: "loop" [] :=
-         let: "n" := !ˢᶜ"x'" in
-         if: "n" ≤ #-1 then
-           "r" <-{Σ none} ();;
-           "k" ["r"]
-         else
-           if: CAS "x'" "n" ("n" + #1) then
-             "r" <-{Σ some} "x'";;
-             "k" ["r"]
-           else "loop" [])
-      cont: "k" ["r"] :=
-        delete [ #1; "x"];; return: ["r"].
+    withcont: "k":
+    withcont: "loop":
+      "loop" []
+    cont: "loop" [] :=
+      let: "n" := !ˢᶜ"x'" in
+        if: "n" ≤ #-1 then
+          "r" <-{Σ none} ();;
+          "k" []
+        else
+          if: CAS "x'" "n" ("n" + #1) then
+            "r" <-{Σ some} "x'";;
+            "k" []
+          else "loop" []
+    cont: "k" [] :=
+      delete [ #1; "x"];; return: ["r"].
 
   Lemma rwlock_try_read_type ty :
     typed_val rwlock_try_read
@@ -143,14 +145,14 @@ Section rwlock_functions.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
-    iApply (type_cont [_] [] (λ r, [x ◁ box (&shr{α} rwlock ty);
-                                    r!!!0 ◁ box (option (rwlockreadguard α ty))])%TC);
-      [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg=>r];
+    iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
+    iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
+    iApply (type_cont [] [] (λ _, [x ◁ box (&shr{α} rwlock ty);
+                                   r ◁ box (option (rwlockreadguard α ty))])%TC);
+      [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg];
       simpl_subst; last first.
     { iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing. }
-    iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
-    iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
     iApply (type_cont [] [] (λ _, [x ◁ _; x' ◁ _; r ◁ _])%TC);
       [iIntros (loop)|iIntros "/= !#"; iIntros (loop arg); inv_vec arg];
       simpl_subst.
@@ -173,7 +175,7 @@ Section rwlock_functions.
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
       iApply (type_sum_unit (option $ rwlockreadguard α ty));
         [solve_typing..|]; first last.
-      simpl. iApply (type_jump [_]); solve_typing.
+      simpl. iApply (type_jump []); solve_typing.
     - wp_op. wp_bind (CAS _ _ _).
       iMod (shr_bor_acc_tok with "LFT Hinv Hβtok1") as "[INV Hclose']"; try done.
       iDestruct "INV" as (st') "(Hlx & Hownst & Hst)". revert Hm1.
@@ -226,7 +228,7 @@ Section rwlock_functions.
           iApply lft_intersect_mono; first done. iApply lft_incl_refl. }
         { rewrite {1}/elctx_interp big_sepL_singleton //. }
         iApply (type_sum_assign (option $ rwlockreadguard α ty)); [solve_typing..|].
-        simpl. iApply (type_jump [_]); solve_typing.
+        simpl. iApply (type_jump []); solve_typing.
       + iApply (wp_cas_int_fail with "Hlx"); try done. iNext. iIntros "Hlx".
         iMod ("Hclose'" with "[Hlx Hownst Hst]") as "Hβtok1"; first by iExists _; iFrame.
         iModIntro. iApply (wp_if _ false). iNext.
@@ -241,6 +243,7 @@ Section rwlock_functions.
   (* Acquiring a write lock. *)
   Definition rwlock_try_write : val :=
     funrec: <> ["x"] :=
+    withcont: "k":
       let: "r" := new [ #2 ] in
       let: "x'" := !"x" in
       if: CAS "x'" #0 #(-1) then
@@ -249,8 +252,8 @@ Section rwlock_functions.
       else
         "r" <-{Σ none} ();;
         "k" ["r"]
-      cont: "k" ["r"] :=
-        delete [ #1; "x"];; return: ["r"].
+    cont: "k" ["r"] :=
+      delete [ #1; "x"];; return: ["r"].
 
   Lemma rwlock_try_write_type ty :
     typed_val rwlock_try_write

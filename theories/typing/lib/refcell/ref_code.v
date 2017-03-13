@@ -206,6 +206,7 @@ Section ref_functions.
   (* Apply a function within the ref, typically for accessing a component. *)
   Definition ref_map : val :=
     funrec: <> ["ref"; "f"; "env"] :=
+    withcont: "k":
       let: "x'" := !"ref" in
       let: "f'" := !"f" in
       letalloc: "x" <- "x'" in

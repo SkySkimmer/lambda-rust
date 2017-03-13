@@ -25,7 +25,7 @@ Section typing.
     □ (∀ k (args : vec val (length argsb)),
           typed_body E L1 (k ◁cont(L1, T') :: C) (T' args)
                      (subst_v (kb::argsb) (k:::args) econt)) -∗
-    typed_body E L2 C T (e2 cont: kb argsb := econt).
+    typed_body E L2 C T (letcont: kb argsb := econt in e2).
   Proof.
     iIntros (Hc1 Hc2) "He2 #Hecont". iIntros (tid qE) "#LFT Htl HE HL HC HT".
     iApply wp_let'; first by rewrite /= decide_left.
@@ -43,7 +43,7 @@ Section typing.
     (∀ k, typed_body E L2 (k ◁cont(L1, T') :: C) T (subst' kb k e2)) -∗
     (∀ k (args : vec val (length argsb)),
           typed_body E L1 C (T' args) (subst_v (kb :: argsb) (k:::args) econt)) -∗
-    typed_body E L2 C T (e2 cont: kb argsb := econt).
+    typed_body E L2 C T (letcont: kb argsb := econt in e2).
   Proof.
     iIntros (Hc1 Hc2) "He2 Hecont". iIntros (tid qE) "#LFT Htl HE HL HC HT".
     iApply wp_let'; first by rewrite /= decide_left.

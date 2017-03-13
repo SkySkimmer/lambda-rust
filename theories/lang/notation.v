@@ -79,14 +79,17 @@ Notation "'let:' x := e1 'in' e2" :=
 Notation "e1 ;; e2" := (let: <> := e1 in e2)%V
   (at level 100, e2 at level 150, format "e1  ;;  e2") : val_scope.
 
-Notation "e1 'cont:' k xl := e2" :=
-  ((Lam (@cons binder k%RustB nil) e1%E) [Rec k%RustB xl%RustB e2%E])
-  (only parsing, at level 151, k, xl at level 1, e2 at level 150) : expr_scope.
+Notation "'letcont:' k xl := e1 'in' e2" :=
+  ((Lam (@cons binder k%RustB nil) e2%E) [Rec k%RustB xl%RustB e1%E])
+  (at level 102, k, xl at level 1, e1, e2 at level 150) : expr_scope.
+Notation "'withcont:' k1 ':' e1 'cont:' k2 xl := e2" :=
+  ((Lam (@cons binder k1%RustB nil) e1%E) [Rec k2%RustB ((fun _ : eq k1%RustB k2%RustB => xl%RustB) eq_refl) e2%E])
+  (only parsing, at level 151, k1, k2, xl at level 1, e2 at level 150) : expr_scope.
 
 Notation "'call:' f args → k" := (f (@cons expr k args))%E
   (only parsing, at level 102, f, args, k at level 1) : expr_scope.
 Notation "'letcall:' x := f args 'in' e" :=
-  (call: f args → "_k" cont: "_k" [ x ] := e)%E
+  (letcont: "_k" [ x ] := e in call: f args → "_k")%E
   (at level 102, x, f, args at level 1, e at level 150) : expr_scope.
 
 (* RJ: These notations unfortunately do not print.  Also, I don't think

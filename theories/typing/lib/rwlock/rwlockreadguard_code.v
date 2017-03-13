@@ -51,13 +51,14 @@ Section rwlockreadguard_functions.
   Definition rwlockreadguard_drop : val :=
     funrec: <> ["x"] :=
       let: "x'" := !"x" in
-      ("loop" []
-       cont: "loop" [] :=
-         let: "n" := !ˢᶜ"x'" in
-         if: CAS "x'" "n" ("n" - #1) then
-           delete [ #1; "x"];;
-           let: "r" := new [ #0] in return: ["r"]
-         else "loop" []).
+    withcont: "loop":
+      "loop" []
+    cont: "loop" [] :=
+      let: "n" := !ˢᶜ"x'" in
+      if: CAS "x'" "n" ("n" - #1) then
+        delete [ #1; "x"];;
+        let: "r" := new [ #0] in return: ["r"]
+      else "loop" [].
 
   Lemma rwlockreadguard_drop_type ty :
     typed_val rwlockreadguard_drop

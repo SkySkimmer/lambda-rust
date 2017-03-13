@@ -156,6 +156,7 @@ Section refmut_functions.
   (* Apply a function within the refmut, typically for accessing a component. *)
   Definition refmut_map : val :=
     funrec: <> ["ref"; "f"; "env"] :=
+    withcont: "k":
       let: "x'" := !"ref" in
       let: "f'" := !"f" in
       letalloc: "x" <- "x'" in

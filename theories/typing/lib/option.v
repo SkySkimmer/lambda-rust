@@ -15,11 +15,12 @@ Section option.
     funrec: <> ["o"] :=
       let: "o'" := !"o" in
       let: "r" := new [ #2 ] in
+    withcont: "k":
       case: !"o'" of
-        [ "r" <-{Σ none} ();; "k" ["r"];
-          "r" <-{Σ some} "o'" +ₗ #1;; "k" ["r"] ]
-      cont: "k" ["r"] :=
-        delete [ #1; "o"];; return: ["r"].
+        [ "r" <-{Σ none} ();; "k" [];
+          "r" <-{Σ some} "o'" +ₗ #1;; "k" [] ]
+    cont: "k" [] :=
+      delete [ #1; "o"];; return: ["r"].
 
   Lemma option_as_mut_type τ :
     typed_val
@@ -27,17 +28,17 @@ Section option.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret p).
       inv_vec p=>o. simpl_subst.
-    iApply (type_cont [_] [] (λ r, [o ◁ _; r!!!0 ◁ _])%TC) ; [solve_typing..| |].
+    iApply type_deref; [solve_typing..|]. iIntros (o'). simpl_subst.
+    iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
+    iApply (type_cont [] [] (λ _, [o ◁ _; r ◁ _])%TC) ; [solve_typing..| |].
     - iIntros (k). simpl_subst.
-      iApply type_deref; [solve_typing..|]. iIntros (o'). simpl_subst.
-      iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
       iApply type_case_uniq; [solve_typing..|].
         constructor; last constructor; last constructor; left.
       + iApply (type_sum_unit (option $ &uniq{α}τ)%T); [solve_typing..|].
-        iApply (type_jump [_]); solve_typing.
+        iApply (type_jump []); solve_typing.
       + iApply (type_sum_assign (option $ &uniq{α}τ)%T); [solve_typing..|].
-        iApply (type_jump [_]); solve_typing.
-    - iIntros "/= !#". iIntros (k r). inv_vec r=>r. simpl_subst.
+        iApply (type_jump []); solve_typing.
+    - iIntros "/= !#". iIntros (k args). inv_vec args. simpl_subst.
       iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing.
   Qed.

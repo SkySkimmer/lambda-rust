@@ -285,7 +285,8 @@ Section code.
   Definition rc_drop ty : val :=
     funrec: <> ["rc"] :=
       let: "x" := new [ #(option ty).(ty_size) ] in
-      (let: "rc'" := !"rc" in
+    withcont: "k":
+      let: "rc'" := !"rc" in
       let: "count" := !("rc'" +ₗ #0) in
       "rc'" +ₗ #0 <- "count" - #1;;
       if: "count" = #1 then
@@ -296,8 +297,8 @@ Section code.
       else
         "x" <-{Σ none} ();;
         "k" []
-      cont: "k" [] :=
-        delete [ #1; "rc"];; return: ["x"]).
+    cont: "k" [] :=
+      delete [ #1; "rc"];; return: ["x"].
 
   Lemma rc_check_unique ty F tid (l : loc) :
     ↑rc_invN ⊆ F →
@@ -358,7 +359,7 @@ Section code.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ret arg). inv_vec arg=>rcx. simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst. rewrite (Nat2Z.id (option ty).(ty_size)).
-    iApply (type_cont [] [] (λ r, [rcx ◁ box (uninit 1); x ◁ box (option ty)])%TC) ; [solve_typing..| |]; last first.
+    iApply (type_cont [] [] (λ _, [rcx ◁ box (uninit 1); x ◁ box (option ty)])%TC) ; [solve_typing..| |]; last first.
     { simpl. iAlways. iIntros (k arg). inv_vec arg. simpl_subst.
       iApply type_delete; [solve_typing..|].
       iApply (type_jump [_]); solve_typing. }
@@ -412,7 +413,8 @@ Section code.
   Definition rc_get_mut : val :=
     funrec: <> ["rc"] :=
       let: "x" := new [ #2 ] in
-      (let: "rc'" := !"rc" in
+    withcont: "k":
+      let: "rc'" := !"rc" in
       let: "rc''" := !"rc'" in
       let: "count" := !("rc''" +ₗ #0) in
       if: "count" = #1 then
@@ -421,8 +423,8 @@ Section code.
       else
         "x" <-{Σ none} ();;
         "k" []
-      cont: "k" [] :=
-        delete [ #1; "rc"];; return: ["x"]).
+    cont: "k" [] :=
+      delete [ #1; "rc"];; return: ["x"].
 
   Lemma rc_get_mut_type ty :
     typed_val rc_get_mut (fn(∀ α, [α]; &uniq{α} rc ty) → option (&uniq{α} ty)).
