@@ -128,6 +128,59 @@ End rc.
 Section code.
   Context `{!typeG Σ, !rcG Σ}.
 
+  Lemma rc_check_unique ty F tid (l : loc) :
+    ↑rc_invN ⊆ F →
+    {{{ na_own tid F ∗ ty_own (rc ty) tid [ #l ] }}}
+    !#l
+    {{{ c, RET #(Zpos c); l ↦ #(Zpos c) ∗
+        ((⌜c = 1%positive⌝ ∗ †{1%Qp}l…(S ty.(ty_size)) ∗ na_own tid F ∗ ▷ shift_loc l 1 ↦∗: ty.(ty_own) tid) ∨
+         (⌜(1 < c)%positive⌝ ∗ na_own tid (F ∖ ↑rc_invN) ∗
+          ∃ γ ν q q', na_inv tid rc_invN (rc_inv tid ν γ l ty) ∗
+            own γ (◯ Some (q, 1%positive)) ∗ own γ (● Some ((q + q')%Qp, c)) ∗
+            q.[ν] ∗ □ ((1).[ν] ={↑lftN,∅}▷=∗ [†ν]) ∗
+            ty.(ty_shr) ν tid (shift_loc l 1) ∗
+            (∀ c' q'', own γ (● Some (q'', c')) ∗ l ↦ #(Zpos c') ∗
+                       (⌜(q + q')%Qp = q''⌝ ∨ ∃ qg, ⌜(q + q' = qg + q'')%Qp⌝ ∗ qg.[ν]) ∗ na_own tid (F ∖ ↑rc_invN) ={⊤}=∗ 
+                       na_own tid F) )
+        ) }}}.
+  Proof.
+    iIntros (? Φ) "[Hna [(Hl & H† & Hown)|Hown]] HΦ".
+    - wp_read. iApply "HΦ". auto with iFrame.
+    - iDestruct "Hown" as (γ ν q) "(#Hinv & Htok & #Hshr & Hν1 & #Hνend)".
+      iMod (na_inv_open with "Hinv Hna") as "(Hproto & Hna & Hclose)"; [solve_ndisj..|].
+      iDestruct "Hproto" as (st) "[>Hst Hproto]".
+      iDestruct (own_valid_2 with "Hst Htok") as %[[Hval|[? [[qa c] [[=<-] [-> Hst]]]]]%option_included _]%auth_valid_discrete_2; first done. (* Oh my, what a pattern... *)
+      iDestruct "Hproto" as (q') "(>Hl & H† & >% & >Hν2 & Hν† & _)". iApply wp_fupd.
+      destruct (decide (c ≤ 1)%positive) as [Hle|Hnle].
+      + (* Tear down the protocol. *)
+        assert (c = 1%positive) as ->.
+        { apply Pos.le_antisym; first done. exact: Pos.le_1_l. } clear Hle.
+        destruct Hst as [[??]|[_ Hle%pos_included]%prod_included]; last first.
+        { exfalso. eapply Pos.nlt_1_r. done. }
+        setoid_subst. iMod (own_update_2 with "Hst Htok") as "Hst".
+        { apply auth_update_dealloc. rewrite -(right_id None _ (Some _)).
+          apply cancel_local_update_empty, _. }
+        iMod ("Hclose" with "[$Hna Hst]") as "Hna".
+        { iExists None. auto. }
+        iSpecialize ("Hνend" with "[Hν1 Hν2]").
+        { rewrite -H0. iFrame. }
+        iApply wp_mask_mono; last iApply (wp_step_fupd with "Hνend"); [done..|try solve_ndisj|].
+        { (* FIXME: solve_ndisj should solve this... *) set_solver+. }
+        wp_read. iIntros "#Hν". iMod ("Hν†" with "Hν") as "Hown". iModIntro.
+        iApply "HΦ". iFrame. iLeft. auto with iFrame.
+      + destruct Hst as [[??%leibniz_equiv]|[[q'' Hqa%leibniz_equiv] ?%pos_included]%prod_included].
+        { exfalso. simpl in *. subst c. apply Hnle. done. }
+        simpl in *. subst qa. wp_read. iApply "HΦ". iFrame. iRight. iModIntro. iSplit.
+        { iPureIntro. apply Pos.lt_nle. done. }
+        iFrame "Hna". iExists _, _, q, q''. iFrame "#∗%". iSplitR; first by iAlways.
+        iIntros (c' qx) "(Hst & Hl & Hq'' & Hna)". iApply "Hclose". iFrame "Hna".
+        iExists _. iFrame "Hst". iDestruct "Hq''" as "[%|Hq'']".
+        * iExists _. subst qx. iFrame "∗%". by iIntros "!> !#".
+        * iDestruct "Hq''" as (qg) "[% Hν']". iExists _.
+          iCombine "Hν2 Hν'" as "Hν". iFrame. iNext. iSplit; last by iAlways.
+          iPureIntro. rewrite [(q' + _)%Qp]comm_L assoc [(qx + _)%Qp]comm_L -H1. done.
+  Qed.
+
   Definition rc_new ty : val :=
     funrec: <> ["x"] :=
       let: "rcbox" := new [ #(S ty.(ty_size)) ] in
@@ -282,6 +335,25 @@ Section code.
     iApply type_jump; solve_typing.
   Qed.
 
+  Definition rc_try_unwrap ty : val :=
+    funrec: <> ["rc"] :=
+      let: "r" := new [ #(Σ[ ty; rc ty ]).(ty_size) ] in
+    withcont: "k":
+      let: "rc'" := !"rc" in
+      let: "count" := !("rc'" +ₗ #0) in
+      if: "count" = #1 then
+        "r" <-{ty.(ty_size),Σ 0} !("rc'" +ₗ #1);;
+        "k" []
+      else
+        "r" <-{(rc ty).(ty_size),Σ 1} !"rc";;
+        "k" []
+    cont: "k" [] :=
+      delete [ #1; "rc"];; return: ["r"].
+
+  Lemma rc_try_unwrap_type ty :
+    typed_val (rc_try_unwrap ty) (fn([]; rc ty) → Σ[ ty; rc ty ]).
+  Proof. Abort.
+
   Definition rc_drop ty : val :=
     funrec: <> ["rc"] :=
       let: "x" := new [ #(option ty).(ty_size) ] in
@@ -299,59 +371,6 @@ Section code.
         "k" []
     cont: "k" [] :=
       delete [ #1; "rc"];; return: ["x"].
-
-  Lemma rc_check_unique ty F tid (l : loc) :
-    ↑rc_invN ⊆ F →
-    {{{ na_own tid F ∗ ty_own (rc ty) tid [ #l ] }}}
-    !#l
-    {{{ c, RET #(Zpos c); l ↦ #(Zpos c) ∗
-        ((⌜c = 1%positive⌝ ∗ †{1%Qp}l…(S ty.(ty_size)) ∗ na_own tid F ∗ ▷ shift_loc l 1 ↦∗: ty.(ty_own) tid) ∨
-         (⌜(1 < c)%positive⌝ ∗ na_own tid (F ∖ ↑rc_invN) ∗
-          ∃ γ ν q q', na_inv tid rc_invN (rc_inv tid ν γ l ty) ∗
-            own γ (◯ Some (q, 1%positive)) ∗ own γ (● Some ((q + q')%Qp, c)) ∗
-            q.[ν] ∗ □ ((1).[ν] ={↑lftN,∅}▷=∗ [†ν]) ∗
-            ty.(ty_shr) ν tid (shift_loc l 1) ∗
-            (∀ c' q'', own γ (● Some (q'', c')) ∗ l ↦ #(Zpos c') ∗
-                       (⌜(q + q')%Qp = q''⌝ ∨ ∃ qg, ⌜(q + q' = qg + q'')%Qp⌝ ∗ qg.[ν]) ∗ na_own tid (F ∖ ↑rc_invN) ={⊤}=∗ 
-                       na_own tid F) )
-        ) }}}.
-  Proof.
-    iIntros (? Φ) "[Hna [(Hl & H† & Hown)|Hown]] HΦ".
-    - wp_read. iApply "HΦ". auto with iFrame.
-    - iDestruct "Hown" as (γ ν q) "(#Hinv & Htok & #Hshr & Hν1 & #Hνend)".
-      iMod (na_inv_open with "Hinv Hna") as "(Hproto & Hna & Hclose)"; [solve_ndisj..|].
-      iDestruct "Hproto" as (st) "[>Hst Hproto]".
-      iDestruct (own_valid_2 with "Hst Htok") as %[[Hval|[? [[qa c] [[=<-] [-> Hst]]]]]%option_included _]%auth_valid_discrete_2; first done. (* Oh my, what a pattern... *)
-      iDestruct "Hproto" as (q') "(>Hl & H† & >% & >Hν2 & Hν† & _)". iApply wp_fupd.
-      destruct (decide (c ≤ 1)%positive) as [Hle|Hnle].
-      + (* Tear down the protocol. *)
-        assert (c = 1%positive) as ->.
-        { apply Pos.le_antisym; first done. exact: Pos.le_1_l. } clear Hle.
-        destruct Hst as [[??]|[_ Hle%pos_included]%prod_included]; last first.
-        { exfalso. eapply Pos.nlt_1_r. done. }
-        setoid_subst. iMod (own_update_2 with "Hst Htok") as "Hst".
-        { apply auth_update_dealloc. rewrite -(right_id None _ (Some _)).
-          apply cancel_local_update_empty, _. }
-        iMod ("Hclose" with "[$Hna Hst]") as "Hna".
-        { iExists None. auto. }
-        iSpecialize ("Hνend" with "[Hν1 Hν2]").
-        { rewrite -H0. iFrame. }
-        iApply wp_mask_mono; last iApply (wp_step_fupd with "Hνend"); [done..|try solve_ndisj|].
-        { (* FIXME: solve_ndisj should solve this... *) set_solver+. }
-        wp_read. iIntros "#Hν". iMod ("Hν†" with "Hν") as "Hown". iModIntro.
-        iApply "HΦ". iFrame. iLeft. auto with iFrame.
-      + destruct Hst as [[??%leibniz_equiv]|[[q'' Hqa%leibniz_equiv] ?%pos_included]%prod_included].
-        { exfalso. simpl in *. subst c. apply Hnle. done. }
-        simpl in *. subst qa. wp_read. iApply "HΦ". iFrame. iRight. iModIntro. iSplit.
-        { iPureIntro. apply Pos.lt_nle. done. }
-        iFrame "Hna". iExists _, _, q, q''. iFrame "#∗%". iSplitR; first by iAlways.
-        iIntros (c' qx) "(Hst & Hl & Hq'' & Hna)". iApply "Hclose". iFrame "Hna".
-        iExists _. iFrame "Hst". iDestruct "Hq''" as "[%|Hq'']".
-        * iExists _. subst qx. iFrame "∗%". by iIntros "!> !#".
-        * iDestruct "Hq''" as (qg) "[% Hν']". iExists _. 
-          iCombine "Hν2 Hν'" as "Hν". iFrame. iNext. iSplit; last by iAlways.
-          iPureIntro. rewrite [(q' + _)%Qp]comm_L assoc [(qx + _)%Qp]comm_L -H1. done.
-  Qed.
 
   Lemma rc_drop_type ty :
     typed_val (rc_drop ty) (fn([]; rc ty) → option ty).
