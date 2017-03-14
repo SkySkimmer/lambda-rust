@@ -77,7 +77,7 @@ Section rc.
       iClear "H↦ Hinv Hpb".
       iMod (bor_acc_cons with "LFT Hb Htok") as "[HP Hclose2]"; first solve_ndisj.
       set (X := (∃ _ _ _, _)%I).
-      iModIntro. iNext. iAssert (|={F ∖ ↑shrN}=> X )%I with "[HP]" as ">HX".
+      iModIntro. iNext. iAssert X with ">[HP]" as "HX".
       { iDestruct "HP" as "[[Hl' [H† Hown]]|$]"; last done.
         iMod (lft_create with "LFT") as (ν) "[[Hν1 Hν2] #Hν†]"; first solve_ndisj.
         (* TODO: We should consider changing the statement of bor_create to dis-entangle the two masks such that this is no longer necessary. *)
@@ -96,7 +96,7 @@ Section rc.
       { iNext. iIntros "HX". iModIntro. iNext.
         iRight. iExists γ, ν, q'. iExact "HX". }
       { iNext. by iFrame "#∗". }
-      iAssert (|={F ∖ ↑shrN}=> C)%I with "[HX]" as ">#HC".
+      iAssert C with ">[HX]" as "#HC".
       { iExists _, _, _. iFrame "Hinv".
         iMod (bor_sep with "LFT HX") as "[_ HX]"; first solve_ndisj.
         iMod (bor_sep with "LFT HX") as "[Hrc HX]"; first solve_ndisj.
@@ -149,7 +149,7 @@ Section code.
     - iDestruct "Hown" as (γ ν q) "(#Hinv & Htok & #Hshr & Hν1 & #Hνend)".
       iMod (na_inv_open with "Hinv Hna") as "(Hproto & Hna & Hclose)"; [solve_ndisj..|].
       iDestruct "Hproto" as (st) "[>Hst Hproto]".
-      iDestruct (own_valid_2 with "Hst Htok") as %[[Hval|[? [[qa c] [[=<-] [-> Hst]]]]]%option_included _]%auth_valid_discrete_2; first done. (* Oh my, what a pattern... *)
+      iDestruct (own_valid_2 with "Hst Htok") as %[[Hval|(? & (qa, c) & [=<-] & -> & Hst)]%option_included _]%auth_valid_discrete_2; first done. (* Oh my, what a pattern... *)
       iDestruct "Hproto" as (q') "(>Hl & H† & >% & >Hν2 & Hν† & _)". iApply wp_fupd.
       destruct (decide (c ≤ 1)%positive) as [Hle|Hnle].
       + (* Tear down the protocol. *)
@@ -264,7 +264,7 @@ Section code.
     iMod (na_inv_open with "Hinv Hna") as "(Hrcproto & Hna & Hclose1)"; [solve_ndisj..|].
     iMod (na_bor_acc with "LFT Hrctokb Hα1 Hna") as "(>Hrctok & Hna & Hclose2)"; [solve_ndisj..|].
     iDestruct "Hrcproto" as (st) "[>Hrc● Hrcst]".
-    iDestruct (own_valid_2 with "Hrc● Hrctok") as %[[Hval|[_ [[qa c] [_ [-> _]]]]]%option_included _]%auth_valid_discrete_2; first done. (* Oh my, what a pattern... *)
+    iDestruct (own_valid_2 with "Hrc● Hrctok") as %[[Hval|(_ & (qa, c) & _ & -> & _)]%option_included _]%auth_valid_discrete_2; first done. (* Oh my, what a pattern... *)
     iDestruct "Hrcst" as (qb) "(>Hl' & >Hl'† & >% & Hνtok & Hν† & #Hνend)".
     wp_read. wp_let. wp_op. rewrite shift_loc_0. wp_op. wp_write. wp_write.
     (* And closing it again. *)
