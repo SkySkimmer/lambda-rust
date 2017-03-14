@@ -55,7 +55,7 @@ Section ref.
     iMod (bor_sep with "LFT Hb") as "[Hinv Hb]". done.
     iMod (bor_persistent_tok with "LFT Hinv Htok") as "[#Hinv $]". done.
     iMod (bor_sep with "LFT Hb") as "[Hκν Hb]". done.
-    iDestruct (frac_bor_lft_incl with "LFT >[Hκν]") as "#Hκν".
+    iDestruct (frac_bor_lft_incl with "LFT [> Hκν]") as "#Hκν".
     { iApply bor_fracture; try done. by rewrite Qp_mult_1_r. }
     iMod (bor_na with "Hb") as "#Hb". done. eauto 20.
   Qed.

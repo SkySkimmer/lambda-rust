@@ -36,7 +36,7 @@ Section refmut_functions.
     iDestruct (lft_intersect_acc with "Hβ Hα2") as (qβα) "[Hα2β Hcloseβα2]".
     wp_bind (!(LitV lx'))%E. iApply (wp_step_fupd with "[Hα2β]");
          [done| |by iApply ("Hshr" with "[] Hα2β")|]; first done.
-    iMod "H↦" as "[H↦1 H↦2]". wp_read. iIntros "[#Hshr' Hα2β]!>". wp_let.
+    iMod "H↦" as "[H↦1 H↦2]". wp_read. iIntros "[#Hshr' Hα2β] !>". wp_let.
     iDestruct ("Hcloseβα2" with "Hα2β") as "[Hβ Hα2]".
     iMod ("Hcloseα1" with "[$H↦1 $H↦2]") as "Hα1".
     iApply (type_type _ _ _ [ x ◁ box (&shr{α} refmut β ty); #lv ◁ &shr{α}ty]%TC
@@ -138,7 +138,7 @@ Section refmut_functions.
     iApply (wp_step_fupd with "[H† Hν]");
       [done| |iApply ("H†" with "Hν")|]; first set_solver.
     wp_seq. iIntros "{Hb} Hb !>".
-    iMod ("Hcloseβ" with ">[H↦lrc H● H◯ Hb] Hna") as "[Hβ Hna]".
+    iMod ("Hcloseβ" with "[> H↦lrc H● H◯ Hb] Hna") as "[Hβ Hna]".
     { iExists None. iFrame. iMod (own_update_2 with "H● H◯") as "$"; last done.
       apply auth_update_dealloc. rewrite -(right_id None _ (Some _)).
       apply cancel_local_update_empty, _. }

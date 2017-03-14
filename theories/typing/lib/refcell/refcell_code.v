@@ -100,7 +100,7 @@ Section refcell_functions.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|];  try iDestruct "Hx'" as "[]".
     iAssert (&{α} (∃ (z : Z), lx' ↦ #z ∗ ⌜-1 ≤ z⌝) ∗
-        (&uniq{α} ty).(ty_own) tid [ #(shift_loc lx' 1)])%I with ">[Hx']" as "[_ Hx']".
+        (&uniq{α} ty).(ty_own) tid [ #(shift_loc lx' 1)])%I with "[> Hx']" as "[_ Hx']".
     { iApply bor_sep; [done..|]. iApply (bor_proper with "Hx'"). iSplit.
       - iIntros "[H1 H2]". iDestruct "H1" as (z) "[??]". iDestruct "H2" as (vl) "[??]".
         iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame. iFrame.
@@ -164,7 +164,7 @@ Section refcell_functions.
         first by iExists st; iFrame.
       iApply (type_type _ _ _
               [ x ◁ box (&shr{α}(refcell ty)); r ◁ box (uninit 3) ]%TC
-              with "[] LFT Hna >[Hclose Hβtok1 Hβtok2] HL Hk"); first last.
+              with "[] LFT Hna [> Hclose Hβtok1 Hβtok2] HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
       iApply (type_sum_unit (option $ ref α ty)); [solve_typing..|]; first last.
@@ -177,7 +177,7 @@ Section refcell_functions.
       iAssert (∃ qν ν, (qβ / 2).[β] ∗ (qν).[ν] ∗
                        ty_shr ty (β ⊓ ν) tid (shift_loc lx 1) ∗
                        own γ (◯ reading_st qν ν) ∗ refcell_inv tid lx γ β ty)%I
-        with ">[Hlx Hownst Hst Hβtok2]" as (q' ν) "(Hβtok2 & Hν & Hshr & Hreading & INV)".
+        with "[> Hlx Hownst Hst Hβtok2]" as (q' ν) "(Hβtok2 & Hν & Hshr & Hreading & INV)".
       { destruct st as [[agν [|[q n]|]]|]; try done.
         - iDestruct "Hst" as (ν) "(Hag & H† & #Hshr & Hst)".
           iDestruct "Hst" as (q') "(#Hqq' & [Hν1 Hν2])".
@@ -211,7 +211,7 @@ Section refcell_functions.
       iMod ("Hclose'" with "[$INV] Hna") as "[Hβtok1 Hna]".
       iApply (type_type  _ _ _
         [ x ◁ box (&shr{α}(refcell ty)); r ◁ box (uninit 3); #lref ◁ box (ref α ty)]%TC
-              with "[] LFT Hna >[Hclose Hβtok1 Hβtok2] HL Hk");
+              with "[] LFT Hna [> Hclose Hβtok1 Hβtok2] HL Hk");
         first last.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame.
         rewrite tctx_hasty_val' //. rewrite /= freeable_sz_full. iFrame.
@@ -285,7 +285,7 @@ Section refcell_functions.
         iApply "Hbh". rewrite -lft_dead_or. auto. }
       iApply (type_type _ _ _
         [ x ◁ box (&shr{α}(refcell ty)); r ◁ box (uninit 3); #lref ◁ box (refmut α ty)]%TC
-              with "[] LFT Hna >[Hclose Hβtok] HL Hk"); first last.
+              with "[] LFT Hna [> Hclose Hβtok] HL Hk"); first last.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame.
         rewrite tctx_hasty_val' //. rewrite /= freeable_sz_full. iFrame.
         iExists [_; _]. rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
@@ -299,7 +299,7 @@ Section refcell_functions.
         first by iExists st; iFrame.
       iApply (type_type _ _ _
               [ x ◁ box (&shr{α}(refcell ty)); r ◁ box (uninit 3) ]%TC
-              with "[] LFT Hna >[Hclose Hβtok] HL Hk"); first last.
+              with "[] LFT Hna [> Hclose Hβtok] HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       { rewrite {1}/elctx_interp big_sepL_singleton /=. iApply "Hclose". by iFrame. }
       iApply (type_sum_unit (option $ refmut α ty)); [solve_typing..|].

@@ -149,7 +149,7 @@ Section typing.
       iDestruct "Helt" as %->%elem_of_list_singleton. iIntros (ret) "Htl HL HT".
       iMod ("Hclose" with "HE'") as "HE".
       iSpecialize ("HC" with "HE"). unfold cctx_elt_interp.
-      iApply ("HC" $! (_ ◁cont(_, _)%CC) with "[%] Htl HL >").
+      iApply ("HC" $! (_ ◁cont(_, _)%CC) with "[%] Htl HL [> -]").
       { by apply elem_of_list_singleton. }
       rewrite /tctx_interp !big_sepL_singleton /=.
       iDestruct "HT" as (v) "[HP Hown]". iExists v. iFrame "HP".

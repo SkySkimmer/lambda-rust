@@ -130,7 +130,7 @@ Section frac_bor.
   Lemma frac_bor_fake E κ :
     ↑lftN ⊆ E → lft_ctx -∗ [†κ] ={E}=∗ &frac{κ}φ.
   Proof.
-    iIntros (?) "#LFT#H†". iApply (bor_fracture with "LFT >"). done.
+    iIntros (?) "#LFT#H†". iApply (bor_fracture with "LFT [>]"); first done.
     by iApply (bor_fake with "LFT").
   Qed.
 End frac_bor.

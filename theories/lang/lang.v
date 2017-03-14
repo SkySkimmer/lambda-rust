@@ -592,7 +592,7 @@ Canonical Structure valC := leibnizC val.
 Canonical Structure exprC := leibnizC expr.
 
 (** Language *)
-Program Instance lrust_ectxi_lang: EctxiLanguage expr val ectx_item state :=
+Program Instance lrust_ectxi_lang : EctxiLanguage expr val ectx_item state :=
   {| ectxi_language.of_val := of_val;
      ectxi_language.to_val := to_val;
      ectxi_language.fill_item := fill_item;
@@ -605,14 +605,11 @@ Canonical Structure lrust_lang := ectx_lang expr.
 (* Lemmas about the language. *)
 Lemma stuck_irreducible K σ : irreducible (fill K stuck_term) σ.
 Proof.
-  intros ??? Hstep. edestruct step_is_head as (?&?&?&?); [..|by do 3 eexists|].
-  - done.
-  - clear. intros Ki K e' Heq (?&?&? & Hstep). destruct Ki; inversion Heq.
-    + destruct K as [|Ki K].
-      * simpl in *. subst. inversion Hstep.
-      * destruct Ki; simpl in *; done.
-    + destruct (of_val <$> vl); last done. destruct (fill K e'); done.
-  - by eapply stuck_not_head_step.
+  apply: (irreducible_fill (K:=ectx_language.fill K)); first done.
+  apply prim_head_irreducible; unfold stuck_term.
+  - inversion 1.
+  - apply ectxi_language_sub_values.
+    intros [] ??; simplify_eq/=; eauto; discriminate_list.
 Qed.
 
 (* Define some derived forms *)

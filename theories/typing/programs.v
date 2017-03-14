@@ -172,7 +172,7 @@ Section typing_rules.
     iSpecialize ("Hend" with "Htok"). wp_bind Endlft.
     iApply (wp_mask_mono (↑lftN)); first done.
     iApply (wp_step_fupd with "Hend"). done. set_solver. wp_seq.
-    iIntros "#Hdead !>". wp_seq. iApply ("He" with "LFT Htl HE HL HC >").
+    iIntros "#Hdead !>". wp_seq. iApply ("He" with "LFT Htl HE HL HC [> -]").
     iApply (Hub with "[] HT"). simpl in *. subst κ. rewrite -lft_dead_or. auto.
   Qed.
 
@@ -262,7 +262,7 @@ Section typing_rules.
       as (l2 vl2 q2) "(% & Hl2 & Hown2 & Hcl2)"; first done.
     iDestruct (ty_size_eq with "Hown2") as "#>%". subst v1 v2. iApply wp_fupd.
     iApply (wp_memcpy with "[$Hl1 $Hl2]"); try congruence; [].
-    iNext. iIntros "[Hl1 Hl2]". iApply ("HΦ" with ">"). rewrite !tctx_hasty_val' //.
+    iNext. iIntros "[Hl1 Hl2]". iApply ("HΦ" with "[> -]"). rewrite !tctx_hasty_val' //.
     iMod ("Hcl1" with "[Hl1 Hown2]") as "($ & $ & $)".
     { iExists _. iFrame. }
     iMod ("Hcl2" with "Hl2") as "($ & $ & $ & $)". done.

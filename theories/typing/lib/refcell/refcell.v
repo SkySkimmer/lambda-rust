@@ -123,7 +123,7 @@ Section refcell.
       iSplitL "Hn"; [eauto|iExists _; iFrame]. }
     iMod (bor_sep with "LFT H") as "[Hn Hvl]". done.
     iMod (bor_acc_cons with "LFT Hn Htok") as "[H Hclose]". done.
-    iAssert ((q / 2).[κ] ∗ ▷ ∃ γ, refcell_inv tid l γ κ ty)%I with ">[-Hclose]"
+    iAssert ((q / 2).[κ] ∗ ▷ ∃ γ, refcell_inv tid l γ κ ty)%I with "[> -Hclose]"
       as "[$ HQ]"; last first.
     { iMod ("Hclose" with "[] HQ") as "[Hb $]".
       - iIntros "!> H !>". iNext. iDestruct "H" as (γ st) "(? & _ & _)".

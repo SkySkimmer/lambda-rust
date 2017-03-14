@@ -102,7 +102,7 @@ Section rc.
         iMod (bor_sep with "LFT HX") as "[Hrc HX]"; first solve_ndisj.
         iMod (bor_sep with "LFT HX") as "[_ HX]"; first solve_ndisj.
         iMod (bor_sep with "LFT HX") as "[Hlft _]"; first solve_ndisj.
-        iDestruct (frac_bor_lft_incl with "LFT >[Hlft]") as "#Hlft".
+        iDestruct (frac_bor_lft_incl with "LFT [> Hlft]") as "#Hlft".
         { iApply (bor_fracture with "LFT"); first solve_ndisj. by rewrite Qp_mult_1_r. }
         iMod (bor_na with "Hrc") as "$"; first solve_ndisj.
         by iFrame "#". }
@@ -309,8 +309,7 @@ Section code.
     iIntros (tid qE) "#LFT Hna HE HL Hk".
     rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iIntros "[Hrcx [Hrc' Hx]]". rewrite [[rcx]]lock.
-    destruct x as [[|x|]|]; try done.
-    (* FIXME why is x printed in the code as "LitV x", not "#x"? *)
+    destruct x as [[|x|]|]; try done. simpl of_val. (* TODO: simpl unfolds too much *)
     iDestruct "Hx" as "[Hx Hx†]". iDestruct "Hx" as (vl) "[>Hx >SZ]".
     rewrite uninit_own. destruct vl as [|]; iDestruct "SZ" as %[=].
     destruct vl as [|]; last done. rewrite heap_mapsto_vec_singleton.
@@ -391,7 +390,7 @@ Section code.
     - iDestruct "Hproto" as (γ ν q q') "(#Hinv & Hrctok & Hrc● & Hν & #Hν† & #Hshr & Hclose)".
       wp_op; intros Hc.
       { exfalso. move:Hc. move/Zpos_eq_iff. intros ->. exact: Pos.lt_irrefl. }
-      wp_if. iMod ("Hclose" with ">[$Hrc● $Hrc $Hna]") as "Hna"; first by eauto.
+      wp_if. iMod ("Hclose" with "[> $Hrc● $Hrc $Hna]") as "Hna"; first by eauto.
       iApply (type_type _ _ _ [ x ◁ own_ptr (ty_size Σ[ ty; rc ty ]) (uninit _);
                                 rcx ◁ box (uninit 1);
                                 #rc' ◁ rc ty ]%TC
@@ -460,7 +459,7 @@ Section code.
     - iDestruct "Hproto" as (γ ν q q') "(#Hinv & Hrctok & Hrc● & Hν & _ & _ & Hclose)".
       wp_write. wp_op; intros Hc.
       { exfalso. move:Hc. move/Zpos_eq_iff. intros ->. exact: Pos.lt_irrefl. }
-      wp_if. iMod ("Hclose" $! (c-1)%positive q' with ">[Hrc● Hrctok Hrc Hν $Hna]") as "Hna".
+      wp_if. iMod ("Hclose" $! (c-1)%positive q' with "[> Hrc● Hrctok Hrc Hν $Hna]") as "Hna".
       { unlock. iMod (own_update_2 with "Hrc● Hrctok") as "$".
         { apply auth_update_dealloc. rewrite -{1}(Pplus_minus c 1%positive); last first.
           { apply Pos.lt_gt. done. }

@@ -157,8 +157,7 @@ Proof.
     destruct e; simpl; try done; repeat (case_match; try done);
     inversion 1; try (apply val_irreducible; rewrite ?language.to_of_val; naive_solver eauto); [].
     rewrite -[stuck_term](fill_empty). apply stuck_irreducible.
-  - intros [|Ki K] e' Hfill Hnotval; [done|exfalso].
-    apply (fill_not_val K), eq_None_not_Some in Hnotval. apply Hnotval. simpl.
+  - apply ectxi_language_sub_values=> /= Ki e' Hfill.
     revert He. destruct e; simpl; try done; repeat (case_match; try done);
     rewrite ?bool_decide_spec;
     destruct Ki; inversion Hfill; subst; clear Hfill;
@@ -249,7 +248,7 @@ Ltac reshape_expr e tac :=
     end
   with go K e :=
   match e with
-  | _ => tac (reverse K) e
+  | _ => tac K e
   | BinOp ?op ?e1 ?e2 =>
      reshape_val e1 ltac:(fun v1 => go (BinOpRCtx op v1 :: K) e2)
   | BinOp ?op ?e1 ?e2 => go (BinOpLCtx op e2 :: K) e1

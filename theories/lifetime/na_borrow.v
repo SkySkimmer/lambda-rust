@@ -46,7 +46,7 @@ Section na_bor.
     iDestruct "HP" as (i) "(#Hpers&#Hinv)".
     iMod (na_inv_open with "Hinv Hnaown") as "(>Hown&Hnaown&Hclose)"; try done.
     iMod (idx_bor_acc with "LFT Hpers Hown Hκ") as "[HP Hclose']". done.
-    iIntros "{$HP $Hnaown}!>HP Hnaown".
+    iIntros "{$HP $Hnaown} !> HP Hnaown".
     iMod ("Hclose'" with "HP") as "[Hown $]". iApply "Hclose". by iFrame.
   Qed.
 
@@ -58,7 +58,7 @@ Section na_bor.
 
   Lemma na_bor_fake E κ: ↑lftN ⊆ E → lft_ctx -∗ [†κ] ={E}=∗ &na{κ,tid,N}P.
   Proof.
-    iIntros (?) "#LFT#H†". iApply (bor_na with ">"). done.
+    iIntros (?) "#LFT#H†". iApply (bor_na with "[>]"); first done.
     by iApply (bor_fake with "LFT H†").
   Qed.
 End na_bor.

@@ -252,7 +252,7 @@ Section lft_contexts.
     iDestruct "Hκ" as (κ0) "(EQ & Htok & #Hend)". simpl. iDestruct "EQ" as %->.
     iAssert (∃ q', q'.[foldr lft_intersect static κs] ∗
       (q'.[foldr lft_intersect static κs] ={F}=∗ elctx_interp E qE ∗ llctx_interp L (qL / 2)))%I
-      with ">[HE HL1]" as "H".
+      with "[> HE HL1]" as "H".
     { move:(qL/2)%Qp=>qL'. clear HL. iClear "Hend".
       iInduction Hκs as [|κ κs Hκ ?] "IH" forall (qE qL').
       - iExists 1%Qp. iFrame. iSplitR; last by auto. iApply lft_tok_static.
@@ -287,7 +287,7 @@ Section lft_contexts.
       by iApply elctx_interp_persist. by iApply llctx_interp_persist.
     iMod (Hal with "HE HL") as (q') "[Htok Hclose]". done.
     iMod (lft_incl_acc with "Hincl Htok") as (q'') "[Htok Hclose']". done.
-    iExists q''. iIntros "{$Htok}!>Htok". iApply ("Hclose" with ">").
+    iExists q''. iIntros "{$Htok}!>Htok". iApply ("Hclose" with "[> -]").
     by iApply "Hclose'".
   Qed.
 
@@ -400,7 +400,7 @@ Section elctx_incl.
       iMod (Hxy with "HE HL HE1") as (qy) "[HE1 Hclose1]"; first done.
       iMod (Hyz with "HE HL HE1") as (qz) "[HE1 Hclose2]"; first done.
       iModIntro. iExists qz. iFrame "HE1". iIntros "HE1".
-      iApply ("Hclose1" with ">"). iApply "Hclose2". done.
+      iApply ("Hclose1" with "[> -]"). by iApply "Hclose2".
   Qed.
 
   Lemma elctx_incl_refl E' : elctx_incl E' E'.

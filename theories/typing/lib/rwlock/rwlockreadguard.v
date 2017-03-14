@@ -49,7 +49,7 @@ Section rwlockreadguard.
     iMod (bor_sep with "LFT Hb") as "[Hinv Hb]". done.
     iMod (bor_persistent_tok with "LFT Hinv Htok") as "[#Hinv $]". done.
     iMod (bor_sep with "LFT Hb") as "[Hκν _]". done.
-    iDestruct (frac_bor_lft_incl with "LFT >[Hκν]") as "#Hκν".
+    iDestruct (frac_bor_lft_incl with "LFT [> Hκν]") as "#Hκν".
     { iApply bor_fracture; try done. by rewrite Qp_mult_1_r. }
     iExists _. iFrame "#". iApply ty_shr_mono; last done.
     iApply lft_intersect_mono; last done. iApply lft_incl_refl.
@@ -87,7 +87,7 @@ Section rwlockreadguard.
         iApply lft_intersect_mono. done. iApply lft_incl_refl.
       + by iApply lft_incl_trans.
       + iApply (shr_bor_iff with "[] Hinv").
-        iIntros "!>!#"; iSplit; iIntros "H"; by iApply rwlock_inv_proper.
+        iIntros "!> !#"; iSplit; iIntros "H"; by iApply rwlock_inv_proper.
     - iIntros (κ tid l) "H". iDestruct "H" as (l') "[Hf Hshr]". iExists l'.
       iFrame. iApply ty_shr_mono; last by iApply "Hs".
       iApply lft_intersect_mono. done. iApply lft_incl_refl.

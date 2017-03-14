@@ -67,28 +67,19 @@ Definition nonracing_accesses (a1 a2 : access_kind * order) : Prop :=
   | _, _ => False
   end.
 
-Definition nonracing_threadpool (el : list expr) σ : Prop :=
+Definition nonracing_threadpool (el : list expr) (σ : state) : Prop :=
   ∀ l a1 a2, next_accesses_threadpool el σ a1 a2 l →
              nonracing_accesses a1 a2.
-
-Lemma next_access_head_head K e σ a l:
-  next_access_head (fill_item K e) σ a l → is_Some (to_val e).
-Proof.
-  destruct K; inversion 1; eauto.
-Qed.
 
 Lemma next_access_head_reductible_ctx e σ σ' a l K :
   next_access_head e σ' a l → reducible (fill K e) σ → head_reducible e σ.
 Proof.
-  intros Ha. apply step_is_head.
-  - by destruct Ha.
-  - clear -Ha. intros Ki K e' Heq (?&?&?&Hstep).
-    subst e. apply next_access_head_head in Ha.
-    change to_val with ectxi_language.to_val in Ha.
-    rewrite fill_not_val in Ha. by eapply is_Some_None. by eapply val_stuck.
+  intros Hhead Hred. apply prim_head_reducible.
+  - eapply (reducible_fill (K:=ectx_language.fill K)), Hred. destruct Hhead; eauto.
+  - apply ectxi_language_sub_values. intros [] ? ->; inversion Hhead; eauto.
 Qed.
 
-Definition head_reduce_not_to_stuck e σ :=
+Definition head_reduce_not_to_stuck (e : expr) (σ : state) :=
   ∀ e' σ' efs, ectx_language.head_step e σ e' σ' efs → e' ≠ App (Lit $ LitInt 0) [].
 
 Lemma next_access_head_reducible_state e σ a l :
@@ -171,7 +162,7 @@ Lemma safe_step_not_reduce_to_stuck el σ K e e' σ' ef :
 Proof.
   intros Hsafe Hi Hstep e1 σ1 ? Hstep1 Hstuck.
   cut (reducible (fill K e1) σ1).
-  { subst. intros (?&?&?&?). eapply stuck_irreducible. done. }
+  { subst. intros (?&?&?&?). by eapply stuck_irreducible. }
   destruct (elem_of_list_split _ _ Hi) as (?&?&->).
   eapply Hsafe; last by (apply: fill_not_val; subst).
   - eapply rtc_l, rtc_l, rtc_refl.
@@ -188,7 +179,7 @@ Lemma safe_not_reduce_to_stuck el σ K e :
 Proof.
   intros Hsafe Hi e1 σ1 ? Hstep1 Hstuck.
   cut (reducible (fill K e1) σ1).
-  { subst. intros (?&?&?&?). eapply stuck_irreducible. done. }
+  { subst. intros (?&?&?&?). by eapply stuck_irreducible. }
   destruct (elem_of_list_split _ _ Hi) as (?&?&->).
   eapply Hsafe; last by (apply: fill_not_val; subst).
   - eapply rtc_l, rtc_refl.

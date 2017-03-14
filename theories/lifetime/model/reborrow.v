@@ -66,7 +66,7 @@ Proof.
       iNext; iFrame "Hinv". rewrite /lft_inv. iRight. iSplit; auto. }
     iMod (fupd_intro_mask') as "Hclose"; last iModIntro; first solve_ndisj.
     iNext. iMod "Hclose" as "_".
-    iApply (bor_fake with "LFT >"); first done.
+    iApply (bor_fake with "LFT [>]"); first done.
     iApply (lft_incl_dead with "[] H†"); first done.
     by iApply (lft_intersect_mono with "Hκ⊑"). }
   rewrite {1}/raw_bor /idx_bor_own /=; iDestruct "Hκ" as (i) "[Hi #Hislice]".

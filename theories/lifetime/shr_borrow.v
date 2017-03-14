@@ -86,14 +86,14 @@ Section shared_bors.
   Lemma shr_bor_fake E κ:
     ↑lftN ⊆ E → N ⊥ lftN → lft_ctx -∗ [†κ] ={E}=∗ &shr{κ,N}P.
   Proof.
-    iIntros (??) "#LFT#H†". iApply (bor_share with ">"); try done.
+    iIntros (??) "#LFT#H†". iApply (bor_share with "[>]"); try done.
     by iApply (bor_fake with "LFT H†").
   Qed.
 
   Lemma shr_bor_fake_lftN E κ:
     ↑lftN ⊆ E → lft_ctx -∗ [†κ] ={E}=∗ &shr{κ,lftN}P.
   Proof.
-    iIntros (?) "#LFT#H†". iApply (bor_share_lftN with ">"); try done.
+    iIntros (?) "#LFT#H†". iApply (bor_share_lftN with "[>]"); try done.
     by iApply (bor_fake with "LFT H†").
   Qed.
 End shared_bors.
