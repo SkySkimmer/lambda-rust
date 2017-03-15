@@ -87,8 +87,7 @@ Section rc.
         { apply auth_valid_discrete_2. done. }
         iMod (na_inv_alloc tid _ _ (rc_inv tid ν γ l' ty) with "[Ha Hν2 Hl' H† HPend]").
         { rewrite /rc_inv. iExists (Some (_, _)). iFrame. iExists _. iFrame "#∗".
-          (* FIXME: iFrame fails to frame Hν†. *)
-          iNext. iSplit; last by iAlways. by rewrite Qp_div_2. }
+          rewrite Qp_div_2; auto. }
         iMod (ty_share with "LFT HP Hν1") as "[??]"; first solve_ndisj.
         iExists _, _, _. iFrame. done. }
       iDestruct "HX" as (γ ν q') "(#Hinv & Hrc & #Hshr & Htok & #Hν†)".
@@ -109,7 +108,7 @@ Section rc.
       iMod ("Hclose1" with "[]") as "_"; first by auto.
       by iFrame "#∗".
     - iMod ("Hclose1" with "[]") as "_"; first by auto.
-      iApply step_fupd_intro; first solve_ndisj. iNext. by iFrame.
+      iApply step_fupd_intro; first solve_ndisj. by iFrame.
   Qed.
   Next Obligation.
     iIntros (ty κ κ' tid l) "#Hincl H". iDestruct "H" as (l') "[#Hl #Hshr]".
@@ -172,7 +171,7 @@ Section code.
         { exfalso. simpl in *. subst c. apply Hnle. done. }
         simpl in *. subst qa. wp_read. iApply "HΦ". iFrame. iRight. iModIntro. iSplit.
         { iPureIntro. apply Pos.lt_nle. done. }
-        iFrame "Hna". iExists _, _, q, q''. iFrame "#∗%". iSplitR; first by iAlways.
+        iFrame "Hna". iExists _, _, q, q''. iFrame "#∗%".
         iIntros (c' qx) "(Hst & Hl & Hq'' & Hna)". iApply "Hclose". iFrame "Hna".
         iExists _. iFrame "Hst". iDestruct "Hq''" as "[%|Hq'']".
         * iExists _. subst qx. iFrame "∗%". by iIntros "!> !#".
@@ -267,10 +266,8 @@ Section code.
     rewrite right_id -Some_op pair_op. iDestruct "Hνtok" as "[Hνtok1 Hνtok2]".
     iMod ("Hclose2" with "[$Hrctok] Hna") as "[Hα1 Hna]".
     iMod ("Hclose1" with "[Hrc● Hl' Hl'† Hνtok2 Hν† $Hna]") as "Hna".
-    { iExists _. iFrame "Hrc●". iExists _. rewrite Z.add_comm. iFrame.
-      (* FIXME: iFrame fails to frame Hνend. *)
-      iNext. iSplit; last by iAlways.
-      iPureIntro. rewrite [_ ⋅ _]comm frac_op' -assoc Qp_div_2. done. }
+    { iExists _. iFrame "Hrc●". iExists _. rewrite Z.add_comm. iFrame "∗ Hνend".
+      rewrite [_ ⋅ _]comm frac_op' -assoc Qp_div_2. auto. }
     (* Finish up the proof. *)
     iApply (type_type _ _ _ [ x ◁ box (&shr{α} rc ty); #lrc2 ◁ box (rc ty)]%TC
         with "[] LFT Hna [Hα1 Hα2] HL Hk [-]"); last first.
@@ -383,7 +380,7 @@ Section code.
         with "[] LFT Hna HE HL Hk [-]"); last first.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton.
         rewrite !tctx_hasty_val tctx_hasty_val' //. unlock. iFrame.
-        iRight. iExists _, _, _. iFrame "∗#". by iAlways. }
+        iRight. iExists _, _, _. iFrame "∗#". }
       iApply (type_sum_assign Σ[ ty; rc ty ]); [solve_typing..|].
       iApply type_jump; solve_typing.
   Qed.
@@ -523,7 +520,7 @@ Section code.
       iMod ("Hclose1" with "[] [Hrc' Hrctok Hν]") as "[Hrc' Hα]".
       { iIntros "!> HX". iModIntro. iExact "HX". }
       { iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame "Hrc'".
-        iRight. iExists _, _, _. iFrame "#∗". iNext. by iAlways. }
+        iRight. iExists _, _, _. iFrame "#∗". }
       iApply (type_type _ _ _ [ x ◁ box (uninit 2);
                                 rcx ◁ box (uninit 1)]%TC
         with "[] LFT Hna [Hα] HL Hk [-]"); last first.

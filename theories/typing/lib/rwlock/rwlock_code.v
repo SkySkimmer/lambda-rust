@@ -213,7 +213,7 @@ Section rwlock_functions.
             iMod (ty_share with "LFT Hst Htok") as "[#Hshr Htok]". solve_ndisj.
             iFrame "#". iDestruct ("Hclose" with "Htok") as "[$ Htok2]".
             iExists _. iFrame. iExists _, _. iSplitR; first done. iFrame "#∗".
-            rewrite Qp_div_2. iSplitR; first done. iSplitL; last done.
+            rewrite Qp_div_2. iSplitL; last done.
             iIntros "!> Hν". iApply "Hh". rewrite -lft_dead_or. auto. }
         iMod ("Hclose'" with "[$INV]") as "Hβtok1".
         iApply (wp_if _ true). iIntros "!>!>".
