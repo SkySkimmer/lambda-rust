@@ -582,5 +582,19 @@ Section subtyping.
   Qed.
 End subtyping.
 
+Section type_util.
+  Context `{typeG Σ}.
+  
+  Lemma heap_mapsto_ty_own l ty tid :
+    l ↦∗: ty_own ty tid ⊣⊢ ∃ (vl : vec val ty.(ty_size)), l ↦∗ vl ∗ ty_own ty tid vl.
+  Proof.
+    iSplit.
+    - iIntros "H". iDestruct "H" as (vl) "[Hl Hown]".
+      iDestruct (ty_size_eq with "Hown") as %<-.
+      iExists (list_to_vec vl). rewrite vec_to_list_of_list. iFrame.
+    - iIntros "H". iDestruct "H" as (vl) "[Hl Hown]". eauto with iFrame.
+  Qed.
+End type_util.
+
 Hint Resolve subtype_refl eqtype_refl : lrust_typing.
 Hint Opaque subtype eqtype : lrust_typing.

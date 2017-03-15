@@ -28,14 +28,12 @@ Section refcell_functions.
     iIntros (r tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite (Nat2Z.id (S ty.(ty_size))) tctx_interp_cons
             tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hr Hx]". destruct x as [[|lx|]|]; try done.
-    iDestruct "Hx" as "[Hx Hx†]". iDestruct "Hx" as (vl) "[Hx↦ Hx]".
-    destruct r as [[|lr|]|]; try done. iDestruct "Hr" as "[Hr Hr†]".
-    iDestruct "Hr" as (vl') "Hr". rewrite uninit_own.
-    iDestruct "Hr" as "[Hr↦ >SZ]". destruct vl' as [|]; iDestruct "SZ" as %[=].
-    rewrite heap_mapsto_vec_cons. iDestruct "Hr↦" as "[Hr↦0 Hr↦1]". wp_op.
+    iDestruct "HT" as "[Hr Hx]".
+    iDestruct (ownptr_own with "Hx") as (lx vlx) "(% & Hx↦ & Hx & Hx†)". subst x.
+    iDestruct (ownptr_uninit_own with "Hr") as (lr vlr) "(% & Hr↦ & Hr†)". subst r.
+    inv_vec vlr=>??. iDestruct (heap_mapsto_vec_cons with "Hr↦") as "[Hr↦0 Hr↦1]". wp_op.
     rewrite shift_loc_0. wp_write. wp_op. iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
-    wp_apply (wp_memcpy with "[$Hr↦1 $Hx↦]"); [done||lia..|].
+    wp_apply (wp_memcpy with "[$Hr↦1 $Hx↦]"); [by auto using vec_to_list_length..|].
     iIntros "[Hr↦1 Hx↦]". wp_seq.
     iApply (type_type _ _ _ [ #lx ◁ box (uninit (ty_size ty)); #lr ◁ box (refcell ty)]%TC
         with "[] LFT Hna HE HL Hk [-]"); last first.
@@ -65,20 +63,20 @@ Section refcell_functions.
     iIntros (r tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
     rewrite (Nat2Z.id (ty.(ty_size))) tctx_interp_cons
             tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hr Hx]". destruct x as [[|lx|]|]; try done.
-    iDestruct "Hx" as "[Hx Hx†]".
-    iDestruct "Hx" as ([|[[]|]vl]) "[Hx↦ Hx]"; try iDestruct "Hx" as ">[]".
-    destruct r as [[|lr|]|]; try done. iDestruct "Hr" as "[Hr Hr†]".
-    iDestruct "Hr" as (vl') "Hr". rewrite uninit_own heap_mapsto_vec_cons.
-    iDestruct "Hr" as "[Hr↦ >%]". iDestruct "Hx↦" as "[Hx↦0 Hx↦1]". wp_op.
-    iDestruct "Hx" as "[% Hx]". iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
-    wp_apply (wp_memcpy with "[$Hr↦ $Hx↦1]"); [done||lia..|].
+    iDestruct "HT" as "[Hr Hx]".
+    iDestruct (ownptr_own with "Hx") as (lx vlx) "(% & >Hx↦ & Hx & Hx†)". subst x.
+    inv_vec vlx=>-[[|?|?]|????] vl; try iDestruct "Hx" as ">[]". simpl vec_to_list.
+    iDestruct "Hx" as "[>% Hx]".
+    iDestruct (heap_mapsto_vec_cons with "Hx↦") as "[Hx↦0 Hx↦1]".
+    iDestruct (ownptr_uninit_own with "Hr") as (lr vlr) "(% & Hr↦ & Hr†)". subst r.
+    wp_op. wp_apply (wp_memcpy with "[$Hr↦ $Hx↦1]"); [by auto using vec_to_list_length..|].
     iIntros "[Hr↦ Hx↦1]". wp_seq.
     iApply (type_type _ _ _ [ #lx ◁ box (uninit (S (ty_size ty))); #lr ◁ box ty]%TC
         with "[] LFT Hna HE HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //. iFrame.
       iSplitR "Hr↦ Hx".
-      - iExists (_::_). rewrite heap_mapsto_vec_cons uninit_own -Hsz. iFrame. auto.
+      - iExists (_::_). rewrite heap_mapsto_vec_cons uninit_own. iFrame.
+        rewrite /= vec_to_list_length. auto.
       - iExists vl. iFrame. }
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.

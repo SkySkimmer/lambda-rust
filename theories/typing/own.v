@@ -174,16 +174,38 @@ Section box.
 
   Global Instance box_ne : NonExpansive box.
   Proof. apply type_contractive_ne, _. Qed.
-
-(* For now, we use the instances inherited from own_ptr. *)
-(*  Global Instance box_send ty :
-    Send ty → Send (box ty).
-  Proof. apply _. Qed.
-
-  Global Instance box_sync ty :
-    Sync ty → Sync (box ty).
-  Proof. apply _. Qed. *)
 End box.
+
+Section util.
+  Context `{typeG Σ}.
+
+  Lemma ownptr_own n ty tid v :
+    (own_ptr n ty).(ty_own) tid [v] ⊣⊢
+       ∃ (l : loc) (vl : vec val ty.(ty_size)), ⌜v = #l⌝ ∗ ▷ l ↦∗ vl ∗ ▷ ty.(ty_own) tid vl ∗ ▷ freeable_sz n ty.(ty_size) l.
+  Proof.
+    iSplit.
+    - iIntros "Hown". destruct v as [[|l|]|]; try done.
+      iExists l. iDestruct "Hown" as "[Hown $]". rewrite heap_mapsto_ty_own.
+      iDestruct "Hown" as (vl) "[??]". eauto with iFrame.
+    - iIntros "Hown". iDestruct "Hown" as (l vl) "(% & ? & ? & ?)". subst v.
+      iFrame. iExists _. iFrame.
+  Qed.
+
+  Lemma ownptr_uninit_own n m tid v :
+    (own_ptr n (uninit m)).(ty_own) tid [v] ⊣⊢
+         ∃ (l : loc) (vl' : vec val m), ⌜v = #l⌝ ∗ ▷ l ↦∗ vl' ∗ ▷ freeable_sz n m l.
+  Proof.
+    rewrite ownptr_own. apply uPred.exist_proper=>l. iSplit.
+    (* FIXME: The goals here look rather confusing:  One cannot tell that we are looking at
+       a statement in Iris; the top-level → could just as well be a Coq implication. *)
+    - iIntros "H". iDestruct "H" as (vl) "(% & Hl & _ & $)". subst v.
+      rewrite -uPred.sep_exist_l. iSplit; first done.
+      iNext. eauto with iFrame.
+    - iIntros "H". iDestruct "H" as (vl) "(% & Hl & $)". subst v.
+      iExists vl. rewrite uninit_own vec_to_list_length.
+      eauto with iFrame.
+  Qed.
+End util.
 
 Section typing.
   Context `{typeG Σ}.
