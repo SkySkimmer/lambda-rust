@@ -77,7 +77,7 @@ Section rc.
       iClear "H↦ Hinv Hpb".
       iMod (bor_acc_cons with "LFT Hb Htok") as "[HP Hclose2]"; first solve_ndisj.
       set (X := (∃ _ _ _, _)%I).
-      iModIntro. iNext. iAssert X with ">[HP]" as "HX".
+      iModIntro. iNext. iAssert X with "[>HP]" as "HX".
       { iDestruct "HP" as "[[Hl' [H† Hown]]|$]"; last done.
         iMod (lft_create with "LFT") as (ν) "[[Hν1 Hν2] #Hν†]"; first solve_ndisj.
         (* TODO: We should consider changing the statement of bor_create to dis-entangle the two masks such that this is no longer necessary. *)
@@ -96,7 +96,7 @@ Section rc.
       { iNext. iIntros "HX". iModIntro. iNext.
         iRight. iExists γ, ν, q'. iExact "HX". }
       { iNext. by iFrame "#∗". }
-      iAssert C with ">[HX]" as "#HC".
+      iAssert C with "[>HX]" as "#HC".
       { iExists _, _, _. iFrame "Hinv".
         iMod (bor_sep with "LFT HX") as "[_ HX]"; first solve_ndisj.
         iMod (bor_sep with "LFT HX") as "[Hrc HX]"; first solve_ndisj.
