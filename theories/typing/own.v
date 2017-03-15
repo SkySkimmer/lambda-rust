@@ -199,8 +199,7 @@ Section util.
     (* FIXME: The goals here look rather confusing:  One cannot tell that we are looking at
        a statement in Iris; the top-level → could just as well be a Coq implication. *)
     - iIntros "H". iDestruct "H" as (vl) "(% & Hl & _ & $)". subst v.
-      rewrite -uPred.sep_exist_l. iSplit; first done.
-      iNext. eauto with iFrame.
+      iExists vl. iSplit; done.
     - iIntros "H". iDestruct "H" as (vl) "(% & Hl & $)". subst v.
       iExists vl. rewrite uninit_own vec_to_list_length.
       eauto with iFrame.
