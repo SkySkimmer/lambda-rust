@@ -20,9 +20,7 @@ lrust-coq8.6:
     - opamroot/
   only:
   - master
-  - ci
-  - /^ralf/ci//
-  - jh/undiscriminated_hintdb
+  - /^ci/
   artifacts:
     paths:
     - build-time.txt
