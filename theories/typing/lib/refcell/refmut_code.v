@@ -188,22 +188,22 @@ Section refmut_functions.
     rewrite -(freeable_sz_split _ 1 1). iDestruct "Href†" as "[Href†1 Href†2]".
     destruct (Qp_lower_bound qE 1) as (q & qE' & qν' & -> & EQ1).
       rewrite [in (_).[ν]%I] EQ1.
-    iDestruct "HE" as "[HE HE']". iDestruct "Hν" as "[Hν Hν']".
+    iDestruct (@fractional_split with "HE") as "[[Hα HE] HE']".
+    iDestruct "Hν" as "[Hν Hν']".
     remember (RecV "k" [] (ret [ LitV lref])%E)%V as k eqn:EQk.
     iApply (wp_let' _ _ _ _ k). { subst. solve_to_val. } simpl_subst.
     iApply (type_type ((α ⊓ ν) :: E)%EL []
         [k ◁cont([], λ _:vec val 0, [ #lref ◁ own_ptr 2 (&uniq{α ⊓ ν}ty2)])]%CC
         [ f ◁ box (fn(∀ α, [α]%EL ++ E; envty, &uniq{α}ty1) → &uniq{α}ty2);
           #lref ◁ own_ptr 2 (&uniq{α ⊓ ν}ty1); env ◁ box envty ]%TC
-       with "[] LFT Hna [HE Hν] HL [Hk HE' Hν' Href↦2 Hγ Href†2]"); first last.
+       with "[] LFT Hna [$HE Hα Hν] HL [Hk HE' Hν' Href↦2 Hγ Href†2]"); first last.
     { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
       iFrame. iApply tctx_hasty_val'. done. iFrame. iExists [_].
       rewrite heap_mapsto_vec_singleton. by iFrame. }
     { rewrite !cctx_interp_singleton /=. iIntros "HE". iIntros (args) "Hna HL HT".
-      inv_vec args. subst. simpl. wp_rec.
-      rewrite {3}/elctx_interp big_sepL_cons /= -lft_tok_sep.
-      iDestruct "HE" as "[[Hα Hν] HE]". iSpecialize ("Hk" with "[Hα HE $HE']").
-      { rewrite /elctx_interp big_sepL_cons. iFrame. }
+      inv_vec args. subst. simpl. wp_rec. iDestruct "HE" as "[Hαν HE]".
+      iDestruct (lft_tok_sep with "Hαν") as "[Hα Hν]".
+      iSpecialize ("Hk" with "[$HE' $Hα $HE]").
       iApply ("Hk" $! [# #lref] with "Hna HL").
       rewrite !tctx_interp_singleton !tctx_hasty_val' //.
       iDestruct "HT" as "[Href Ḥref†2]".
@@ -212,7 +212,7 @@ Section refmut_functions.
       iExists [ #lv'; #lrc].
       rewrite (heap_mapsto_vec_cons _ _ _ [_]) !heap_mapsto_vec_singleton. iFrame.
       iExists ν. rewrite /= EQ1. eauto 20 with iFrame. }
-    { rewrite /elctx_interp !big_sepL_cons /= -lft_tok_sep. iFrame. }
+    { rewrite /= -lft_tok_sep. iFrame. }
     iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (f'). simpl_subst.
     iApply type_letalloc_1; [solve_typing..|]. iIntros (x). simpl_subst.
