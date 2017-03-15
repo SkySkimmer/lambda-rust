@@ -342,7 +342,7 @@ Section lft_contexts.
     iMod (HE1 with "HE1 HL1") as (qE1) "[HE1 Hclose1]". done.
     iMod (HE2 with "HE2 HL2") as (qE2) "[HE2 Hclose2]". done.
     destruct (Qp_lower_bound qE1 qE2) as (q & qE1' & qE2' & -> & ->). iExists q.
-    rewrite !fractional (fractional_half_equiv qE) /elctx_interp big_sepL_app.
+    rewrite !fractional [elctx_interp E qE]fractional_half /elctx_interp big_sepL_app.
     iDestruct "HE1" as "[$ HE1]". iDestruct "HE2" as "[$ HE2]". iIntros "!> [Hq1 Hq2]".
     iMod ("Hclose1" with "[$HE1 $Hq1]") as "[$ $]". iApply "Hclose2". iFrame.
   Qed.
