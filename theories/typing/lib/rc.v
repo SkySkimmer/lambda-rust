@@ -163,8 +163,7 @@ Section code.
         { iExists None. auto. }
         iSpecialize ("Hνend" with "[Hν1 Hν2]").
         { rewrite -H0. iFrame. }
-        iApply wp_mask_mono; last iApply (wp_step_fupd with "Hνend"); [done..|try solve_ndisj|].
-        { (* FIXME: solve_ndisj should solve this... *) set_solver+. }
+        iApply wp_mask_mono; last iApply (wp_step_fupd with "Hνend"); [done..|solve_ndisj|].
         wp_read. iIntros "#Hν". iMod ("Hν†" with "Hν") as "Hown". iModIntro.
         iApply "HΦ". iFrame. iLeft. auto with iFrame.
       + destruct Hst as [[??%leibniz_equiv]|[[q'' Hqa%leibniz_equiv] ?%pos_included]%prod_included].
