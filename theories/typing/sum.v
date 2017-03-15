@@ -30,15 +30,13 @@ Section sum.
   Global Instance emp_sync : Sync ∅.
   Proof. iIntros (????) "[]". Qed.
 
-  Definition list_max (l : list nat) := foldr max 0%nat l.
-
   Definition is_pad i tyl (vl : list val) : iProp Σ :=
-    ⌜((nth i tyl ∅).(ty_size) + length vl)%nat = (list_max $ map ty_size tyl)⌝%I.
+    ⌜((nth i tyl ∅).(ty_size) + length vl)%nat = (max_list_with ty_size tyl)⌝%I.
 
   Lemma split_sum_mt l tid q tyl :
     (l ↦∗{q}: λ vl,
          ∃ (i : nat) vl' vl'', ⌜vl = #i :: vl' ++ vl''⌝ ∗
-                               ⌜length vl = S (list_max $ map ty_size tyl)⌝ ∗
+                               ⌜length vl = S (max_list_with ty_size tyl)⌝ ∗
                                ty_own (nth i tyl ∅) tid vl')%I
     ⊣⊢ ∃ (i : nat), (l ↦{q} #i ∗
                        shift_loc l (S $ (nth i tyl ∅).(ty_size)) ↦∗{q}: is_pad i tyl) ∗
@@ -62,10 +60,10 @@ Section sum.
   Qed.
 
   Program Definition sum (tyl : list type) :=
-    {| ty_size := S (list_max $ map ty_size tyl);
+    {| ty_size := S (max_list_with ty_size tyl);
        ty_own tid vl :=
          (∃ (i : nat) vl' vl'', ⌜vl = #i :: vl' ++ vl''⌝ ∗
-                                ⌜length vl = S (list_max $ map ty_size tyl)⌝ ∗
+                                ⌜length vl = S (max_list_with ty_size tyl)⌝ ∗
                                 (nth i tyl ∅).(ty_own) tid vl')%I;
        ty_shr κ tid l :=
          (∃ (i : nat),
@@ -96,7 +94,7 @@ Section sum.
   Global Instance sum_type_ne n : Proper (Forall2 (type_dist2 n) ==> type_dist2 n) sum.
   Proof.
     intros x y EQ.
-    assert (EQmax : list_max (map ty_size x) = list_max (map ty_size y)).
+    assert (EQmax : max_list_with ty_size x = max_list_with ty_size y).
     { induction EQ as [|???? EQ _ IH]=>//=.
       rewrite IH. f_equiv. apply EQ. }
     (* TODO: If we had the right lemma relating nth, (Forall2 R) and R, we should
@@ -114,7 +112,7 @@ Section sum.
   Global Instance sum_ne : NonExpansive sum.
   Proof.
     intros n x y EQ.
-    assert (EQmax : list_max (map ty_size x) = list_max (map ty_size y)).
+    assert (EQmax : max_list_with ty_size x = max_list_with ty_size y).
     { induction EQ as [|???? EQ _ IH]=>//=.
       rewrite IH. f_equiv. apply EQ. }
     (* TODO: If we had the right lemma relating nth, (Forall2 R) and R, we should
@@ -133,7 +131,7 @@ Section sum.
     Proper (Forall2 (subtype E L) ==> subtype E L) sum.
   Proof.
     iIntros (tyl1 tyl2 Htyl) "#? %".
-    iAssert (⌜list_max (map ty_size tyl1) = list_max (map ty_size tyl2)⌝%I) with "[#]" as %Hleq.
+    iAssert (⌜max_list_with ty_size tyl1 = max_list_with ty_size tyl2⌝%I) with "[#]" as %Hleq.
     { iInduction Htyl as [|???? Hsub] "IH"; first done.
       iDestruct (Hsub with "[] []") as "(% & _ & _)"; [done..|].
       iDestruct "IH" as %IH. iPureIntro. simpl. inversion_clear IH. by f_equal. }
@@ -206,7 +204,7 @@ Section sum.
         apply shr_locsE_subseteq. omega. }
       iDestruct (na_own_acc with "Htl") as "[$ Htlclose]".
       { apply difference_mono_l.
-        trans (shr_locsE (shift_loc l 1) (list_max (map ty_size tyl))).
+        trans (shr_locsE (shift_loc l 1) (max_list_with ty_size tyl)).
         - apply shr_locsE_subseteq. omega.
         - set_solver+. }
       destruct (Qp_lower_bound q'1 q'2) as (q' & q'01 & q'02 & -> & ->).
