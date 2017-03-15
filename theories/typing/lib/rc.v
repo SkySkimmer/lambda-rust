@@ -197,10 +197,8 @@ Section code.
       iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (rcbox); simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (rc); simpl_subst.
-    iIntros (tid qE) "#LFT Hna HE HL Hk HT".
-    rewrite (Nat2Z.id (S ty.(ty_size))) 2!tctx_interp_cons
-            tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hrc [Hrcbox Hx]]".
+    iIntros (tid qE) "#LFT Hna HE HL Hk [Hrc [Hrcbox [Hx _]]]".
+    rewrite (Nat2Z.id (S ty.(ty_size))) !tctx_hasty_val.
     iDestruct (ownptr_own with "Hx") as (lx vlx) "(% & Hx↦ & Hx & Hx†)". subst x.
     iDestruct (ownptr_uninit_own with "Hrcbox") as (lrcbox vlrcbox) "(% & Hrcbox↦ & Hrcbox†)". subst rcbox.
     inv_vec vlrcbox=>??. iDestruct (heap_mapsto_vec_cons with "Hrcbox↦") as "[Hrcbox↦0 Hrcbox↦1]".
@@ -239,15 +237,13 @@ Section code.
     iApply type_new; [solve_typing..|]; iIntros (rc2); simpl_subst.
     rewrite (Nat2Z.id 1). (* Having to do this is rather annoying... *) 
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
-    iIntros (tid qE) "#LFT Hna HE HL Hk".
-    rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iIntros "[Hx [Hrc' Hrc2]]". rewrite [[x]]lock.
+    iIntros (tid qE) "#LFT Hna HE HL Hk [Hx [Hrc' [Hrc2 _]]]".
+    rewrite !tctx_hasty_val [[x]]lock.
     destruct rc' as [[|lrc|]|]; try done. iDestruct "Hrc'" as (l') "[#Hlrc #Hshr]".
     iDestruct (ownptr_uninit_own with "Hrc2") as (lrc2 vlrc2) "(% & Hrc2 & Hrc2†)".
     subst rc2. inv_vec vlrc2=>rc2. rewrite heap_mapsto_vec_singleton.
     (* All right, we are done preparing our context. Let's get going. *)
-    rewrite {1}/elctx_interp big_sepL_singleton.
-    iDestruct "HE" as "[Hα1 Hα2]". wp_bind (!_)%E.
+    iDestruct "HE" as "[[Hα1 Hα2] _]". wp_bind (!_)%E.
     iSpecialize ("Hshr" with "[] Hα1"); last iApply (wp_step_fupd with "Hshr"); [done..|].
     iMod (frac_bor_acc with "LFT Hlrc Hα2") as (q') "[Hlrc↦ Hclose]"; first solve_ndisj.
     rewrite heap_mapsto_vec_singleton. iApply wp_fupd. wp_read.
@@ -281,7 +277,7 @@ Section code.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       unlock. iFrame "Hx". iFrame "Hrc2†". iExists [_]. rewrite heap_mapsto_vec_singleton.
       iFrame "Hrc2". iNext. iRight. iExists _, ν, _. iFrame "#∗". }
-    { rewrite /elctx_interp big_sepL_singleton. iFrame. }
+    { by iFrame. }
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.
@@ -300,15 +296,14 @@ Section code.
       iIntros (α ret arg). inv_vec arg=>rcx. simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst. rewrite (Nat2Z.id 1).
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
-    iIntros (tid qE) "#LFT Hna HE HL Hk".
-    rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iIntros "[Hrcx [Hrc' Hx]]". rewrite [[rcx]]lock.
+    iIntros (tid qE) "#LFT Hna HE HL Hk [Hrcx [Hrc' [Hx _]]]".
+    rewrite !tctx_hasty_val [[rcx]]lock.
     iDestruct (ownptr_uninit_own with "Hx") as (lrc2 vlrc2) "(% & Hx & Hx†)".
     subst x. inv_vec vlrc2=>?. rewrite heap_mapsto_vec_singleton. 
     destruct rc' as [[|rc'|]|]; try done. simpl of_val.
     iDestruct "Hrc'" as (l') "[#Hrc' #Hdelay]".
     (* All right, we are done preparing our context. Let's get going. *)
-    rewrite {1}/elctx_interp big_sepL_singleton. iDestruct "HE" as "[Hα1 Hα2]". wp_bind (!_)%E.
+    iDestruct "HE" as "[[Hα1 Hα2] _]". wp_bind (!_)%E.
     iSpecialize ("Hdelay" with "[] Hα1"); last iApply (wp_step_fupd with "Hdelay"); [done..|].
     iMod (frac_bor_acc with "LFT Hrc' Hα2") as (q') "[Hrc'↦ Hclose]"; first solve_ndisj.
     rewrite heap_mapsto_vec_singleton. iApply wp_fupd. wp_read.
@@ -321,7 +316,7 @@ Section code.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val tctx_hasty_val' //.
       unlock. iFrame "Hrcx". iFrame "Hx†". iExists [_]. rewrite heap_mapsto_vec_singleton.
       iFrame "Hx". iNext. iApply ty_shr_mono; done. }
-    { rewrite /elctx_interp big_sepL_singleton. iFrame. }
+    { by iFrame. }
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.
@@ -356,11 +351,10 @@ Section code.
       iApply type_jump; solve_typing. }
     iIntros (k). simpl_subst.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
-    iIntros (tid qE) "#LFT Hna HE HL Hk".
-    rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iIntros "[Hrcx [Hrc' Hx]]".
-    destruct rc' as [[|rc'|]|]; try done. rewrite [[rcx]]lock [[x]]lock [[ #rc' ]]lock.
-    wp_op. rewrite shift_loc_0. rewrite -(lock [ #rc' ]).
+    iIntros (tid qE) "#LFT Hna HE HL Hk [Hrcx [Hrc' [Hx _]]]".
+    rewrite !tctx_hasty_val [[rcx]]lock [[x]]lock.
+    destruct rc' as [[|rc'|]|]; try done.
+    rewrite [[ #rc' ]]lock. wp_op. rewrite shift_loc_0 -(lock [ #rc' ]).
     wp_apply (rc_check_unique with "[$Hna $Hrc']"); first solve_ndisj.
     iIntros (c) "(Hrc & Hc)". wp_let.
     iDestruct "Hc" as "[(% & Hrc† & Hna & Hown)|(% & Hna & Hproto)]".
@@ -424,10 +418,9 @@ Section code.
       iApply type_jump; solve_typing. }
     iIntros (k). simpl_subst.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
-    iIntros (tid qE) "#LFT Hna HE HL Hk".
-    rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iIntros "[Hrcx [Hrc' Hx]]".
-    destruct rc' as [[|rc'|]|]; try done. rewrite [[rcx]]lock [[x]]lock [[ #rc' ]]lock.
+    iIntros (tid qE) "#LFT Hna HE HL Hk [Hrcx [Hrc' [Hx _]]]".
+    rewrite !tctx_hasty_val [[rcx]]lock [[x]]lock.
+    destruct rc' as [[|rc'|]|]; try done. rewrite [[ #rc' ]]lock.
     wp_op. rewrite shift_loc_0. rewrite -(lock [ #rc' ]).
     wp_apply (rc_check_unique with "[$Hna $Hrc']"); first solve_ndisj.
     iIntros (c) "(Hrc & Hc)". wp_let. wp_op. rewrite shift_loc_0.
@@ -496,12 +489,11 @@ Section code.
       iApply type_jump; solve_typing. }
     iIntros (k). simpl_subst.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
-    iIntros (tid qE) "#LFT Hna HE HL Hk".
-    rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iIntros "[Hrcx [Hrc' Hx]]".
-    destruct rc' as [[|rc'|]|]; try done. rewrite [[rcx]]lock [[x]]lock.
-    rewrite {1}/elctx_interp big_sepL_singleton.
-    iMod (bor_acc_cons with "LFT Hrc' HE") as "[Hrc' Hclose1]"; first solve_ndisj.
+    iIntros (tid qE) "#LFT Hna HE HL Hk [Hrcx [Hrc' [Hx _]]]".
+    rewrite !tctx_hasty_val  [[rcx]]lock [[x]]lock.
+    destruct rc' as [[|rc'|]|]; try done.
+    iDestruct "HE" as "[Hα _]".
+    iMod (bor_acc_cons with "LFT Hrc' Hα") as "[Hrc' Hclose1]"; first solve_ndisj.
     iDestruct (heap_mapsto_ty_own with "Hrc'") as (vl) "[>Hrc' Hrcown]".
     inv_vec vl=>l. rewrite heap_mapsto_vec_singleton.
     wp_read. destruct l as [[|l|]|]; try done.
@@ -512,32 +504,32 @@ Section code.
     iIntros (c) "(Hrc & Hc)". wp_let. wp_op; intros Hc.
     - wp_if. iDestruct "Hc" as "[(% & Hl† & Hna & Hown)|(% & _)]"; last first.
       { exfalso. move:Hc. move/Zpos_eq_iff. intros->. exact: Pos.lt_irrefl. }
-      subst c. iMod ("Hclose1" with "[Hrc Hrc' Hl†] [Hown]") as "[Hown HE]"; [|iNext; iExact "Hown"|].
+      subst c. iMod ("Hclose1" with "[Hrc Hrc' Hl†] [Hown]") as "[Hown Hα]"; [|iNext; iExact "Hown"|].
       { iIntros "!> Hown". iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame "Hrc'".
         iLeft. by iFrame. }
       iApply (type_type _ _ _ [ x ◁ box (uninit 2);
                                  #l +ₗ #1 ◁ &uniq{α} ty;
                                 rcx ◁ box (uninit 1)]%TC
-        with "[] LFT Hna [HE] HL Hk [-]"); last first.
+        with "[] LFT Hna [Hα] HL Hk [-]"); last first.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val tctx_hasty_val' //.
         unlock. iFrame. }
-      { rewrite /elctx_interp big_sepL_singleton. done. }
+      { by iFrame. }
       iApply (type_sum_assign (option (&uniq{_} _))); [solve_typing..|].
       iApply type_jump; solve_typing.
     - wp_if. iDestruct "Hc" as "[(% & _)|(% & Hna & Hproto)]".
       { exfalso. subst c. done. }
       iDestruct "Hproto" as (γ ν q q') "(#Hinv & Hrctok & Hrc● & Hν & #Hshr & #Hν† & Hclose2)".
       iMod ("Hclose2" with "[$Hrc● $Hrc $Hna]") as "Hna"; first by auto.
-      iMod ("Hclose1" with "[] [Hrc' Hrctok Hν]") as "[Hrc' HE]".
+      iMod ("Hclose1" with "[] [Hrc' Hrctok Hν]") as "[Hrc' Hα]".
       { iIntros "!> HX". iModIntro. iExact "HX". }
       { iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame "Hrc'".
         iRight. iExists _, _, _. iFrame "#∗". iNext. by iAlways. }
       iApply (type_type _ _ _ [ x ◁ box (uninit 2);
                                 rcx ◁ box (uninit 1)]%TC
-        with "[] LFT Hna [HE] HL Hk [-]"); last first.
+        with "[] LFT Hna [Hα] HL Hk [-]"); last first.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
         unlock. iFrame. }
-      { rewrite /elctx_interp big_sepL_singleton. done. }
+      { by iFrame. }
       iApply (type_sum_unit (option (&uniq{_} _))); [solve_typing..|].
       iApply type_jump; solve_typing.
   Qed.
