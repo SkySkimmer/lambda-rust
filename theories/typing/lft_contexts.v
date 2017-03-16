@@ -55,7 +55,6 @@ Section lft_contexts.
   Global Instance elctx_elt_interp_fractional x:
     Fractional (elctx_elt_interp x).
   Proof. destruct x; unfold elctx_elt_interp; apply _. Qed.
-  Typeclasses Opaque elctx_elt_interp.
   Definition elctx_elt_interp_0 (x : elctx_elt) : iProp Σ :=
     match x with
     | ELCtx_Alive κ => True%I
@@ -64,7 +63,6 @@ Section lft_contexts.
   Global Instance elctx_elt_interp_0_persistent x:
     PersistentP (elctx_elt_interp_0 x).
   Proof. destruct x; apply _. Qed.
-  Typeclasses Opaque elctx_elt_interp_0.
 
   Lemma elctx_elt_interp_persist x q :
     elctx_elt_interp x q -∗ elctx_elt_interp_0 x.
@@ -82,7 +80,6 @@ Section lft_contexts.
   Global Instance elctx_interp_permut:
     Proper ((≡ₚ) ==> eq ==> (⊣⊢)) elctx_interp.
   Proof. intros ????? ->. by apply big_opL_permutation. Qed.
-  Typeclasses Opaque elctx_interp.
 
   Definition elctx_interp_0 (E : elctx) : iProp Σ :=
     ([∗ list] x ∈ E, elctx_elt_interp_0 x)%I.
@@ -93,7 +90,6 @@ Section lft_contexts.
   Global Instance elctx_interp_0_permut:
     Proper ((≡ₚ) ==> (⊣⊢)) elctx_interp_0.
   Proof. intros ???. by apply big_opL_permutation. Qed.
-  Typeclasses Opaque elctx_interp_0.
 
   Lemma elctx_interp_persist x q :
     elctx_interp x q -∗ elctx_interp_0 x.
@@ -119,7 +115,6 @@ Section lft_contexts.
       rewrite (inj (lft_intersect (foldr lft_intersect static κs)) κ0' κ0); last congruence.
       iExists κ0. by iFrame "∗%".
   Qed.
-  Typeclasses Opaque llctx_elt_interp.
 
   Definition llctx_elt_interp_0 (x : llctx_elt) : Prop :=
     let κ' := foldr lft_intersect static (x.2) in (∃ κ0, x.1 = κ' ⊓ κ0).
@@ -142,7 +137,6 @@ Section lft_contexts.
   Global Instance llctx_interp_permut:
     Proper ((≡ₚ) ==> eq ==> (⊣⊢)) llctx_interp.
   Proof. intros ????? ->. by apply big_opL_permutation. Qed.
-  Typeclasses Opaque llctx_interp.
 
   Definition llctx_interp_0 (L : llctx) : Prop :=
     ∀ x, x ∈ L → llctx_elt_interp_0 x.
@@ -274,7 +268,6 @@ Section lft_contexts.
   Lemma lctx_lft_alive_external κ: (ELCtx_Alive κ) ∈ E → lctx_lft_alive κ.
   Proof.
     iIntros ([i HE]%elem_of_list_lookup_1 F qE qL ?) "HE $ !>".
-    rewrite /elctx_interp /elctx_elt_interp.
     iDestruct (big_sepL_lookup_acc with "HE") as "[Hκ Hclose]". done.
     iExists qE. iFrame. iIntros "?!>". by iApply "Hclose".
   Qed.
@@ -321,7 +314,7 @@ Section lft_contexts.
     iDestruct "Htok" as "[$ Htok]". iDestruct "HE'" as "[Hf HE']".
     iSplitL "Hf". by rewrite /elctx_interp.
     iIntros "!>[Htok' ?]". iMod ("Hclose" with "[$Htok $Htok']") as "[$$]".
-    iApply "Hclose'". iFrame. by rewrite /elctx_interp.
+    iApply "Hclose'". iFrame.
   Qed.
 
   Lemma elctx_sat_lft_incl E' κ κ' :
@@ -331,8 +324,7 @@ Section lft_contexts.
     iAssert (κ ⊑ κ')%I with "[#]" as "#Hincl". iApply (Hκκ' with "[HE] [HL]").
       by iApply elctx_interp_persist. by iApply llctx_interp_persist.
     iMod (HE' with "HE HL") as (q) "[HE' Hclose']". done.
-    iExists q. rewrite {1 2 4 5}/elctx_interp big_sepL_cons /=.
-    iIntros "{$Hincl $HE'}!>[_ ?]". by iApply "Hclose'".
+    iExists q. iFrame "HE'". iIntros "{$Hincl}!>[_ ?]". by iApply "Hclose'".
   Qed.
 
   Lemma elctx_sat_app E1 E2 :
@@ -467,8 +459,7 @@ Section elctx_incl.
     iDestruct (Hκκ' with "[HE HE1'] HL") as "#Hκκ'".
     { rewrite /elctx_interp_0 big_sepL_app. auto. }
     iMod (HE2 with "HE HL HE1") as (qE2) "[HE2 Hclose']". done.
-    iExists qE2. rewrite /elctx_interp big_sepL_cons /=. iFrame "∗#".
-    iIntros "!> [_ HE2']". by iApply "Hclose'".
+    iExists qE2. iFrame "∗#". iIntros "!> [_ HE2']". by iApply "Hclose'".
   Qed.
 End elctx_incl.
 
