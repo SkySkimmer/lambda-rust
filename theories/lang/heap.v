@@ -139,13 +139,11 @@ Section heap.
   Global Instance heap_freeable_timeless q l n : TimelessP (†{q}l…n).
   Proof. rewrite heap_freeable_eq /heap_freeable_def. apply _. Qed.
 
-  Lemma heap_mapsto_agree l q1 q2 v1 v2 :
-    l ↦{q1} v1 ∗ l ↦{q2} v2 ⊢ ⌜v1 = v2⌝.
+  Lemma heap_mapsto_agree l q1 q2 v1 v2 : l ↦{q1} v1 ∗ l ↦{q2} v2 ⊢ ⌜v1 = v2⌝.
   Proof.
     rewrite heap_mapsto_eq -own_op -auth_frag_op own_valid uPred.discrete_valid.
     eapply pure_elim; [done|]=> /auth_own_valid /=.
-    rewrite op_singleton pair_op singleton_valid. case.
-    rewrite /= to_agree_comp_valid=>? Heq. fold_leibniz. eauto.
+    rewrite op_singleton pair_op singleton_valid=> -[? /agree_op_invL'->]; eauto.
   Qed.
 
   Lemma heap_mapsto_vec_nil l q : l ↦∗{q} [] ⊣⊢ True.

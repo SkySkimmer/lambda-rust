@@ -58,6 +58,7 @@ Proof.
   iIntros "HI"; iDestruct 1 as (γs) "[? _]".
   by iApply (own_ilft_auth_agree with "HI").
 Qed.
+
 Lemma own_bor_op κ x y : own_bor κ (x ⋅ y) ⊣⊢ own_bor κ x ∗ own_bor κ y.
 Proof.
   iSplit.
@@ -65,7 +66,7 @@ Proof.
   iIntros "[Hx Hy]".
   iDestruct "Hx" as (γs) "[Hγs Hx]"; iDestruct "Hy" as (γs') "[Hγs' Hy]".
   iDestruct (own_valid_2 with "Hγs Hγs'") as %Hγs%auth_own_valid.
-  move: Hγs; rewrite /= op_singleton singleton_valid=> /agree_op_inv /(inj to_agree) <-.
+  move: Hγs; rewrite /= op_singleton singleton_valid=> /agree_op_invL' <-.
   iExists γs. iSplit. done. rewrite own_op; iFrame.
 Qed.
 Global Instance own_bor_into_op κ x x1 x2 :
@@ -99,7 +100,7 @@ Proof.
   iIntros "[Hx Hy]".
   iDestruct "Hx" as (γs) "[Hγs Hx]"; iDestruct "Hy" as (γs') "[Hγs' Hy]".
   iDestruct (own_valid_2 with "Hγs Hγs'") as %Hγs%auth_own_valid.
-  move: Hγs; rewrite /= op_singleton singleton_valid=> /agree_op_inv /(inj to_agree) <-.
+  move: Hγs; rewrite /= op_singleton singleton_valid=> /agree_op_invL'=> <-.
   iExists γs. iSplit; first done. rewrite own_op; iFrame.
 Qed.
 Global Instance own_cnt_into_op κ x x1 x2 :
@@ -133,7 +134,7 @@ Proof.
   iIntros "[Hx Hy]".
   iDestruct "Hx" as (γs) "[Hγs Hx]"; iDestruct "Hy" as (γs') "[Hγs' Hy]".
   iDestruct (own_valid_2 with "Hγs Hγs'") as %Hγs%auth_own_valid.
-  move: Hγs; rewrite /= op_singleton singleton_valid=> /agree_op_inv /(inj to_agree) <-.
+  move: Hγs; rewrite /= op_singleton singleton_valid=> /agree_op_invL' <-.
   iExists γs. iSplit. done. rewrite own_op; iFrame.
 Qed.
 Global Instance own_inh_into_op κ x x1 x2 :
