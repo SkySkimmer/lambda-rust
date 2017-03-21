@@ -89,7 +89,7 @@ Proof.
   iMod (fupd_intro_mask' _ ∅) as "Hclose"; first set_solver.
   iModIntro; iSplit; first by eauto.
   iNext; iIntros (e2 σ2 efs Hstep); inv_head_step. iMod "Hclose" as "_".
-  iModIntro. iFrame "Hσ". iSplit; [|by iApply big_sepL_nil].
+  iModIntro. iFrame "Hσ". iSplit; last done.
   clear dependent σ1 n.
   iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1) "Hσ". iMod ("Hσclose" with "Hσ") as (n) "(% & Hσ & Hv)".
@@ -122,7 +122,7 @@ Proof.
   iMod (fupd_intro_mask' _ ∅) as "Hclose"; first set_solver.
   iModIntro; iSplit; first by eauto.
   iNext; iIntros (e2 σ2 efs Hstep); inv_head_step. iMod "Hclose" as "_".
-  iModIntro. iFrame "Hσ". iSplit; [|by iApply big_sepL_nil].
+  iModIntro. iFrame "Hσ". iSplit; last done.
   clear dependent σ1. iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1) "Hσ". iMod ("Hσclose" with "Hσ") as "(% & Hσ & Hv)".
   iModIntro; iSplit; first by eauto.
@@ -261,7 +261,7 @@ Proof.
   iIntros (? Φ) "HΦ". iApply wp_lift_pure_head_step; eauto.
   { intros. by inv_head_step. }
   iApply step_fupd_intro; first done. iNext. iIntros (e2 efs σ Hs).
-  inv_head_step; rewrite big_sepL_nil right_id.
+  inv_head_step; rewrite right_id.
   rewrite -wp_value //. iApply "HΦ". eauto.
 Qed.
 
@@ -337,16 +337,16 @@ Lemma wp_app_ind E f (el : list expr) (Ql : vec (val → iProp Σ) (length el)) 
                     WP App f (of_val <$> vs ++ vl) @ E {{ Φ }}) -∗
     WP App f ((of_val <$> vs) ++ el) @ E {{ Φ }}.
 Proof.
-  intros [vf Hf]. revert vs Ql. induction el as [|e el IH]=>/= vs Ql; inv_vec Ql.
-  - iIntros "_ H". iSpecialize ("H" $! [#]). rewrite !app_nil_r big_sepL_nil.
-      by iApply "H".
-  - intros Q Ql. rewrite /= big_sepL_cons /=. iIntros "[He Hl] HΦ".
+  intros [vf Hf]. revert vs Ql.
+  induction el as [|e el IH]=>/= vs Ql; inv_vec Ql; simpl.
+  - iIntros "H". iSpecialize ("H" $! [#]). rewrite !app_nil_r /=. by iApply "H".
+  - iIntros (Q Ql) "[He Hl] HΦ".
     assert (App f ((of_val <$> vs) ++ e :: el) = fill_item (AppRCtx vf vs el) e)
       as -> by rewrite /= (of_to_val f) //.
     iApply wp_bindi. iApply (wp_wand with "He"). iIntros (v) "HQ /=".
     rewrite cons_middle (assoc app) -(fmap_app _ _ [v]) (of_to_val f) //.
     iApply (IH _ _ with "Hl"). iIntros "* Hvl". rewrite -assoc.
-    iApply ("HΦ" $! (v:::vl)). rewrite /= big_sepL_cons. iFrame.
+    iApply ("HΦ" $! (v:::vl)). iFrame.
 Qed.
 
 Lemma wp_app_vec E f el (Ql : vec (val → iProp Σ) (length el)) Φ :
@@ -355,9 +355,7 @@ Lemma wp_app_vec E f el (Ql : vec (val → iProp Σ) (length el)) Φ :
     (∀ vl : vec val (length el), ([∗ list] vQ ∈ zip vl Ql, vQ.2 $ vQ.1) -∗
                     WP App f (of_val <$> (vl : list val)) @ E {{ Φ }}) -∗
     WP App f el @ E {{ Φ }}.
-Proof.
-  iIntros (Hf). iApply (wp_app_ind _ _ _ _ []). done.
-Qed.
+Proof. iIntros (Hf). by iApply (wp_app_ind _ _ _ _ []). Qed.
 
 Lemma wp_app (Ql : list (val → iProp Σ)) E f el Φ :
   length Ql = length el → is_Some (to_val f) →

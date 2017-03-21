@@ -286,9 +286,10 @@ Section typing.
     iIntros (<- tid) "#LFT #HE $ $ Hp". rewrite tctx_interp_singleton.
     wp_bind p. iApply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown"; try done.
     iDestruct "Hown" as "[H↦: >H†]". iDestruct "H↦:" as (vl) "[>H↦ Hown]".
-    rewrite tctx_interp_nil. iDestruct (ty_size_eq with "Hown") as "#>EQ".
-    iDestruct "EQ" as %<-. iApply (wp_delete with "[-]"); auto; [].
-    rewrite freeable_sz_full. by iFrame.
+    iDestruct (ty_size_eq with "Hown") as "#>EQ".
+    iDestruct "EQ" as %<-. iApply (wp_delete with "[-]"); auto.
+    - iFrame "H↦". by iApply freeable_sz_full.
+    - rewrite /tctx_interp /=; auto.
   Qed.
 
   Lemma type_delete {E L} ty C T T' (n' : nat) (n : Z)  p e :

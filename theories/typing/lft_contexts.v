@@ -267,9 +267,7 @@ Section lft_contexts.
     ∀ qL, llctx_interp L qL -∗ □ (elctx_interp E -∗ elctx_interp E').
 
   Lemma elctx_sat_nil : elctx_sat [].
-  Proof.
-    iIntros (?) "_ !# _". rewrite /elctx_interp big_sepL_nil. auto.
-  Qed.
+  Proof. iIntros (?) "_ !# _". by rewrite /elctx_interp /=. Qed.
 
   Lemma elctx_sat_lft_incl E' κ κ' :
     lctx_lft_incl κ κ' → elctx_sat E' → elctx_sat ((κ ⊑ κ') :: E')%EL.
@@ -277,9 +275,7 @@ Section lft_contexts.
     iIntros (Hκκ' HE' qL) "HL".
     iDestruct (Hκκ' with "HL") as "#Hincl".
     iDestruct (HE' with "HL") as "#HE'".
-    iClear "∗". iIntros "!# #HE".
-    (* FIXME: Why does iSplit fail here?  The goal is persistent. *)
-    iSplitL.
+    iClear "∗". iIntros "!# #HE". iSplit.
     - by iApply "Hincl".
     - by iApply "HE'".
   Qed.

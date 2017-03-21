@@ -53,8 +53,8 @@ Section type_soundness.
     iMod (lft_create with "LFT") as (ϝ) "Hϝ". done.
     iApply ("Hmain" $! () ϝ exit_cont [#] tid with "LFT [] Htl [Hϝ] []");
       last by rewrite tctx_interp_nil.
-    { by rewrite /elctx_interp /= big_sepL_nil. }
-    { rewrite /llctx_interp big_sepL_singleton. iExists ϝ. iFrame. by rewrite /= left_id. }
+    { by rewrite /elctx_interp /=. }
+    { rewrite /llctx_interp /=. iSplit; last done. iExists ϝ. iFrame. by rewrite /= left_id. }
     rewrite cctx_interp_singleton. simpl. iIntros (args) "_ _".
     inv_vec args. iIntros (x) "_ /=". by wp_lam.
   Qed.

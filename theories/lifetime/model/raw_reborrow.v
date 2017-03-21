@@ -88,7 +88,7 @@ Proof.
      as "Hbox"; first by solve_ndisj.
   { by rewrite lookup_fmap HB. }
   iDestruct (@big_sepM_delete with "HB") as "[Hcnt HB]"; first done.
-  rewrite /=; iDestruct "Hcnt" as "[% H1◯]".
+  rewrite /=. iDestruct "Hcnt" as "[% H1◯]".
   iMod ("Hvs" $! I with "[Hκdead' HI Hinv Hvs' Hinh HB● Hbox HB]
                          [$HPb Hi] Hκ†") as "($ & $ & Hcnt')".
   { rewrite lft_vs_inv_unfold. iFrame "Hκdead' HI".

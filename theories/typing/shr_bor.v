@@ -69,11 +69,11 @@ Section typing.
     lctx_lft_incl E L κ' κ →
     tctx_incl E L [p ◁ &shr{κ}ty] [p ◁ &shr{κ'}ty; p ◁{κ} &shr{κ}ty].
   Proof.
-    iIntros (Hκκ' tid ?) "#LFT #HE HL H". iDestruct (Hκκ' with "HL HE") as "#Hκκ'".
-    iFrame. rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
+    iIntros (Hκκ' tid ?) "#LFT #HE HL [H _]". iDestruct (Hκκ' with "HL HE") as "#Hκκ'".
+    iFrame. rewrite /tctx_interp /=.
     iDestruct "H" as ([[]|]) "[% #Hshr]"; try done. iModIntro. iSplit.
     - iExists _. iSplit. done. by iApply (ty_shr_mono with "Hκκ' Hshr").
-    - iExists _. auto.
+    - iSplit=> //. iExists _. auto.
   Qed.
 
   Lemma read_shr E L κ ty :

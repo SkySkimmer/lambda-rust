@@ -203,7 +203,8 @@ Section refmut_functions.
        with "[] LFT [] Hna HL [-H† Hlx Henv Hbor]"); swap 1 2; swap 3 4.
     { iSplitL; last iSplitL; [done|iApply lft_intersect_incl_l|iApply "HE"]. }
     { iApply (type_call (α ⊓ ν)); solve_typing. }
-    { iFrame "∗#". iApply tctx_hasty_val'; first done. rewrite -freeable_sz_full.
+    { rewrite /tctx_interp /=. iFrame "Hf' Henv".
+      iApply tctx_hasty_val'; first done. rewrite -freeable_sz_full.
       iFrame. iExists [_]. rewrite heap_mapsto_vec_singleton. auto with iFrame. }
     iIntros (? ->%elem_of_list_singleton arg) "Hna HL Hr". inv_vec arg=>r.
     apply of_to_val in EQk. rewrite EQk. iApply wp_rec; try (done || apply _).
@@ -219,13 +220,14 @@ Section refmut_functions.
     iApply wp_mask_mono; last iApply (wp_step_fupd with "Hκ'†"); auto with ndisj.
     wp_seq. iIntros "Hκ'† !>". iMod ("Hν" with "[Hκ'†]") as "Hν";
       first by rewrite -lft_dead_or; auto. wp_seq. wp_write.
-    iApply (type_type _ _ _
+    iApply (type_type _ [_] _
         [ f ◁ box (fn(∀ α, ∅; envty, &uniq{α}ty1) → &uniq{α}ty2);
           #lref ◁ box (refmut α ty2) ]%TC
-       with "[] LFT HE Hna HL Hk"); first last.
+       with "[] LFT HE Hna [HL] Hk"); first last.
     { iFrame. rewrite big_sepL_singleton tctx_hasty_val. iExists _. iSplit. done.
       iFrame. iExists [_;_]. rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
       iFrame. destruct r' as [[]|]=>//=. auto 10 with iFrame. }
+    { rewrite /llctx_interp /=; auto. }
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.

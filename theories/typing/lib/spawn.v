@@ -96,7 +96,7 @@ Section spawn.
       iApply (Hcall with "LFT HE Htl [] [Hfin]").
       - constructor.
       - solve_typing.
-      - rewrite /llctx_interp big_sepL_nil. done.
+      - by rewrite /llctx_interp /=.
       - rewrite /cctx_interp. iIntros "* Hin".
         iDestruct "Hin" as %Hin%elem_of_list_singleton. subst x.
         rewrite /cctx_elt_interp. iIntros "* ?? Hret". inv_vec args=>arg /=.

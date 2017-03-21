@@ -15,11 +15,10 @@ Section borrow.
   Lemma tctx_borrow E L p n ty κ :
     tctx_incl E L [p ◁ own_ptr n ty] [p ◁ &uniq{κ}ty; p ◁{κ} own_ptr n ty].
   Proof.
-    iIntros (tid ?)  "#LFT _ $ H".
-    rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
+    iIntros (tid ?)  "#LFT _ $ [H _]".
     iDestruct "H" as ([[]|]) "[% Hown]"; try done. iDestruct "Hown" as "[Hmt ?]".
     iMod (bor_create with "LFT Hmt") as "[Hbor Hext]". done.
-    iModIntro. iSplitL "Hbor".
+    iModIntro. rewrite /tctx_interp /=. iSplitL "Hbor"; last iSplit; last done.
     - iExists _. auto.
     - iExists _. iSplit. done. by iFrame.
   Qed.

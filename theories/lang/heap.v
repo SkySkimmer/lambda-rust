@@ -1,7 +1,7 @@
 From Coq Require Import Min.
 From stdpp Require Import coPset.
-From iris.algebra Require Import cmra_big_op gmap frac agree.
-From iris.algebra Require Import csum excl auth.
+From iris.algebra Require Import big_op gmap frac agree.
+From iris.algebra Require Import csum excl auth cmra_big_op.
 From iris.base_logic Require Import big_op lib.fractional.
 From iris.base_logic Require Export lib.own.
 From iris.proofmode Require Export tactics.
@@ -147,7 +147,7 @@ Section heap.
   Qed.
 
   Lemma heap_mapsto_vec_nil l q : l ↦∗{q} [] ⊣⊢ True.
-  Proof. by rewrite /heap_mapsto_vec big_sepL_nil. Qed.
+  Proof. by rewrite /heap_mapsto_vec. Qed.
 
   Lemma heap_mapsto_vec_app l q vl1 vl2 :
     l ↦∗{q} (vl1 ++ vl2) ⊣⊢ l ↦∗{q} vl1 ∗ shift_loc l (length vl1) ↦∗{q} vl2.
@@ -157,7 +157,7 @@ Section heap.
   Qed.
 
   Lemma heap_mapsto_vec_singleton l q v : l ↦∗{q} [v] ⊣⊢ l ↦{q} v.
-  Proof. by rewrite /heap_mapsto_vec big_sepL_singleton /= shift_loc_0. Qed.
+  Proof. by rewrite /heap_mapsto_vec /= shift_loc_0 right_id. Qed.
 
   Lemma heap_mapsto_vec_cons l q v vl:
     l ↦∗{q} (v :: vl) ⊣⊢ l ↦{q} v ∗ shift_loc l 1 ↦∗{q} vl.
@@ -204,7 +204,7 @@ Section heap.
 
   Lemma heap_mapsto_vec_combine l q vl :
     vl ≠ [] →
-    l ↦∗{q} vl ⊣⊢ own heap_name (◯ [⋅ list] i ↦ v ∈ vl,
+    l ↦∗{q} vl ⊣⊢ own heap_name (◯ [^op list] i ↦ v ∈ vl,
       {[shift_loc l i := (q, Cinr 0%nat, to_agree v)]}).
   Proof.
     rewrite /heap_mapsto_vec heap_mapsto_eq /heap_mapsto_def /heap_mapsto_st=>?.
@@ -335,7 +335,7 @@ Section heap.
     (∀ m : Z, σ !! shift_loc l m = None) →
     own heap_name (● to_heap σ)
     ==∗ own heap_name (● to_heap (init_mem l vl σ))
-       ∗ own heap_name (◯ [⋅ list] i ↦ v ∈ vl,
+       ∗ own heap_name (◯ [^op list] i ↦ v ∈ vl,
            {[shift_loc l i := (1%Qp, Cinr 0%nat, to_agree v)]}).
   Proof.
     intros FREE. rewrite -own_op. apply own_update, auth_update_alloc.
@@ -374,7 +374,7 @@ Section heap.
   Qed.
 
   Lemma heap_free_vs σ l vl :
-    own heap_name (● to_heap σ) ∗ own heap_name (◯ [⋅ list] i ↦ v ∈ vl,
+    own heap_name (● to_heap σ) ∗ own heap_name (◯ [^op list] i ↦ v ∈ vl,
       {[shift_loc l i := (1%Qp, Cinr 0%nat, to_agree v)]})
     ==∗ own heap_name (● to_heap (free_mem l (length vl) σ)).
   Proof.
@@ -382,9 +382,8 @@ Section heap.
     revert σ l. induction vl as [|v vl IH]=> σ l; [done|].
     rewrite (big_opL_consZ_l (λ k _, _ (_ k) _ )) /= shift_loc_0.
     apply local_update_total_valid=> _ Hvalid _.
-    assert (([⋅ list] k↦y ∈ vl,
-      {[shift_loc l (1 + k) := (1%Qp, Cinr 0%nat, to_agree y)]}) !! l
-      = @None (frac * lock_stateR * agree valC)).
+    assert (([^op list] k↦y ∈ vl,
+      {[shift_loc l (1 + k) := (1%Qp, Cinr 0%nat, to_agree y)]} : heapUR) !! l = None).
     { move: (Hvalid l). rewrite lookup_op lookup_singleton.
       by move=> /(cmra_discrete_valid_iff 0) /exclusiveN_Some_l. }
     rewrite -insert_singleton_op //. etrans.

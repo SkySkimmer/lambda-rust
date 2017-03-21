@@ -246,15 +246,15 @@ Section typing.
     iApply (wp_app_vec _ _ (_::_) ((λ v, ⌜v = (λ: ["_r"], (#() ;; #()) ;; k ["_r"])%V⌝):::
                vmap (λ ty (v : val), tctx_elt_interp tid (v ◁ box ty)) (fp x).(fp_tys))%I
             with "[Hargs]"); first wp_done.
-    - rewrite /= big_sepL_cons. iSplitR "Hargs".
+    - rewrite /=. iSplitR "Hargs".
       { simpl. iApply wp_value; last done. solve_to_val. }
       clear dependent k p.
       rewrite /tctx_interp vec_to_list_map !zip_with_fmap_r
               (zip_with_zip (λ e ty, (e, _))) zip_with_zip !big_sepL_fmap.
-      iApply (big_sepL_mono' with "Hargs"). iIntros (i [p ty]) "HT/=".
+      iApply (big_sepL_mono' with "Hargs"); last done. iIntros (i [p ty]) "HT/=".
       iApply (wp_hasty with "HT"). setoid_rewrite tctx_hasty_val. iIntros (?) "? $".
     - simpl. change (@length expr ps) with (length ps).
-      iIntros (vl'). inv_vec vl'=>kv vl. rewrite /= big_sepL_cons.
+      iIntros (vl'). inv_vec vl'=>kv vl.
       iIntros "/= [% Hvl]". subst kv. iDestruct "Hf" as (fb kb xb e ?) "[EQ [EQl #Hf]]".
       iDestruct "EQ" as %[=->]. iDestruct "EQl" as %EQl. revert vl fp HE.
       rewrite <-EQl=>vl fp HE. iApply wp_rec; try done.
@@ -281,7 +281,7 @@ Section typing.
         rewrite tctx_interp_singleton tctx_interp_cons. iFrame.
       + rewrite /tctx_interp vec_to_list_map !zip_with_fmap_r
                 (zip_with_zip (λ v ty, (v, _))) zip_with_zip !big_sepL_fmap.
-        iApply (big_sepL_mono' with "Hvl"). by iIntros (i [v ty']).
+        iApply (big_sepL_mono' with "Hvl"); last done. by iIntros (i [v ty']).
   Qed.
 
   Lemma type_call {A} x E L C T T' T'' p (ps : list path)

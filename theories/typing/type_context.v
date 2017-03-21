@@ -130,7 +130,7 @@ Section type_context.
 
   Lemma tctx_interp_cons tid x T :
     tctx_interp tid (x :: T) ≡ (tctx_elt_interp tid x ∗ tctx_interp tid T)%I.
-  Proof. rewrite /tctx_interp big_sepL_cons //. Qed.
+  Proof. done. Qed.
 
   Lemma tctx_interp_app tid T1 T2 :
     tctx_interp tid (T1 ++ T2) ≡ (tctx_interp tid T1 ∗ tctx_interp tid T2)%I.
@@ -141,7 +141,7 @@ Section type_context.
 
   Lemma tctx_interp_singleton tid x :
     tctx_interp tid [x] ≡ tctx_elt_interp tid x.
-  Proof. rewrite tctx_interp_cons tctx_interp_nil right_id //. Qed.
+  Proof. rewrite /tctx_interp /= right_id //. Qed.
 
   (** Copy typing contexts *)
   Class CopyC (T : tctx) :=
@@ -216,10 +216,7 @@ Section type_context.
 
   Lemma copy_tctx_incl E L p `{!Copy ty} :
     tctx_incl E L [p ◁ ty] [p ◁ ty; p ◁ ty].
-  Proof.
-    iIntros (??) "_ _ $ *". rewrite /tctx_interp !big_sepL_cons big_sepL_nil.
-    by iIntros "[#$ $]".
-  Qed.
+  Proof. iIntros (??) "_ _ $ * [#$ $] //". Qed.
 
   Lemma copy_elem_of_tctx_incl E L T p `{!Copy ty} :
     (p ◁ ty)%TC ∈ T → tctx_incl E L T ((p ◁ ty) :: T).
@@ -233,9 +230,9 @@ Section type_context.
   Lemma subtype_tctx_incl E L p ty1 ty2 :
     subtype E L ty1 ty2 → tctx_incl E L [p ◁ ty1] [p ◁ ty2].
   Proof.
-    iIntros (Hst ??) "#LFT #HE HL H". rewrite /tctx_interp !big_sepL_singleton /=.
+    iIntros (Hst ??) "#LFT #HE HL [H _]".
     iDestruct "H" as (v) "[% H]". iDestruct (Hst with "HL HE") as "#(_ & Ho & _)". 
-    iFrame "HL". iExists _. iFrame "%". by iApply "Ho".
+    iFrame "HL". iApply big_sepL_singleton. iExists _. iFrame "%". by iApply "Ho".
   Qed.
 
   (* Extracting from a type context. *)

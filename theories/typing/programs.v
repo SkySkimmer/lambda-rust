@@ -103,7 +103,7 @@ Section typing_rules.
     rewrite /llctx_interp big_sepL_cons. iDestruct "HL" as "[Hκ HL]".
     iMod (lctx_equalize_lft with "LFT Hκ") as "[Hκ1 Hκ2]".
     iApply (He with "LFT [Hκ1 Hκ2 HE] Htl HL HC HT").
-    rewrite /elctx_interp !big_sepL_cons. by iFrame.
+    rewrite /elctx_interp /=. by iFrame.
   Qed.
 
   Lemma type_let' E L T1 T2 (T : tctx) C xb e e' :
@@ -153,7 +153,7 @@ Section typing_rules.
     iMod (lft_create with "LFT") as (Λ) "[Htk #Hinh]"; first done.
     set (κ' := lft_intersect_list κs). wp_seq.
     iApply ("He" $! (κ' ⊓ Λ) with "LFT HE Htl [HL Htk] HC HT").
-    rewrite /llctx_interp big_sepL_cons. iFrame "HL".
+    rewrite /llctx_interp /=. iFrame "HL".
     iExists Λ. iSplit; first done. iFrame. done.
   Qed.
 

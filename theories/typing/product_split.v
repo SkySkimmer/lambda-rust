@@ -41,13 +41,13 @@ Section product_split.
     iInduction tyl as [|ty tyl IH] "IH" forall (p).
     { rewrite tctx_interp_nil. auto. }
     rewrite product_cons. iMod (Hsplit with "LFT HE HL H") as "(HL & H)".
-    cbn -[tctx_elt_interp]. rewrite tctx_interp_cons tctx_interp_singleton tctx_interp_cons.
+    cbn -[tctx_elt_interp].
     iDestruct "H" as "[Hty Htyl]". iDestruct "Hty" as (v) "[Hp Hty]". iDestruct "Hp" as %Hp. 
     iDestruct (Hloc with "Hty") as %[l [=->]].
     iAssert (tctx_elt_interp tid (p +ₗ #0 ◁ ptr ty)) with "[Hty]" as "$".
     { iExists #l. iSplit; last done. simpl; by rewrite Hp shift_loc_0. }
     iMod ("IH" with "HL [Htyl]") as "($ & Htyl)".
-    { rewrite tctx_interp_singleton //. }
+    { auto. }
     iClear "IH". rewrite (hasty_ptr_offsets_offset l) // -plus_n_O //.
   Qed.
 
