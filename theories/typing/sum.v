@@ -183,12 +183,10 @@ Section sum.
   Lemma emp_sum E L :
     eqtype E L emp (sum []).
   Proof.
-    split; (iIntros (q) "_ _"; iSplit; first done; iSplit; iAlways).
-    - iIntros (??) "[]".
-    - iIntros (κ tid l) "[]".
-    - iIntros (??) "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)".
-      by rewrite nth_empty.
-    - iIntros (???) "H". iDestruct "H" as (i) "(_ & Hshr)". by rewrite nth_empty.
+    apply eqtype_unfold. iIntros (?) "_ !# _".
+    iSplit; first done; iSplit; iAlways; iIntros; iSplit; try by iIntros "[]".
+    - iIntros "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)". by rewrite nth_empty.
+    - iIntros "H". iDestruct "H" as (i) "(_ & Hshr)". by rewrite nth_empty.
   Qed.
 
   Global Instance sum_copy tyl : LstCopy tyl → Copy (sum tyl).
