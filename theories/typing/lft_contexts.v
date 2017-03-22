@@ -216,6 +216,27 @@ Section lft_contexts.
     iExists q''. iIntros "{$Htok}!>Htok". iApply ("Hclose" with "[> -]").
     by iApply "Hclose'".
   Qed.
+  
+  Lemma lctx_lft_alive_list κs ϝ `{!frac_borG Σ} :
+    Forall lctx_lft_alive κs →
+    ∀ (F : coPset) (qL : Qp),
+      ↑lftN ⊆ F → lft_ctx -∗ elctx_interp E -∗
+         llctx_interp L qL ={F}=∗ elctx_interp ((λ κ, ϝ ⊑ κ) <$> κs)%EL ∗
+                                   ([†ϝ] ={F}=∗ llctx_interp L qL).
+  Proof.
+    iIntros (Hκs F qL ?) "#LFT #HE". iInduction κs as [|κ κs] "IH" forall (qL Hκs).
+    { iIntros "$ !>". rewrite /elctx_interp big_sepL_nil. auto. }
+    iIntros "[HL1 HL2]". inversion Hκs as [|?? Hκ Hκs']. clear Hκs. subst.
+    iMod ("IH" with "[% //] HL2") as "[#Hκs Hclose1] {IH}".
+    iMod (Hκ with "HE HL1") as (q) "[Hκ Hclose2]"; first done.
+    iMod (bor_create with "LFT [Hκ]") as "[Hκ H†]"; first done. iApply "Hκ".
+    iDestruct (frac_bor_lft_incl _ _ q with "LFT [> Hκ]") as "#Hincl".
+    { iApply (bor_fracture with "LFT [>-]"); first done. simpl.
+      rewrite Qp_mult_1_r. done. (* FIXME: right_id? *) }
+    iModIntro. iFrame "#". iIntros "#Hϝ†".
+    iMod ("H†" with "Hϝ†") as ">Hκ". iMod ("Hclose2" with "Hκ") as "$".
+    by iApply "Hclose1".
+  Qed.
 
   (* External lifetime context satisfiability *)
 
