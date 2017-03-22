@@ -515,6 +515,21 @@ Section subtyping.
     iClear "∗". iIntros "!# #HE".
     iApply (type_incl_trans with "[#]"). by iApply "H12". by iApply "H23".
   Qed.
+  
+  Lemma subtype_Forall2_llctx E L tys1 tys2 qL : 
+    Forall2 (subtype E L) tys1 tys2 →
+    llctx_interp L qL -∗ □ (elctx_interp E -∗
+           [∗ list] tys ∈ (zip tys1 tys2), type_incl (tys.1) (tys.2)).
+  Proof.
+    iIntros (Htys) "HL".
+    iAssert ([∗ list] tys ∈ zip tys1 tys2,
+             □ (elctx_interp _ -∗ type_incl (tys.1) (tys.2)))%I as "#Htys".
+    { iApply big_sepL_forall. iIntros (k [ty1 ty2] Hlookup).
+      move:Htys => /Forall2_Forall /Forall_forall=>Htys.
+      iApply (Htys (ty1, ty2)); first by exact: elem_of_list_lookup_2. done. }
+    iClear "∗". iIntros "!# #HE". iApply (big_sepL_impl with "[$Htys]").
+    iIntros "!# * % #Hincl". by iApply "Hincl".
+  Qed.
 
   Lemma equiv_subtype E L ty1 ty2 : ty1 ≡ ty2 → subtype E L ty1 ty2.
   Proof. unfold subtype, type_incl=>EQ. setoid_rewrite EQ. apply subtype_refl. Qed.
