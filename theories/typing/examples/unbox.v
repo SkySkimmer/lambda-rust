@@ -12,10 +12,10 @@ Section unbox.
        delete [ #1; "b"] ;; "return" ["r"].
 
   Lemma ubox_type :
-    typed_val unbox (fn(∀ α, [α]; &uniq{α}box (Π[int; int])) → &uniq{α} int).
+    typed_val unbox (fn(∀ α, λ ϝ, [ϝ ⊑ α]; &uniq{α}box (Π[int; int])) → &uniq{α} int).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret b).
-      inv_vec b=>b. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ϝ ret b). inv_vec b=>b. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (b'); simpl_subst.
     iApply type_deref_uniq_own; [solve_typing..|]. iIntros (bx); simpl_subst.
     iApply type_letalloc_1; [solve_typing..|]. iIntros (r). simpl_subst.

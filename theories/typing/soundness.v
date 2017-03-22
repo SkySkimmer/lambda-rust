@@ -23,7 +23,7 @@ Proof. solve_inG. Qed.
 Section type_soundness.
   Definition exit_cont : val := λ: [<>], #().
 
-  Definition main_type `{typeG Σ} := (fn([]) → unit)%T.
+  Definition main_type `{typeG Σ} := (fn(λ ϝ, []) → unit)%T.
 
   Theorem type_soundness `{typePreG Σ} (main : val) σ t :
     (∀ `{typeG Σ}, typed_val main main_type) →
@@ -39,20 +39,23 @@ Section type_soundness.
     iMod lft_init as (?) "#LFT". done.
     iMod na_alloc as (tid) "Htl". set (Htype := TypeG _ _ _ _ _).
     wp_bind (of_val main). iApply (wp_wand with "[Htl]").
-    iApply (Hmain _ [] [] $! tid 1%Qp with "LFT Htl [] [] []").
+    iApply (Hmain _ [] [] $! tid with "LFT [] Htl [] []").
     { by rewrite /elctx_interp big_sepL_nil. }
     { by rewrite /llctx_interp big_sepL_nil. }
     { by rewrite tctx_interp_nil. }
-    clear Hrtc Hmain main. iIntros (main) "(Htl & HE & HL & Hmain)".
-    rewrite tctx_interp_singleton. iDestruct "Hmain" as (?) "[EQ Hmain]".
+    clear Hrtc Hmain main. iIntros (main) "(Htl & _ & Hmain & _)".
+    iDestruct "Hmain" as (?) "[EQ Hmain]".
     rewrite eval_path_of_val. iDestruct "EQ" as %[= <-].
     iDestruct "Hmain" as (f k x e ?) "(EQ & % & Hmain)". iDestruct "EQ" as %[= ->].
     destruct x; try done.
     iApply (wp_rec _ _ _ _ _ _ [exit_cont]%E); [done| |by simpl_subst|iNext].
     { repeat econstructor. apply to_of_val. }
-    iApply ("Hmain" $! () exit_cont [#] tid 1%Qp with "LFT Htl HE HL []");
+    iMod (lft_create with "LFT") as (ϝ) "Hϝ". done.
+    iApply ("Hmain" $! () ϝ exit_cont [#] tid with "LFT [] Htl [Hϝ] []");
       last by rewrite tctx_interp_nil.
-    iIntros "_". rewrite cctx_interp_singleton. simpl. iIntros (args) "_ _".
+    { by rewrite /elctx_interp /=. }
+    { rewrite /llctx_interp big_sepL_singleton. iExists ϝ. iFrame. by rewrite /= left_id. }
+    rewrite cctx_interp_singleton. simpl. iIntros (args) "_ _".
     inv_vec args. iIntros (x) "_ /=". by wp_lam.
   Qed.
 End type_soundness.

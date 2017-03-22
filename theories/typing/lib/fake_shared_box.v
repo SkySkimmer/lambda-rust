@@ -11,15 +11,15 @@ Section fake_shared_box.
 
   Lemma cell_replace_type ty :
     typed_val fake_shared_box
-      (fn (fun '(α, β) => FP [α; β; α ⊑ β]%EL
+      (fn (fun '(α, β) => FP (λ ϝ, [ϝ ⊑ α; α ⊑ β]%EL)
                               [# &shr{α}(&shr{β} ty)] (&shr{α}box ty))).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
-      iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
-    iIntros (tid qE) "#LFT Hna HE HL Hk HT".
+      iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
+    iIntros (tid) "#LFT #HE Hna HL Hk HT".
     rewrite tctx_interp_singleton tctx_hasty_val.
-    rewrite {1}/elctx_interp 2!big_sepL_cons big_sepL_singleton.
-    iDestruct "HE" as "(Hα & Hβ & #Hαβ)".
+    rewrite {1}/elctx_interp big_sepL_cons big_sepL_singleton.
+    iDestruct "HE" as "(Hβ & #Hαβ)".
     iAssert (▷ ty_own (own_ptr 1 (&shr{α} box ty)) tid [x])%I with "[HT]" as "HT".
     { destruct x as [[|l|]|]=>//=. iDestruct "HT" as "[H $]".
       iNext. iDestruct "H" as ([|[[]|][]]) "[H↦ H]"; try done.
@@ -30,10 +30,10 @@ Section fake_shared_box.
       iDestruct "H" as "#H". iIntros "!# * % $". iApply step_fupd_intro. set_solver.
       by iApply ty_shr_mono. }
     wp_seq.
-    iApply (type_type _ _ _ [ x ◁ box (&shr{α}box ty) ]%TC
-            with "[] LFT Hna [Hα Hβ Hαβ] HL Hk [HT]"); last first.
+    iApply (type_type [] _ _ [ x ◁ box (&shr{α}box ty) ]%TC
+            with "[] LFT [] Hna HL Hk [HT]"); last first.
     { by rewrite tctx_interp_singleton tctx_hasty_val. }
-    { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
+    { by rewrite /elctx_interp. }
     iApply type_jump; simpl; solve_typing.
   Qed.
 End fake_shared_box.

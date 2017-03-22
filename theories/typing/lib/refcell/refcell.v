@@ -62,17 +62,18 @@ Section refcell_inv.
     eapply refcell_inv_type_ne, type_dist_dist2. done.
   Qed.
 
-  Lemma refcell_inv_proper E L tid l γ α ty1 ty2 :
+  Lemma refcell_inv_proper E L ty1 ty2 q :
     eqtype E L ty1 ty2 →
-    elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
-    refcell_inv tid l γ α ty1 -∗ refcell_inv tid l γ α ty2.
+    llctx_interp L q -∗ ∀ tid l γ α, □ (elctx_interp E -∗
+    refcell_inv tid l γ α ty1 -∗ refcell_inv tid l γ α ty2).
   Proof.
-    (* TODO : this proof is essentially [solve_proper], but within the logic.
-              It would easily gain from some automation. *)
-    iIntros (Hty%eqtype_unfold) "#HE #HL H". unfold refcell_inv.
-    iDestruct (Hty with "HE HL") as "(% & Hown & Hshr)".
+    (* TODO : this proof is essentially [solve_proper], but within the logic. *)
+  (*             It would easily gain from some automation. *)
+    rewrite eqtype_unfold. iIntros (Hty) "HL".
+    iDestruct (Hty with "HL") as "#Hty". iIntros "* !# #HE H".
+    iDestruct ("Hty" with "HE") as "(% & #Hown & #Hshr)".
     iAssert (□ (&{α} shift_loc l 1 ↦∗: ty_own ty1 tid -∗
-                &{α} shift_loc l 1 ↦∗: ty_own ty2 tid))%I with "[]" as "#Hb".
+                &{α} shift_loc l 1 ↦∗: ty_own ty2 tid))%I as "#Hb".
     { iIntros "!# H". iApply bor_iff; last done.
       iSplit; iIntros "!>!#H"; iDestruct "H" as (vl) "[Hf H]"; iExists vl;
       iFrame; by iApply "Hown". }
@@ -171,14 +172,17 @@ Section refcell.
   Proof.
     (* TODO : this proof is essentially [solve_proper], but within the logic.
               It would easily gain from some automation. *)
-    iIntros (ty1 ty2 EQ) "#HE #HL". pose proof EQ as EQ'%eqtype_unfold.
-    iDestruct (EQ' with "HE HL") as "(% & #Hown & #Hshr)".
+    iIntros (ty1 ty2 EQ qL) "HL". generalize EQ. rewrite eqtype_unfold=>EQ'.
+    iDestruct (EQ' with "HL") as "#EQ'".
+    iDestruct (refcell_inv_proper with "HL") as "#Hty1ty2"; first done.
+    iDestruct (refcell_inv_proper with "HL") as "#Hty2ty1"; first by symmetry.
+    iIntros "!# #HE". iDestruct ("EQ'" with "HE") as "(% & #Hown & #Hshr)".
     iSplit; [|iSplit; iIntros "!# * H"].
     - iPureIntro. simpl. congruence.
     - destruct vl as [|[[]|]]; try done. iDestruct "H" as "[$ H]". by iApply "Hown".
     - iDestruct "H" as (a γ) "[Ha H]". iExists a, γ. iFrame.
-      iApply na_bor_iff; last done.
-      iSplit; iIntros "!>!# H"; by iApply refcell_inv_proper.
+      iApply na_bor_iff; last done. iSplit; iIntros "!>!# H".
+      by iApply "Hty1ty2". by iApply "Hty2ty1".
   Qed.
   Lemma refcell_mono' E L ty1 ty2 :
     eqtype E L ty1 ty2 → subtype E L (refcell ty1) (refcell ty2).
