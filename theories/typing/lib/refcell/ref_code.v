@@ -56,17 +56,23 @@ Section ref_functions.
      See: https://coq.inria.fr/bugs/show_bug.cgi?id=5326 *)
   Lemma ref_clone_type ty :
     typed_val ref_clone
-      (fn (fun '(α, β) => FP [α; β]%EL [# &shr{α}(ref β ty)]%T (ref β ty)%T)).
+              (fn (fun '(α, β) => FP (λ ϝ, [ϝ ⊑ α; α ⊑ β]%EL)
+                                     [# &shr{α}(ref β ty)]%T (ref β ty)%T)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
-      iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
+      iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x').
-    iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
+
+Typeclasses Opaque llctx_interp.
+    iIntros (tid) "#LFT HE Hna [HL1 HL2] Hk HT".
+
+
+    simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
     iDestruct "Hx'" as (ν q γ δ ty' lv lrc) "#(Hαν & Hfrac & Hshr & Hβδ & Hinv & H◯inv)".
-    wp_op. rewrite {1}/elctx_interp big_sepL_cons big_sepL_singleton.
-    iDestruct "HE" as "[[Hα1 Hα2] Hβ]".
+    wp_op.
+    iMod (lctx_lft_alive_tok _ _ β with "HE HL") as (q') "[Hβ Hclose1]"; [solve_typing..|].
     iMod (lft_incl_acc with "Hβδ Hβ") as (qδ) "[Hδ Hcloseβ]". done.
     iMod (frac_bor_acc with "LFT Hfrac Hα1") as (qlx') "[H↦ Hcloseα1]". done.
     iMod (na_bor_acc with "LFT Hinv Hδ Hna") as "(INV & Hna & Hcloseδ)"; [done..|].

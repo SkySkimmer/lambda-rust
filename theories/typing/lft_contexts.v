@@ -173,9 +173,11 @@ Section lft_contexts.
     ∀ F qL, ↑lftN ⊆ F → elctx_interp E -∗ llctx_interp L qL ={F}=∗
           ∃ q', q'.[κ] ∗ (q'.[κ] ={F}=∗ llctx_interp L qL).
 
-  Lemma lctx_lft_alive_tok κ :
-    lctx_lft_alive κ → lctx_lft_alive κ.
-  Proof. done. Qed.
+  Lemma lctx_lft_alive_tok κ F q :
+    ↑lftN ⊆ F →
+    lctx_lft_alive κ → elctx_interp E -∗ llctx_interp L q ={F}=∗
+      ∃ q', q'.[κ] ∗ llctx_interp L (q / 2) ∗ (q'.[κ] ={F}=∗ llctx_interp L (q / 2)).
+  Proof. iIntros (? Hal) "#HE [$ HL]". by iApply Hal. Qed.
 
   Lemma lctx_lft_alive_static : lctx_lft_alive static.
   Proof.
