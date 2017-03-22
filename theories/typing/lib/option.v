@@ -24,19 +24,19 @@ Section option.
 
   Lemma option_as_mut_type τ :
     typed_val
-      option_as_mut (fn(∀ α, [α]; &uniq{α} (option τ)) → option (&uniq{α}τ)).
+      option_as_mut (fn(∀ α, (λ ϝ, [ϝ ⊑ α]); &uniq{α} (option τ)) → option (&uniq{α}τ)).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ret p).
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ϝ ret p).
       inv_vec p=>o. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (o'). simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
-    iApply (type_cont [] [] (λ _, [o ◁ _; r ◁ _])%TC) ; [solve_typing..| |].
+    iApply (type_cont [] [ϝ ⊑ []]%LL (λ _, [o ◁ _; r ◁ _])%TC) ; [solve_typing..| |].
     - iIntros (k). simpl_subst.
       iApply type_case_uniq; [solve_typing..|].
         constructor; last constructor; last constructor; left.
       + iApply (type_sum_unit (option $ &uniq{α}τ)%T); [solve_typing..|].
         iApply type_jump; solve_typing.
-      + iApply (type_sum_assign (option $ &uniq{α}τ)%T); [solve_typing..|].
+      + iApply (type_sum_assign (option $ &uniq{α}τ)%T); [try solve_typing..|].
         iApply type_jump; solve_typing.
     - iIntros "/= !#". iIntros (k args). inv_vec args. simpl_subst.
       iApply type_delete; [solve_typing..|].
