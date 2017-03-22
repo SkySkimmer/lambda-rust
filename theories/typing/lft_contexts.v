@@ -216,7 +216,13 @@ Section lft_contexts.
     iExists q''. iIntros "{$Htok}!>Htok". iApply ("Hclose" with "[> -]").
     by iApply "Hclose'".
   Qed.
-  
+
+  Lemma lctx_lft_alive_external κ κ':
+    (κ ⊑ κ')%EL ∈ E → lctx_lft_alive κ → lctx_lft_alive κ'.
+  Proof.
+    intros. by eapply lctx_lft_alive_incl, lctx_lft_incl_external.
+  Qed.
+
   Lemma lctx_lft_alive_list κs ϝ `{!frac_borG Σ} :
     Forall lctx_lft_alive κs →
     ∀ (F : coPset) (qL : Qp),
@@ -305,7 +311,7 @@ Hint Resolve of_val_unlock : lrust_typing.
 Hint Resolve
      lctx_lft_incl_relf lctx_lft_incl_static lctx_lft_incl_local'
      lctx_lft_incl_external'
-     lctx_lft_alive_static lctx_lft_alive_local
+     lctx_lft_alive_static lctx_lft_alive_local lctx_lft_alive_external
      elctx_sat_nil elctx_sat_lft_incl elctx_sat_app elctx_sat_refl
   : lrust_typing.
 Hint Resolve elctx_sat_cons_weaken elctx_sat_app_weaken_l elctx_sat_app_weaken_r

@@ -54,10 +54,10 @@ Section option.
         return: ["r"]].
 
   Lemma option_unwrap_or_type τ :
-    typed_val (option_unwrap_or τ) (fn([]; option τ, τ) → τ).
+    typed_val (option_unwrap_or τ) (fn((λ ϝ, []); option τ, τ) → τ).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([] ret p).
-      inv_vec p=>o def. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros ([] ϝ ret p). inv_vec p=>o def. simpl_subst.
     iApply type_case_own; [solve_typing|]. constructor; last constructor; last constructor.
     + right. iApply type_delete; [solve_typing..|].
       iApply type_jump; solve_typing.
