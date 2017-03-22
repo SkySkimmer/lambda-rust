@@ -15,7 +15,7 @@ Section borrow.
   Lemma tctx_borrow E L p n ty κ :
     tctx_incl E L [p ◁ own_ptr n ty] [p ◁ &uniq{κ}ty; p ◁{κ} own_ptr n ty].
   Proof.
-    iIntros (tid ??) "#LFT $ $ H".
+    iIntros (tid ?)  "#LFT _ $ H".
     rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
     iDestruct "H" as ([[]|]) "[% Hown]"; try done. iDestruct "Hown" as "[Hmt ?]".
     iMod (bor_create with "LFT Hmt") as "[Hbor Hext]". done.
@@ -47,7 +47,7 @@ Section borrow.
     lctx_lft_alive E L κ →
     typed_instruction_ty E L [p ◁ &uniq{κ} own_ptr n ty] (!p) (&uniq{κ} ty).
   Proof.
-    iIntros (Hκ tid qE) "#LFT $ HE HL Hp".
+    iIntros (Hκ tid) "#LFT HE $ HL Hp".
     rewrite tctx_interp_singleton.
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
     wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown"; try done.
@@ -77,7 +77,7 @@ Section borrow.
     lctx_lft_alive E L κ →
     typed_instruction_ty E L [p ◁ &shr{κ} own_ptr n ty] (!p) (&shr{κ} ty).
   Proof.
-    iIntros (Hκ tid qE) "#LFT $ HE HL Hp".
+    iIntros (Hκ tid) "#LFT HE $ HL Hp".
     rewrite tctx_interp_singleton.
     iMod (Hκ with "HE HL") as (q) "[[Htok1 Htok2] Hclose]"; first set_solver.
     wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown"; try done.
@@ -103,10 +103,9 @@ Section borrow.
     lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
     typed_instruction_ty E L [p ◁ &uniq{κ} &uniq{κ'} ty] (!p) (&uniq{κ} ty).
   Proof.
-    iIntros (Hκ Hincl tid qE) "#LFT $ HE HL Hp".
+    iIntros (Hκ Hincl tid) "#LFT #HE $ HL Hp".
     rewrite tctx_interp_singleton.
-    iPoseProof (Hincl with "[#] [#]") as "Hincl".
-    { by iApply elctx_interp_persist. } { by iApply llctx_interp_persist. }
+    iDestruct (Hincl with "HL HE") as "#Hincl".
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
     wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown"; try done.
     iMod (bor_exists with "LFT Hown") as (vl) "Hbor". done.
@@ -137,9 +136,8 @@ Section borrow.
     lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
     typed_instruction_ty E L [p ◁ &shr{κ} &uniq{κ'} ty] (!p) (&shr{κ} ty).
   Proof.
-    iIntros (Hκ Hincl tid qE) "#LFT $ HE HL Hp". rewrite tctx_interp_singleton.
-    iPoseProof (Hincl with "[#] [#]") as "Hincl".
-    { by iApply elctx_interp_persist. } { by iApply llctx_interp_persist. }
+    iIntros (Hκ Hincl tid) "#LFT HE $ HL Hp". rewrite tctx_interp_singleton.
+    iDestruct (Hincl with "HL HE") as "#Hincl".
     iMod (Hκ with "HE HL") as (q) "[[Htok1 Htok2] Hclose]"; first set_solver.
     wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hshr"; try done.
     iDestruct "Hshr" as (l') "[H↦ Hown]".

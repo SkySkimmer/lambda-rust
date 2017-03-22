@@ -20,9 +20,11 @@ Section shr_bor.
     Proper (flip (lctx_lft_incl E L) ==> subtype E L ==> subtype E L) shr_bor.
   Proof.
     intros κ1 κ2 Hκ ty1 ty2 Hty. apply subtype_simple_type.
-    iIntros (? [|[[]|][]]) "#HE #HL H"; try done.
-    iDestruct (Hκ with "HE HL") as "#Hκ". iApply (ty2.(ty_shr_mono) with "Hκ").
-    iDestruct (Hty with "[] []") as "(_ & _ & #Hs1)"; [done..|clear Hty].
+    iIntros (?) "/= HL". iDestruct (Hκ with "HL") as "#Hincl".
+    iDestruct (Hty with "HL") as "#Hty". iIntros "!# #HE".
+    iIntros (? [|[[]|][]]) "H"; try done. iDestruct ("Hincl" with "HE") as "#Hκ".
+    iApply (ty2.(ty_shr_mono) with "Hκ").
+    iDestruct ("Hty" with "HE") as "(_ & _ & #Hs1)"; [done..|clear Hty].
     by iApply "Hs1".
   Qed.
   Global Instance shr_mono_flip E L :
@@ -64,11 +66,8 @@ Section typing.
     lctx_lft_incl E L κ' κ →
     tctx_incl E L [p ◁ &shr{κ}ty] [p ◁ &shr{κ'}ty; p ◁{κ} &shr{κ}ty].
   Proof.
-    iIntros (Hκκ' tid ??) "#LFT HE HL H".
-    iDestruct (elctx_interp_persist with "HE") as "#HE'".
-    iDestruct (llctx_interp_persist with "HL") as "#HL'". iFrame "HE HL".
-    iDestruct (Hκκ' with "HE' HL'") as "Hκκ'".
-    rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
+    iIntros (Hκκ' tid ?) "#LFT #HE HL H". iDestruct (Hκκ' with "HL HE") as "#Hκκ'".
+    iFrame. rewrite /tctx_interp big_sepL_singleton big_sepL_cons big_sepL_singleton.
     iDestruct "H" as ([[]|]) "[% #Hshr]"; try done. iModIntro. iSplit.
     - iExists _. iSplit. done. by iApply (ty_shr_mono with "Hκκ' Hshr").
     - iExists _. auto.
@@ -78,7 +77,7 @@ Section typing.
     Copy ty → lctx_lft_alive E L κ → typed_read E L (&shr{κ}ty) ty (&shr{κ}ty).
   Proof.
     iIntros (Hcopy Halive) "!#".
-    iIntros ([[]|] tid F qE qL ?) "#LFT Htl HE HL #Hshr"; try done.
+    iIntros ([[]|] tid F qL ?) "#LFT #HE Htl HL #Hshr"; try done.
     iMod (Halive with "HE HL") as (q) "[Hκ Hclose]"; first set_solver.
     assert (↑shrN ⊆ (↑lrustN : coPset)) by solve_ndisj. (* set_solver needs some help. *)
     iMod (copy_shr_acc with "LFT Hshr Htl Hκ") as (q') "(Htl & H↦ & Hcl)".
