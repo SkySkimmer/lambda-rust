@@ -32,8 +32,9 @@ Section cell.
 
   Global Instance cell_mono E L : Proper (eqtype E L ==> subtype E L) cell.
   Proof.
-    iIntros (?? EQ%eqtype_unfold) "#HE #HL".
-    iDestruct (EQ with "HE HL") as "(% & #Hown & #Hshr)".
+    move=>?? /eqtype_unfold EQ. iIntros (?) "HL".
+    iDestruct (EQ with "HL") as "#EQ". iIntros "!# #HE".
+    iDestruct ("EQ" with "HE") as "(% & #Hown & #Hshr)".
     iSplit; [done|iSplit; iIntros "!# * H"].
     - iApply ("Hown" with "H").
     - iApply na_bor_iff; last done. iSplit; iIntros "!>!# H";
@@ -85,36 +86,36 @@ Section typing.
   Definition cell_new : val := funrec: <> ["x"] := return: ["x"].
 
   Lemma cell_new_type ty :
-    typed_val cell_new (fn([]; ty) → cell ty).
+    typed_val cell_new (fn(λ _, []; ty) → cell ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
-      iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
+      iIntros (_ ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_jump; [solve_typing..|].
-    iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
+    iIntros (??) "#LFT _ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
 
   (* The other direction: getting ownership out of a cell. *)
   Definition cell_into_inner : val := funrec: <> ["x"] := return: ["x"].
 
   Lemma cell_into_inner_type ty :
-    typed_val cell_into_inner (fn([]; cell ty) → ty).
+    typed_val cell_into_inner (fn(λ _, []; cell ty) → ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
-      iIntros (_ ret arg). inv_vec arg=>x. simpl_subst.
+      iIntros (_ ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_jump; [solve_typing..|].
-    iIntros (???) "#LFT $ $ Hty". rewrite !tctx_interp_singleton /=. done.
+    iIntros (??) "#LFT _ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
 
   Definition cell_get_mut : val :=
     funrec: <> ["x"] := return: ["x"].
 
   Lemma cell_get_mut_type ty :
-    typed_val cell_get_mut (fn(∀ α, [α]; &uniq{α} (cell ty)) → &uniq{α} ty).
+    typed_val cell_get_mut (fn(∀ α, λ ϝ, [ϝ ⊑ α]; &uniq{α} (cell ty)) → &uniq{α} ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
-      iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
+      iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_jump; [solve_typing..|]. rewrite /tctx_incl /=.
-    iIntros (???) "_ $$". rewrite !tctx_interp_singleton /tctx_elt_interp /=.
+    iIntros (??) "_ _ $". rewrite !tctx_interp_singleton /tctx_elt_interp /=.
     by iIntros "$".
   Qed.
 
@@ -126,10 +127,10 @@ Section typing.
       delete [ #1; "x"];; return: ["r"].
 
   Lemma cell_get_type `(!Copy ty) :
-    typed_val (cell_get ty) (fn(∀ α, [α]; &shr{α} (cell ty)) → ty).
+    typed_val (cell_get ty) (fn(∀ α, λ ϝ, [ϝ ⊑ α]; &shr{α} (cell ty)) → ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
-      iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
+      iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
     iApply type_letalloc_n; [solve_typing| |iIntros (r); simpl_subst].
     { apply (read_shr _ _ _ (cell ty)); solve_typing. }
@@ -146,21 +147,21 @@ Section typing.
       delete [ #1; "c"] ;; delete [ #ty.(ty_size); "x"] ;; return: ["r"].
 
   Lemma cell_replace_type ty :
-    typed_val (cell_replace ty) (fn(∀ α, [α]; &shr{α} cell ty, ty) → ty).
+    typed_val (cell_replace ty) (fn(∀ α, λ ϝ, [ϝ ⊑ α]; &shr{α} cell ty, ty) → ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
-      iIntros (α ret arg). inv_vec arg=>c x. simpl_subst.
+      iIntros (α ϝ ret arg). inv_vec arg=>c x. simpl_subst.
     iApply type_deref; [solve_typing..|].
     iIntros (c'); simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r); simpl_subst.
     (* Drop to Iris level. *)
-    iIntros (tid qE) "#LFT Htl HE HL HC".
+    iIntros (tid) "#LFT #HE Htl HL HC".
     rewrite 3!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iIntros "(Hr & Hc & #Hc' & Hx)".
-    rewrite {1}/elctx_interp big_opL_singleton /=.
     destruct c' as [[|c'|]|]; try done. destruct x as [[|x|]|]; try done.
     destruct r as [[|r|]|]; try done.
-    iMod (na_bor_acc with "LFT Hc' HE Htl") as "(Hc'↦ & Htl & Hclose)"; [solve_ndisj..|].
+    iMod (lctx_lft_alive_tok _ _ α with "HE HL") as (q') "[Htok Hclose1]"; [solve_typing..|].
+    iMod (na_bor_acc with "LFT Hc' Htok Htl") as "(Hc'↦ & Htl & Hclose2)"; [solve_ndisj..|].
     iDestruct "Hc'↦" as (vc') "[>Hc'↦ Hc'own]".
     iDestruct (ty_size_eq with "Hc'own") as "#>%".
     iDestruct "Hr" as "[Hr↦ Hr†]". iDestruct "Hr↦" as (vr) "[>Hr↦ Hrown]".
@@ -174,16 +175,16 @@ Section typing.
     rewrite Nat2Z.id. iDestruct (ty_size_eq with "Hxown") as "#%".
     wp_apply (wp_memcpy with "[$Hc'↦ $Hx↦]"); try by f_equal.
     iIntros "[Hc'↦ Hx↦]". wp_seq.
-    iMod ("Hclose" with "[Hc'↦ Hxown] Htl") as "[HE Htl]"; first by auto with iFrame.
+    iMod ("Hclose2" with "[Hc'↦ Hxown] Htl") as "[Htok Htl]"; first by auto with iFrame.
+    iMod ("Hclose1" with "Htok") as "HL".
     (* Now go back to typing level. *)
     iApply (type_type _ _ _
            [c ◁ box (&shr{α} cell ty); #x ◁ box (uninit ty.(ty_size)); #r ◁ box ty]%TC
-    with "[] LFT Htl [HE] HL HC"); last first.
+    with "[] LFT HE Htl HL HC"); last first.
     { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
       iFrame "Hc". rewrite !tctx_hasty_val' //. iSplitL "Hx↦ Hx†".
       - iFrame. iExists _. iFrame. iNext. iApply uninit_own. done.
       - iFrame. iExists _. iFrame. }
-    { rewrite /elctx_interp big_opL_singleton. done. }
     iApply type_delete; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.

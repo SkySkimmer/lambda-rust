@@ -173,6 +173,10 @@ Section lft_contexts.
     ∀ F qL, ↑lftN ⊆ F → elctx_interp E -∗ llctx_interp L qL ={F}=∗
           ∃ q', q'.[κ] ∗ (q'.[κ] ={F}=∗ llctx_interp L qL).
 
+  Lemma lctx_lft_alive_tok κ :
+    lctx_lft_alive κ → lctx_lft_alive κ.
+  Proof. done. Qed.
+
   Lemma lctx_lft_alive_static : lctx_lft_alive static.
   Proof.
     iIntros (F qL ?) "_ $". iExists 1%Qp. iSplitL. by iApply lft_tok_static. auto.
