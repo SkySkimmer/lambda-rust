@@ -176,8 +176,16 @@ Section lft_contexts.
   Lemma lctx_lft_alive_tok κ F q :
     ↑lftN ⊆ F →
     lctx_lft_alive κ → elctx_interp E -∗ llctx_interp L q ={F}=∗
-      ∃ q', q'.[κ] ∗ llctx_interp L (q / 2) ∗ (q'.[κ] ={F}=∗ llctx_interp L (q / 2)).
-  Proof. iIntros (? Hal) "#HE [$ HL]". by iApply Hal. Qed.
+      ∃ q', q'.[κ] ∗ llctx_interp L q' ∗
+                   (q'.[κ] -∗ llctx_interp L q' ={F}=∗ llctx_interp L q).
+  Proof.
+    iIntros (? Hal) "#HE [HL1 HL2]".
+    iMod (Hal with "HE HL1") as (q') "[Htok Hclose]"; first done.
+    destruct (Qp_lower_bound (q/2) q') as (qq & q0  & q'0 & Hq & ->). rewrite Hq.
+    iExists qq. iDestruct "HL2" as "[$ HL]". iDestruct "Htok" as "[$ Htok]".
+    iIntros "!> Htok' HL'". iCombine "HL'" "HL" as "HL". rewrite -Hq. iFrame.
+    iApply "Hclose". iFrame.
+  Qed.
 
   Lemma lctx_lft_alive_static : lctx_lft_alive static.
   Proof.

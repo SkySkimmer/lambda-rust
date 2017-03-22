@@ -64,15 +64,14 @@ Section ref_functions.
     iApply type_deref; [solve_typing..|]. iIntros (x').
 
 Typeclasses Opaque llctx_interp.
-    iIntros (tid) "#LFT HE Hna [HL1 HL2] Hk HT".
-
-
-    simpl_subst.
+    iIntros (tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
     iDestruct "Hx'" as (ν q γ δ ty' lv lrc) "#(Hαν & Hfrac & Hshr & Hβδ & Hinv & H◯inv)".
     wp_op.
-    iMod (lctx_lft_alive_tok _ _ β with "HE HL") as (q') "[Hβ Hclose1]"; [solve_typing..|].
+    iMod (lctx_lft_alive_tok _ _ β with "HE HL") as (qβ) "(Hβ & HL & Hclose)"; [solve_typing..|].
+    iMod (lctx_lft_alive_tok _ _ α with "HE HL") as (qα) "(Hα & HL & Hclose')";
+      [solve_typing..|].
     iMod (lft_incl_acc with "Hβδ Hβ") as (qδ) "[Hδ Hcloseβ]". done.
     iMod (frac_bor_acc with "LFT Hfrac Hα1") as (qlx') "[H↦ Hcloseα1]". done.
     iMod (na_bor_acc with "LFT Hinv Hδ Hna") as "(INV & Hna & Hcloseδ)"; [done..|].
