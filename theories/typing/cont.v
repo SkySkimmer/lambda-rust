@@ -17,9 +17,9 @@ Section typing.
     tctx_incl E L T (T' (list_to_vec argsv)) →
     typed_body E L C T (k args).
   Proof.
-    iIntros (Hargs HC Hincl tid qE) "#LFT Hna HE HL HC HT".
-    iMod (Hincl with "LFT HE HL HT") as "(HE & HL & HT)".
-    iSpecialize ("HC" with "HE []"); first done.
+    iIntros (Hargs HC Hincl tid) "#LFT #HE Hna HL HC HT".
+    iMod (Hincl with "LFT HE HL HT") as "(HL & HT)".
+    iSpecialize ("HC" with "[]"); first done.
     assert (args = of_val <$> argsv) as ->.
     { clear -Hargs. induction Hargs as [|a av ?? [<-%of_to_val| ->] _ ->]=>//=. }
     rewrite -{3}(vec_to_list_of_list argsv). iApply ("HC" with "Hna HL HT").
@@ -33,15 +33,15 @@ Section typing.
                      (subst_v (kb::argsb) (k:::args) econt)) -∗
     typed_body E L2 C T (letcont: kb argsb := econt in e2).
   Proof.
-    iIntros (Hc1 Hc2) "He2 #Hecont". iIntros (tid qE) "#LFT Htl HE HL HC HT".
+    iIntros (Hc1 Hc2) "He2 #Hecont". iIntros (tid) "#LFT #HE Htl HL HC HT".
     iApply wp_let'; first by rewrite /= decide_left.
-    iModIntro. iApply ("He2" with "LFT Htl HE HL [HC] HT").
-    iIntros "HE". iLöb as "IH". iIntros (x) "H".
-    iDestruct "H" as %[->|?]%elem_of_cons; last by iApply ("HC" with "HE").
+    iModIntro. iApply ("He2" with "LFT HE Htl HL [HC] HT").
+    iLöb as "IH". iIntros (x) "H".
+    iDestruct "H" as %[->|?]%elem_of_cons; last by iApply "HC".
     iIntros (args) "Htl HL HT". iApply wp_rec; try done.
     { rewrite Forall_fmap Forall_forall=>? _. rewrite /= to_of_val. eauto. }
     { by rewrite -(subst_v_eq (_ :: _) (RecV _ _ _ ::: _)). }
-    iNext. iApply ("Hecont" with "LFT Htl HE HL [HC] HT"). by iApply "IH".
+    iNext. iApply ("Hecont" with "LFT HE Htl HL [HC] HT"). by iApply "IH".
   Qed.
 
   Lemma type_cont_norec argsb L1 (T' : vec val (length argsb) → _) E L2 C T econt e2 kb :
@@ -51,14 +51,14 @@ Section typing.
           typed_body E L1 C (T' args) (subst_v (kb :: argsb) (k:::args) econt)) -∗
     typed_body E L2 C T (letcont: kb argsb := econt in e2).
   Proof.
-    iIntros (Hc1 Hc2) "He2 Hecont". iIntros (tid qE) "#LFT Htl HE HL HC HT".
+    iIntros (Hc1 Hc2) "He2 Hecont". iIntros (tid) "#LFT #HE Htl HL HC HT".
     iApply wp_let'; first by rewrite /= decide_left.
-    iModIntro. iApply ("He2" with "LFT Htl HE HL [HC Hecont] HT").
-    iIntros "HE". iIntros (x) "H".
-    iDestruct "H" as %[->|?]%elem_of_cons; last by iApply ("HC" with "HE").
+    iModIntro. iApply ("He2" with "LFT HE Htl HL [HC Hecont] HT").
+    iIntros (x) "H".
+    iDestruct "H" as %[->|?]%elem_of_cons; last by iApply "HC".
     iIntros (args) "Htl HL HT". iApply wp_rec; try done.
     { rewrite Forall_fmap Forall_forall=>? _. rewrite /= to_of_val. eauto. }
     { by rewrite -(subst_v_eq (_ :: _) (RecV _ _ _ ::: _)). }
-    iNext. iApply ("Hecont" with "LFT Htl HE HL HC HT").
+    iNext. iApply ("Hecont" with "LFT HE Htl HL HC HT").
   Qed.
 End typing.

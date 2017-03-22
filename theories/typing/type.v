@@ -472,7 +472,7 @@ Instance: Params (@type_incl) 2.
 (* Typeclasses Opaque type_incl. *)
 
 Definition subtype `{typeG Σ} (E : elctx) (L : llctx) (ty1 ty2 : type) : Prop :=
-  elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗ type_incl ty1 ty2.
+  ∀ qL, llctx_interp L qL -∗ □ (elctx_interp E -∗ type_incl ty1 ty2).
 Instance: Params (@subtype) 4.
 
 (* TODO: The prelude should have a symmetric closure. *)
@@ -505,12 +505,15 @@ Section subtyping.
   Qed.
 
   Lemma subtype_refl E L ty : subtype E L ty ty.
-  Proof. iIntros. iApply type_incl_refl. Qed.
+  Proof. iIntros (?) "_ !# _". iApply type_incl_refl. Qed.
   Global Instance subtype_preorder E L : PreOrder (subtype E L).
   Proof.
     split; first by intros ?; apply subtype_refl.
-    intros ty1 ty2 ty3 H12 H23. iIntros.
-    iApply type_incl_trans. by iApply H12. by iApply H23.
+    intros ty1 ty2 ty3 H12 H23. iIntros (?) "HL".
+    iDestruct (H12 with "HL") as "#H12".
+    iDestruct (H23 with "HL") as "#H23".
+    iClear "∗". iIntros "!# #HE".
+    iApply (type_incl_trans with "[#]"). by iApply "H12". by iApply "H23".
   Qed.
 
   Lemma equiv_subtype E L ty1 ty2 : ty1 ≡ ty2 → subtype E L ty1 ty2.
@@ -518,21 +521,27 @@ Section subtyping.
 
   Lemma eqtype_unfold E L ty1 ty2 :
     eqtype E L ty1 ty2 ↔
-    (elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
+    (∀ qL, llctx_interp L qL -∗ □ (elctx_interp E -∗
       (⌜ty1.(ty_size) = ty2.(ty_size)⌝ ∗
       (□ ∀ tid vl, ty1.(ty_own) tid vl ↔ ty2.(ty_own) tid vl) ∗
-      (□ ∀ κ tid l, ty1.(ty_shr) κ tid l ↔ ty2.(ty_shr) κ tid l))%I).
+      (□ ∀ κ tid l, ty1.(ty_shr) κ tid l ↔ ty2.(ty_shr) κ tid l)))%I).
   Proof.
     split.
-    - iIntros ([EQ1 EQ2]) "#HE #HL".
-      iDestruct (EQ1 with "HE HL") as "[#Hsz [#H1own #H1shr]]".
-      iDestruct (EQ2 with "HE HL") as "[_ [#H2own #H2shr]]".
+    - iIntros ([EQ1 EQ2] qL) "HL".
+      iDestruct (EQ1 with "HL") as "#EQ1".
+      iDestruct (EQ2 with "HL") as "#EQ2".
+      iClear "∗". iIntros "!# #HE".
+      iDestruct ("EQ1" with "HE") as "[#Hsz [#H1own #H1shr]]".
+      iDestruct ("EQ2" with "HE") as "[_ [#H2own #H2shr]]".
       iSplit; last iSplit.
       + done.
       + by iIntros "!#*"; iSplit; iIntros "H"; [iApply "H1own"|iApply "H2own"].
       + by iIntros "!#*"; iSplit; iIntros "H"; [iApply "H1shr"|iApply "H2shr"].
-    - intros EQ. split; iIntros "#HE #HL"; (iSplit; last iSplit);
-      iDestruct (EQ with "HE HL") as "[% [#Hown #Hshr]]".
+    - intros EQ. split; (iIntros (qL) "HL";
+      iDestruct (EQ with "HL") as "#EQ";
+      iClear "∗"; iIntros "!# #HE";
+      iDestruct ("EQ" with "HE") as "[% [#Hown #Hshr]]";
+      (iSplit; last iSplit)).
       + done.
       + iIntros "!#* H". by iApply "Hown".
       + iIntros "!#* H". by iApply "Hshr".
@@ -560,25 +569,25 @@ Section subtyping.
   Qed.
 
   Lemma subtype_simple_type E L (st1 st2 : simple_type) :
-    (∀ tid vl, elctx_interp_0 E -∗ ⌜llctx_interp_0 L⌝ -∗
-                 st1.(st_own) tid vl -∗ st2.(st_own) tid vl) →
+    (∀ qL, llctx_interp L qL -∗ □ (elctx_interp E -∗ 
+       ∀ tid vl, st1.(st_own) tid vl -∗ st2.(st_own) tid vl)) →
     subtype E L st1 st2.
   Proof.
-    intros Hst. iIntros. iSplit; first done. iSplit; iAlways.
-    - iIntros. iApply Hst; done.
+    intros Hst. iIntros (qL) "HL". iDestruct (Hst with "HL") as "#Hst".
+    iClear "∗". iIntros "!# #HE". iSplit; first done. iSplit; iAlways.
+    - iIntros. iApply "Hst"; done.
     - iIntros (???). iDestruct 1 as (vl) "[Hf Hown]". iExists vl. iFrame "Hf".
-      by iApply Hst.
+      by iApply "Hst".
   Qed.
 
   Lemma subtype_weaken E1 E2 L1 L2 ty1 ty2 :
     E1 ⊆+ E2 → L1 ⊆+ L2 →
     subtype E1 L1 ty1 ty2 → subtype E2 L2 ty1 ty2.
   Proof.
-    iIntros (HE12 ? Hsub) "HE HL".
-    iApply (Hsub with "[HE] [HL]").
-    - rewrite /elctx_interp_0. by iApply big_sepL_submseteq.
-    - iDestruct "HL" as %HL. iPureIntro. intros ??. apply HL.
-      eauto using elem_of_submseteq.
+    iIntros (HE12 ? Hsub qL) "HL". iDestruct (Hsub with "[HL]") as "#Hsub".
+    { rewrite /llctx_interp. by iApply big_sepL_submseteq. }
+    iClear "∗". iIntros "!# #HE". iApply "Hsub".
+    rewrite /elctx_interp. by iApply big_sepL_submseteq.
   Qed.
 End subtyping.
 
