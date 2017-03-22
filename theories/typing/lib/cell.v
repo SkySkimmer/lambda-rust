@@ -160,7 +160,7 @@ Section typing.
     iIntros "(Hr & Hc & #Hc' & Hx)".
     destruct c' as [[|c'|]|]; try done. destruct x as [[|x|]|]; try done.
     destruct r as [[|r|]|]; try done.
-    iMod (lctx_lft_alive_tok _ _ α with "HE HL") as (q') "[Htok Hclose1]"; [solve_typing..|].
+    iMod (lctx_lft_alive_tok _ _ α with "HE HL") as (q') "(Htok & HL & Hclose1)"; [solve_typing..|].
     iMod (na_bor_acc with "LFT Hc' Htok Htl") as "(Hc'↦ & Htl & Hclose2)"; [solve_ndisj..|].
     iDestruct "Hc'↦" as (vc') "[>Hc'↦ Hc'own]".
     iDestruct (ty_size_eq with "Hc'own") as "#>%".
@@ -176,7 +176,7 @@ Section typing.
     wp_apply (wp_memcpy with "[$Hc'↦ $Hx↦]"); try by f_equal.
     iIntros "[Hc'↦ Hx↦]". wp_seq.
     iMod ("Hclose2" with "[Hc'↦ Hxown] Htl") as "[Htok Htl]"; first by auto with iFrame.
-    iMod ("Hclose1" with "Htok") as "HL".
+    iMod ("Hclose1" with "Htok HL") as "HL".
     (* Now go back to typing level. *)
     iApply (type_type _ _ _
            [c ◁ box (&shr{α} cell ty); #x ◁ box (uninit ty.(ty_size)); #r ◁ box ty]%TC
