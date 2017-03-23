@@ -36,6 +36,13 @@ Section rc.
       | None => True
       end)%I.
 
+  Global Instance rc_type_ne n :
+    Proper (type_dist2 n ==> dist n) (rc_inv tid ν γ l).
+  Proof.
+    solve_proper_core
+      ltac:(fun _ => exact: type_dist2_S || f_type_equiv || f_contractive || f_equiv).
+  Qed.
+
   Program Definition rc (ty : type) :=
     {| ty_size := 1;
        ty_own tid vl :=
@@ -122,6 +129,17 @@ Section rc.
     - by iApply lft_incl_trans.
     - by iApply na_bor_shorten.
   Qed.
+
+  Global Instance rc_type_contractive : TypeContractive rc.
+  Proof.
+    constructor;
+      solve_proper_core ltac:(fun _ => exact: type_dist2_S || (eapply refcell_inv_type_ne; try reflexivity) ||
+                                              f_type_equiv || f_contractive || f_equiv).
+  Qed.
+
+  Global Instance rc_ne : NonExpansive rc.
+  Proof. apply type_contractive_ne, _. Qed.
+
 End rc.
 
 Section code.
