@@ -300,6 +300,7 @@ Arguments lctx_lft_incl {_ _ _} _%EL _%LL _ _.
 Arguments lctx_lft_eq {_ _ _} _%EL _%LL _ _.
 Arguments lctx_lft_alive {_ _ _} _%EL _%LL _.
 Arguments elctx_sat {_ _ _} _%EL _%LL _%EL.
+Arguments lctx_lft_alive_tok {_ _ _ _%EL _%LL} _ _ _.
 
 Lemma elctx_sat_cons_weaken `{invG Σ, lftG Σ} e0 E E' L :
   elctx_sat E L E' → elctx_sat (e0 :: E) L E'.

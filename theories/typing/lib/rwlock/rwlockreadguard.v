@@ -75,19 +75,21 @@ Section rwlockreadguard.
   Global Instance rwlockreadguard_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> eqtype E L ==> subtype E L) rwlockreadguard.
   Proof.
-    iIntros (α1 α2 Hα ty1 ty2 Hty) "#HE #HL".
-    iDestruct (proj1 Hty with "HE HL") as "(%&#Ho&#Hs)".
-    iDestruct (Hα with "HE HL") as "Hα1α2".
-    iSplit; [|iSplit; iAlways].
+    iIntros (α1 α2 Hα ty1 ty2 Hty q) "HL".
+    iDestruct (proj1 Hty with "HL") as "#Hty". iDestruct (Hα with "HL") as "#Hα".
+    iDestruct (rwlock_inv_proper with "HL") as "#Hty1ty2"; first done.
+    iDestruct (rwlock_inv_proper with "HL") as "#Hty2ty1"; first by symmetry.
+    iIntros "!# #HE". iDestruct ("Hα" with "HE") as "Hα1α2".
+    iDestruct ("Hty" with "HE") as "(%&#Ho&#Hs)". iSplit; [|iSplit; iAlways].
     - done.
     - iIntros (tid [|[[]|][]]) "H"; try done.
-      iDestruct "H" as (ν q γ β) "(#Hshr & #H⊑ & #Hinv & Htok & Hown)".
-      iExists ν, q, γ, β. iFrame "∗#". iSplit; last iSplit.
+      iDestruct "H" as (ν q' γ β) "(#Hshr & #H⊑ & #Hinv & Htok & Hown)".
+      iExists ν, q', γ, β. iFrame "∗#". iSplit; last iSplit.
       + iApply ty_shr_mono; last by iApply "Hs".
         iApply lft_intersect_mono. done. iApply lft_incl_refl.
       + by iApply lft_incl_trans.
       + iApply (shr_bor_iff with "[] Hinv").
-        iIntros "!> !#"; iSplit; iIntros "H"; by iApply rwlock_inv_proper.
+        iIntros "!> !#"; iSplit; iIntros "H". by iApply "Hty1ty2". by iApply "Hty2ty1".
     - iIntros (κ tid l) "H". iDestruct "H" as (l') "[Hf Hshr]". iExists l'.
       iFrame. iApply ty_shr_mono; last by iApply "Hs".
       iApply lft_intersect_mono. done. iApply lft_incl_refl.

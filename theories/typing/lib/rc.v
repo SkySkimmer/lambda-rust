@@ -241,7 +241,7 @@ Section code.
     iDestruct (ownptr_uninit_own with "Hrc2") as (lrc2 vlrc2) "(% & Hrc2 & Hrc2†)".
     subst rc2. inv_vec vlrc2=>rc2. rewrite heap_mapsto_vec_singleton.
     (* All right, we are done preparing our context. Let's get going. *)
-    iMod (lctx_lft_alive_tok _ _ α with "HE HL") as (q) "([Hα1 Hα2] & HL & Hclose1)"; [solve_typing..|].
+    iMod (lctx_lft_alive_tok α with "HE HL") as (q) "([Hα1 Hα2] & HL & Hclose1)"; [solve_typing..|].
     wp_bind (!_)%E.
     iSpecialize ("Hshr" with "[] Hα1"); last iApply (wp_step_fupd with "Hshr"); [done..|].
     iMod (frac_bor_acc with "LFT Hlrc Hα2") as (q') "[Hlrc↦ Hclose]"; first solve_ndisj.
@@ -300,7 +300,7 @@ Section code.
     destruct rc' as [[|rc'|]|]; try done. simpl of_val.
     iDestruct "Hrc'" as (l') "[#Hrc' #Hdelay]".
     (* All right, we are done preparing our context. Let's get going. *)
-    iMod (lctx_lft_alive_tok _ _ α with "HE HL") as (q) "([Hα1 Hα2] & HL & Hclose1)"; [solve_typing..|].
+    iMod (lctx_lft_alive_tok α with "HE HL") as (q) "([Hα1 Hα2] & HL & Hclose1)"; [solve_typing..|].
     wp_bind (!_)%E.
     iSpecialize ("Hdelay" with "[] Hα1"); last iApply (wp_step_fupd with "Hdelay"); [done..|].
     iMod (frac_bor_acc with "LFT Hrc' Hα2") as (q') "[Hrc'↦ Hclose2]"; first solve_ndisj.
@@ -490,7 +490,7 @@ Section code.
     iIntros (tid) "#LFT #HE Hna HL Hk [Hrcx [Hrc' [Hx _]]]".
     rewrite !tctx_hasty_val  [[rcx]]lock [[x]]lock.
     destruct rc' as [[|rc'|]|]; try done.
-    iMod (lctx_lft_alive_tok _ _ α with "HE HL") as (q) "(Hα & HL & Hclose1)"; [solve_typing..|].
+    iMod (lctx_lft_alive_tok α with "HE HL") as (q) "(Hα & HL & Hclose1)"; [solve_typing..|].
     iMod (bor_acc_cons with "LFT Hrc' Hα") as "[Hrc' Hclose2]"; first solve_ndisj.
     iDestruct (heap_mapsto_ty_own with "Hrc'") as (vl) "[>Hrc' Hrcown]".
     inv_vec vl=>l. rewrite heap_mapsto_vec_singleton.

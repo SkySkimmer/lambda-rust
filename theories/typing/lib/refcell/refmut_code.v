@@ -20,31 +20,34 @@ Section refmut_functions.
 
   Lemma refmut_deref_type ty :
     typed_val refmut_deref
-      (fn (fun '(α, β) => FP [α; β; α ⊑ β]%EL [# &shr{α}(refmut β ty)]%T (&shr{α}ty))).
+      (fn (fun '(α, β) => FP (λ ϝ, [ϝ ⊑ α; α ⊑ β]%EL)
+                             [# &shr{α}(refmut β ty)]%T (&shr{α}ty))).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
-      iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
+      iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x').
-    iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
+    iIntros (tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
     iDestruct "Hx'" as (lv lrc) "#(Hfrac & #Hshr)".
-    rewrite {1}/elctx_interp 2!big_sepL_cons big_sepL_singleton.
-    iDestruct "HE" as "([Hα1 Hα2] & Hβ & #Hαβ)".
+    iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "([Hα1 Hα2] & HL & Hclose')";
+      [solve_typing..|].
     iMod (frac_bor_acc with "LFT Hfrac Hα1") as (qlx') "[H↦ Hcloseα1]". done.
     rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
+    iMod (lctx_lft_alive_tok β with "HE HL") as (qβ) "(Hβ & HL & Hclose'')";
+      [solve_typing..|].
     iDestruct (lft_intersect_acc with "Hβ Hα2") as (qβα) "[Hα2β Hcloseβα2]".
     wp_bind (!(LitV lx'))%E. iApply (wp_step_fupd with "[Hα2β]");
          [done| |by iApply ("Hshr" with "[] Hα2β")|]; first done.
     iMod "H↦" as "[H↦1 H↦2]". wp_read. iIntros "[#Hshr' Hα2β] !>". wp_let.
     iDestruct ("Hcloseβα2" with "Hα2β") as "[Hβ Hα2]".
     iMod ("Hcloseα1" with "[$H↦1 $H↦2]") as "Hα1".
+    iMod ("Hclose''" with "Hβ HL") as "HL". iMod ("Hclose'" with "[$] HL") as "HL".
     iApply (type_type _ _ _ [ x ◁ box (&shr{α} refmut β ty); #lv ◁ &shr{α}ty]%TC
-            with "[] LFT Hna [Hα1 Hα2 Hβ Hαβ] HL Hk"); last first.
+            with "[] LFT HE Hna HL Hk"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
-      iFrame. iApply (ty_shr_mono with "[] Hshr'"). iApply lft_incl_glb; first done.
-      iApply lft_incl_refl. }
-    { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
+      iFrame. iApply (ty_shr_mono with "[] Hshr'").
+      iApply lft_incl_glb; last iApply lft_incl_refl. iDestruct "HE" as "(_ & $ & _)". }
     iApply (type_letalloc_1 (&shr{α}ty)); [solve_typing..|].
     iIntros (r). simpl_subst. iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
@@ -60,19 +63,19 @@ Section refmut_functions.
 
   Lemma refmut_derefmut_type ty :
     typed_val refmut_derefmut
-      (fn (fun '(α, β) => FP [α; β; α ⊑ β]%EL [# &uniq{α}(refmut β ty)]%T
+      (fn (fun '(α, β) => FP (λ ϝ, [ϝ ⊑ α; α ⊑ β]%EL) [# &uniq{α}(refmut β ty)]%T
                               (&uniq{α}ty)%T)).
    Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
-      iIntros ([α β] ret arg). inv_vec arg=>x. simpl_subst.
+      iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x').
-    iIntros (tid qE) "#LFT Hna HE HL Hk HT". simpl_subst.
+    iIntros (tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hx Hx']".
-    rewrite {1}/elctx_interp 2!big_sepL_cons big_sepL_singleton.
-    iDestruct "HE" as "(Hα & Hβ & #Hαβ)". destruct x' as [[|lx'|]|]; try done.
+    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
     iMod (bor_exists with "LFT Hx'") as (vl) "H". done.
     iMod (bor_sep with "LFT H") as "[H↦ H]". done.
+    iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose')";
+      [solve_typing..|].
     destruct vl as [|[[|lv|]|][|[[|lrc|]|][]]];
       try by iMod (bor_persistent_tok with "LFT H Hα") as "[>[] _]".
     iMod (bor_exists with "LFT H") as (ν) "H". done.
@@ -92,13 +95,13 @@ Section refmut_functions.
     wp_bind (!(LitV lx'))%E. iApply (wp_step_fupd with "[Hb]");
       [done| |by iApply (bor_unnest with "LFT Hb")|]; first done.
     wp_read. iIntros "Hb !>". wp_let.
-    iMod ("Hcloseα" with "[$H↦]") as "[_ Hα]".
+    iMod ("Hcloseα" with "[$H↦]") as "[_ Hα]". iMod ("Hclose'" with "Hα HL") as "HL".
     iApply (type_type _ _ _ [ x ◁ box (uninit 1); #lv ◁ &uniq{α}ty]%TC
-            with "[] LFT Hna [Hα Hβ Hαβ] HL Hk"); last first.
+            with "[] LFT HE Hna HL Hk"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (bor_shorten with "[] Hb").
-      by iApply lft_incl_glb; [iApply lft_incl_glb|iApply lft_incl_refl]. }
-    { rewrite /elctx_interp 2!big_sepL_cons big_sepL_singleton. by iFrame. }
+      iApply lft_incl_glb; [iApply lft_incl_glb|iApply lft_incl_refl]; last done.
+      iDestruct "HE" as "(_ & $ & _)". }
     iApply (type_letalloc_1 (&uniq{α}ty)); [solve_typing..|].
     iIntros (r). simpl_subst. iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
@@ -114,17 +117,18 @@ Section refmut_functions.
       let: "r" := new [ #0] in return: ["r"].
 
   Lemma refmut_drop_type ty :
-    typed_val refmut_drop (fn(∀ α, [α]; refmut α ty) → unit).
+    typed_val refmut_drop (fn(∀ α, (λ ϝ, [ϝ ⊑ α]); refmut α ty) → unit).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
-      iIntros (α ret arg). inv_vec arg=>x. simpl_subst.
-    iIntros (tid qE) "#LFT Hna Hα HL Hk Hx".
-    rewrite {1}/elctx_interp big_sepL_singleton tctx_interp_singleton tctx_hasty_val.
+      iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
+    iIntros (tid) "#LFT #HE Hna HL Hk Hx". rewrite tctx_interp_singleton tctx_hasty_val.
     destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
     iDestruct "Hx" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Hx"; try iDestruct "Hx" as "[_ >[]]".
     rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
     iDestruct "Hx" as "[[Hx↦1 Hx↦2] Hx]". wp_op. wp_read. wp_let.
     iDestruct "Hx" as (ν γ β ty') "(Hb & #Hαβ & #Hinv & Hν & H◯)".
+    iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)";
+      [solve_typing..|].
     iMod (lft_incl_acc with "Hαβ Hα") as (qβ) "[Hβ Hcloseα]". done.
     iMod (na_bor_acc with "LFT Hinv Hβ Hna") as "(INV & Hna & Hcloseβ)"; [done..|].
     iDestruct "INV" as (st) "(H↦lrc & H● & INV)". wp_write.
@@ -142,12 +146,11 @@ Section refmut_functions.
     { iExists None. iFrame. iMod (own_update_2 with "H● H◯") as "$"; last done.
       apply auth_update_dealloc. rewrite -(right_id None _ (Some _)).
       apply cancel_local_update_empty, _. }
-    iMod ("Hcloseα" with "Hβ") as "Hα". wp_seq.
+    iMod ("Hcloseα" with "Hβ") as "Hα". iMod ("Hclose" with "Hα HL") as "HL". wp_seq.
     iApply (type_type _ _ _ [ #lx ◁ box (uninit 2)]%TC
-            with "[] LFT Hna [Hα] HL Hk"); last first.
+            with "[] LFT HE Hna HL Hk"); last first.
     { rewrite tctx_interp_singleton tctx_hasty_val' //. iFrame. iExists [ #lv;#lrc].
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton uninit_own. iFrame. auto. }
-    { by rewrite /elctx_interp big_sepL_singleton. }
     iApply type_delete; [solve_typing..|].
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_jump; solve_typing.

@@ -73,11 +73,12 @@ Section rwlockwriteguard.
   Global Instance rwlockwriteguard_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> eqtype E L ==> subtype E L) rwlockwriteguard.
   Proof.
-    iIntros (α1 α2 Hα ty1 ty2 Hty) "#HE #HL".
-    pose proof Hty as Hty'%eqtype_unfold.
-    iDestruct (Hty' with "HE HL") as "(%&#Ho&#Hs)".
-    iDestruct (Hα with "HE HL") as "Hα1α2".
-    iSplit; [|iSplit; iAlways].
+    intros α1 α2 Hα ty1 ty2 Hty. generalize Hty. rewrite eqtype_unfold. iIntros (Hty' q) "HL".
+    iDestruct (Hty' with "HL") as "#Hty". iDestruct (Hα with "HL") as "#Hα".
+    iDestruct (rwlock_inv_proper with "HL") as "#Hty1ty2"; first done.
+    iDestruct (rwlock_inv_proper with "HL") as "#Hty2ty1"; first by symmetry.
+    iIntros "!# #HE". iDestruct ("Hα" with "HE") as "Hα1α2".
+    iDestruct ("Hty" with "HE") as "(%&#Ho&#Hs)". iSplit; [|iSplit; iAlways].
     - done.
     - iIntros (tid [|[[]|][]]) "H"; try done.
       iDestruct "H" as (γ β) "(Hb & #H⊑ & #Hinv & Hown)".
@@ -87,7 +88,7 @@ Section rwlockwriteguard.
         iExists vl; iFrame; by iApply "Ho".
       + by iApply lft_incl_trans.
       + iApply shr_bor_iff; try done.
-        iIntros "!>!#"; iSplit; iIntros "H"; by iApply rwlock_inv_proper.
+        iIntros "!>!#"; iSplit; iIntros "H". by iApply "Hty1ty2". by iApply "Hty2ty1".
     - iIntros (κ tid l) "H". iDestruct "H" as (l') "H". iExists l'.
       iDestruct "H" as "[$ #H]". iIntros "!# * % Htok".
       iMod (lft_incl_acc with "[] Htok") as (q') "[Htok Hclose]". set_solver.
