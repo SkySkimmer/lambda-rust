@@ -618,6 +618,7 @@ Section type_util.
       iExists (list_to_vec vl). rewrite vec_to_list_of_list. iFrame.
     - iIntros "H". iDestruct "H" as (vl) "[Hl Hown]". eauto with iFrame.
   Qed.
+
 End type_util.
 
 Hint Resolve subtype_refl eqtype_refl : lrust_typing.

@@ -48,8 +48,9 @@ Section rc.
        ty_own tid vl :=
          match vl return _ with
          | [ #(LitLoc l) ] =>
-           (l ↦ #1 ∗ †{1%Qp}l…(S ty.(ty_size)) ∗ ▷ shift_loc l 1 ↦∗: ty.(ty_own) tid) ∨
-           (∃ γ ν q, na_inv tid rc_invN (rc_inv tid ν γ l ty) ∗
+           (l ↦ #1 ∗ ▷ †{1%Qp}l…(S ty.(ty_size)) ∗ ▷ shift_loc l 1 ↦∗: ty.(ty_own) tid) ∨
+           (∃ γ ν q ty', ▷ type_incl ty' ty ∗
+                     na_inv tid rc_invN (rc_inv tid ν γ l ty') ∗
                      own γ (◯ Some (q, 1%positive)) ∗
                      ty.(ty_shr) ν tid (shift_loc l 1) ∗
                      q.[ν] ∗ □ (1.[ν] ={↑lftN,∅}▷=∗ [†ν]))
@@ -57,8 +58,9 @@ Section rc.
        ty_shr κ tid l :=
          ∃ (l' : loc), &frac{κ} (λ q, l ↦∗{q} [ #l']) ∗
            □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ]
-             ={F, F∖↑shrN}▷=∗ q.[κ] ∗ ∃ γ ν q', κ ⊑ ν ∗
-                na_inv tid rc_invN (rc_inv tid ν γ l' ty) ∗
+             ={F, F∖↑shrN}▷=∗ q.[κ] ∗ ∃ γ ν q' ty', κ ⊑ ν ∗
+                ▷ type_incl ty' ty ∗
+                na_inv tid rc_invN (rc_inv tid ν γ l' ty') ∗
                 &na{κ, tid, rc_shrN}(own γ (◯ Some (q', 1%positive))) ∗
                 ty.(ty_shr) ν tid (shift_loc l' 1)
     |}%I.
@@ -74,7 +76,7 @@ Section rc.
       try by iMod (bor_persistent_tok with "LFT Hb Htok") as "[>[] _]".
     iFrame "Htok". iExists _. iFrame "#". rewrite bor_unfold_idx.
     iDestruct "Hb" as (i) "(#Hpb&Hpbown)".
-    set (C := (∃ _ _ _, _ ∗ _ ∗ &na{_,_,_} _ ∗ _)%I).
+    set (C := (∃ _ _ _ _, _ ∗ _ ∗ _ ∗ &na{_,_,_} _ ∗ _)%I).
     iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ C)%I
           with "[Hpbown]") as "#Hinv"; first by iLeft.
     iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose1]"; first set_solver.
@@ -96,14 +98,16 @@ Section rc.
         { rewrite /rc_inv. iExists (Some (_, _)). iFrame. iExists _. iFrame "#∗".
           rewrite Qp_div_2; auto. }
         iMod (ty_share with "LFT HP Hν1") as "[??]"; first solve_ndisj.
-        iExists _, _, _. iFrame. done. }
-      iDestruct "HX" as (γ ν q') "(#Hinv & Hrc & #Hshr & Htok & #Hν†)".
+        iExists _, _, _, _. iFrame. iModIntro. iSplit; last done.
+        by iApply type_incl_refl. }
+      iDestruct "HX" as (γ ν q' ty') "(#Hincl & #Hinv & Hrc & #Hshr & Htok & #Hν†)".
       iMod ("Hclose2" with "[] [Hrc Htok]") as "[HX Htok]".
       { iNext. iIntros "HX". iModIntro. iNext.
-        iRight. iExists γ, ν, q'. iExact "HX". }
-      { iNext. by iFrame "#∗". }
+        iRight. iExists γ, ν, q', _. iExact "HX". }
+      { iNext.  by iFrame "#∗". }
       iAssert C with "[>HX]" as "#HC".
-      { iExists _, _, _. iFrame "Hinv".
+      { iExists _, _, _, _. iFrame "Hinv".
+        iMod (bor_sep with "LFT HX") as "[_ HX]"; first solve_ndisj.
         iMod (bor_sep with "LFT HX") as "[_ HX]"; first solve_ndisj.
         iMod (bor_sep with "LFT HX") as "[Hrc HX]"; first solve_ndisj.
         iMod (bor_sep with "LFT HX") as "[_ HX]"; first solve_ndisj.
@@ -124,8 +128,8 @@ Section rc.
     iMod (lft_incl_acc with "Hincl Htok") as (q'') "[Htok Hclose]"; first solve_ndisj.
     iMod ("Hshr" with "[] Htok") as "Hshr2"; first done.
     iModIntro. iNext. iMod "Hshr2" as "[Htok HX]".
-    iMod ("Hclose" with "Htok") as "$". iDestruct "HX" as (? ν ?) "(? & ? & ?& ?)".
-    iExists _, _, _. iModIntro. iFrame. iSplit.
+    iMod ("Hclose" with "Htok") as "$". iDestruct "HX" as (? ν ??) "(? & ? & ? & ? & ?)".
+    iExists _, _, _, _. iModIntro. iFrame. iSplit.
     - by iApply lft_incl_trans.
     - by iApply na_bor_shorten.
   Qed.
@@ -133,12 +137,47 @@ Section rc.
   Global Instance rc_type_contractive : TypeContractive rc.
   Proof.
     constructor;
-      solve_proper_core ltac:(fun _ => exact: type_dist2_S || (eapply refcell_inv_type_ne; try reflexivity) ||
-                                              f_type_equiv || f_contractive || f_equiv).
+      solve_proper_core ltac:(fun _ => exact: type_dist2_S || exact: type_dist2_dist ||
+                                       (eapply refcell_inv_type_ne; try reflexivity) ||
+                                       f_type_equiv || f_contractive || f_equiv).
   Qed.
 
   Global Instance rc_ne : NonExpansive rc.
   Proof. apply type_contractive_ne, _. Qed.
+
+  Lemma rc_subtype ty1 ty2 :
+    type_incl ty1 ty2 -∗ type_incl (rc ty1) (rc ty2).
+  Proof.
+    iIntros "#Hincl". iPoseProof "Hincl" as "Hincl2". iDestruct "Hincl2" as "(#Hsz & #Hoincl & #Hsincl)".
+    (* FIXME: Would be nice to have an easier way to duplicate destructed things.  Maybe iPoseProof with a destruct pattern? *)
+    iSplit; first done. iSplit; iAlways.
+    - iIntros "* Hvl". destruct vl as [|[[|vl|]|] [|]]; try done.
+      iDestruct "Hvl" as "[(Hl & H† & Hc) | Hvl]".
+      { iLeft. iFrame "Hl". iNext. iDestruct "Hsz" as %->.
+        iFrame. iApply (heap_mapsto_pred_wand with "Hc").
+        iApply "Hoincl". }
+      iDestruct "Hvl" as (γ ν q ty') "(#Hincl' & #Hinc & Htk & #Hsr & Hν)".
+      iRight. iExists _, _, _, _. iFrame "#∗". iSplit.
+      + iNext. iApply type_incl_trans; done.
+      + iApply "Hsincl". done.
+    - iIntros "* #Hshr". iDestruct "Hshr" as (l') "[Hfrac Hshr]". iExists l'.
+      iFrame "Hfrac". iIntros "!# * % Htok". iMod ("Hshr" with "[% //] Htok") as "{Hshr} H".
+      iModIntro. iNext. iMod "H" as "[Htok H]". iModIntro. iFrame "Htok".
+      iDestruct "H" as (γ ν q' ty') "(Hlft & #Hincl' & Hinv & Hna & Hshr)". iExists _, _, _, _.
+      iFrame. iSplit.
+      + iNext. iApply type_incl_trans; done.
+      + iApply "Hsincl". done.
+  Qed.
+
+  Global Instance rc_mono E L :
+    Proper (subtype E L ==> subtype E L) rc.
+  Proof.
+    iIntros (ty1 ty2 Hsub ?) "HL". iDestruct (Hsub with "HL") as "#Hsub".
+    iIntros "!# #HE". iApply rc_subtype. iApply "Hsub"; done.
+  Qed.
+  Global Instance rc_proper E L :
+    Proper (eqtype E L ==> eqtype E L) rc.
+  Proof. intros ??[]. by split; apply rc_mono. Qed.
 
 End rc.
 
@@ -152,7 +191,7 @@ Section code.
     {{{ c, RET #(Zpos c); l ↦ #(Zpos c) ∗
         ((⌜c = 1%positive⌝ ∗ †{1%Qp}l…(S ty.(ty_size)) ∗ na_own tid F ∗ ▷ shift_loc l 1 ↦∗: ty.(ty_own) tid) ∨
          (⌜(1 < c)%positive⌝ ∗ na_own tid (F ∖ ↑rc_invN) ∗
-          ∃ γ ν q q', na_inv tid rc_invN (rc_inv tid ν γ l ty) ∗
+          ∃ γ ν q q' ty', ▷ type_incl ty' ty ∗ na_inv tid rc_invN (rc_inv tid ν γ l ty') ∗
             own γ (◯ Some (q, 1%positive)) ∗ own γ (● Some ((q + q')%Qp, c)) ∗
             q.[ν] ∗ □ ((1).[ν] ={↑lftN,∅}▷=∗ [†ν]) ∗
             ty.(ty_shr) ν tid (shift_loc l 1) ∗
@@ -163,7 +202,7 @@ Section code.
   Proof.
     iIntros (? Φ) "[Hna [(Hl & H† & Hown)|Hown]] HΦ".
     - wp_read. iApply "HΦ". auto with iFrame.
-    - iDestruct "Hown" as (γ ν q) "(#Hinv & Htok & #Hshr & Hν1 & #Hνend)".
+    - iDestruct "Hown" as (γ ν q ty') "(#Hincl & #Hinv & Htok & #Hshr & Hν1 & #Hνend)".
       iMod (na_inv_open with "Hinv Hna") as "(Hproto & Hna & Hclose)"; [solve_ndisj..|].
       iDestruct "Hproto" as (st) "[>Hst Hproto]".
       iDestruct (own_valid_2 with "Hst Htok") as %[[Hval|(? & (qa, c) & [=<-] & -> & Hst)]%option_included _]%auth_valid_discrete_2; first done. (* Oh my, what a pattern... *)
@@ -183,12 +222,14 @@ Section code.
         { rewrite -H0. iFrame. }
         iApply wp_mask_mono; last iApply (wp_step_fupd with "Hνend"); [done..|solve_ndisj|].
         wp_read. iIntros "#Hν". iMod ("Hν†" with "Hν") as "Hown". iModIntro.
-        iApply "HΦ". iFrame. iLeft. auto with iFrame.
+        iApply "HΦ". iFrame. iLeft. iModIntro. iSplit; first done.
+        iDestruct "Hincl" as "(#Hsz & #Hincl & _)". iDestruct "Hsz" as %->. iFrame.
+        iApply (heap_mapsto_pred_wand with "Hown"). iApply "Hincl".
       + destruct Hst as [[??%leibniz_equiv]|[[q'' Hqa%leibniz_equiv] ?%pos_included]%prod_included].
         { exfalso. simpl in *. subst c. apply Hnle. done. }
         simpl in *. subst qa. wp_read. iApply "HΦ". iFrame. iRight. iModIntro. iSplit.
         { iPureIntro. apply Pos.lt_nle. done. }
-        iFrame "Hna". iExists _, _, q, q''. iFrame "#∗%".
+        iFrame "Hna". iExists _, _, q, q'', _. iFrame "#∗%".
         iIntros (c' qx) "(Hst & Hl & Hq'' & Hna)". iApply "Hclose". iFrame "Hna".
         iExists _. iFrame "Hst". iDestruct "Hq''" as "[%|Hq'']".
         * iExists _. subst qx. iFrame "∗%". by iIntros "!> !#".
@@ -265,7 +306,7 @@ Section code.
     iMod (frac_bor_acc with "LFT Hlrc Hα2") as (q') "[Hlrc↦ Hclose]"; first solve_ndisj.
     rewrite heap_mapsto_vec_singleton. iApply wp_fupd. wp_read.
     iMod ("Hclose" with "[$Hlrc↦]") as "Hα2". iIntros "!> [Hα1 Hproto]".
-    iDestruct "Hproto" as (γ ν q'') "(#Hincl & #Hinv & #Hrctokb & #Hshr)". iModIntro.
+    iDestruct "Hproto" as (γ ν q'' ty') "(#Hincl & #Hty & #Hinv & #Hrctokb & #Hshr)". iModIntro.
     wp_let. wp_op. rewrite shift_loc_0.
     (* Finally, finally... opening the thread-local Rc protocol. *)
     iMod (na_inv_open with "Hinv Hna") as "(Hrcproto & Hna & Hclose2)"; [solve_ndisj..|].
@@ -292,7 +333,7 @@ Section code.
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       unlock. iFrame "Hx". iFrame "Hrc2†". iExists [_]. rewrite heap_mapsto_vec_singleton.
-      iFrame "Hrc2". iNext. iRight. iExists _, ν, _. iFrame "#∗". }
+      iFrame "Hrc2". iNext. iRight. iExists _, ν, _, _. iFrame "#∗". }
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.
@@ -324,7 +365,7 @@ Section code.
     iMod (frac_bor_acc with "LFT Hrc' Hα2") as (q') "[Hrc'↦ Hclose2]"; first solve_ndisj.
     rewrite heap_mapsto_vec_singleton. iApply wp_fupd. wp_read.
     iMod ("Hclose2" with "[$Hrc'↦]") as "Hα2". iIntros "!> [Hα1 Hproto]".
-    iDestruct "Hproto" as (γ ν q'') "(#Hincl & #Hinv & #Hrctokb & #Hshr)". iModIntro.
+    iDestruct "Hproto" as (γ ν q'' ty') "(#? & #? & #Hinv & #Hrctokb & #Hshr)". iModIntro.
     wp_op. wp_write.
     iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
     (* Finish up the proof. *)
@@ -389,7 +430,7 @@ Section code.
       iApply (type_sum_memcpy Σ[ ty; rc ty ]); [solve_typing..|].
       iApply (type_delete (Π[uninit _; uninit _])); [solve_typing..|].
       iApply type_jump; solve_typing.
-    - iDestruct "Hproto" as (γ ν q q') "(#Hinv & Hrctok & Hrc● & Hν & #Hν† & #Hshr & Hclose)".
+    - iDestruct "Hproto" as (γ ν q q' ty') "(#Hincl & #Hinv & Hrctok & Hrc● & Hν & #Hν† & #Hshr & Hclose)".
       wp_op; intros Hc.
       { exfalso. move:Hc. move/Zpos_eq_iff. intros ->. exact: Pos.lt_irrefl. }
       wp_if. iMod ("Hclose" with "[> $Hrc● $Hrc $Hna]") as "Hna"; first by eauto.
@@ -399,7 +440,7 @@ Section code.
         with "[] LFT HE Hna HL Hk [-]"); last first.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton.
         rewrite !tctx_hasty_val tctx_hasty_val' //. unlock. iFrame.
-        iRight. iExists _, _, _. iFrame "∗#". }
+        iRight. iExists _, _, _, _. iFrame "∗#". }
       iApply (type_sum_assign Σ[ ty; rc ty ]); [solve_typing..|].
       iApply type_jump; solve_typing.
   Qed.
@@ -457,7 +498,7 @@ Section code.
       iApply (type_sum_memcpy (option _)); [solve_typing..|].
       iApply (type_delete (Π[uninit _; uninit _])); [solve_typing..|].
       iApply type_jump; solve_typing.
-    - iDestruct "Hproto" as (γ ν q q') "(#Hinv & Hrctok & Hrc● & Hν & _ & _ & Hclose)".
+    - iDestruct "Hproto" as (γ ν q q' ty') "(#Hincl & #Hinv & Hrctok & Hrc● & Hν & _ & _ & Hclose)".
       wp_write. wp_op; intros Hc.
       { exfalso. move:Hc. move/Zpos_eq_iff. intros ->. exact: Pos.lt_irrefl. }
       wp_if. iMod ("Hclose" $! (c-1)%positive q' with "[> Hrc● Hrctok Hrc Hν $Hna]") as "Hna".
@@ -534,12 +575,12 @@ Section code.
       iApply type_jump; solve_typing.
     - wp_if. iDestruct "Hc" as "[(% & _)|(% & Hna & Hproto)]".
       { exfalso. subst c. done. }
-      iDestruct "Hproto" as (γ ν q' q'') "(#Hinv & Hrctok & Hrc● & Hν & #Hshr & #Hν† & Hclose3)".
+      iDestruct "Hproto" as (γ ν q' q'' ty') "(#Hincl & #Hinv & Hrctok & Hrc● & Hν & #Hshr & #Hν† & Hclose3)".
       iMod ("Hclose3" with "[$Hrc● $Hrc $Hna]") as "Hna"; first by auto.
       iMod ("Hclose2" with "[] [Hrc' Hrctok Hν]") as "[Hrc' Hα]".
       { iIntros "!> HX". iModIntro. iExact "HX". }
       { iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame "Hrc'".
-        iRight. iExists _, _, _. iFrame "#∗". }
+        iRight. iExists _, _, _, _. iFrame "#∗". }
       iMod ("Hclose1" with "Hα HL") as "HL".
       iApply (type_type _ _ _ [ x ◁ box (uninit 2);
                                 rcx ◁ box (uninit 1)]%TC

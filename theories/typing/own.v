@@ -93,9 +93,9 @@ Section own.
   Proof.
     iIntros "#Heq (#Hsz & #Ho & #Hs)". iSplit; first done. iSplit; iAlways.
     - iIntros (?[|[[| |]|][]]) "H"; try done. simpl.
-      iDestruct "H" as "[Hmt H†]". iDestruct "Hmt" as (vl') "[Hmt Hown]". iNext.
-      iDestruct ("Ho" with "Hown") as "Hown". iDestruct ("Hsz") as %<-.
-      iDestruct "Heq" as %->. iFrame. iExists _. iFrame.
+      iDestruct "H" as "[Hmt H†]". iNext. iDestruct ("Hsz") as %<-.
+      iDestruct "Heq" as %->. iFrame. iApply (heap_mapsto_pred_wand with "Hmt").
+      iApply "Ho".
     - iIntros (???) "H". iDestruct "H" as (l') "[Hfb #Hvs]".
       iExists l'. iFrame. iIntros "!#". iIntros (F' q) "% Htok".
       iMod ("Hvs" with "[%] Htok") as "Hvs'". done. iModIntro. iNext.
