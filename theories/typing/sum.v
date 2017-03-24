@@ -1,3 +1,4 @@
+From iris.base_logic Require Import big_op.
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import list.
 From iris.base_logic Require Import fractional.
@@ -18,6 +19,8 @@ Section sum.
     iDestruct "H" as (?) "[_ []]".
   Qed.
   Next Obligation. iIntros (κ κ' tid l) "#Hord []". Qed.
+
+  Global Instance emp_wf : TyWf emp := { ty_lfts := []; ty_wf_E := [] }.
 
   Global Instance emp_empty : Empty type := emp.
 
@@ -91,6 +94,9 @@ Section sum.
     - iApply ((nth i tyl ∅).(ty_shr_mono) with "Hord"); done.
   Qed.
 
+  Global Instance sum_wf tyl `{!TyWfLst tyl} : TyWf (sum tyl) :=
+    { ty_lfts := tyl.(tyl_lfts); ty_wf_E := tyl.(tyl_wf_E) }.
+
   Global Instance sum_type_ne n : Proper (Forall2 (type_dist2 n) ==> type_dist2 n) sum.
   Proof.
     intros x y EQ.
@@ -130,19 +136,27 @@ Section sum.
   Global Instance sum_mono E L :
     Proper (Forall2 (subtype E L) ==> subtype E L) sum.
   Proof.
-    iIntros (tyl1 tyl2 Htyl) "#? %".
-    iAssert (⌜max_list_with ty_size tyl1 = max_list_with ty_size tyl2⌝%I) with "[#]" as %Hleq.
-    { iInduction Htyl as [|???? Hsub] "IH"; first done.
-      iDestruct (Hsub with "[] []") as "(% & _ & _)"; [done..|].
-      iDestruct "IH" as %IH. iPureIntro. simpl. inversion_clear IH. by f_equal. }
+    iIntros (tyl1 tyl2 Htyl qL) "HL".
+    iAssert (□ (lft_contexts.elctx_interp E -∗ ⌜max_list_with ty_size tyl1 = max_list_with ty_size tyl2⌝))%I with "[#]" as "#Hleq".
+    { iInduction Htyl as [|???? Hsub] "IH".
+      { iClear "∗". iIntros "!# _". done. }
+      iDestruct (Hsub with "HL") as "#Hsub". iDestruct ("IH" with "HL") as "{IH} #IH".
+      (* FIXME: WHy does the previous iDestruvt remove HL? *)
+      iAlways. iIntros "#HE". iDestruct ("Hsub" with "HE") as "(% & _ & _)".
+      iDestruct ("IH" with "HE") as %IH. iPureIntro. simpl. inversion_clear IH. by f_equal. }
+    iDestruct (subtype_Forall2_llctx with "HL") as "#Htyl"; first done.
+    iClear "HL". iIntros "!# #HE".
+    iDestruct ("Hleq" with "HE") as %Hleq. iSpecialize ("Htyl" with "HE"). iClear "Hleq HE".
     iAssert (∀ i, type_incl (nth i tyl1 ∅) (nth i tyl2 ∅))%I with "[#]" as "#Hty".
       { iIntros (i). edestruct (nth_lookup_or_length tyl1 i) as [Hl1|Hl]; last first.
         { rewrite nth_overflow // nth_overflow; first by iApply type_incl_refl.
           by erewrite <-Forall2_length. }
-        edestruct @Forall2_lookup_l as (ty2 & Hl2 & Hty2); [done..|].
-        rewrite (nth_lookup_Some tyl2 _ _ ty2) //.
-        by iApply (Hty2 with "[] []"). }
-    clear -Hleq. iSplit; last iSplit.
+        edestruct @Forall2_lookup_l as (ty2 & Hl2 & _); [done..|].
+        iDestruct (big_sepL_lookup with "Htyl") as "Hty".
+        { rewrite lookup_zip_with. erewrite Hl1. simpl.
+          rewrite Hl2 /=. done. }
+        rewrite (nth_lookup_Some tyl2 _ _ ty2) //. }
+    clear -Hleq. iClear "∗". iSplit; last iSplit.
     - simpl. by rewrite Hleq.
     - iAlways. iIntros (tid vl) "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)".
       iExists i, vl', vl''. iSplit; first done.
@@ -174,12 +188,10 @@ Section sum.
   Lemma emp_sum E L :
     eqtype E L emp (sum []).
   Proof.
-    split; (iIntros; iSplit; first done; iSplit; iAlways).
-    - iIntros (??) "[]".
-    - iIntros (κ tid l) "[]".
-    - iIntros (??) "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)".
-      by rewrite nth_empty.
-    - iIntros (???) "H". iDestruct "H" as (i) "(_ & Hshr)". by rewrite nth_empty.
+    apply eqtype_unfold. iIntros (?) "_ !# _".
+    iSplit; first done; iSplit; iAlways; iIntros; iSplit; try by iIntros "[]".
+    - iIntros "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)". by rewrite nth_empty.
+    - iIntros "H". iDestruct "H" as (i) "(_ & Hshr)". by rewrite nth_empty.
   Qed.
 
   Global Instance sum_copy tyl : LstCopy tyl → Copy (sum tyl).

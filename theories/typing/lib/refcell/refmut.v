@@ -72,6 +72,9 @@ Section refmut.
       iApply ty_shr_mono; try done. iApply lft_intersect_mono. iApply lft_incl_refl. done.
   Qed.
 
+  Global Instance refmut_wf α ty `{!TyWf ty} : TyWf (refmut α ty) :=
+    { ty_lfts := [α]; ty_wf_E := ty.(ty_wf_E) ++ ty.(ty_outlives_E) α }.
+
   Global Instance refmut_type_contractive α : TypeContractive (refmut α).
   Proof. solve_type_proper. Qed.
   Global Instance refmut_ne α : NonExpansive (refmut α).
@@ -80,11 +83,10 @@ Section refmut.
   Global Instance refmut_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> eqtype E L ==> subtype E L) refmut.
   Proof.
-    iIntros (α1 α2 Hα ty1 ty2 Hty) "#HE #HL".
-    pose proof Hty as Hty'%eqtype_unfold.
-    iDestruct (Hty' with "HE HL") as "(%&#Ho&#Hs)".
-    iDestruct (Hα with "HE HL") as "Hα1α2".
-    iSplit; [|iSplit; iAlways].
+    intros α1 α2 Hα ty1 ty2. rewrite eqtype_unfold=>Hty. iIntros (q) "HL".
+    iDestruct (Hty with "HL") as "#Hty". iDestruct (Hα with "HL") as "#Hα".
+    iIntros "!# #HE". iDestruct ("Hα" with "HE") as "Hα1α2".
+    iDestruct ("Hty" with "HE") as "(%&#Ho&#Hs)". iSplit; [|iSplit; iAlways].
     - done.
     - iIntros (tid [|[[]|][|[[]|][]]]) "H"; try done.
       iDestruct "H" as (ν γ β ty') "(Hb & #H⊑ & #Hinv & Hν & Hown)".

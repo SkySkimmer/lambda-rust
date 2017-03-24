@@ -81,9 +81,11 @@ Section product.
   Global Instance product2_mono E L:
     Proper (subtype E L ==> subtype E L ==> subtype E L) product2.
   Proof.
-    iIntros (ty11 ty12 H1 ty21 ty22 H2). iIntros.
-    iDestruct (H1 with "[] []") as "(% & #Ho1 & #Hs1)"; [done..|]. clear H1.
-    iDestruct (H2 with "[] []") as "(% & #Ho2 & #Hs2)"; [done..|]. clear H2.
+    iIntros (ty11 ty12 H1 ty21 ty22 H2). iIntros (qL) "HL".
+    iDestruct (H1 with "HL") as "#H1". iDestruct (H2 with "HL") as "#H2".
+    iClear "∗". iIntros "!# #HE".
+    iDestruct ("H1" with "HE") as "#(% & #Ho1 & #Hs1)". clear H1.
+    iDestruct ("H2" with "HE") as "#(% & #Ho2 & #Hs2)". clear H2.
     iSplit; first by (iPureIntro; simpl; f_equal). iSplit; iAlways.
     - iIntros (??) "H". iDestruct "H" as (vl1 vl2) "(% & Hown1 & Hown2)".
       iExists _, _. iSplit. done. iSplitL "Hown1".
@@ -146,6 +148,9 @@ Section product.
   Definition product := foldr product2 unit0.
   Definition unit := product [].
 
+  Global Instance product_wf tyl `{!TyWfLst tyl} : TyWf (product tyl) :=
+    { ty_lfts := tyl.(tyl_lfts); ty_wf_E := tyl.(tyl_wf_E) }.
+
   Global Instance product_type_ne n: Proper (Forall2 (type_dist2 n) ==> type_dist2 n) product.
   Proof. intros ??. induction 1=>//=. by f_equiv. Qed.
   Global Instance product_ne : NonExpansive product.
@@ -182,39 +187,39 @@ Section typing.
 
   Global Instance prod2_assoc E L : Assoc (eqtype E L) product2.
   Proof.
-    split; (iIntros; (iSplit; first by rewrite /= assoc); iSplit; iAlways;
-            last iIntros (?); iIntros (??) "H").
+    intros ???. apply eqtype_unfold. iIntros (?) "_ !# _".
+    iSplit; first by rewrite /= assoc. iSplit; iIntros "!# *"; iSplit; iIntros "H".
     - iDestruct "H" as (vl1 vl') "(% & Ho1 & H)".
       iDestruct "H" as (vl2 vl3) "(% & Ho2 & Ho3)". subst.
       iExists _, _. iSplit. by rewrite assoc. iFrame. iExists _, _. by iFrame.
-    - iDestruct "H" as "(Hs1 & Hs2 & Hs3)". rewrite shift_loc_assoc_nat.
-      by iFrame.
     - iDestruct "H" as (vl1 vl') "(% & H & Ho3)".
       iDestruct "H" as (vl2 vl3) "(% & Ho1 & Ho2)". subst.
       iExists _, _. iSplit. by rewrite -assoc. iFrame. iExists _, _. by iFrame.
+    - iDestruct "H" as "(Hs1 & Hs2 & Hs3)". rewrite shift_loc_assoc_nat.
+      by iFrame.
     - iDestruct "H" as "[[Hs1 Hs2] Hs3]". rewrite /= shift_loc_assoc_nat.
       by iFrame.
   Qed.
 
   Global Instance prod2_unit_leftid E L : LeftId (eqtype E L) unit product2.
   Proof.
-    intros ty. split; (iIntros; (iSplit; first done); iSplit; iAlways;
-                  last iIntros (?); iIntros (??) "H").
+    intros ty. apply eqtype_unfold. iIntros (?) "_ !# _". iSplit; first done.
+    iSplit; iIntros "!# *"; iSplit; iIntros "H".
     - iDestruct "H" as (? ?) "(% & % & ?)". by subst.
+    - iExists [], _. eauto.
     - iDestruct "H" as "(? & ?)". rewrite shift_loc_0.
       iApply ty_shr_mono; last done.
       iApply lft_incl_refl.
-    - iExists [], _. eauto.
     - simpl. rewrite shift_loc_0. by iFrame.
   Qed.
 
   Global Instance prod2_unit_rightid E L : RightId (eqtype E L) unit product2.
   Proof.
-    intros ty. split; (iIntros; (iSplit; first by rewrite /= -plus_n_O); iSplit;
-                  iAlways; last iIntros (?); iIntros (??) "H").
+    intros ty. apply eqtype_unfold. iIntros (?) "_ !# _".
+    iSplit; first by rewrite /= -plus_n_O. iSplit; iIntros "!# *"; iSplit; iIntros "H".
     - iDestruct "H" as (? ?) "(% & ? & %)". subst. by rewrite app_nil_r.
-    - iDestruct "H" as "(? & _)". done.
     - iExists _, []. rewrite app_nil_r. eauto.
+    - iDestruct "H" as "(? & _)". done.
     - simpl. iFrame.
   Qed.
 

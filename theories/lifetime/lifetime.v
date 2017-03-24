@@ -15,6 +15,8 @@ Module Export lifetime : lifetime_sig.
   Include creation.
 End lifetime.
 
+Notation lft_intersect_list l := (foldr lft_intersect static l).
+
 Instance lft_inhabited : Inhabited lft := populate static.
 
 Canonical lftC := leibnizC lft.
@@ -111,4 +113,14 @@ Proof.
   - iIntros (q) "?". iExists 1%Qp. iSplitR. by iApply lft_tok_static. auto.
   - iIntros "Hst". by iDestruct (lft_dead_static with "Hst") as "[]".
 Qed.
+
+Lemma lft_intersect_list_elem_of_incl κs κ :
+  κ ∈ κs → (lft_intersect_list κs ⊑ κ)%I.
+Proof.
+  induction 1 as [|???? IH].
+  - iApply lft_intersect_incl_l.
+  - iApply lft_incl_trans; last iApply IH. (* FIXME: Why does "done" not do this? Looks like "assumption" to me. *)
+    iApply lft_intersect_incl_r.
+Qed.
+  
 End derived.

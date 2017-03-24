@@ -12,11 +12,10 @@ Section init_prod.
        "r" +ₗ #0 <- "x'";; "r" +ₗ #1 <- "y'";;
        delete [ #1; "x"] ;; delete [ #1; "y"] ;; return: ["r"].
 
-  Lemma init_prod_type :
-    typed_val init_prod (fn([]; int, int) → Π[int;int]).
+  Lemma init_prod_type : typed_val init_prod (fn(∅; int, int) → Π[int;int]).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros ([] ret p).
-      inv_vec p=>x y. simpl_subst.
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros ([] ϝ ret p). inv_vec p=>x y. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (y'). simpl_subst.
     iApply (type_new_subtype (Π[uninit 1; uninit 1])); [solve_typing..|].

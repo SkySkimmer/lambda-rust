@@ -20,7 +20,7 @@ Notation cctx := (list cctx_elt).
 Delimit Scope lrust_cctx_scope with CC.
 Bind Scope lrust_cctx_scope with cctx_elt.
 
-Notation "k ◁cont( L , T )" := (CCtx_iscont k L _ T%TC)
+Notation "k ◁cont( L , T )" := (CCtx_iscont k L%LL _ T%TC)
   (at level 70, format "k  ◁cont( L ,  T )") : lrust_cctx_scope.
 Notation "a :: b" := (@cons cctx_elt a%CC b%CC)
   (at level 60, right associativity) : lrust_cctx_scope.
@@ -77,38 +77,35 @@ Section cont_context.
   Qed.
 
   Definition cctx_incl (E : elctx) (C1 C2 : cctx): Prop :=
-    ∀ tid q, lft_ctx -∗ (elctx_interp E q -∗ cctx_interp tid C1) -∗
-                       (elctx_interp E q -∗ cctx_interp tid C2).
+    ∀ tid, lft_ctx -∗ elctx_interp E -∗ cctx_interp tid C1 -∗ cctx_interp tid C2.
   Global Arguments cctx_incl _%EL _%CC _%CC.
 
   Global Instance cctx_incl_preorder E : PreOrder (cctx_incl E).
   Proof.
     split.
-    - iIntros (???) "_ $".
-    - iIntros (??? H1 H2 ??) "#LFT HE".
-      iApply (H2 with "LFT"). by iApply (H1 with "LFT").
+    - iIntros (??) "_ _ $".
+    - iIntros (??? H1 H2 ?) "#LFT #HE HC".
+      iApply (H2 with "LFT HE"). by iApply (H1 with "LFT HE").
   Qed.
 
   Lemma incl_cctx_incl E C1 C2 : C1 ⊆ C2 → cctx_incl E C2 C1.
   Proof.
-    rewrite /cctx_incl /cctx_interp. iIntros (HC1C2 tid ?) "_ H HE * %".
-    iApply ("H" with "HE [%]"). by apply HC1C2.
+    rewrite /cctx_incl /cctx_interp. iIntros (HC1C2 tid) "_ #HE H * %".
+    iApply ("H" with "[%]"). by apply HC1C2.
   Qed.
 
   Lemma cctx_incl_cons_match E k L n (T1 T2 : vec val n → tctx) C1 C2 :
     cctx_incl E C1 C2 → (∀ args, tctx_incl E L (T2 args) (T1 args)) →
     cctx_incl E (k ◁cont(L, T1) :: C1) (k ◁cont(L, T2) :: C2).
   Proof.
-    iIntros (HC1C2 HT1T2 ??) "#LFT H HE". rewrite /cctx_interp.
+    iIntros (HC1C2 HT1T2 ?) "#LFT #HE H". rewrite /cctx_interp.
     iIntros (x) "Hin". iDestruct "Hin" as %[->|Hin]%elem_of_cons.
     - iIntros (args) "Htl HL HT".
-      iMod (HT1T2 with "LFT HE HL HT") as "(HE & HL & HT)".
-      iSpecialize ("H" with "HE").
+      iMod (HT1T2 with "LFT HE HL HT") as "(HL & HT)".
       iApply ("H" $! (_ ◁cont(_, _))%CC with "[%] Htl HL HT").
       constructor.
-    - iApply (HC1C2 with "LFT [H] HE [%]"); last done.
-      iIntros "HE". iIntros (x') "%".
-      iApply ("H" with "HE [%]"). by apply elem_of_cons; auto.
+    - iApply (HC1C2 with "LFT HE [H] [%]"); last done.
+      iIntros (x') "%". iApply ("H" with "[%]"). by apply elem_of_cons; auto.
   Qed.
 
   Lemma cctx_incl_nil E C : cctx_incl E C [].
@@ -121,7 +118,7 @@ Section cont_context.
     cctx_incl E C1 (k ◁cont(L, T2) :: C2).
   Proof.
     intros Hin ??. rewrite <-cctx_incl_cons_match; try done.
-    iIntros (??) "_ HC HE". iSpecialize ("HC" with "HE").
+    iIntros (?) "_ #HE HC".
     rewrite cctx_interp_cons. iSplit; last done. clear -Hin.
     iInduction Hin as [] "IH"; rewrite cctx_interp_cons;
       [iDestruct "HC" as "[$ _]" | iApply "IH"; iDestruct "HC" as "[_ $]"].

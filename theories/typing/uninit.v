@@ -17,7 +17,7 @@ Section uninit.
     Π (replicate n uninit_1).
 
   Lemma uninit0_sz n : ty_size (uninit0 n) = n.
-  Proof. induction n. done. simpl. by f_equal. Qed.
+  Proof. induction n=>//=. by f_equal. Qed.
 
   (* We redefine uninit as an alias of uninit0, so that the size
      computes directly to [n] *)
@@ -27,6 +27,9 @@ Section uninit.
   Next Obligation. intros. by rewrite ty_size_eq uninit0_sz. Qed.
   Next Obligation. intros. by apply ty_share. Qed.
   Next Obligation. intros. by apply ty_shr_mono. Qed.
+
+  Global Instance uninit_wf n : TyWf (uninit n) :=
+    { ty_lfts := []; ty_wf_E := [] }.
 
   Global Instance uninit_copy n : Copy (uninit n).
   Proof.

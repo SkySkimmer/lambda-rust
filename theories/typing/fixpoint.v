@@ -16,6 +16,25 @@ Section fixpoint_def.
   Qed.
 
   Definition type_fixpoint : type := fixpointK 2 T.
+
+  (* The procedure for computing ty_lfts and ty_wf_E for fixpoints is
+     the following:
+       - We do a first pass for computing [ty_lfts].
+       - In a second pass, we compute [ty_wf_E], by using the result of the
+         first pass.
+     I believe this gives the right sets for all types that we can define in
+     Rust, but I do not have any proof of this.
+     TODO : investigate this in more detail. *)
+  Global Instance type_fixpoint_wf `{∀ `{!TyWf ty}, TyWf (T ty)} : TyWf type_fixpoint :=
+    let lfts :=
+      let _ : TyWf type_fixpoint := {| ty_lfts := []; ty_wf_E := [] |} in
+      (T type_fixpoint).(ty_lfts)
+    in
+    let wf_E :=
+      let _ : TyWf type_fixpoint := {| ty_lfts := lfts; ty_wf_E := [] |} in
+      (T type_fixpoint).(ty_wf_E)
+    in
+    {| ty_lfts := lfts; ty_wf_E := wf_E |}.
 End fixpoint_def.
 
 Lemma type_fixpoint_ne `{typeG Σ} (T1 T2 : type → type)
@@ -74,7 +93,7 @@ Section fixpoint.
   Proof.
     unfold eqtype, subtype, type_incl.
     setoid_rewrite <-fixpointK_unfold; [| by apply type_contractive_ne, _..].
-    split; iIntros "_ _"; (iSplit; first done); iSplit; iIntros "!#*$".
+    split; iIntros (qL) "_ !# _"; (iSplit; first done); iSplit; iIntros "!#*$".
   Qed.
 End fixpoint.
 

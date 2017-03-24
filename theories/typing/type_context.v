@@ -176,32 +176,31 @@ Section type_context.
 
   (** Type context inclusion *)
   Definition tctx_incl (E : elctx) (L : llctx) (T1 T2 : tctx): Prop :=
-    ∀ tid q1 q2, lft_ctx -∗ elctx_interp E q1 -∗ llctx_interp L q2 -∗
-              tctx_interp tid T1 ={⊤}=∗ elctx_interp E q1 ∗ llctx_interp L q2 ∗
-                                     tctx_interp tid T2.
+    ∀ tid q2, lft_ctx -∗ elctx_interp E -∗ llctx_interp L q2 -∗
+              tctx_interp tid T1 ={⊤}=∗ llctx_interp L q2 ∗ tctx_interp tid T2.
   Global Arguments tctx_incl _%EL _%LL _%TC _%TC.
   Global Instance : ∀ E L, RewriteRelation (tctx_incl E L).
 
   Global Instance tctx_incl_preorder E L : PreOrder (tctx_incl E L).
   Proof.
     split.
-    - by iIntros (????) "_ $ $ $".
-    - iIntros (??? H1 H2 ???) "#LFT HE HL H".
-      iMod (H1 with "LFT HE HL H") as "(HE & HL & H)".
-      by iMod (H2 with "LFT HE HL H") as "($ & $ & $)".
+    - by iIntros (???) "_ _ $ $".
+    - iIntros (??? H1 H2 ??) "#LFT #HE HL H".
+      iMod (H1 with "LFT HE HL H") as "(HL & H)".
+      by iMod (H2 with "LFT HE HL H") as "($ & $)".
   Qed.
 
   Lemma contains_tctx_incl E L T1 T2 : T1 ⊆+ T2 → tctx_incl E L T2 T1.
   Proof.
-    rewrite /tctx_incl. iIntros (Hc ???) "_ $ $ H". by iApply big_sepL_submseteq.
+    rewrite /tctx_incl. iIntros (Hc ??) "_ _ $ H". by iApply big_sepL_submseteq.
   Qed.
 
   Global Instance tctx_incl_app E L :
     Proper (tctx_incl E L ==> tctx_incl E L ==> tctx_incl E L) app.
   Proof.
-    intros ?? Hincl1 ?? Hincl2 ???. rewrite /tctx_interp !big_sepL_app.
-    iIntros "#LFT HE HL [H1 H2]".
-    iMod (Hincl1 with "LFT HE HL H1") as "(HE & HL & $)".
+    intros ?? Hincl1 ?? Hincl2 ??. rewrite /tctx_interp !big_sepL_app.
+    iIntros "#LFT #HE HL [H1 H2]".
+    iMod (Hincl1 with "LFT HE HL H1") as "(HL & $)".
     iApply (Hincl2 with "LFT HE HL H2").
   Qed.
   Global Instance tctx_incl_cons E L x :
@@ -218,7 +217,7 @@ Section type_context.
   Lemma copy_tctx_incl E L p `{!Copy ty} :
     tctx_incl E L [p ◁ ty] [p ◁ ty; p ◁ ty].
   Proof.
-    iIntros (???) "_ $ $ *". rewrite /tctx_interp !big_sepL_cons big_sepL_nil.
+    iIntros (??) "_ _ $ *". rewrite /tctx_interp !big_sepL_cons big_sepL_nil.
     by iIntros "[#$ $]".
   Qed.
 
@@ -234,11 +233,9 @@ Section type_context.
   Lemma subtype_tctx_incl E L p ty1 ty2 :
     subtype E L ty1 ty2 → tctx_incl E L [p ◁ ty1] [p ◁ ty2].
   Proof.
-    iIntros (Hst ???) "#LFT HE HL H". rewrite /tctx_interp !big_sepL_singleton /=.
-    iDestruct (elctx_interp_persist with "HE") as "#HE'".
-    iDestruct (llctx_interp_persist with "HL") as "#HL'".
-    iFrame "HE HL". iDestruct "H" as (v) "[% H]". iExists _. iFrame "%".
-    iDestruct (Hst with "[] []") as "(_ & #Ho & _)"; [done..|by iApply "Ho"].
+    iIntros (Hst ??) "#LFT #HE HL H". rewrite /tctx_interp !big_sepL_singleton /=.
+    iDestruct "H" as (v) "[% H]". iDestruct (Hst with "HL HE") as "#(_ & Ho & _)". 
+    iFrame "HL". iExists _. iFrame "%". by iApply "Ho".
   Qed.
 
   (* Extracting from a type context. *)
