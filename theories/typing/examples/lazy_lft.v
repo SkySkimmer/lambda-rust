@@ -17,8 +17,7 @@ Section lazy_lft.
       let: "r" := new [ #0] in
       Endlft;; delete [ #2; "t"];; delete [ #1; "f"];; delete [ #1; "g"];; "return" ["r"].
 
-  Lemma lazy_lft_type :
-    typed_val lazy_lft (fn(λ ϝ, []) → unit).
+  Lemma lazy_lft_type : typed_val lazy_lft (fn(∅) → unit).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([] ϝ ret p). inv_vec p. simpl_subst.

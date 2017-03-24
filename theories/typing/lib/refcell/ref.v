@@ -68,6 +68,9 @@ Section ref.
     - by iApply na_bor_shorten.
   Qed.
 
+  Global Instance ref_wf α ty `{!TyWf ty} : TyWf (ref α ty) :=
+    { ty_lfts := [α]; ty_wf_E := ty.(ty_wf_E) ++ ty.(ty_outlives_E) α }.
+
   Global Instance ref_type_contractive α : TypeContractive (ref α).
   Proof. solve_type_proper. Qed.
   Global Instance ref_ne α : NonExpansive (ref α).

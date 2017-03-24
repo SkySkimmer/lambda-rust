@@ -20,6 +20,8 @@ Section sum.
   Qed.
   Next Obligation. iIntros (κ κ' tid l) "#Hord []". Qed.
 
+  Global Instance emp_wf : TyWf emp := { ty_lfts := []; ty_wf_E := [] }.
+
   Global Instance emp_empty : Empty type := emp.
 
   Global Instance emp_copy : Copy ∅.
@@ -91,6 +93,9 @@ Section sum.
     - by iApply (frac_bor_shorten with "Hord").
     - iApply ((nth i tyl ∅).(ty_shr_mono) with "Hord"); done.
   Qed.
+
+  Global Instance sum_wf tyl `{!TyWfLst tyl} : TyWf (sum tyl) :=
+    { ty_lfts := tyl.(tyl_lfts); ty_wf_E := tyl.(tyl_wf_E) }.
 
   Global Instance sum_type_ne n : Proper (Forall2 (type_dist2 n) ==> type_dist2 n) sum.
   Proof.

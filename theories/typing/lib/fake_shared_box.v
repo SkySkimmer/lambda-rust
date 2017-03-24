@@ -9,17 +9,15 @@ Section fake_shared_box.
   Definition fake_shared_box : val :=
     funrec: <> ["x"] := Skip ;; return: ["x"].
 
-  Lemma cell_replace_type ty :
+  Lemma fake_shared_box_type ty `{!TyWf ty} :
     typed_val fake_shared_box
-      (fn (fun '(α, β) => FP (λ ϝ, [ϝ ⊑ α; α ⊑ β]%EL)
-                              [# &shr{α}(&shr{β} ty)] (&shr{α}box ty))).
+      (fn (fun '(α, β) => FP_wf ∅ [# &shr{α}(&shr{β} ty)] (&shr{α}box ty))).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iIntros (tid) "#LFT #HE Hna HL Hk HT".
     rewrite tctx_interp_singleton tctx_hasty_val.
-    rewrite {1}/elctx_interp big_sepL_cons big_sepL_singleton.
-    iDestruct "HE" as "(Hβ & #Hαβ)".
+    iDestruct (lctx_lft_incl_incl α β with "HL HE") as "#Hαβ"; [solve_typing..|].
     iAssert (▷ ty_own (own_ptr 1 (&shr{α} box ty)) tid [x])%I with "[HT]" as "HT".
     { destruct x as [[|l|]|]=>//=. iDestruct "HT" as "[H $]".
       iNext. iDestruct "H" as ([|[[]|][]]) "[H↦ H]"; try done.

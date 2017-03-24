@@ -16,6 +16,8 @@ Section bool.
   Next Obligation. intros ? [|[[| |[|[]|]]|] []]; auto. Qed.
   Next Obligation. intros ? [|[[| |[|[]|]]|] []]; apply _. Qed.
 
+  Global Instance bool_wf : TyWf bool := { ty_lfts := []; ty_wf_E := [] }.
+
   Global Instance bool_send : Send bool.
   Proof. done. Qed.
 End bool.

@@ -53,6 +53,61 @@ Instance: Params (@ty_shr) 2.
 
 Arguments ty_own {_ _} _ _ !_ /.
 
+Class TyWf `{typeG Σ} (ty : type) := { ty_lfts : list lft; ty_wf_E : elctx }.
+Arguments ty_lfts {_ _} _ {_}.
+Arguments ty_wf_E {_ _} _ {_}.
+
+Definition ty_outlives_E `{typeG Σ} ty `{!TyWf ty} (κ : lft) : elctx :=
+  (λ α, κ ⊑ α)%EL <$> ty.(ty_lfts).
+
+Lemma ty_outlives_E_elctx_sat `{typeG Σ} E L ty `{!TyWf ty} α β :
+  ty.(ty_outlives_E) β ⊆+ E →
+  lctx_lft_incl E L α β →
+  elctx_sat E L (ty.(ty_outlives_E) α).
+Proof.
+  unfold ty_outlives_E. induction ty.(ty_lfts) as [|κ l IH]=>/= Hsub Hαβ.
+  - solve_typing.
+  - apply elctx_sat_lft_incl.
+    + etrans; first done. eapply lctx_lft_incl_external, elem_of_submseteq, Hsub.
+      set_solver.
+    + apply IH, Hαβ. etrans; last done. by apply submseteq_cons.
+Qed.
+
+Inductive TyWfLst `{typeG Σ} : list type → Type :=
+| tyl_wf_nil : TyWfLst []
+| tyl_wf_cons ty tyl `{!TyWf ty, !TyWfLst tyl} : TyWfLst (ty::tyl).
+Existing Class TyWfLst.
+Existing Instances tyl_wf_nil tyl_wf_cons.
+
+Fixpoint tyl_lfts `{typeG Σ} tyl {WF : TyWfLst tyl} : list lft :=
+  match WF with
+  | tyl_wf_nil => []
+  | tyl_wf_cons ty tyl _ _ => ty.(ty_lfts) ++ tyl.(tyl_lfts)
+  end.
+
+Fixpoint tyl_wf_E `{typeG Σ} tyl {WF : TyWfLst tyl} : elctx :=
+  match WF with
+  | tyl_wf_nil => []
+  | tyl_wf_cons ty tyl _ _ => ty.(ty_wf_E) ++ tyl.(tyl_wf_E)
+  end.
+
+Fixpoint tyl_outlives_E `{typeG Σ} tyl {WF : TyWfLst tyl} (κ : lft) : elctx :=
+  match WF with
+  | tyl_wf_nil => []
+  | tyl_wf_cons ty tyl _ _ => ty.(ty_outlives_E) κ ++ tyl.(tyl_outlives_E) κ
+  end.
+
+Lemma tyl_outlives_E_elctx_sat `{typeG Σ} E L tyl {WF : TyWfLst tyl} α β :
+  tyl.(tyl_outlives_E) β ⊆+ E →
+  lctx_lft_incl E L α β →
+  elctx_sat E L (tyl.(tyl_outlives_E) α).
+Proof.
+  induction WF as [|???? IH]=>/=.
+  - solve_typing.
+  - intros. apply elctx_sat_app, IH; [eapply ty_outlives_E_elctx_sat| |]=>//;
+      (etrans; [|done]); solve_typing.
+Qed.
+
 Record simple_type `{typeG Σ} :=
   { st_own : thread_id → list val → iProp Σ;
     st_size_eq tid vl : st_own tid vl -∗ ⌜length vl = 1%nat⌝;
@@ -194,8 +249,7 @@ Section ofe.
 
   Global Instance ty_of_st_ne : NonExpansive ty_of_st.
   Proof.
-    intros n ?? EQ. constructor. done. simpl.
-    - intros tid l. apply EQ.
+    intros n ?? EQ. constructor; try apply EQ. done.
     - simpl. intros; repeat f_equiv. apply EQ.
   Qed.
   Global Instance ty_of_st_proper : Proper ((≡) ==> (≡)) ty_of_st.
@@ -515,8 +569,8 @@ Section subtyping.
     iClear "∗". iIntros "!# #HE".
     iApply (type_incl_trans with "[#]"). by iApply "H12". by iApply "H23".
   Qed.
-  
-  Lemma subtype_Forall2_llctx E L tys1 tys2 qL : 
+
+  Lemma subtype_Forall2_llctx E L tys1 tys2 qL :
     Forall2 (subtype E L) tys1 tys2 →
     llctx_interp L qL -∗ □ (elctx_interp E -∗
            [∗ list] tys ∈ (zip tys1 tys2), type_incl (tys.1) (tys.2)).
@@ -584,7 +638,7 @@ Section subtyping.
   Qed.
 
   Lemma subtype_simple_type E L (st1 st2 : simple_type) :
-    (∀ qL, llctx_interp L qL -∗ □ (elctx_interp E -∗ 
+    (∀ qL, llctx_interp L qL -∗ □ (elctx_interp E -∗
        ∀ tid vl, st1.(st_own) tid vl -∗ st2.(st_own) tid vl)) →
     subtype E L st1 st2.
   Proof.
@@ -608,7 +662,7 @@ End subtyping.
 
 Section type_util.
   Context `{typeG Σ}.
-  
+
   Lemma heap_mapsto_ty_own l ty tid :
     l ↦∗: ty_own ty tid ⊣⊢ ∃ (vl : vec val ty.(ty_size)), l ↦∗ vl ∗ ty_own ty tid vl.
   Proof.
@@ -621,5 +675,6 @@ Section type_util.
 
 End type_util.
 
+Hint Resolve ty_outlives_E_elctx_sat tyl_outlives_E_elctx_sat : lrust_typing.
 Hint Resolve subtype_refl eqtype_refl : lrust_typing.
 Hint Opaque subtype eqtype : lrust_typing.

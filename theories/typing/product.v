@@ -148,6 +148,9 @@ Section product.
   Definition product := foldr product2 unit0.
   Definition unit := product [].
 
+  Global Instance product_wf tyl `{!TyWfLst tyl} : TyWf (product tyl) :=
+    { ty_lfts := tyl.(tyl_lfts); ty_wf_E := tyl.(tyl_wf_E) }.
+
   Global Instance product_type_ne n: Proper (Forall2 (type_dist2 n) ==> type_dist2 n) product.
   Proof. intros ??. induction 1=>//=. by f_equiv. Qed.
   Global Instance product_ne : NonExpansive product.

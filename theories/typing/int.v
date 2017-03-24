@@ -15,6 +15,8 @@ Section int.
   Next Obligation. intros ? [|[[]|] []]; auto. Qed.
   Next Obligation. intros ? [|[[]|] []]; apply _. Qed.
 
+  Global Instance int_wf : TyWf int := { ty_lfts := []; ty_wf_E := [] }.
+
   Global Instance int_send : Send int.
   Proof. done. Qed.
 End int.

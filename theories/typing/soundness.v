@@ -23,7 +23,7 @@ Proof. solve_inG. Qed.
 Section type_soundness.
   Definition exit_cont : val := λ: [<>], #().
 
-  Definition main_type `{typeG Σ} := (fn(λ ϝ, []) → unit)%T.
+  Definition main_type `{typeG Σ} := (fn(∅) → unit)%T.
 
   Theorem type_soundness `{typePreG Σ} (main : val) σ t :
     (∀ `{typeG Σ}, typed_val main main_type) →
@@ -53,7 +53,7 @@ Section type_soundness.
     iMod (lft_create with "LFT") as (ϝ) "Hϝ". done.
     iApply ("Hmain" $! () ϝ exit_cont [#] tid with "LFT [] Htl [Hϝ] []");
       last by rewrite tctx_interp_nil.
-    { by rewrite /elctx_interp /=. }
+    { by rewrite /elctx_interp /= big_sepL_nil. }
     { rewrite /llctx_interp big_sepL_singleton. iExists ϝ. iFrame. by rewrite /= left_id. }
     rewrite cctx_interp_singleton. simpl. iIntros (args) "_ _".
     inv_vec args. iIntros (x) "_ /=". by wp_lam.

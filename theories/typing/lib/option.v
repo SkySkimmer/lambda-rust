@@ -22,9 +22,9 @@ Section option.
     cont: "k" [] :=
       delete [ #1; "o"];; return: ["r"].
 
-  Lemma option_as_mut_type τ :
+  Lemma option_as_mut_type τ `{!TyWf τ} :
     typed_val
-      option_as_mut (fn(∀ α, (λ ϝ, [ϝ ⊑ α]); &uniq{α} (option τ)) → option (&uniq{α}τ)).
+      option_as_mut (fn(∀ α, ∅; &uniq{α} (option τ)) → option (&uniq{α}τ)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ϝ ret p).
       inv_vec p=>o. simpl_subst.
@@ -53,8 +53,8 @@ Section option.
         delete [ #(S τ.(ty_size)); "o"];; delete [ #τ.(ty_size); "def"];;
         return: ["r"]].
 
-  Lemma option_unwrap_or_type τ :
-    typed_val (option_unwrap_or τ) (fn((λ ϝ, []); option τ, τ) → τ).
+  Lemma option_unwrap_or_type τ `{!TyWf τ} :
+    typed_val (option_unwrap_or τ) (fn(∅; option τ, τ) → τ).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([] ϝ ret p). inv_vec p=>o def. simpl_subst.

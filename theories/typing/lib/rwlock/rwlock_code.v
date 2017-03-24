@@ -19,8 +19,8 @@ Section rwlock_functions.
       "r" +ₗ #1 <-{ty.(ty_size)} !"x";;
        delete [ #ty.(ty_size) ; "x"];; return: ["r"].
 
-  Lemma rwlock_new_type ty :
-    typed_val (rwlock_new ty) (fn(λ ϝ, []; ty) → rwlock ty).
+  Lemma rwlock_new_type ty `{!TyWf ty} :
+    typed_val (rwlock_new ty) (fn(∅; ty) → rwlock ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ret ϝ arg). inv_vec arg=>x. simpl_subst.
@@ -55,8 +55,8 @@ Section rwlock_functions.
       "r" <-{ty.(ty_size)} !("x" +ₗ #1);;
        delete [ #(S ty.(ty_size)) ; "x"];; return: ["r"].
 
-  Lemma rwlock_into_inner_type ty :
-    typed_val (rwlock_into_inner ty) (fn(λ ϝ, [] ; rwlock ty) → ty).
+  Lemma rwlock_into_inner_type ty `{!TyWf ty} :
+    typed_val (rwlock_into_inner ty) (fn(∅; rwlock ty) → ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ret ϝ arg). inv_vec arg=>x. simpl_subst.
@@ -89,8 +89,8 @@ Section rwlock_functions.
       "x" <- "x'" +ₗ #1;;
       return: ["x"].
 
-  Lemma rwlock_get_mut_type ty :
-    typed_val rwlock_get_mut (fn(∀ α, λ ϝ, [ϝ ⊑ α]; &uniq{α} (rwlock ty)) → &uniq{α} ty).
+  Lemma rwlock_get_mut_type ty `{!TyWf ty} :
+    typed_val rwlock_get_mut (fn(∀ α, ∅; &uniq{α} (rwlock ty)) → &uniq{α} ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
@@ -139,9 +139,9 @@ Section rwlock_functions.
     cont: "k" [] :=
       delete [ #1; "x"];; return: ["r"].
 
-  Lemma rwlock_try_read_type ty :
+  Lemma rwlock_try_read_type ty `{!TyWf ty} :
     typed_val rwlock_try_read
-        (fn(∀ α, λ ϝ, [ϝ ⊑ α]; &shr{α}(rwlock ty)) → option (rwlockreadguard α ty)).
+        (fn(∀ α, ∅; &shr{α}(rwlock ty)) → option (rwlockreadguard α ty)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
@@ -254,9 +254,9 @@ Section rwlock_functions.
     cont: "k" ["r"] :=
       delete [ #1; "x"];; return: ["r"].
 
-  Lemma rwlock_try_write_type ty :
+  Lemma rwlock_try_write_type ty `{!TyWf ty} :
     typed_val rwlock_try_write
-        (fn(∀ α, λ ϝ, [ϝ ⊑ α]; &shr{α}(rwlock ty)) → option (rwlockwriteguard α ty)).
+        (fn(∀ α, ∅; &shr{α}(rwlock ty)) → option (rwlockwriteguard α ty)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.

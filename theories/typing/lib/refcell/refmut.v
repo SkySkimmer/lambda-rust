@@ -72,6 +72,9 @@ Section refmut.
       iApply ty_shr_mono; try done. iApply lft_intersect_mono. iApply lft_incl_refl. done.
   Qed.
 
+  Global Instance refmut_wf α ty `{!TyWf ty} : TyWf (refmut α ty) :=
+    { ty_lfts := [α]; ty_wf_E := ty.(ty_wf_E) ++ ty.(ty_outlives_E) α }.
+
   Global Instance refmut_type_contractive α : TypeContractive (refmut α).
   Proof. solve_type_proper. Qed.
   Global Instance refmut_ne α : NonExpansive (refmut α).

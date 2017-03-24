@@ -61,6 +61,9 @@ Section rwlockwriteguard.
       iApply ty_shr_mono; try done. iApply lft_intersect_mono. iApply lft_incl_refl. done.
   Qed.
 
+  Global Instance rwlockwriteguard_wf α ty `{!TyWf ty} : TyWf (rwlockwriteguard α ty) :=
+    { ty_lfts := [α]; ty_wf_E := ty.(ty_wf_E) ++ ty.(ty_outlives_E) α }.
+
   Global Instance rwlockwriteguard_type_contractive α : TypeContractive (rwlockwriteguard α).
   Proof.
     constructor;

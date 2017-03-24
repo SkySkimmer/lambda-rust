@@ -18,10 +18,9 @@ Section refmut_functions.
       letalloc: "r" <- "r'" in
       delete [ #1; "x"];; return: ["r"].
 
-  Lemma refmut_deref_type ty :
-    typed_val refmut_deref
-      (fn (fun '(α, β) => FP (λ ϝ, [ϝ ⊑ α; α ⊑ β]%EL)
-                             [# &shr{α}(refmut β ty)]%T (&shr{α}ty))).
+  Lemma refmut_deref_type ty `{!TyWf ty} :
+    typed_val refmut_deref (fn (fun '(α, β) =>
+       FP_wf ∅ [# &shr{α}(refmut β ty)]%T (&shr{α}ty))).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
@@ -43,11 +42,12 @@ Section refmut_functions.
     iDestruct ("Hcloseβα2" with "Hα2β") as "[Hβ Hα2]".
     iMod ("Hcloseα1" with "[$H↦1 $H↦2]") as "Hα1".
     iMod ("Hclose''" with "Hβ HL") as "HL". iMod ("Hclose'" with "[$] HL") as "HL".
+    iDestruct (lctx_lft_incl_incl α β with "HL HE") as "#Hαβ"; [solve_typing..|].
     iApply (type_type _ _ _ [ x ◁ box (&shr{α} refmut β ty); #lv ◁ &shr{α}ty]%TC
             with "[] LFT HE Hna HL Hk"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (ty_shr_mono with "[] Hshr'").
-      iApply lft_incl_glb; last iApply lft_incl_refl. iDestruct "HE" as "(_ & $ & _)". }
+      by iApply lft_incl_glb; last iApply lft_incl_refl. }
     iApply (type_letalloc_1 (&shr{α}ty)); [solve_typing..|].
     iIntros (r). simpl_subst. iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
@@ -61,10 +61,9 @@ Section refmut_functions.
       letalloc: "r" <- "r'" in
       delete [ #1; "x"];; return: ["r"].
 
-  Lemma refmut_derefmut_type ty :
-    typed_val refmut_derefmut
-      (fn (fun '(α, β) => FP (λ ϝ, [ϝ ⊑ α; α ⊑ β]%EL) [# &uniq{α}(refmut β ty)]%T
-                              (&uniq{α}ty)%T)).
+  Lemma refmut_derefmut_type ty `{!TyWf ty} :
+    typed_val refmut_derefmut (fn (fun '(α, β) =>
+      FP_wf ∅ [# &uniq{α}(refmut β ty)]%T (&uniq{α}ty)%T)).
    Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
@@ -96,12 +95,12 @@ Section refmut_functions.
       [done| |by iApply (bor_unnest with "LFT Hb")|]; first done.
     wp_read. iIntros "Hb !>". wp_let.
     iMod ("Hcloseα" with "[$H↦]") as "[_ Hα]". iMod ("Hclose'" with "Hα HL") as "HL".
+    iDestruct (lctx_lft_incl_incl α β with "HL HE") as "#Hαβ"; [solve_typing..|].
     iApply (type_type _ _ _ [ x ◁ box (uninit 1); #lv ◁ &uniq{α}ty]%TC
             with "[] LFT HE Hna HL Hk"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (bor_shorten with "[] Hb").
-      iApply lft_incl_glb; [iApply lft_incl_glb|iApply lft_incl_refl]; last done.
-      iDestruct "HE" as "(_ & $ & _)". }
+      by iApply lft_incl_glb; [iApply lft_incl_glb|iApply lft_incl_refl]. }
     iApply (type_letalloc_1 (&uniq{α}ty)); [solve_typing..|].
     iIntros (r). simpl_subst. iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
@@ -116,8 +115,8 @@ Section refmut_functions.
       delete [ #2; "x"];;
       let: "r" := new [ #0] in return: ["r"].
 
-  Lemma refmut_drop_type ty :
-    typed_val refmut_drop (fn(∀ α, (λ ϝ, [ϝ ⊑ α]); refmut α ty) → unit).
+  Lemma refmut_drop_type ty `{!TyWf ty} :
+    typed_val refmut_drop (fn(∀ α, ∅; refmut α ty) → unit).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
@@ -159,69 +158,74 @@ Section refmut_functions.
   (* Apply a function within the refmut, typically for accessing a component. *)
   Definition refmut_map : val :=
     funrec: <> ["ref"; "f"; "env"] :=
-    withcont: "k":
-      let: "x'" := !"ref" in
       let: "f'" := !"f" in
+      Newlft;;
+      let: "x'" := !"ref" in
       letalloc: "x" <- "x'" in
       letcall: "r" := "f'" ["env"; "x"]%E in
-      let: "r'" := !"r" in
+      let: "r'" := !"r" in delete [ #1; "r"];;
+      Endlft;;
       "ref" <- "r'";;
-      delete [ #1; "f"];; "k" []
-    cont: "k" [] :=
-      return: ["ref"].
+      delete [ #1; "f"];; return: ["ref"].
 
-  Lemma refmut_map_type ty1 ty2 envty E :
+  Lemma refmut_map_type ty1 ty2 envty `{!TyWf ty1, !TyWf ty2, !TyWf envty} :
     typed_val refmut_map
-      (fn(∀ β, [β]%EL ++ E; refmut β ty1,
-                         fn(∀ α, [α]%EL ++ E; envty, &uniq{α} ty1) → &uniq{α} ty2,
-                         envty)
+      (fn(∀ β, ∅; refmut β ty1,
+            fn(∀ α, ∅; envty, &uniq{α} ty1) → &uniq{α} ty2, envty)
        → refmut β ty2).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
-      iIntros (α ret arg). inv_vec arg=>ref f env. simpl_subst.
-    iIntros (tid qE) "#LFT Hna HE HL Hk HT".
-    rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "(Href & Hf & Henv)".
-    destruct ref as [[|lref|]|]; try done. iDestruct "Href" as "[Href Href†]".
+    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ϝ ret arg).
+       inv_vec arg=>ref f env. simpl_subst.
+    iApply type_deref; [solve_typing..|]. iIntros (f'). simpl_subst.
+    iApply (type_newlft [ϝ]). iIntros (κ tid) "#LFT #HE Hna HL Hk (Hf & #Hf' & Href & Henv)".
+    rewrite (tctx_hasty_val _ ref). destruct ref as [[|lref|]|]; try done.
+    iDestruct "Href" as "[Href Href†]".
     iDestruct "Href" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Href";
       try iDestruct "Href" as "[_ >[]]".
     rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
     iDestruct "Href" as "[[Href↦1 Href↦2] Href]".
     iDestruct "Href" as (ν γ β ty') "(Hbor & #Hαβ & #Hinv & >Hν & Hγ)".
-    rewrite -(freeable_sz_split _ 1 1). iDestruct "Href†" as "[Href†1 Href†2]".
-    destruct (Qp_lower_bound qE 1) as (q & qE' & qν' & -> & EQ1).
-      rewrite [in (_).[ν]%I] EQ1.
-    iDestruct (@fractional_split with "HE") as "[[Hα HE] HE']".
-    iDestruct "Hν" as "[Hν Hν']".
-    remember (RecV "k" [] (ret [ LitV lref])%E)%V as k eqn:EQk.
-    iApply (wp_let' _ _ _ _ k). { subst. solve_to_val. } simpl_subst.
-    iApply (type_type ((α ⊓ ν) :: E)%EL []
-        [k ◁cont([], λ _:vec val 0, [ #lref ◁ own_ptr 2 (&uniq{α ⊓ ν}ty2)])]%CC
-        [ f ◁ box (fn(∀ α, [α]%EL ++ E; envty, &uniq{α}ty1) → &uniq{α}ty2);
-          #lref ◁ own_ptr 2 (&uniq{α ⊓ ν}ty1); env ◁ box envty ]%TC
-       with "[] LFT Hna [$HE Hα Hν] HL [Hk HE' Hν' Href↦2 Hγ Href†2]"); first last.
-    { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-      iFrame. iApply tctx_hasty_val'. done. iFrame. iExists [_].
-      rewrite heap_mapsto_vec_singleton. by iFrame. }
-    { rewrite !cctx_interp_singleton /=. iIntros "HE". iIntros (args) "Hna HL HT".
-      inv_vec args. subst. simpl. wp_rec. iDestruct "HE" as "[Hαν HE]".
-      iDestruct (lft_tok_sep with "Hαν") as "[Hα Hν]".
-      iSpecialize ("Hk" with "[$HE' $Hα $HE]").
-      iApply ("Hk" $! [# #lref] with "Hna HL").
-      rewrite !tctx_interp_singleton !tctx_hasty_val' //.
-      iDestruct "HT" as "[Href Ḥref†2]".
-      rewrite /= -(freeable_sz_split _ 1 1). iFrame.
-      iDestruct "Href" as ([|[[|lv'|]|] [|]]) "[H↦ Href]"; auto.
-      iExists [ #lv'; #lrc].
-      rewrite (heap_mapsto_vec_cons _ _ _ [_]) !heap_mapsto_vec_singleton. iFrame.
-      iExists ν. rewrite /= EQ1. eauto 20 with iFrame. }
-    { rewrite /= -lft_tok_sep. iFrame. }
-    iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
-    iApply type_deref; [solve_typing..|]. iIntros (f'). simpl_subst.
-    iApply type_letalloc_1; [solve_typing..|]. iIntros (x). simpl_subst.
-    iApply (type_letcall); [simpl; solve_typing..|]. iIntros (r). simpl_subst.
-    iApply type_deref; [solve_typing..|]. iIntros (r'). simpl_subst.
-    iApply type_assign; [solve_typing..|].
+    wp_read. wp_let. wp_apply wp_new; first done.
+    iIntros (lx [|? []]) "(% & H† & Hlx)"; try (simpl in *; lia).
+    rewrite heap_mapsto_vec_singleton. wp_let. wp_write.
+    match goal with | |- context [(WP (_ [?k']) {{_, _}})%I] =>
+      assert (∃ k, to_val k' = Some k) as [k EQk] by (eexists; solve_to_val) end.
+    iApply (wp_let' _ _ _ _ k _ EQk). simpl_subst. iNext.
+    iDestruct (lctx_lft_incl_incl κ α with "HL HE") as "#Hκα"; [solve_typing..|].
+    iMod (bor_create _ κ (1).[ν] with "LFT [$Hν]") as "[Hb Hν]"; first done.
+    iAssert (κ ⊑ α ⊓ ν)%I with "[>Hb]" as "#Hκν".
+    { iApply (lft_incl_glb with "Hκα"). iApply (frac_bor_lft_incl with "LFT").
+      iApply (bor_fracture with "LFT [> -]"); first done. rewrite /= Qp_mult_1_r //. }
+    iApply (type_type ((κ ⊑ α ⊓ ν) :: (α ⊓ ν ⊑ α) :: _)%EL _
+        [k ◁cont(_, λ x:vec val 1, [ x!!!0 ◁ box (&uniq{α ⊓ ν}ty2)])]%CC
+        [ f' ◁ fn(∀ α, ∅; envty, &uniq{α}ty1) → &uniq{α}ty2;
+          #lx ◁ box (&uniq{α ⊓ ν}ty1); env ◁ box envty ]%TC
+       with "[] LFT [] Hna HL [-H† Hlx Henv Hbor]"); swap 1 2; swap 3 4.
+    { iSplitL; last iSplitL; [done|iApply lft_intersect_incl_l|iApply "HE"]. }
+    { iApply (type_call (α ⊓ ν)); solve_typing. }
+    { iFrame "∗#". iApply tctx_hasty_val'; first done. rewrite -freeable_sz_full.
+      iFrame. iExists [_]. rewrite heap_mapsto_vec_singleton. auto with iFrame. }
+    iIntros (? ->%elem_of_list_singleton arg) "Hna HL Hr". inv_vec arg=>r.
+    apply of_to_val in EQk. rewrite EQk. iApply wp_rec; try (done || apply _).
+    { repeat econstructor. by rewrite to_of_val. } simpl_subst.
+    rewrite /tctx_interp big_sepL_singleton (tctx_hasty_val _ r) ownptr_own.
+    iDestruct "Hr" as (lr vr) "(% & Hlr & Hvr & H†)". subst. inv_vec vr=>r'. iNext.
+    rewrite heap_mapsto_vec_singleton. wp_read. wp_let.
+    wp_apply (wp_delete _ _ _ [_] with "[Hlr H†]"). done.
+    { rewrite heap_mapsto_vec_singleton freeable_sz_full. iFrame. }
+    iIntros "_". wp_seq. wp_bind Endlft. iDestruct "HL" as "[Hκ HL]".
+    iDestruct "Hκ" as (κ') "(% & Hκ' & #Hκ'†)". simpl in *. subst κ.
+    iSpecialize ("Hκ'†" with "Hκ'").
+    iApply wp_mask_mono; last iApply (wp_step_fupd with "Hκ'†"); auto with ndisj.
+    wp_seq. iIntros "Hκ'† !>". iMod ("Hν" with "[Hκ'†]") as "Hν";
+      first by rewrite -lft_dead_or; auto. wp_seq. wp_write.
+    iApply (type_type _ _ _
+        [ f ◁ box (fn(∀ α, ∅; envty, &uniq{α}ty1) → &uniq{α}ty2);
+          #lref ◁ box (refmut α ty2) ]%TC
+       with "[] LFT HE Hna HL Hk"); first last.
+    { iFrame. rewrite big_sepL_singleton tctx_hasty_val. iExists _. iSplit. done.
+      iFrame. iExists [_;_]. rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
+      iFrame. destruct r' as [[]|]=>//=. auto 10 with iFrame. }
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.

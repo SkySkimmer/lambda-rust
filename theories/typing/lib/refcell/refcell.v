@@ -156,6 +156,9 @@ Section refcell.
     iExists _, _. iFrame. iApply lft_incl_trans; auto.
   Qed.
 
+  Global Instance refcell_wf ty `{!TyWf ty} : TyWf (refcell ty) :=
+    { ty_lfts := ty.(ty_lfts); ty_wf_E := ty.(ty_wf_E) }.
+
   Global Instance refcell_type_ne : TypeNonExpansive refcell.
   Proof.
     constructor;

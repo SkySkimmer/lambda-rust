@@ -61,6 +61,9 @@ Section rwlockreadguard.
     iApply lft_incl_refl.
   Qed.
 
+  Global Instance rwlockreadguard_wf α ty `{!TyWf ty} : TyWf (rwlockreadguard α ty) :=
+    { ty_lfts := [α]; ty_wf_E := ty.(ty_wf_E) ++ ty.(ty_outlives_E) α }.
+
   Global Instance rwlockreadguard_type_contractive α : TypeContractive (rwlockreadguard α).
   Proof.
     constructor;

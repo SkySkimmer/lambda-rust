@@ -16,6 +16,9 @@ Section shr_bor.
   Next Obligation. by iIntros (κ ty tid [|[[]|][]]) "H". Qed.
   Next Obligation. intros κ ty tid [|[[]|][]]; apply _. Qed.
 
+  Global Instance shr_bor_wf κ ty `{!TyWf ty} : TyWf (shr_bor κ ty) :=
+    { ty_lfts := [κ]; ty_wf_E := ty.(ty_wf_E) ++ ty.(ty_outlives_E) κ }.
+
   Global Instance shr_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> subtype E L ==> subtype E L) shr_bor.
   Proof.

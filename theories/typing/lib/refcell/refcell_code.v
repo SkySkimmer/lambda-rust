@@ -19,8 +19,8 @@ Section refcell_functions.
       "r" +ₗ #1 <-{ty.(ty_size)} !"x";;
       delete [ #ty.(ty_size) ; "x"];; return: ["r"].
 
-  Lemma refcell_new_type ty :
-    typed_val (refcell_new ty) (fn(λ ϝ, []; ty) → refcell ty).
+  Lemma refcell_new_type ty `{!TyWf ty} :
+    typed_val (refcell_new ty) (fn(∅; ty) → refcell ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>x. simpl_subst.
@@ -54,8 +54,8 @@ Section refcell_functions.
              Leaving them away is inconsistent with `let ... := !"x" +ₗ #1`. *)
        delete [ #(S ty.(ty_size)) ; "x"];; return: ["r"].
 
-  Lemma refcell_into_inner_type ty :
-    typed_val (refcell_into_inner ty) (fn(λ ϝ, []; refcell ty) → ty).
+  Lemma refcell_into_inner_type ty `{!TyWf ty} :
+    typed_val (refcell_into_inner ty) (fn(∅; refcell ty) → ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>x. simpl_subst.
@@ -88,9 +88,9 @@ Section refcell_functions.
       "x" <- "x'" +ₗ #1;;
       return: ["x"].
 
-  Lemma refcell_get_mut_type ty :
+  Lemma refcell_get_mut_type ty `{!TyWf ty} :
     typed_val refcell_get_mut
-             (fn(∀ α, λ ϝ, [ϝ ⊑ α]; &uniq{α} (refcell ty)) → &uniq{α} ty)%T.
+              (fn(∀ α, ∅; &uniq{α} (refcell ty)) → &uniq{α} ty)%T.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
@@ -139,9 +139,9 @@ Section refcell_functions.
     cont: "k" [] :=
       delete [ #1; "x"];; return: ["r"].
 
-  Lemma refcell_try_borrow_type ty :
+  Lemma refcell_try_borrow_type ty `{!TyWf ty} :
     typed_val refcell_try_borrow
-      (fn(∀ α, λ ϝ, [ϝ ⊑ α] ; &shr{α}(refcell ty)) → option (ref α ty)).
+      (fn(∀ α, ∅; &shr{α}(refcell ty)) → option (ref α ty)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
@@ -246,9 +246,9 @@ Section refcell_functions.
     cont: "k" [] :=
       delete [ #1; "x"];; return: ["r"].
 
-  Lemma refcell_try_borrow_mut_type ty :
+  Lemma refcell_try_borrow_mut_type ty `{!TyWf ty} :
     typed_val refcell_try_borrow_mut
-              (fn(∀ α, λ ϝ, [ϝ ⊑ α]; &shr{α}(refcell ty)) → option (refmut α ty))%T.
+              (fn(∀ α, ∅; &shr{α}(refcell ty)) → option (refmut α ty))%T.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.

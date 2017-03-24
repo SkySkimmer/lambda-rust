@@ -63,8 +63,8 @@ Section own.
          end%I;
        ty_shr κ tid l :=
          (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ∗
-            □ (∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ] ={F,F∖↑shrN}▷=∗ ty.(ty_shr) κ tid l' ∗ q.[κ]))%I
-    |}.
+            □ (∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ] ={F,F∖↑shrN}▷=∗
+                            ty.(ty_shr) κ tid l' ∗ q.[κ]))%I |}.
   Next Obligation. by iIntros (q ty tid [|[[]|][]]) "H". Qed.
   Next Obligation.
     move=>n ty N κ l tid ?? /=. iIntros "#LFT Hshr Htok".
@@ -87,6 +87,9 @@ Section own.
     iMod "Hvs'" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
     by iApply (ty.(ty_shr_mono) with "Hκ").
   Qed.
+
+  Global Instance own_ptr_wf n ty `{!TyWf ty} : TyWf (own_ptr n ty) :=
+    { ty_lfts := ty.(ty_lfts); ty_wf_E := ty.(ty_wf_E) }.
 
   Lemma own_type_incl n m ty1 ty2 :
     ▷ ⌜n = m⌝ -∗ ▷ type_incl ty1 ty2 -∗ type_incl (own_ptr n ty1) (own_ptr m ty2).
@@ -186,7 +189,8 @@ Section util.
 
   Lemma ownptr_own n ty tid v :
     (own_ptr n ty).(ty_own) tid [v] ⊣⊢
-       ∃ (l : loc) (vl : vec val ty.(ty_size)), ⌜v = #l⌝ ∗ ▷ l ↦∗ vl ∗ ▷ ty.(ty_own) tid vl ∗ ▷ freeable_sz n ty.(ty_size) l.
+       ∃ (l : loc) (vl : vec val ty.(ty_size)),
+         ⌜v = #l⌝ ∗ ▷ l ↦∗ vl ∗ ▷ ty.(ty_own) tid vl ∗ ▷ freeable_sz n ty.(ty_size) l.
   Proof.
     iSplit.
     - iIntros "Hown". destruct v as [[|l|]|]; try done.

@@ -12,7 +12,7 @@ Section get_x.
        delete [ #1; "p"] ;; "return" ["r"].
 
   Lemma get_x_type :
-    typed_val get_x (fn(∀ α, λ ϝ, [ϝ ⊑ α]; &uniq{α} Π[int; int]) → &shr{α} int).
+    typed_val get_x (fn(∀ α, ∅; &uniq{α} Π[int; int]) → &shr{α} int).
   (* FIXME: The above is pretty-printed with some explicit scope annotations,
      and without using 'typed_instruction_ty'.  I think that's related to
      the list notation that we added to %TC. *)

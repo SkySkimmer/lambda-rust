@@ -26,6 +26,9 @@ Section join_handle.
   Next Obligation. iIntros "* _ _ _ $". auto. Qed.
   Next Obligation. iIntros (?) "**"; auto. Qed.
 
+  Global Instance join_handle_wf ty `{!TyWf ty} : TyWf (join_handle ty) :=
+    { ty_lfts := ty.(ty_lfts); ty_wf_E := ty.(ty_wf_E) }.
+
   Lemma join_handle_subtype ty1 ty2 :
     ▷ type_incl ty1 ty2 -∗ type_incl (join_handle ty1) (join_handle ty2).
   Proof.
@@ -67,8 +70,10 @@ Section spawn.
       letalloc: "r" <- "join" in
       delete [ #1; "f"];; return: ["r"].
 
-  Lemma spawn_type `(!Send envty, !Send retty) :
-    typed_val spawn (fn(λ _, []; fn(λ _, [] ; envty) → retty, envty) → join_handle retty).
+  Lemma spawn_type envty retty `{!TyWf envty, !TyWf retty}
+        `(!Send envty, !Send retty) :
+    let E ϝ := envty.(ty_outlives_E) static ++ retty.(ty_outlives_E) static in
+    typed_val spawn (fn(E; fn(∅; envty) → retty, envty) → join_handle retty).
   Proof. (* FIXME: typed_instruction_ty is not used for printing. *)
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>f env. simpl_subst.
@@ -84,13 +89,13 @@ Section spawn.
         iIntros "?". iExists retty. iFrame. iApply type_incl_refl. }
       iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let.
       (* FIXME this is horrible. *)
-      assert (Hcall := type_call' [] [] [] f' [] [env:expr] (λ _:(), FP (λ _, []) [# envty] retty)).
+      refine (let Hcall := type_call' _ [] [] f' [] [env:expr]
+                (λ _:(), FP_wf ∅ [# envty] retty) in _).
       specialize (Hcall (rec: "_k" ["r"] := finish [ #c; "r"])%V ()).
       erewrite of_val_unlock in Hcall; last done.
-      iApply (Hcall with "LFT [] Htl [] [Hfin]").
+      iApply (Hcall with "LFT HE Htl [] [Hfin]").
       - constructor.
-      - intros. apply elctx_sat_nil.
-      - rewrite /elctx_interp big_sepL_nil. done.
+      - solve_typing.
       - rewrite /llctx_interp big_sepL_nil. done.
       - rewrite /cctx_interp. iIntros "* Hin".
         iDestruct "Hin" as %Hin%elem_of_list_singleton. subst x.
@@ -98,9 +103,8 @@ Section spawn.
         wp_rec. iApply (finish_spec with "[$Hfin Hret]"); last auto.
         rewrite tctx_interp_singleton tctx_hasty_val. by iApply @send_change_tid.
       - rewrite tctx_interp_cons tctx_interp_singleton. iSplitL "Hf'".
-        + rewrite !tctx_hasty_val.
-          iApply @send_change_tid. done.
-        + rewrite !tctx_hasty_val. iApply @send_change_tid. done. }
+        + rewrite !tctx_hasty_val. by iApply @send_change_tid.
+        + rewrite !tctx_hasty_val. by iApply @send_change_tid. }
     iIntros (v). simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_assign; [solve_typing..|].
@@ -114,8 +118,8 @@ Section spawn.
       let: "r" := join ["c'"] in
       delete [ #1; "c"];; return: ["r"].
 
-  Lemma join_type retty :
-    typed_val join (fn(λ _, []; join_handle retty) → retty).
+  Lemma join_type retty `{!TyWf retty} :
+    typed_val join (fn(∅; join_handle retty) → retty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>c. simpl_subst.

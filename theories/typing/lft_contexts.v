@@ -114,6 +114,9 @@ Section lft_contexts.
   Definition lctx_lft_eq κ κ' : Prop :=
     lctx_lft_incl κ κ' ∧ lctx_lft_incl κ' κ.
 
+  Lemma lctx_lft_incl_incl κ κ' : lctx_lft_incl κ κ' → lctx_lft_incl κ κ'.
+  Proof. done. Qed.
+
   Lemma lctx_lft_incl_relf κ : lctx_lft_incl κ κ.
   Proof. iIntros (qL) "_ !# _". iApply lft_incl_refl. Qed.
 
@@ -300,26 +303,12 @@ Arguments lctx_lft_incl {_ _ _} _%EL _%LL _ _.
 Arguments lctx_lft_eq {_ _ _} _%EL _%LL _ _.
 Arguments lctx_lft_alive {_ _ _} _%EL _%LL _.
 Arguments elctx_sat {_ _ _} _%EL _%LL _%EL.
+Arguments lctx_lft_incl_incl {_ _ _ _%EL _%LL} _ _.
 Arguments lctx_lft_alive_tok {_ _ _ _%EL _%LL} _ _ _.
 
-Lemma elctx_sat_cons_weaken `{invG Σ, lftG Σ} e0 E E' L :
-  elctx_sat E L E' → elctx_sat (e0 :: E) L E'.
-Proof.
-  iIntros (HE' ?) "HL". iDestruct (HE' with "HL") as "#HE'".
-  iClear "∗". iIntros "!# #[_ HE]". iApply "HE'". done.
-Qed.
-
-Lemma elctx_sat_app_weaken_l `{invG Σ, lftG Σ} E0 E E' L :
-  elctx_sat E L E' → elctx_sat (E0 ++ E) L E'.
-Proof. induction E0=>//= ?. auto using elctx_sat_cons_weaken. Qed.
-
-Lemma elctx_sat_app_weaken_r `{invG Σ, lftG Σ} E0 E E' L :
-  elctx_sat E L E' → elctx_sat (E ++ E0) L E'.
-Proof.
-  intros ?. rewrite /elctx_sat /elctx_interp.
-  setoid_rewrite (big_opL_permutation _ (E++E0)); try apply Permutation_app_comm.
-  by apply elctx_sat_app_weaken_l.
-Qed.
+Lemma elctx_sat_submseteq `{invG Σ, lftG Σ} E E' L :
+  E' ⊆+ E → elctx_sat E L E'.
+Proof. iIntros (HE' ?) "_ !# H". by iApply big_sepL_submseteq. Qed.
 
 Hint Constructors Forall Forall2 elem_of_list : lrust_typing.
 Hint Resolve of_val_unlock : lrust_typing.
@@ -328,8 +317,15 @@ Hint Resolve
      lctx_lft_incl_external'
      lctx_lft_alive_static lctx_lft_alive_local lctx_lft_alive_external
      elctx_sat_nil elctx_sat_lft_incl elctx_sat_app elctx_sat_refl
+     submseteq_cons submseteq_inserts_l submseteq_inserts_r
   : lrust_typing.
-Hint Resolve elctx_sat_cons_weaken elctx_sat_app_weaken_l elctx_sat_app_weaken_r
-             | 100 : lrust_typing.
+
+Hint Resolve elctx_sat_submseteq | 100 : lrust_typing.
+
+(* FIXME : I would prefer using a [Hint Resolve <-] for this, but
+   unfortunately, this is not preserved across modules. See:
+     https://coq.inria.fr/bugs/show_bug.cgi?id=5189
+   This should be fixed in the next version of Coq. *)
+Hint Extern 1 (_ ∈ _ ++ _) => apply <- @elem_of_app : lrust_typing.
 
 Hint Opaque elctx_sat lctx_lft_alive lctx_lft_incl : lrust_typing.

@@ -89,10 +89,13 @@ Section rc.
       iModIntro. iNext. iAssert X with "[>HP]" as "HX".
       { iDestruct "HP" as "[[Hl' [H† Hown]]|$]"; last done.
         iMod (lft_create with "LFT") as (ν) "[[Hν1 Hν2] #Hν†]"; first solve_ndisj.
-        (* TODO: We should consider changing the statement of bor_create to dis-entangle the two masks such that this is no longer necessary. *)
+        (* TODO: We should consider changing the statement of
+           bor_create to dis-entangle the two masks such that this is no
+          longer necessary. *)
         iApply (fupd_mask_mono (↑lftN)); first solve_ndisj.
         iMod (bor_create with "LFT Hown") as "[HP HPend]"; first solve_ndisj.
-        iMod (own_alloc (● Some ((1/2)%Qp, 1%positive) ⋅ ◯ Some ((1/2)%Qp, 1%positive))) as (γ) "[Ha Hf]".
+        iMod (own_alloc (● Some ((1/2)%Qp, 1%positive) ⋅
+                         ◯ Some ((1/2)%Qp, 1%positive))) as (γ) "[Ha Hf]".
         { apply auth_valid_discrete_2. done. }
         iMod (na_inv_alloc tid _ _ (rc_inv tid ν γ l' ty) with "[Ha Hν2 Hl' H† HPend]").
         { rewrite /rc_inv. iExists (Some (_, _)). iFrame. iExists _. iFrame "#∗".
@@ -134,6 +137,9 @@ Section rc.
     - by iApply na_bor_shorten.
   Qed.
 
+  Global Instance rc_wf ty `{!TyWf ty} : TyWf (rc ty) :=
+    { ty_lfts := ty.(ty_lfts); ty_wf_E := ty.(ty_wf_E) }.
+
   Global Instance rc_type_contractive : TypeContractive rc.
   Proof.
     constructor;
@@ -148,8 +154,10 @@ Section rc.
   Lemma rc_subtype ty1 ty2 :
     type_incl ty1 ty2 -∗ type_incl (rc ty1) (rc ty2).
   Proof.
-    iIntros "#Hincl". iPoseProof "Hincl" as "Hincl2". iDestruct "Hincl2" as "(#Hsz & #Hoincl & #Hsincl)".
-    (* FIXME: Would be nice to have an easier way to duplicate destructed things.  Maybe iPoseProof with a destruct pattern? *)
+    iIntros "#Hincl". iPoseProof "Hincl" as "Hincl2".
+    iDestruct "Hincl2" as "(#Hsz & #Hoincl & #Hsincl)".
+    (* FIXME: Would be nice to have an easier way to duplicate
+       destructed things.  Maybe iPoseProof with a destruct pattern? *)
     iSplit; first done. iSplit; iAlways.
     - iIntros "* Hvl". destruct vl as [|[[|vl|]|] [|]]; try done.
       iDestruct "Hvl" as "[(Hl & H† & Hc) | Hvl]".
@@ -178,7 +186,6 @@ Section rc.
   Global Instance rc_proper E L :
     Proper (eqtype E L ==> eqtype E L) rc.
   Proof. intros ??[]. by split; apply rc_mono. Qed.
-
 End rc.
 
 Section code.
@@ -247,8 +254,8 @@ Section code.
       "rc" +ₗ #0 <- "rcbox";;
       delete [ #ty.(ty_size); "x"];; return: ["rc"].
 
-  Lemma rc_new_type ty :
-    typed_val (rc_new ty) (fn(λ _, []; ty) → rc ty).
+  Lemma rc_new_type ty `{!TyWf ty} :
+    typed_val (rc_new ty) (fn(∅; ty) → rc ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>x. simpl_subst.
@@ -286,8 +293,8 @@ Section code.
       "rc2" <- "rc''";;
       delete [ #1; "rc" ];; return: ["rc2"].
 
-  Lemma rc_clone_type ty :
-    typed_val rc_clone (fn(∀ α, λ ϝ, [ϝ ⊑ α]; &shr{α} rc ty) → rc ty).
+  Lemma rc_clone_type ty `{!TyWf ty} :
+    typed_val rc_clone (fn(∀ α, ∅; &shr{α} rc ty) → rc ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
@@ -326,7 +333,7 @@ Section code.
     iMod ("Hclose3" with "[$Hrctok] Hna") as "[Hα1 Hna]".
     iMod ("Hclose2" with "[Hrc● Hl' Hl'† Hνtok2 Hν† $Hna]") as "Hna".
     { iExists _. iFrame "Hrc●". iExists _. rewrite Z.add_comm. iFrame "∗ Hνend".
-      rewrite [_ ⋅ _]comm frac_op' -assoc Qp_div_2. auto. }
+      rewrite [_ ⋅ _]comm frac_op' -[(_ + _)%Qp]assoc. rewrite Qp_div_2. auto. }
     iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
     (* Finish up the proof. *)
     iApply (type_type _ _ _ [ x ◁ box (&shr{α} rc ty); #lrc2 ◁ box (rc ty)]%TC
@@ -345,8 +352,8 @@ Section code.
       "x" <- (!"rc'" +ₗ #1);;
       delete [ #1; "rc" ];; return: ["x"].
 
-  Lemma rc_deref_type ty :
-    typed_val rc_deref (fn(∀ α, λ ϝ, [ϝ ⊑ α]; &shr{α} rc ty) → &shr{α} ty).
+  Lemma rc_deref_type ty `{!TyWf ty} :
+    typed_val rc_deref (fn(∀ α, ∅; &shr{α} rc ty) → &shr{α} ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
@@ -395,8 +402,8 @@ Section code.
     cont: "k" [] :=
       delete [ #1; "rc"];; return: ["r"].
 
-  Lemma rc_try_unwrap_type ty :
-    typed_val (rc_try_unwrap ty) (fn(λ _, []; rc ty) → Σ[ ty; rc ty ]).
+  Lemma rc_try_unwrap_type ty `{!TyWf ty} :
+    typed_val (rc_try_unwrap ty) (fn(∅; rc ty) → Σ[ ty; rc ty ]).
   Proof.
     (* TODO: There is a *lot* of duplication between this proof and the one for drop. *)
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
@@ -463,8 +470,8 @@ Section code.
     cont: "k" [] :=
       delete [ #1; "rc"];; return: ["x"].
 
-  Lemma rc_drop_type ty :
-    typed_val (rc_drop ty) (fn(λ _, []; rc ty) → option ty).
+  Lemma rc_drop_type ty `{!TyWf ty} :
+    typed_val (rc_drop ty) (fn(∅; rc ty) → option ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
@@ -534,8 +541,8 @@ Section code.
     cont: "k" [] :=
       delete [ #1; "rc"];; return: ["x"].
 
-  Lemma rc_get_mut_type ty :
-    typed_val rc_get_mut (fn(∀ α, λ ϝ, [ϝ ⊑ α]; &uniq{α} rc ty) → option (&uniq{α} ty)).
+  Lemma rc_get_mut_type ty `{!TyWf ty} :
+    typed_val rc_get_mut (fn(∀ α, ∅; &uniq{α} rc ty) → option (&uniq{α} ty)).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>rcx. simpl_subst.

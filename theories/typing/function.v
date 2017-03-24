@@ -8,7 +8,12 @@ Set Default Proof Using "Type".
 Section fn.
   Context `{typeG Σ} {A : Type} {n : nat}.
 
-  Record fn_params := FP' { fp_tys : vec type n; fp_ty : type; fp_E : lft → elctx }.
+  Record fn_params := FP { fp_E : lft → elctx; fp_tys : vec type n; fp_ty : type }.
+
+  Definition FP_wf E (tys : vec type n) `{!TyWfLst tys} ty `{!TyWf ty} :=
+    FP (λ ϝ, E ϝ ++ tys.(tyl_wf_E) ++ tys.(tyl_outlives_E) ϝ ++
+                    ty.(ty_wf_E) ++ ty.(ty_outlives_E) ϝ)
+       tys ty.
 
   Program Definition fn (fp : A → fn_params) : type :=
     {| st_own tid vl := (∃ fb kb xb e H,
@@ -22,6 +27,14 @@ Section fn.
   Next Obligation.
     iIntros (fp tid vl) "H". iDestruct "H" as (fb kb xb e ?) "[% _]". by subst.
   Qed.
+
+  (* FIXME : This definition is less restrictive than the one used in
+     Rust. In Rust, the type of parameters are taken into account for
+     well-formedness, and all the liftime constrains relating a
+     generalized liftime are ignored. For simplicity, we ignore all of
+     them, but this is not very faithful. *)
+  Global Instance fn_wf fp : TyWf (fn fp) :=
+    { ty_lfts := []; ty_wf_E := [] }.
 
   Global Instance fn_send fp : Send (fn fp).
   Proof. iIntros (tid1 tid2 vl). done. Qed.
@@ -47,8 +60,9 @@ Section fn.
   Proof. intros ?? HR ??->. apply HR. Qed.
 
   Global Instance FP_proper R :
-    Proper (flip (Forall2 R : relation (vec _ _)) ==> R ==>
-            pointwise_relation lft eq ==> fn_params_rel R) FP'.
+    Proper (pointwise_relation lft eq ==>
+            flip (Forall2 R : relation (vec _ _)) ==> R ==>
+            fn_params_rel R) FP.
   Proof. by split; [|split]. Qed.
 
   Global Instance fn_type_contractive n' :
@@ -98,12 +112,6 @@ End fn.
 
 Arguments fn_params {_ _} _.
 
-(* The parameter of [FP'] are in the wrong order in order to make sure
-   that type-checking is done in that order, so that the [ELCtx_Alive]
-   is taken as a coercion. We reestablish the intuitive order with
-   [FP] *)
-Notation FP E tys ty := (FP' tys ty E).
-
 (* We use recursive notation for binders as well, to allow patterns
    like '(a, b) to be used. In practice, only one binder is ever used,
    but using recursive binders is the only way to make Coq accept
@@ -112,21 +120,23 @@ Notation FP E tys ty := (FP' tys ty E).
    printing. Once on 8.6pl1, this should work.  *)
 Notation "'fn(∀' x .. x' ',' E ';' T1 ',' .. ',' TN ')' '→' R" :=
   (fn (λ x, (.. (λ x',
-      FP E%EL (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T R%T)..)))
+      FP_wf E%EL (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T R%T)..)))
   (at level 99, R at level 200, x binder, x' binder,
    format "'fn(∀'  x .. x' ','  E ';'  T1 ','  .. ','  TN ')'  '→'  R") : lrust_type_scope.
 Notation "'fn(∀' x .. x' ',' E ')' '→' R" :=
-  (fn (λ x, (.. (λ x', FP E%EL Vector.nil R%T)..)))
+  (fn (λ x, (.. (λ x', FP_wf E%EL Vector.nil R%T)..)))
   (at level 99, R at level 200, x binder, x' binder,
    format "'fn(∀'  x .. x' ','  E ')'  '→'  R") : lrust_type_scope.
 Notation "'fn(' E ';' T1 ',' .. ',' TN ')' '→' R" :=
-  (fn (λ _:(), FP E%EL (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..) R%T))
+  (fn (λ _:(), FP_wf E%EL (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..) R%T))
   (at level 99, R at level 200,
    format "'fn(' E ';'  T1 ','  .. ','  TN ')'  '→'  R") : lrust_type_scope.
 Notation "'fn(' E ')' '→' R" :=
-  (fn (λ _:(), FP E%EL Vector.nil R%T))
+  (fn (λ _:(), FP_wf E%EL Vector.nil R%T))
   (at level 99, R at level 200,
    format "'fn(' E ')'  '→'  R") : lrust_type_scope.
+
+Instance elctx_empty : Empty (lft → elctx) := λ ϝ, [].
 
 Section typing.
   Context `{typeG Σ}.
@@ -191,7 +201,7 @@ Section typing.
   Proof.
     intros fp1 fp2 Hfp. apply fn_subtype=>x ϝ. destruct (Hfp x) as (Htys & Hty & HE).
     split; last split.
-    - rewrite (HE ϝ). apply elctx_sat_app_weaken_l, elctx_sat_refl.
+    - rewrite (HE ϝ). solve_typing.
     - eapply Forall2_impl; first eapply Htys. intros ??.
       eapply subtype_weaken; last done. by apply submseteq_inserts_r.
     - eapply subtype_weaken, Hty; last done. by apply submseteq_inserts_r.
@@ -202,11 +212,11 @@ Section typing.
             eqtype E0 L0) fn.
   Proof.
     intros fp1 fp2 Hfp. split; eapply fn_subtype=>x ϝ; destruct (Hfp x) as (Htys & Hty & HE); (split; last split).
-    - rewrite (HE ϝ). apply elctx_sat_app_weaken_l, elctx_sat_refl.
+    - rewrite (HE ϝ). solve_typing.
     - eapply Forall2_impl; first eapply Htys. intros t1 t2 Ht.
       eapply subtype_weaken; last apply Ht; last done. by apply submseteq_inserts_r.
     - eapply subtype_weaken; last apply Hty; last done. by apply submseteq_inserts_r.
-    - rewrite (HE ϝ). apply elctx_sat_app_weaken_l, elctx_sat_refl.
+    - rewrite (HE ϝ). solve_typing.
     - symmetry in Htys. eapply Forall2_impl; first eapply Htys. intros t1 t2 Ht.
       eapply subtype_weaken; last apply Ht; last done. by apply submseteq_inserts_r.
     - eapply subtype_weaken; last apply Hty; last done. by apply submseteq_inserts_r.

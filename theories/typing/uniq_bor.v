@@ -43,6 +43,9 @@ Section uniq_bor.
     by iApply (ty_shr_mono with "Hκ0").
   Qed.
 
+  Global Instance uniq_bor_wf κ ty `{!TyWf ty} : TyWf (uniq_bor κ ty) :=
+    { ty_lfts := [κ]; ty_wf_E := ty.(ty_wf_E) ++ ty.(ty_outlives_E) κ }.
+
   Global Instance uniq_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> eqtype E L ==> subtype E L) uniq_bor.
   Proof.
