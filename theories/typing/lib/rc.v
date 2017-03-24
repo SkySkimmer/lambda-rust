@@ -212,7 +212,9 @@ Section code.
     - iDestruct "Hown" as (γ ν q ty') "(#Hincl & #Hinv & Htok & #Hshr & Hν1 & #Hνend)".
       iMod (na_inv_open with "Hinv Hna") as "(Hproto & Hna & Hclose)"; [solve_ndisj..|].
       iDestruct "Hproto" as (st) "[>Hst Hproto]".
-      iDestruct (own_valid_2 with "Hst Htok") as %[[Hval|(? & (qa, c) & [=<-] & -> & Hst)]%option_included _]%auth_valid_discrete_2; first done. (* Oh my, what a pattern... *)
+      iDestruct (own_valid_2 with "Hst Htok")
+        as %[[Hval|(? &(qa,c) & [=<-] & -> & Hst)]%option_included _]%auth_valid_discrete_2;
+        first done. (* Oh my, what a pattern... *)
       iDestruct "Hproto" as (q') "(>Hl & H† & >% & >Hν2 & Hν† & _)". iApply wp_fupd.
       destruct (decide (c ≤ 1)%positive) as [Hle|Hnle].
       + (* Tear down the protocol. *)
@@ -319,7 +321,9 @@ Section code.
     iMod (na_inv_open with "Hinv Hna") as "(Hrcproto & Hna & Hclose2)"; [solve_ndisj..|].
     iMod (na_bor_acc with "LFT Hrctokb Hα1 Hna") as "(>Hrctok & Hna & Hclose3)"; [solve_ndisj..|].
     iDestruct "Hrcproto" as (st) "[>Hrc● Hrcst]".
-    iDestruct (own_valid_2 with "Hrc● Hrctok") as %[[Hval|(_ & (qa, c) & _ & -> & _)]%option_included _]%auth_valid_discrete_2; first done. (* Oh my, what a pattern... *)
+    iDestruct (own_valid_2 with "Hrc● Hrctok") as
+        %[[Hval|(_ & (qa, c) & _ & -> & _)]%option_included _]%auth_valid_discrete_2;
+      first done. (* Oh my, what a pattern... *)
     iDestruct "Hrcst" as (qb) "(>Hl' & >Hl'† & >% & Hνtok & Hν† & #Hνend)".
     wp_read. wp_let. wp_op. rewrite shift_loc_0. wp_op. wp_write. wp_write.
     (* And closing it again. *)
@@ -407,9 +411,12 @@ Section code.
   Proof.
     (* TODO: There is a *lot* of duplication between this proof and the one for drop. *)
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
-      iIntros (_ ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst. rewrite (Nat2Z.id (Σ[ ty; rc ty ]).(ty_size)).
-    iApply (type_cont [] [ϝ ⊑ []]%LL (λ _, [rcx ◁ box (uninit 1); x ◁ box (Σ[ ty; rc ty ])])%TC) ; [solve_typing..| |]; last first.
+    iIntros (_ ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst.
+    rewrite (Nat2Z.id (Σ[ ty; rc ty ]).(ty_size)).
+    iApply (type_cont [] [ϝ ⊑ []]%LL
+                      (λ _, [rcx ◁ box (uninit 1); x ◁ box (Σ[ ty; rc ty ])])%TC) ;
+      [solve_typing..| |]; last first.
     { simpl. iAlways. iIntros (k arg). inv_vec arg. simpl_subst.
       iApply type_delete; [solve_typing..|].
       iApply type_jump; solve_typing. }
@@ -432,12 +439,13 @@ Section code.
         rewrite 2!tctx_hasty_val tctx_hasty_val' // tctx_hasty_val' //.
         rewrite -freeable_sz_full_S -(freeable_sz_split _ 1%nat).
         iDestruct "Hrc†" as "[Hrc†1 Hrc†2]". iFrame.
-        rewrite shift_loc_0. iFrame. iExists [_]. rewrite uninit_own heap_mapsto_vec_singleton.
-        auto with iFrame. }
+        rewrite shift_loc_0. iFrame. iExists [_].
+        rewrite uninit_own heap_mapsto_vec_singleton. auto with iFrame. }
       iApply (type_sum_memcpy Σ[ ty; rc ty ]); [solve_typing..|].
       iApply (type_delete (Π[uninit _; uninit _])); [solve_typing..|].
       iApply type_jump; solve_typing.
-    - iDestruct "Hproto" as (γ ν q q' ty') "(#Hincl & #Hinv & Hrctok & Hrc● & Hν & #Hν† & #Hshr & Hclose)".
+    - iDestruct "Hproto" as (γ ν q q' ty')
+          "(#Hincl & #Hinv & Hrctok & Hrc● & Hν & #Hν† & #Hshr & Hclose)".
       wp_op; intros Hc.
       { exfalso. move:Hc. move/Zpos_eq_iff. intros ->. exact: Pos.lt_irrefl. }
       wp_if. iMod ("Hclose" with "[> $Hrc● $Hrc $Hna]") as "Hna"; first by eauto.
@@ -474,9 +482,12 @@ Section code.
     typed_val (rc_drop ty) (fn(∅; rc ty) → option ty).
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
-      iIntros (_ ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst. rewrite (Nat2Z.id (option ty).(ty_size)).
-    iApply (type_cont [] [ϝ ⊑ []]%LL (λ _, [rcx ◁ box (uninit 1); x ◁ box (option ty)])%TC) ; [solve_typing..| |]; last first.
+    iIntros (_ ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst.
+    rewrite (Nat2Z.id (option ty).(ty_size)).
+    iApply (type_cont [] [ϝ ⊑ []]%LL
+                      (λ _, [rcx ◁ box (uninit 1); x ◁ box (option ty)])%TC);
+      [solve_typing..| |]; last first.
     { simpl. iAlways. iIntros (k arg). inv_vec arg. simpl_subst.
       iApply type_delete; [solve_typing..|].
       iApply type_jump; solve_typing. }
@@ -500,12 +511,13 @@ Section code.
         rewrite 2!tctx_hasty_val tctx_hasty_val' // tctx_hasty_val' //.
         rewrite -freeable_sz_full_S -(freeable_sz_split _ 1%nat).
         iDestruct "Hrc†" as "[Hrc†1 Hrc†2]". iFrame.
-        rewrite shift_loc_0. iFrame. iExists [_]. rewrite uninit_own heap_mapsto_vec_singleton.
-        auto with iFrame. }
+        rewrite shift_loc_0. iFrame. iExists [_].
+        rewrite uninit_own heap_mapsto_vec_singleton. auto with iFrame. }
       iApply (type_sum_memcpy (option _)); [solve_typing..|].
       iApply (type_delete (Π[uninit _; uninit _])); [solve_typing..|].
       iApply type_jump; solve_typing.
-    - iDestruct "Hproto" as (γ ν q q' ty') "(#Hincl & #Hinv & Hrctok & Hrc● & Hν & _ & _ & Hclose)".
+    - iDestruct "Hproto" as (γ ν q q' ty')
+                              "(#Hincl & #Hinv & Hrctok & Hrc● & Hν & _ & _ & Hclose)".
       wp_write. wp_op; intros Hc.
       { exfalso. move:Hc. move/Zpos_eq_iff. intros ->. exact: Pos.lt_irrefl. }
       wp_if. iMod ("Hclose" $! (c-1)%positive q' with "[> Hrc● Hrctok Hrc Hν $Hna]") as "Hna".
@@ -547,7 +559,9 @@ Section code.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst. rewrite (Nat2Z.id 2%nat).
-    iApply (type_cont [] [ϝ ⊑ []]%LL (λ r, [rcx ◁ box (uninit 1); x ◁ box (option $ &uniq{α} ty)])%TC) ; [solve_typing..| |]; last first.
+    iApply (type_cont [] [ϝ ⊑ []]%LL
+                      (λ r, [rcx ◁ box (uninit 1); x ◁ box (option $ &uniq{α} ty)])%TC);
+      [solve_typing..| |]; last first.
     { simpl. iAlways. iIntros (k arg). inv_vec arg. simpl_subst.
       iApply type_delete; [solve_typing..|].
       iApply type_jump; solve_typing. }
@@ -582,7 +596,8 @@ Section code.
       iApply type_jump; solve_typing.
     - wp_if. iDestruct "Hc" as "[(% & _)|(% & Hna & Hproto)]".
       { exfalso. subst c. done. }
-      iDestruct "Hproto" as (γ ν q' q'' ty') "(#Hincl & #Hinv & Hrctok & Hrc● & Hν & #Hshr & #Hν† & Hclose3)".
+      iDestruct "Hproto" as (γ ν q' q'' ty')
+              "(#Hincl & #Hinv & Hrctok & Hrc● & Hν & #Hshr & #Hν† & Hclose3)".
       iMod ("Hclose3" with "[$Hrc● $Hrc $Hna]") as "Hna"; first by auto.
       iMod ("Hclose2" with "[] [Hrc' Hrctok Hν]") as "[Hrc' Hα]".
       { iIntros "!> HX". iModIntro. iExact "HX". }
