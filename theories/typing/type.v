@@ -73,6 +73,7 @@ Proof.
     + apply IH, Hαβ. etrans; last done. by apply submseteq_cons.
 Qed.
 
+(* Lift TyWf to lists.  We cannot use `Forall` because that one is restricted to Prop. *)
 Inductive TyWfLst `{typeG Σ} : list type → Type :=
 | tyl_wf_nil : TyWfLst []
 | tyl_wf_cons ty tyl `{!TyWf ty, !TyWfLst tyl} : TyWfLst (ty::tyl).
