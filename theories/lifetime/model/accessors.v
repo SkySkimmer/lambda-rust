@@ -62,7 +62,7 @@ Proof.
   iIntros "#HEQ Hvs HvsQ". iNext. rewrite !lft_vs_unfold.
   iDestruct "Hvs" as (n) "[Hcnt Hvs]". iExists n.
   iIntros "{$Hcnt}*Hinv[HQ HPb] #H†". iApply fupd_trans.
-  iApply fupd_mask_mono; last iMod ("HvsQ" with "HQ H†") as "HP". set_solver.
+  iApply fupd_mask_mono; last iMod ("HvsQ" with "HQ H†") as "HP"; first solve_ndisj.
   iModIntro. iAssert (▷ Pb)%I with "[HPb HP]" as "HPb".
   { iNext. iRewrite "HEQ". iFrame. }
   iApply ("Hvs" with "Hinv HPb H†").

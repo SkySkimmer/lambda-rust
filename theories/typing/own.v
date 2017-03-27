@@ -68,22 +68,22 @@ Section own.
   Next Obligation. by iIntros (q ty tid [|[[]|][]]) "H". Qed.
   Next Obligation.
     move=>n ty N κ l tid ?? /=. iIntros "#LFT Hshr Htok".
-    iMod (bor_exists with "LFT Hshr") as (vl) "Hb". set_solver.
-    iMod (bor_sep with "LFT Hb") as "[Hb1 Hb2]". set_solver.
+    iMod (bor_exists with "LFT Hshr") as (vl) "Hb"; first solve_ndisj.
+    iMod (bor_sep with "LFT Hb") as "[Hb1 Hb2]"; first solve_ndisj.
     destruct vl as [|[[|l'|]|][]];
-      try (iMod (bor_persistent_tok with "LFT Hb2 Htok") as "[>[]_]"; set_solver).
+      try (iMod (bor_persistent_tok with "LFT Hb2 Htok") as "[>[]_]"; solve_ndisj).
     iFrame. iExists l'. rewrite heap_mapsto_vec_singleton.
-    iMod (bor_sep with "LFT Hb2") as "[Hb2 _]". set_solver.
-    iMod (bor_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "$". set_solver.
+    iMod (bor_sep with "LFT Hb2") as "[Hb2 _]"; first solve_ndisj.
+    iMod (bor_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "$"; first solve_ndisj.
     iApply delay_sharing_later; done.
   Qed.
   Next Obligation.
     intros _ ty κ κ' tid l. iIntros "#Hκ #H".
     iDestruct "H" as (l') "[Hfb #Hvs]".
     iExists l'. iSplit. by iApply (frac_bor_shorten with "[]"). iIntros "!# *% Htok".
-    iApply (step_fupd_mask_mono F _ _ (F∖↑shrN)). set_solver. set_solver.
-    iMod (lft_incl_acc with "Hκ Htok") as (q') "[Htok Hclose]"; first set_solver.
-    iMod ("Hvs" with "[%] Htok") as "Hvs'". set_solver. iModIntro. iNext.
+    iApply (step_fupd_mask_mono F _ _ (F∖↑shrN)); [solve_ndisj..|].
+    iMod (lft_incl_acc with "Hκ Htok") as (q') "[Htok Hclose]"; first solve_ndisj.
+    iMod ("Hvs" with "[%] Htok") as "Hvs'"; first solve_ndisj. iModIntro. iNext.
     iMod "Hvs'" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
     by iApply (ty.(ty_shr_mono) with "Hκ").
   Qed.

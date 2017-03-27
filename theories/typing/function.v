@@ -274,7 +274,7 @@ Section typing.
         rewrite /= left_id in EQ. subst κ'. simpl. wp_rec. wp_bind Endlft.
         iSpecialize ("Hinh" with "Htk").
         iApply (wp_mask_mono (↑lftN)); first done.
-        iApply (wp_step_fupd with "Hinh"); [set_solver+..|]. wp_seq.
+        iApply (wp_step_fupd with "Hinh"); [solve_ndisj..|]. wp_seq.
         iIntros "#Htok !>". wp_seq. iMod ("Hclose" with "Htok") as "HL".
         iSpecialize ("HC" with "[]"); first by (iPureIntro; apply elem_of_list_singleton).
         iApply ("HC" $! [#r] with "Htl HL").

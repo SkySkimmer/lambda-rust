@@ -80,11 +80,11 @@ Section sum.
   Qed.
   Next Obligation.
     intros tyl E κ l tid. iIntros (??) "#LFT Hown Htok". rewrite split_sum_mt.
-    iMod (bor_exists with "LFT Hown") as (i) "Hown". set_solver.
-    iMod (bor_sep with "LFT Hown") as "[Hmt Hown]". solve_ndisj.
+    iMod (bor_exists with "LFT Hown") as (i) "Hown"; first solve_ndisj.
+    iMod (bor_sep with "LFT Hown") as "[Hmt Hown]"; first solve_ndisj.
     iMod ((nth i tyl ∅).(ty_share) with "LFT Hown Htok") as "[#Hshr $]"; try done.
-    iMod (bor_fracture with "LFT [Hmt]") as "H'";[set_solver| |]; last eauto.
-      by iFrame.
+    iMod (bor_fracture with "LFT [Hmt]") as "H'"; first solve_ndisj; last eauto.
+    by iFrame.
   Qed.
   Next Obligation.
     iIntros (tyl κ κ' tid l) "#Hord H".
@@ -204,7 +204,7 @@ Section sum.
     - intros κ tid E F l q ? HF.
       iIntros "#LFT #H Htl [Htok1 Htok2]".
       setoid_rewrite split_sum_mt. iDestruct "H" as (i) "[Hshr0 Hshr]".
-      iMod (frac_bor_acc with "LFT Hshr0 Htok1") as (q'1) "[>Hown Hclose]". set_solver.
+      iMod (frac_bor_acc with "LFT Hshr0 Htok1") as (q'1) "[>Hown Hclose]"; first solve_ndisj.
       iAssert ((∃ vl, is_pad i tyl vl)%I) with "[#]" as %[vl Hpad].
       { iDestruct "Hown" as "[_ Hpad]". iDestruct "Hpad" as (vl) "[_ %]".
         eauto. }

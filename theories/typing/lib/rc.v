@@ -79,7 +79,7 @@ Section rc.
     set (C := (∃ _ _ _ _, _ ∗ _ ∗ _ ∗ &na{_,_,_} _ ∗ _)%I).
     iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ C)%I
           with "[Hpbown]") as "#Hinv"; first by iLeft.
-    iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose1]"; first set_solver.
+    iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose1]"; first solve_ndisj.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
     - iAssert (&{κ} _)%I with "[Hbtok]" as "Hb".
       { rewrite bor_unfold_idx. iExists _. by iFrame. }

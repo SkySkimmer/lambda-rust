@@ -23,11 +23,11 @@ Section uniq_bor.
   Next Obligation. by iIntros (q ty tid [|[[]|][]]) "H". Qed.
   Next Obligation.
     move=> κ ty N κ' l tid ??/=. iIntros "#LFT Hshr Htok".
-    iMod (bor_exists with "LFT Hshr") as ([|[[|l'|]|][]]) "Hb"; first set_solver;
-      (iMod (bor_sep with "LFT Hb") as "[Hb1 Hb2]"; first set_solver);
-      try (iMod (bor_persistent_tok with "LFT Hb2 Htok") as "[>[] _]"; set_solver).
+    iMod (bor_exists with "LFT Hshr") as ([|[[|l'|]|][]]) "Hb"; first solve_ndisj;
+      (iMod (bor_sep with "LFT Hb") as "[Hb1 Hb2]"; first solve_ndisj);
+      try (iMod (bor_persistent_tok with "LFT Hb2 Htok") as "[>[] _]"; solve_ndisj).
     iFrame. iExists l'. subst. rewrite heap_mapsto_vec_singleton.
-    iMod (bor_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "$". set_solver.
+    iMod (bor_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "$"; first solve_ndisj.
     iApply delay_sharing_nested; try done. iApply lft_incl_refl.
   Qed.
   Next Obligation.
@@ -36,9 +36,9 @@ Section uniq_bor.
     { iApply lft_intersect_mono. iApply lft_incl_refl. done. }
     iExists l'. iSplit. by iApply (frac_bor_shorten with "[]").
     iIntros "!# * % Htok".
-    iApply (step_fupd_mask_mono F _ _ (F∖↑shrN∖↑lftN)); try set_solver.
-    iMod (lft_incl_acc with "Hκ0 Htok") as (q') "[Htok Hclose]"; first set_solver.
-    iMod ("Hvs" with "[%] Htok") as "Hvs'". set_solver. iModIntro. iNext.
+    iApply (step_fupd_mask_mono F _ _ (F∖↑shrN∖↑lftN)); try solve_ndisj.
+    iMod (lft_incl_acc with "Hκ0 Htok") as (q') "[Htok Hclose]"; first solve_ndisj.
+    iMod ("Hvs" with "[%] Htok") as "Hvs'"; first solve_ndisj. iModIntro. iNext.
     iMod "Hvs'" as "[#Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
     by iApply (ty_shr_mono with "Hκ0").
   Qed.
@@ -61,7 +61,7 @@ Section uniq_bor.
     - iIntros (κ ??) "H". iAssert (κ2 ⊓ κ ⊑ κ1 ⊓ κ)%I as "#Hincl'".
       { iApply lft_intersect_mono. done. iApply lft_incl_refl. }
       iDestruct "H" as (l') "[Hbor #Hupd]". iExists l'. iIntros "{$Hbor}!# %%% Htok".
-      iMod (lft_incl_acc with "Hincl' Htok") as (q') "[Htok Hclose]"; first set_solver.
+      iMod (lft_incl_acc with "Hincl' Htok") as (q') "[Htok Hclose]"; first solve_ndisj.
       iMod ("Hupd" with "[%] Htok") as "Hupd'"; try done. iModIntro. iNext.
       iMod "Hupd'" as "[H Htok]". iMod ("Hclose" with "Htok") as "$".
       iApply ty_shr_mono; [done..|]. by iApply "Hs".
@@ -177,8 +177,8 @@ Section typing.
   Proof.
     iIntros (Hcopy Halive) "!#".
     iIntros ([[]|] tid F qL ?) "#LFT #HE Htl HL Hown"; try done.
-    iMod (Halive with "HE HL") as (q) "[Hκ Hclose]"; first set_solver.
-    iMod (bor_acc with "LFT Hown Hκ") as "[H↦ Hclose']"; first set_solver.
+    iMod (Halive with "HE HL") as (q) "[Hκ Hclose]"; first solve_ndisj.
+    iMod (bor_acc with "LFT Hown Hκ") as "[H↦ Hclose']"; first solve_ndisj.
     iDestruct "H↦" as (vl) "[>H↦ #Hown]".
     iDestruct (ty_size_eq with "Hown") as "#>%". iIntros "!>".
     iExists _, _, _. iSplit; first done. iFrame "∗#". iIntros "H↦".
@@ -191,8 +191,8 @@ Section typing.
   Proof.
     iIntros (Halive) "!#".
     iIntros ([[]|] tid F qL ?) "#LFT HE HL Hown"; try done.
-    iMod (Halive with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
-    iMod (bor_acc with "LFT Hown Htok") as "[H↦ Hclose']". set_solver.
+    iMod (Halive with "HE HL") as (q) "[Htok Hclose]"; first solve_ndisj.
+    iMod (bor_acc with "LFT Hown Htok") as "[H↦ Hclose']"; first solve_ndisj.
     iDestruct "H↦" as (vl) "[>H↦ Hown]". rewrite ty.(ty_size_eq).
     iDestruct "Hown" as ">%". iModIntro. iExists _, _. iSplit; first done.
     iFrame. iIntros "Hown". iDestruct "Hown" as (vl') "[H↦ Hown]".

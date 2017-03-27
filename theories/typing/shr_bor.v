@@ -81,10 +81,9 @@ Section typing.
   Proof.
     iIntros (Hcopy Halive) "!#".
     iIntros ([[]|] tid F qL ?) "#LFT #HE Htl HL #Hshr"; try done.
-    iMod (Halive with "HE HL") as (q) "[Hκ Hclose]"; first set_solver.
-    assert (↑shrN ⊆ (↑lrustN : coPset)) by solve_ndisj. (* set_solver needs some help. *)
-    iMod (copy_shr_acc with "LFT Hshr Htl Hκ") as (q') "(Htl & H↦ & Hcl)".
-    { set_solver. } { rewrite ->shr_locsE_shrN. set_solver. }
+    iMod (Halive with "HE HL") as (q) "[Hκ Hclose]"; first solve_ndisj.
+    iMod (copy_shr_acc with "LFT Hshr Htl Hκ") as (q') "(Htl & H↦ & Hcl)"; first solve_ndisj.
+    { rewrite ->shr_locsE_shrN. solve_ndisj. }
     iDestruct "H↦" as (vl) "[>Hmt #Hown]". iModIntro. iExists _, _, _.
     iFrame "∗#". iSplit; first done. iIntros "Hmt".
     iMod ("Hcl" with "Htl [Hmt]") as "[$ Hκ]"; first by iExists _; iFrame.

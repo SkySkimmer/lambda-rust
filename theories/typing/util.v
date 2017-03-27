@@ -32,14 +32,14 @@ Section util.
     iDestruct "Hbor" as (i) "(#Hpb&Hpbown)".
     iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty κ tid l)%I
           with "[Hpbown]") as "#Hinv"; first by eauto.
-    iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]"; first set_solver.
+    iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]"; first solve_ndisj.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
     - iMod (bor_later_tok with "LFT [Hbtok] Htok") as "Hdelay"; first solve_ndisj.
       { rewrite bor_unfold_idx. eauto. }
       iModIntro. iNext. iMod "Hdelay" as "[Hb Htok]".
       iMod (ty.(ty_share) with "LFT Hb Htok") as "[#$ $]"; first solve_ndisj.
       iApply "Hclose". auto.
-    - iMod fupd_intro_mask' as "Hclose'"; last iModIntro. set_solver.
+    - iMod fupd_intro_mask' as "Hclose'"; first solve_ndisj. iModIntro.
       iNext. iMod "Hclose'" as "_". iMod ("Hclose" with "[]") as "_"; by eauto.
   Qed.
 
@@ -53,15 +53,15 @@ Section util.
     iDestruct "Hbor" as (i) "(#Hpb&Hpbown)".
     iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty κ'' tid l)%I
           with "[Hpbown]") as "#Hinv"; first by eauto.
-    iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]"; first set_solver.
+    iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]"; first solve_ndisj.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
-    - iMod (bor_unnest with "LFT [Hbtok]") as "Hb". solve_ndisj.
+    - iMod (bor_unnest with "LFT [Hbtok]") as "Hb"; first solve_ndisj.
       { iApply bor_unfold_idx. eauto. }
       iModIntro. iNext. iMod "Hb".
-      iMod (ty.(ty_share) with "LFT [Hb] Htok") as "[#Hshr $]". solve_ndisj.
+      iMod (ty.(ty_share) with "LFT [Hb] Htok") as "[#Hshr $]"; first solve_ndisj.
       { iApply bor_shorten; done. }
       iMod ("Hclose" with "[]") as "_"; auto.
-    - iMod fupd_intro_mask' as "Hclose'"; last iModIntro. set_solver.
+    - iMod fupd_intro_mask' as "Hclose'"; last iModIntro; first solve_ndisj.
       iNext. iMod "Hclose'" as "_". iMod ("Hclose" with "[]") as "_"; by eauto.
   Qed.
 End util.

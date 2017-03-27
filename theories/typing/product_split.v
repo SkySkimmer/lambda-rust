@@ -145,8 +145,8 @@ Section product_split.
     iIntros (tid q) "#LFT _ $ H".
     rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
     iDestruct "H" as ([[]|]) "[Hp H]"; try done. iDestruct "Hp" as %Hp.
-    rewrite /= split_prod_mt. iMod (bor_sep with "LFT H") as "[H1 H2]".
-    set_solver. rewrite /tctx_elt_interp /=.
+    rewrite /= split_prod_mt. iMod (bor_sep with "LFT H") as "[H1 H2]"; first solve_ndisj.
+    rewrite /tctx_elt_interp /=.
     iSplitL "H1"; iExists _; (iSplitR; first by rewrite Hp); auto.
   Qed.
 
@@ -159,7 +159,7 @@ Section product_split.
     iDestruct "H" as "[H1 H2]". iDestruct "H1" as ([[]|]) "[Hp1 H1]"; try done.
     iDestruct "Hp1" as %Hp1. iDestruct "H2" as (v2) "(Hp2 & H2)". rewrite /= Hp1.
     iDestruct "Hp2" as %[=<-]. iExists #l. iFrame "%".
-    iMod (bor_combine with "LFT H1 H2") as "H". set_solver. by rewrite /= split_prod_mt.
+    iMod (bor_combine with "LFT H1 H2") as "H"; first solve_ndisj. by rewrite /= split_prod_mt.
   Qed.
 
   Lemma uniq_is_ptr κ ty tid (vl : list val) :

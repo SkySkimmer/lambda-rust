@@ -128,9 +128,9 @@ Program Definition ty_of_st `{typeG Σ} (st : simple_type) : type :=
 Next Obligation. intros. apply st_size_eq. Qed.
 Next Obligation.
   iIntros (?? st E κ l tid ??) "#LFT Hmt Hκ".
-  iMod (bor_exists with "LFT Hmt") as (vl) "Hmt". set_solver.
-  iMod (bor_sep with "LFT Hmt") as "[Hmt Hown]". set_solver.
-  iMod (bor_persistent with "LFT Hown") as "[Hown|#H†]". set_solver.
+  iMod (bor_exists with "LFT Hmt") as (vl) "Hmt"; first solve_ndisj.
+  iMod (bor_sep with "LFT Hmt") as "[Hmt Hown]"; first solve_ndisj.
+  iMod (bor_persistent with "LFT Hown") as "[Hown|#H†]"; first solve_ndisj.
   - iFrame "Hκ".
     iMod (bor_fracture with "LFT [Hmt]") as "Hfrac"; by eauto with iFrame.
   - iExFalso. by iApply (lft_tok_dead with "Hκ").
@@ -485,9 +485,9 @@ Section type.
   Global Program Instance ty_of_st_copy st : Copy (ty_of_st st).
   Next Obligation.
     iIntros (st κ tid E ? l q ? HF) "#LFT #Hshr Htok Hlft".
-    iDestruct (na_own_acc with "Htok") as "[$ Htok]"; first set_solver+.
+    iDestruct (na_own_acc with "Htok") as "[$ Htok]"; first solve_ndisj.
     iDestruct "Hshr" as (vl) "[Hf Hown]".
-    iMod (frac_bor_acc with "LFT Hf Hlft") as (q') "[Hmt Hclose]"; first set_solver.
+    iMod (frac_bor_acc with "LFT Hf Hlft") as (q') "[Hmt Hclose]"; first solve_ndisj.
     iModIntro. iExists _. iDestruct "Hmt" as "[Hmt1 Hmt2]".
     iSplitL "Hmt1"; first by auto with iFrame.
     iIntros "Htok2 Hmt1". iDestruct "Hmt1" as (vl') "[Hmt1 #Hown']".

@@ -15,7 +15,7 @@ Section product.
   Global Instance unit0_copy : Copy unit0.
   Proof.
     split. by apply _. iIntros (????????) "_ _ Htok $".
-    iDestruct (na_own_acc with "Htok") as "[$ Htok]"; first set_solver+.
+    iDestruct (na_own_acc with "Htok") as "[$ Htok]"; first solve_ndisj.
     iExists 1%Qp. iModIntro. iSplitR.
     { iExists []. iSplitL; last by auto. rewrite heap_mapsto_vec_nil. auto. }
     iIntros "Htok2 _". iApply "Htok". done.
@@ -57,9 +57,9 @@ Section product.
   Qed.
   Next Obligation.
     intros ty1 ty2 E κ l tid q ?. iIntros "#LFT /=H Htok". rewrite split_prod_mt.
-    iMod (bor_sep with "LFT H") as "[H1 H2]". set_solver.
-    iMod (ty1.(ty_share) with "LFT H1 Htok") as "[? Htok]". solve_ndisj.
-    iMod (ty2.(ty_share) with "LFT H2 Htok") as "[? Htok]". solve_ndisj.
+    iMod (bor_sep with "LFT H") as "[H1 H2]"; first solve_ndisj.
+    iMod (ty1.(ty_share) with "LFT H1 Htok") as "[? Htok]"; first solve_ndisj.
+    iMod (ty2.(ty_share) with "LFT H2 Htok") as "[? Htok]"; first solve_ndisj.
     iModIntro. iFrame "Htok". iFrame.
   Qed.
   Next Obligation.
@@ -104,9 +104,9 @@ Section product.
   Proof.
     split; first (intros; apply _).
     intros κ tid E F l q ? HF. iIntros "#LFT [H1 H2] Htl [Htok1 Htok2]".
-    iMod (@copy_shr_acc with "LFT H1 Htl Htok1") as (q1) "(Htl & H1 & Hclose1)"; first set_solver.
+    iMod (@copy_shr_acc with "LFT H1 Htl Htok1") as (q1) "(Htl & H1 & Hclose1)"; first solve_ndisj.
     { rewrite <-HF. apply shr_locsE_subseteq. simpl. clear. omega. }
-    iMod (@copy_shr_acc with "LFT H2 Htl Htok2") as (q2) "(Htl & H2 & Hclose2)"; first set_solver.
+    iMod (@copy_shr_acc with "LFT H2 Htl Htok2") as (q2) "(Htl & H2 & Hclose2)"; first solve_ndisj.
     { move: HF. rewrite /= -plus_assoc shr_locsE_shift.
       assert (shr_locsE l (ty_size ty1) ⊥ shr_locsE (shift_loc l (ty_size ty1)) (ty_size ty2 + 1))
              by exact: shr_locsE_disj.

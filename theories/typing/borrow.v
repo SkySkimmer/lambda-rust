@@ -48,7 +48,7 @@ Section borrow.
   Proof.
     iIntros (Hκ tid) "#LFT HE $ HL Hp".
     rewrite tctx_interp_singleton.
-    iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
+    iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first solve_ndisj.
     wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown"; try done.
     iMod (bor_acc_cons with "LFT Hown Htok") as "[H↦ Hclose']". done.
     iDestruct "H↦" as ([|[[|l'|]|][]]) "[>H↦ Hown]"; try iDestruct "Hown" as ">[]".
@@ -78,12 +78,12 @@ Section borrow.
   Proof.
     iIntros (Hκ tid) "#LFT HE $ HL Hp".
     rewrite tctx_interp_singleton.
-    iMod (Hκ with "HE HL") as (q) "[[Htok1 Htok2] Hclose]"; first set_solver.
+    iMod (Hκ with "HE HL") as (q) "[[Htok1 Htok2] Hclose]"; first solve_ndisj.
     wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown"; try done.
     iDestruct "Hown" as (l') "#[H↦b #Hown]".
     iMod (frac_bor_acc with "LFT H↦b Htok1") as (q''') "[>H↦ Hclose']". done.
     iApply (wp_step_fupd _ (_∖_) with "[Hown Htok2]"); try done.
-    - iApply ("Hown" with "[%] Htok2"). set_solver+.
+    - iApply ("Hown" with "[%] Htok2"); first solve_ndisj.
     - iApply wp_fupd. wp_read. iIntros "!>[#Hshr Htok2]".
       iMod ("Hclose'" with "[H↦]") as "Htok1"; first by auto.
       iMod ("Hclose" with "[Htok1 Htok2]") as "($ & $)"; first by iFrame.
@@ -105,7 +105,7 @@ Section borrow.
     iIntros (Hκ Hincl tid) "#LFT #HE $ HL Hp".
     rewrite tctx_interp_singleton.
     iDestruct (Hincl with "HL HE") as "#Hincl".
-    iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first set_solver.
+    iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first solve_ndisj.
     wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown"; try done.
     iMod (bor_exists with "LFT Hown") as (vl) "Hbor". done.
     iMod (bor_sep with "LFT Hbor") as "[H↦ Hbor]". done.
@@ -137,15 +137,15 @@ Section borrow.
   Proof.
     iIntros (Hκ Hincl tid) "#LFT HE $ HL Hp". rewrite tctx_interp_singleton.
     iDestruct (Hincl with "HL HE") as "#Hincl".
-    iMod (Hκ with "HE HL") as (q) "[[Htok1 Htok2] Hclose]"; first set_solver.
+    iMod (Hκ with "HE HL") as (q) "[[Htok1 Htok2] Hclose]"; first solve_ndisj.
     wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hshr"; try done.
     iDestruct "Hshr" as (l') "[H↦ Hown]".
     iMod (frac_bor_acc with "LFT H↦ Htok1") as (q'') "[>H↦ Hclose']". done.
     iAssert (κ ⊑ κ' ⊓ κ)%I as "#Hincl'".
     { iApply (lft_incl_glb with "Hincl []"). iApply lft_incl_refl. }
-    iMod (lft_incl_acc with "Hincl' Htok2") as (q2) "[Htok2 Hclose'']". solve_ndisj.
+    iMod (lft_incl_acc with "Hincl' Htok2") as (q2) "[Htok2 Hclose'']"; first solve_ndisj.
     iApply (wp_step_fupd _ (_∖_) with "[Hown Htok2]"); try done.
-    - iApply ("Hown" with "[%] Htok2"). set_solver+.
+    - iApply ("Hown" with "[%] Htok2"); first solve_ndisj.
     - iApply wp_fupd. wp_read. iIntros "!>[#Hshr Htok2]".
       iMod ("Hclose''" with "Htok2") as "Htok2".
       iMod ("Hclose'" with "[H↦]") as "Htok1"; first by auto.

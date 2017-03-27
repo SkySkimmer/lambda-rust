@@ -54,7 +54,7 @@ Section rwlockwriteguard.
     iExists _. iSplit.
     - by iApply frac_bor_shorten.
     - iIntros "!# * % Htok".
-      iMod (lft_incl_acc with "[] Htok") as (q') "[Htok Hclose]". set_solver.
+      iMod (lft_incl_acc with "[] Htok") as (q') "[Htok Hclose]"; first solve_ndisj.
       { iApply lft_intersect_mono. iApply lft_incl_refl. done. }
       iMod ("H" with "[] Htok") as "Hshr". done. iModIntro. iNext.
       iMod "Hshr" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
@@ -94,7 +94,7 @@ Section rwlockwriteguard.
         iIntros "!>!#"; iSplit; iIntros "H". by iApply "Hty1ty2". by iApply "Hty2ty1".
     - iIntros (κ tid l) "H". iDestruct "H" as (l') "H". iExists l'.
       iDestruct "H" as "[$ #H]". iIntros "!# * % Htok".
-      iMod (lft_incl_acc with "[] Htok") as (q') "[Htok Hclose]". set_solver.
+      iMod (lft_incl_acc with "[] Htok") as (q') "[Htok Hclose]"; first solve_ndisj.
       { iApply lft_intersect_mono. done. iApply lft_incl_refl. }
       iMod ("H" with "[] Htok") as "Hshr". done. iModIntro. iNext.
       iMod "Hshr" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
