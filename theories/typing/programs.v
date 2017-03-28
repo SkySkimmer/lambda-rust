@@ -99,8 +99,7 @@ Section typing_rules.
     typed_body ((κ1 ⊑ κ2) :: (κ2 ⊑ κ1) :: E) L C T e →
     typed_body E ((κ1 ⊑ [κ2]%list) :: L) C T e.
   Proof.
-    iIntros (He tid) "#LFT #HE Htl HL HC HT".
-    rewrite /llctx_interp big_sepL_cons. iDestruct "HL" as "[Hκ HL]".
+    iIntros (He tid) "#LFT #HE Htl [Hκ HL] HC HT".
     iMod (lctx_equalize_lft with "LFT Hκ") as "[Hκ1 Hκ2]".
     iApply (He with "LFT [Hκ1 Hκ2 HE] Htl HL HC HT").
     rewrite /elctx_interp /=. by iFrame.
@@ -163,8 +162,7 @@ Section typing_rules.
     Closed [] e → UnblockTctx κ T1 T2 →
     typed_body E L C T2 e -∗ typed_body E ((κ ⊑ κs) :: L) C T1 (Endlft ;; e).
   Proof.
-    iIntros (Hc Hub) "He". iIntros (tid) "#LFT #HE Htl".
-    rewrite /llctx_interp big_sepL_cons. iIntros "[Hκ HL] HC HT".
+    iIntros (Hc Hub) "He". iIntros (tid) "#LFT #HE Htl [Hκ HL] HC HT".
     iDestruct "Hκ" as (Λ) "(% & Htok & #Hend)".
     iSpecialize ("Hend" with "Htok"). wp_bind Endlft.
     iApply (wp_mask_mono (↑lftN)); first done.
@@ -176,7 +174,7 @@ Section typing_rules.
   Lemma type_path_instr {E L} p ty :
     typed_instruction_ty E L [p ◁ ty] p ty.
   Proof.
-    iIntros (?) "_ _ $$ ?". rewrite tctx_interp_singleton.
+    iIntros (?) "_ _ $$ [? _]".
     iApply (wp_hasty with "[-]"). done. iIntros (v) "_ Hv".
     rewrite tctx_interp_singleton. iExists v. iFrame. by rewrite eval_path_of_val.
   Qed.

@@ -81,9 +81,8 @@ Section spawn.
     iApply (type_let _ _ _ _ ([f' ◁ _; env ◁ _]%TC)
                      (λ j, [j ◁ join_handle retty]%TC)); try solve_typing; [|].
     { (* The core of the proof: showing that spawn is safe. *)
-      iIntros (tid) "#LFT #HE $ $".
-      rewrite tctx_interp_cons tctx_interp_singleton.
-      iIntros "[Hf' Henv]". iApply (spawn_spec _ (join_inv tid retty) with "[-]");
+      iIntros (tid) "#LFT #HE $ $ [Hf' [Henv _]]".
+      iApply (spawn_spec _ (join_inv tid retty) with "[-]");
                               first solve_to_val; last first; last simpl_subst.
       { iIntros "!> *". rewrite tctx_interp_singleton tctx_hasty_val.
         iIntros "?". iExists retty. iFrame. iApply type_incl_refl. }
