@@ -154,10 +154,7 @@ Section rc.
   Lemma rc_subtype ty1 ty2 :
     type_incl ty1 ty2 -∗ type_incl (rc ty1) (rc ty2).
   Proof.
-    iIntros "#Hincl". iPoseProof "Hincl" as "Hincl2".
-    iDestruct "Hincl2" as "(#Hsz & #Hoincl & #Hsincl)".
-    (* FIXME: Would be nice to have an easier way to duplicate
-       destructed things.  Maybe iPoseProof with a destruct pattern? *)
+    iIntros "#Hincl". iPoseProof "Hincl" as "(#Hsz & #Hoincl & #Hsincl)".
     iSplit; first done. iSplit; iAlways.
     - iIntros "* Hvl". destruct vl as [|[[|vl|]|] [|]]; try done.
       iDestruct "Hvl" as "[(Hl & H† & Hc) | Hvl]".

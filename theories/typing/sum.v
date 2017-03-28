@@ -141,7 +141,6 @@ Section sum.
     { iInduction Htyl as [|???? Hsub] "IH".
       { iClear "∗". iIntros "!# _". done. }
       iDestruct (Hsub with "HL") as "#Hsub". iDestruct ("IH" with "HL") as "{IH} #IH".
-      (* FIXME: WHy does the previous iDestruvt remove HL? *)
       iAlways. iIntros "#HE". iDestruct ("Hsub" with "HE") as "(% & _ & _)".
       iDestruct ("IH" with "HE") as %IH. iPureIntro. simpl. inversion_clear IH. by f_equal. }
     iDestruct (subtype_Forall2_llctx with "HL") as "#Htyl"; first done.
