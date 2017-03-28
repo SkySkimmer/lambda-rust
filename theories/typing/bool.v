@@ -38,7 +38,7 @@ Section typing.
   Proof. iIntros. iApply type_let; [apply type_bool_instr|solve_typing|done]. Qed.
 
   Lemma type_if E L C T e1 e2 p:
-    (p ◁ bool)%TC ∈ T →
+    p ◁ bool ∈ T →
     typed_body E L C T e1 -∗ typed_body E L C T e2 -∗
     typed_body E L C T (if: p then e1 else e2).
   Proof.

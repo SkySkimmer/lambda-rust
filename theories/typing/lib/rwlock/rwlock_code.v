@@ -37,7 +37,7 @@ Section rwlock_functions.
     rewrite shift_loc_0. wp_write. wp_op. iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
     wp_apply (wp_memcpy with "[$Hr↦1 $Hx↦]"); [done||lia..|].
     iIntros "[Hr↦1 Hx↦]". wp_seq.
-    iApply (type_type _ _ _ [ #lx ◁ box (uninit (ty_size ty)); #lr ◁ box (rwlock ty)]%TC
+    iApply (type_type _ _ _ [ #lx ◁ box (uninit (ty_size ty)); #lr ◁ box (rwlock ty)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //=. iFrame.
       iSplitL "Hx↦".
@@ -73,7 +73,7 @@ Section rwlock_functions.
     iDestruct "Hx" as "[% Hx]". iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
     wp_apply (wp_memcpy with "[$Hr↦ $Hx↦1]"); [done||lia..|].
     iIntros "[Hr↦ Hx↦1]". wp_seq.
-    iApply (type_type _ _ _ [ #lx ◁ box (uninit (S (ty_size ty))); #lr ◁ box ty]%TC
+    iApply (type_type _ _ _ [ #lx ◁ box (uninit (S (ty_size ty))); #lr ◁ box ty]
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //. iFrame.
       iSplitR "Hr↦ Hx".
@@ -110,7 +110,7 @@ Section rwlock_functions.
     destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
     iDestruct "Hx" as (vl) "[Hx↦ Hx]". rewrite uninit_own. wp_op.
     iApply (type_type _ _ _
-            [ #lx ◁ box (uninit 1); #(shift_loc lx' 1) ◁ &uniq{α}ty]%TC
+            [ #lx ◁ box (uninit 1); #(shift_loc lx' 1) ◁ &uniq{α}ty]
             with "[] LFT HE Hna HL HC [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //. iFrame.
       iNext. iExists _. rewrite uninit_own. iFrame. }
@@ -147,13 +147,13 @@ Section rwlock_functions.
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
-    iApply (type_cont [] [ϝ ⊑ []]%LL (λ _, [x ◁ box (&shr{α} rwlock ty);
-                                            r ◁ box (option (rwlockreadguard α ty))])%TC);
+    iApply (type_cont [] [ϝ ⊑ₗ []] (λ _, [x ◁ box (&shr{α} rwlock ty);
+                                            r ◁ box (option (rwlockreadguard α ty))]));
       [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg];
       simpl_subst; last first.
     { iApply type_delete; [solve_typing..|].
       iApply type_jump; solve_typing. }
-    iApply (type_cont [] [ϝ ⊑ []]%LL (λ _, [x ◁ _; x' ◁ _; r ◁ _])%TC);
+    iApply (type_cont [] [ϝ ⊑ₗ []] (λ _, [x ◁ _; x' ◁ _; r ◁ _]));
       [iIntros (loop)|iIntros "/= !#"; iIntros (loop arg); inv_vec arg];
       simpl_subst.
     { iApply type_jump; solve_typing. }
@@ -171,7 +171,7 @@ Section rwlock_functions.
     iModIntro. wp_let. wp_op=>Hm1; wp_if.
     - iMod ("Hclose'" with "[$]") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
       iApply (type_type _ _ _
-              [ x ◁ box (&shr{α}(rwlock ty)); r ◁ box (uninit 2) ]%TC
+              [ x ◁ box (&shr{α}(rwlock ty)); r ◁ box (uninit 2) ]
               with "[] LFT HE Hna HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       iApply (type_sum_unit (option $ rwlockreadguard α ty));
@@ -221,7 +221,7 @@ Section rwlock_functions.
         iMod ("Hclose'" with "[$]") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
         iApply (type_type  _ _ _
                    [ x ◁ box (&shr{α}(rwlock ty)); r ◁ box (uninit 2);
-                     #lx ◁ rwlockreadguard α ty]%TC
+                     #lx ◁ rwlockreadguard α ty]
               with "[] LFT HE Hna HL Hk"); first last.
         { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val
                   tctx_hasty_val' //. iFrame.
@@ -260,8 +260,8 @@ Section rwlock_functions.
   Proof.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
-    iApply (type_cont [_] [ϝ ⊑ []]%LL (λ r, [x ◁ box (&shr{α} rwlock ty);
-                                        r!!!0 ◁ box (option (rwlockwriteguard α ty))])%TC);
+    iApply (type_cont [_] [ϝ ⊑ₗ []] (λ r, [x ◁ box (&shr{α} rwlock ty);
+                                        r!!!0 ◁ box (option (rwlockwriteguard α ty))]));
       [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg=>r];
       simpl_subst; last first.
     { iApply type_delete; [solve_typing..|]. iApply type_jump; solve_typing. }
@@ -282,7 +282,7 @@ Section rwlock_functions.
       iMod ("Hclose'" with "Hβtok") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
       iModIntro. iApply (wp_if _ false). iNext.
       iApply (type_type _ _ _
-              [ x ◁ box (&shr{α}(rwlock ty)); r ◁ box (uninit 2) ]%TC
+              [ x ◁ box (&shr{α}(rwlock ty)); r ◁ box (uninit 2) ]
               with "[] LFT HE Hna HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
       iApply (type_sum_unit (option $ rwlockwriteguard α ty));
@@ -296,7 +296,7 @@ Section rwlock_functions.
       iMod ("Hclose" with "Hα HL") as "HL".
       iApply (type_type  _ _ _
                    [ x ◁ box (&shr{α}(rwlock ty)); r ◁ box (uninit 2);
-                     #lx ◁ rwlockwriteguard α ty]%TC
+                     #lx ◁ rwlockwriteguard α ty]
               with "[] LFT HE Hna HL Hk"); first last.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val
                 tctx_hasty_val' //. iFrame.  iExists _, _. iFrame "∗#". }

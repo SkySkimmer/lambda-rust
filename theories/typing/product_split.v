@@ -13,7 +13,7 @@ Section product_split.
     match tyl with
     | [] => []
     | ty :: tyl =>
-      (p +ₗ #off ◁ ptr ty)%TC :: hasty_ptr_offsets p ptr tyl (off + ty.(ty_size))
+      (p +ₗ #off ◁ ptr ty) :: hasty_ptr_offsets p ptr tyl (off + ty.(ty_size))
     end.
 
   Lemma hasty_ptr_offsets_offset (l : loc) p (off1 off2 : nat) ptr tyl tid :
@@ -258,7 +258,7 @@ Section product_split.
   Proof.
     intros. apply (tctx_incl_frame_r _ [_] [_;_]).
     rewrite {1}copy_tctx_incl. apply (tctx_incl_frame_r _ [_] [_]).
-    rewrite tctx_split_shr_prod -(contains_tctx_incl _ _ [p' ◁ ty]%TC) //.
+    rewrite tctx_split_shr_prod -(contains_tctx_incl _ _ [p' ◁ ty]) //.
     apply submseteq_skip, submseteq_nil_l.
   Qed.
 

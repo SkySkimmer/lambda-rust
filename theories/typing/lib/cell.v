@@ -181,7 +181,7 @@ Section typing.
     iMod ("Hclose1" with "Htok HL") as "HL".
     (* Now go back to typing level. *)
     iApply (type_type _ _ _
-           [c ◁ box (&shr{α} cell ty); #x ◁ box (uninit ty.(ty_size)); #r ◁ box ty]%TC
+           [c ◁ box (&shr{α} cell ty); #x ◁ box (uninit ty.(ty_size)); #r ◁ box ty]
     with "[] LFT HE Htl HL HC"); last first.
     { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
       iFrame "Hc". rewrite !tctx_hasty_val' //. iSplitL "Hx↦ Hx†".

@@ -43,7 +43,7 @@ Section refmut_functions.
     iMod ("Hcloseα1" with "[$H↦1 $H↦2]") as "Hα1".
     iMod ("Hclose''" with "Hβ HL") as "HL". iMod ("Hclose'" with "[$] HL") as "HL".
     iDestruct (lctx_lft_incl_incl α β with "HL HE") as "#Hαβ"; [solve_typing..|].
-    iApply (type_type _ _ _ [ x ◁ box (&shr{α} refmut β ty); #lv ◁ &shr{α}ty]%TC
+    iApply (type_type _ _ _ [ x ◁ box (&shr{α} refmut β ty); #lv ◁ &shr{α}ty]
             with "[] LFT HE Hna HL Hk"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (ty_shr_mono with "[] Hshr'").
@@ -96,7 +96,7 @@ Section refmut_functions.
     wp_read. iIntros "Hb !>". wp_let.
     iMod ("Hcloseα" with "[$H↦]") as "[_ Hα]". iMod ("Hclose'" with "Hα HL") as "HL".
     iDestruct (lctx_lft_incl_incl α β with "HL HE") as "#Hαβ"; [solve_typing..|].
-    iApply (type_type _ _ _ [ x ◁ box (uninit 1); #lv ◁ &uniq{α}ty]%TC
+    iApply (type_type _ _ _ [ x ◁ box (uninit 1); #lv ◁ &uniq{α}ty]
             with "[] LFT HE Hna HL Hk"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (bor_shorten with "[] Hb").
@@ -146,7 +146,7 @@ Section refmut_functions.
       apply auth_update_dealloc. rewrite -(right_id None _ (Some _)).
       apply cancel_local_update_empty, _. }
     iMod ("Hcloseα" with "Hβ") as "Hα". iMod ("Hclose" with "Hα HL") as "HL". wp_seq.
-    iApply (type_type _ _ _ [ #lx ◁ box (uninit 2)]%TC
+    iApply (type_type _ _ _ [ #lx ◁ box (uninit 2)]
             with "[] LFT HE Hna HL Hk"); last first.
     { rewrite tctx_interp_singleton tctx_hasty_val' //. iFrame. iExists [ #lv;#lrc].
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton uninit_own. iFrame. auto. }
@@ -196,10 +196,10 @@ Section refmut_functions.
     iAssert (κ ⊑ α ⊓ ν)%I with "[>Hb]" as "#Hκν".
     { iApply (lft_incl_glb with "Hκα"). iApply (frac_bor_lft_incl with "LFT").
       iApply (bor_fracture with "LFT [> -]"); first done. rewrite /= Qp_mult_1_r //. }
-    iApply (type_type ((κ ⊑ α ⊓ ν) :: (α ⊓ ν ⊑ α) :: _)%EL _
-        [k ◁cont(_, λ x:vec val 1, [ x!!!0 ◁ box (&uniq{α ⊓ ν}ty2)])]%CC
+    iApply (type_type ((κ ⊑ₑ α ⊓ ν) :: (α ⊓ ν ⊑ₑ α) :: _)%EL _
+        [k ◁cont(_, λ x:vec val 1, [ x!!!0 ◁ box (&uniq{α ⊓ ν}ty2)])]
         [ f' ◁ fn(∀ α, ∅; envty, &uniq{α}ty1) → &uniq{α}ty2;
-          #lx ◁ box (&uniq{α ⊓ ν}ty1); env ◁ box envty ]%TC
+          #lx ◁ box (&uniq{α ⊓ ν}ty1); env ◁ box envty ]
        with "[] LFT [] Hna HL [-H† Hlx Henv Hbor]"); swap 1 2; swap 3 4.
     { iSplitL; last iSplitL; [done|iApply lft_intersect_incl_l|iApply "HE"]. }
     { iApply (type_call (α ⊓ ν)); solve_typing. }
@@ -222,7 +222,7 @@ Section refmut_functions.
       first by rewrite -lft_dead_or; auto. wp_seq. wp_write.
     iApply (type_type _ [_] _
         [ f ◁ box (fn(∀ α, ∅; envty, &uniq{α}ty1) → &uniq{α}ty2);
-          #lref ◁ box (refmut α ty2) ]%TC
+          #lref ◁ box (refmut α ty2) ]
        with "[] LFT HE Hna [HL] Hk"); first last.
     { iFrame. rewrite big_sepL_singleton tctx_hasty_val. iExists _. iSplit. done.
       iFrame. iExists [_;_]. rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.

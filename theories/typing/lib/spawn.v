@@ -78,8 +78,8 @@ Section spawn.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>f env. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (f'). simpl_subst.
-    iApply (type_let _ _ _ _ ([f' ◁ _; env ◁ _]%TC)
-                     (λ j, [j ◁ join_handle retty]%TC)); try solve_typing; [|].
+    iApply (type_let _ _ _ _ ([f' ◁ _; env ◁ _])
+                     (λ j, [j ◁ join_handle retty])); try solve_typing; [|].
     { (* The core of the proof: showing that spawn is safe. *)
       iIntros (tid) "#LFT #HE $ $ [Hf' [Henv _]]".
       iApply (spawn_spec _ (join_inv tid retty) with "[-]");
@@ -123,8 +123,8 @@ Section spawn.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>c. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (c'); simpl_subst.
-    iApply (type_let _ _ _ _ ([c' ◁ _]%TC)
-                             (λ r, [r ◁ box retty]%TC)); try solve_typing; [|].
+    iApply (type_let _ _ _ _ ([c' ◁ _])
+                             (λ r, [r ◁ box retty])); try solve_typing; [|].
     { iIntros (tid) "#LFT _ $ $".
       rewrite tctx_interp_singleton tctx_hasty_val. iIntros "Hc'".
       destruct c' as [[|c'|]|]; try done. iDestruct "Hc'" as (ty') "[#Hsub Hc']".

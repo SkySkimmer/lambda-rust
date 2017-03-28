@@ -14,18 +14,9 @@ Inductive tctx_elt `{typeG Σ} : Type :=
 
 Notation tctx := (list tctx_elt).
 
-Delimit Scope lrust_tctx_scope with TC.
-Bind Scope lrust_tctx_scope with tctx_elt.
-
-Notation "p ◁ ty" := (TCtx_hasty p ty%list%T) (at level 70) : lrust_tctx_scope.
+Notation "p ◁ ty" := (TCtx_hasty p ty%list%T) (at level 70).
 Notation "p ◁{ κ } ty" := (TCtx_blocked p κ ty)
-   (at level 70, format "p  ◁{ κ }  ty") : lrust_tctx_scope.
-Notation "a :: b" := (@cons tctx_elt a%TC b%TC)
-  (at level 60, right associativity) : lrust_tctx_scope.
-Notation "[ x1 ; x2 ; .. ; xn ]" :=
-  (@cons tctx_elt x1%TC (@cons tctx_elt x2%TC
-        (..(@cons tctx_elt xn%TC (@nil tctx_elt))..))) : lrust_tctx_scope.
-Notation "[ x ]" := (@cons tctx_elt x%TC (@nil tctx_elt)) : lrust_tctx_scope.
+   (at level 70, format "p  ◁{ κ }  ty").
 
 Section type_context.
   Context `{typeG Σ}.
@@ -74,8 +65,8 @@ Section type_context.
   (** Type context element *)
   Definition tctx_elt_interp (tid : thread_id) (x : tctx_elt) : iProp Σ :=
     match x with
-    | (p ◁ ty)%TC => ∃ v, ⌜eval_path p = Some v⌝ ∗ ty.(ty_own) tid [v]
-    | (p ◁{κ} ty)%TC => ∃ v, ⌜eval_path p = Some v⌝ ∗
+    | p ◁ ty => ∃ v, ⌜eval_path p = Some v⌝ ∗ ty.(ty_own) tid [v]
+    | p ◁{κ} ty => ∃ v, ⌜eval_path p = Some v⌝ ∗
                              ([†κ] ={⊤}=∗ ty.(ty_own) tid [v])
     end%I.
 
@@ -122,7 +113,6 @@ Section type_context.
   (** Type context *)
   Definition tctx_interp (tid : thread_id) (T : tctx) : iProp Σ :=
     ([∗ list] x ∈ T, tctx_elt_interp tid x)%I.
-  Global Arguments tctx_interp _ _%TC.
 
   Global Instance tctx_interp_permut tid:
     Proper ((≡ₚ) ==> (⊣⊢)) (tctx_interp tid).
@@ -146,7 +136,6 @@ Section type_context.
   (** Copy typing contexts *)
   Class CopyC (T : tctx) :=
     copyc_persistent tid : PersistentP (tctx_interp tid T).
-  Global Arguments CopyC _%TC.
   Global Existing Instances copyc_persistent.
 
   Global Instance tctx_nil_copy : CopyC [].
@@ -159,7 +148,6 @@ Section type_context.
   (** Send typing contexts *)
   Class SendC (T : tctx) :=
     sendc_change_tid tid1 tid2 : tctx_interp tid1 T -∗ tctx_interp tid2 T.
-  Global Arguments SendC _%TC.
 
   Global Instance tctx_nil_send : SendC [].
   Proof. done. Qed.
@@ -178,7 +166,6 @@ Section type_context.
   Definition tctx_incl (E : elctx) (L : llctx) (T1 T2 : tctx): Prop :=
     ∀ tid q2, lft_ctx -∗ elctx_interp E -∗ llctx_interp L q2 -∗
               tctx_interp tid T1 ={⊤}=∗ llctx_interp L q2 ∗ tctx_interp tid T2.
-  Global Arguments tctx_incl _%EL _%LL _%TC _%TC.
   Global Instance : ∀ E L, RewriteRelation (tctx_incl E L).
 
   Global Instance tctx_incl_preorder E L : PreOrder (tctx_incl E L).
@@ -219,9 +206,9 @@ Section type_context.
   Proof. iIntros (??) "_ _ $ * [#$ $] //". Qed.
 
   Lemma copy_elem_of_tctx_incl E L T p `{!Copy ty} :
-    (p ◁ ty)%TC ∈ T → tctx_incl E L T ((p ◁ ty) :: T).
+    p ◁ ty ∈ T → tctx_incl E L T ((p ◁ ty) :: T).
   Proof.
-    remember (p ◁ ty)%TC. induction 1 as [|???? IH]; subst.
+    remember (p ◁ ty). induction 1 as [|???? IH]; subst.
     - apply (tctx_incl_frame_r _ [_] [_;_]), copy_tctx_incl, _.
     - etrans. by apply (tctx_incl_frame_l [_]), IH, reflexivity.
       apply contains_tctx_incl, submseteq_swap.
@@ -239,7 +226,6 @@ Section type_context.
 
   Definition tctx_extract_hasty E L p ty T T' : Prop :=
     tctx_incl E L T ((p ◁ ty)::T').
-  Global Arguments tctx_extract_hasty _%EL _%LL _%E _%T _%TC _%TC.
   Lemma tctx_extract_hasty_further E L p ty T T' x :
     tctx_extract_hasty E L p ty T T' →
     tctx_extract_hasty E L p ty (x::T) (x::T').
@@ -263,7 +249,6 @@ Section type_context.
 
   Definition tctx_extract_blocked E L p κ ty T T' : Prop :=
     tctx_incl E L T ((p ◁{κ} ty)::T').
-  Global Arguments tctx_extract_blocked _%EL _%LL _%E _ _%T _%TC _%TC.
   Lemma tctx_extract_blocked_cons E L p κ ty T T' x :
     tctx_extract_blocked E L p κ ty T T' →
     tctx_extract_blocked E L p κ ty (x::T) (x::T').
@@ -277,7 +262,6 @@ Section type_context.
 
   Definition tctx_extract_ctx E L T T1 T2 : Prop :=
     tctx_incl E L T1 (T++T2).
-  Global Arguments tctx_extract_ctx _%EL _%LL _%TC _%TC _%TC.
   Lemma tctx_extract_ctx_nil E L T:
     tctx_extract_ctx E L [] T T.
   Proof. by unfold tctx_extract_ctx. Qed.
@@ -306,7 +290,6 @@ Section type_context.
 
   Class UnblockTctx (κ : lft) (T1 T2 : tctx) : Prop :=
     unblock_tctx : ∀ tid, [†κ] -∗ tctx_interp tid T1 ={⊤}=∗ tctx_interp tid T2.
-  Global Arguments UnblockTctx _ _%TC _%TC.
 
   Global Instance unblock_tctx_nil κ : UnblockTctx κ [] [].
   Proof. by iIntros (tid) "_ $". Qed.

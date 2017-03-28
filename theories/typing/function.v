@@ -19,8 +19,8 @@ Section fn.
     {| st_own tid vl := (∃ fb kb xb e H,
          ⌜vl = [@RecV fb (kb::xb) e H]⌝ ∗ ⌜length xb = n⌝ ∗
          ▷ ∀ (x : A) (ϝ : lft) (k : val) (xl : vec val (length xb)),
-            □ typed_body ((fp x).(fp_E)  ϝ) [ϝ ⊑ []]
-                         [k◁cont([ϝ ⊑ []], λ v : vec _ 1, [v!!!0 ◁ box (fp x).(fp_ty)])]
+            □ typed_body ((fp x).(fp_E)  ϝ) [ϝ ⊑ₗ []]
+                         [k◁cont([ϝ ⊑ₗ []], λ v : vec _ 1, [v!!!0 ◁ box (fp x).(fp_ty)])]
                          (zip_with (TCtx_hasty ∘ of_val) xl
                                    (box <$> (vec_to_list (fp x).(fp_tys))))
                          (subst_v (fb::kb::xb) (RecV fb (kb::xb) e:::k:::xl) e))%I |}.
@@ -172,7 +172,7 @@ Section typing.
     - unfold cctx_interp. iIntros (elt) "Helt".
       iDestruct "Helt" as %->%elem_of_list_singleton. iIntros (ret) "Htl HL HT".
       unfold cctx_elt_interp.
-      iApply ("HC" $! (_ ◁cont(_, _)%CC) with "[%] Htl HL [> -]").
+      iApply ("HC" $! (_ ◁cont(_, _)) with "[%] Htl HL [> -]").
       { by apply elem_of_list_singleton. }
       rewrite /tctx_interp !big_sepL_singleton /=.
       iDestruct "HT" as (v) "[HP Hown]". iExists v. iFrame "HP".
@@ -234,7 +234,7 @@ Section typing.
   Lemma type_call' {A} E L T p (κs : list lft) (ps : list path)
                          (fp : A → fn_params (length ps)) (k : val) x :
     Forall (lctx_lft_alive E L) κs →
-    (∀ ϝ, elctx_sat (((λ κ, ϝ ⊑ κ) <$> κs)%EL ++ E) L ((fp x).(fp_E) ϝ)) →
+    (∀ ϝ, elctx_sat (((λ κ, ϝ ⊑ₑ κ) <$> κs) ++ E) L ((fp x).(fp_E) ϝ)) →
     typed_body E L [k ◁cont(L, λ v : vec _ 1, (v!!!0 ◁ box (fp x).(fp_ty)) :: T)]
                ((p ◁ fn fp) ::
                 zip_with TCtx_hasty ps (box <$> (vec_to_list (fp x).(fp_tys))) ++
@@ -286,12 +286,12 @@ Section typing.
 
   Lemma type_call {A} x E L C T T' T'' p (ps : list path)
                         (fp : A → fn_params (length ps)) k :
-    (p ◁ fn fp)%TC ∈ T →
+    p ◁ fn fp ∈ T →
     Forall (lctx_lft_alive E L) (L.*1) →
-    (∀ ϝ, elctx_sat (((λ κ, ϝ ⊑ κ) <$> (L.*1))%EL ++ E) L ((fp x).(fp_E) ϝ)) →
+    (∀ ϝ, elctx_sat (((λ κ, ϝ ⊑ₑ κ) <$> (L.*1)) ++ E) L ((fp x).(fp_E) ϝ)) →
     tctx_extract_ctx E L (zip_with TCtx_hasty ps
                                    (box <$> vec_to_list (fp x).(fp_tys))) T T' →
-    (k ◁cont(L, T''))%CC ∈ C →
+    k ◁cont(L, T'') ∈ C →
     (∀ ret : val, tctx_incl E L ((ret ◁ box (fp x).(fp_ty))::T') (T'' [# ret])) →
     typed_body E L C T (call: p ps → k).
   Proof.
@@ -306,16 +306,16 @@ Section typing.
   Lemma type_letcall {A} x E L C T T' p (ps : list path)
                         (fp : A → fn_params (length ps)) b e :
     Closed (b :b: []) e → Closed [] p → Forall (Closed []) ps →
-    (p ◁ fn fp)%TC ∈ T →
+    p ◁ fn fp ∈ T →
     Forall (lctx_lft_alive E L) (L.*1) →
-    (∀ ϝ, elctx_sat (((λ κ, ϝ ⊑ κ) <$> (L.*1))%EL ++ E) L ((fp x).(fp_E) ϝ)) →
+    (∀ ϝ, elctx_sat (((λ κ, ϝ ⊑ₑ κ) <$> (L.*1)) ++ E) L ((fp x).(fp_E) ϝ)) →
     tctx_extract_ctx E L (zip_with TCtx_hasty ps
                                    (box <$> vec_to_list (fp x).(fp_tys))) T T' →
     (∀ ret : val, typed_body E L C ((ret ◁ box (fp x).(fp_ty))::T') (subst' b ret e)) -∗
     typed_body E L C T (letcall: b := p ps in e).
   Proof.
     iIntros (?? Hpsc ????) "He".
-    iApply (type_cont_norec [_] _ (λ r, (r!!!0 ◁ box (fp x).(fp_ty)) :: T')%TC).
+    iApply (type_cont_norec [_] _ (λ r, (r!!!0 ◁ box (fp x).(fp_ty)) :: T')).
     - (* TODO : make [solve_closed] work here. *)
       eapply is_closed_weaken; first done. set_solver+.
     - (* TODO : make [solve_closed] work here. *)
@@ -344,8 +344,8 @@ Section typing.
     n = length argsb →
     Closed (fb :b: "return" :b: argsb +b+ []) e →
     □ (∀ x ϝ (f : val) k (args : vec val (length argsb)),
-          typed_body ((fp x).(fp_E) ϝ) [ϝ ⊑ []]
-                     [k ◁cont([ϝ ⊑ []], λ v : vec _ 1, [v!!!0 ◁ box (fp x).(fp_ty)])]
+          typed_body ((fp x).(fp_E) ϝ) [ϝ ⊑ₗ []]
+                     [k ◁cont([ϝ ⊑ₗ []], λ v : vec _ 1, [v!!!0 ◁ box (fp x).(fp_ty)])]
                      ((f ◁ fn fp) ::
                         zip_with (TCtx_hasty ∘ of_val) args
                                  (box <$> vec_to_list (fp x).(fp_tys)) ++ T)
@@ -369,8 +369,8 @@ Section typing.
     n = length argsb →
     Closed ("return" :b: argsb +b+ []) e →
     □ (∀ x ϝ k (args : vec val (length argsb)),
-        typed_body ((fp x).(fp_E) ϝ) [ϝ ⊑ []]
-                   [k ◁cont([ϝ ⊑ []], λ v : vec _ 1, [v!!!0 ◁ box (fp x).(fp_ty)])]
+        typed_body ((fp x).(fp_E) ϝ) [ϝ ⊑ₗ []]
+                   [k ◁cont([ϝ ⊑ₗ []], λ v : vec _ 1, [v!!!0 ◁ box (fp x).(fp_ty)])]
                    (zip_with (TCtx_hasty ∘ of_val) args
                              (box <$> vec_to_list (fp x).(fp_tys)) ++ T)
                    (subst_v (BNamed "return" :: argsb) (k ::: args) e)) -∗

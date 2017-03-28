@@ -35,7 +35,7 @@ Section rwlockreadguard_functions.
     iMod ("Hcloseα" with "[$H↦]") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
     iDestruct (lctx_lft_incl_incl α β with "HL HE") as "#Hαβ"; [solve_typing..|].
     iApply (type_type _ _ _ [ x ◁ box (&shr{α} rwlockreadguard β ty);
-                              #(shift_loc l' 1) ◁ &shr{α}ty]%TC
+                              #(shift_loc l' 1) ◁ &shr{α}ty]
       with "[] LFT HE Hna HL Hk"); first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (ty_shr_mono with "[] Hshr"). iApply lft_incl_glb; first done.
@@ -64,7 +64,7 @@ Section rwlockreadguard_functions.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
-    iApply (type_cont [] [ϝ ⊑ []]%LL (λ _, [x ◁ _; x' ◁ _])%TC);
+    iApply (type_cont [] [ϝ ⊑ₗ []] (λ _, [x ◁ _; x' ◁ _]));
       [iIntros (loop)|iIntros "/= !#"; iIntros (loop arg); inv_vec arg];
       simpl_subst.
     { iApply type_jump; solve_typing. }
@@ -124,7 +124,7 @@ Section rwlockreadguard_functions.
       iMod ("INV" with "Hlx") as "INV". iMod ("Hcloseβ" with "[$INV]") as "Hβ".
       iMod ("Hcloseα" with "Hβ") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
       iApply (wp_if _ true). iIntros "!>!>".
-      iApply (type_type _ _ _ [ x ◁ box (uninit 1)]%TC
+      iApply (type_type _ _ _ [ x ◁ box (uninit 1)]
               with "[] LFT HE Hna HL Hk"); first last.
       { rewrite tctx_interp_singleton tctx_hasty_val //. }
       iApply type_delete; [solve_typing..|].
@@ -134,7 +134,7 @@ Section rwlockreadguard_functions.
       iMod ("Hcloseβ" with "[Hlx H● Hst]") as "Hβ". by iExists _; iFrame.
       iMod ("Hcloseα" with "Hβ") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
       iApply (wp_if _ false). iIntros "!> !>".
-      iApply (type_type _ _ _ [ x ◁ box (uninit 1); #lx' ◁ rwlockreadguard α ty]%TC
+      iApply (type_type _ _ _ [ x ◁ box (uninit 1); #lx' ◁ rwlockreadguard α ty]
               with "[] LFT HE Hna HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val
                 tctx_hasty_val' //=. auto 10 with iFrame. }

@@ -17,28 +17,18 @@ Add Printing Constructor cctx_elt.
 
 Notation cctx := (list cctx_elt).
 
-Delimit Scope lrust_cctx_scope with CC.
-Bind Scope lrust_cctx_scope with cctx_elt.
-
-Notation "k ◁cont( L , T )" := (CCtx_iscont k L%LL _ T%TC)
-  (at level 70, format "k  ◁cont( L ,  T )") : lrust_cctx_scope.
-Notation "a :: b" := (@cons cctx_elt a%CC b%CC)
-  (at level 60, right associativity) : lrust_cctx_scope.
-Notation "[ x1 ; x2 ; .. ; xn ]" :=
-  (@cons cctx_elt x1%CC (@cons cctx_elt x2%CC
-        (..(@cons cctx_elt xn%CC (@nil cctx_elt))..))) : lrust_cctx_scope.
-Notation "[ x ]" := (@cons cctx_elt x%CC (@nil cctx_elt)) : lrust_cctx_scope.
+Notation "k ◁cont( L , T )" := (CCtx_iscont k L _ T)
+  (at level 70, format "k  ◁cont( L ,  T )").
 
 Section cont_context.
   Context `{typeG Σ}.
 
   Definition cctx_elt_interp (tid : thread_id) (x : cctx_elt) : iProp Σ :=
-    let '(k ◁cont(L, T))%CC := x in
+    let '(k ◁cont(L, T)) := x in
     (∀ args, na_own tid ⊤ -∗ llctx_interp L 1 -∗ tctx_interp tid (T args) -∗
          WP k (of_val <$> (args : list _)) {{ _, cont_postcondition }})%I.
   Definition cctx_interp (tid : thread_id) (C : cctx) : iProp Σ :=
     (∀ (x : cctx_elt), ⌜x ∈ C⌝ -∗ cctx_elt_interp tid x)%I.
-  Global Arguments cctx_interp _ _%CC.
 
   Global Instance cctx_interp_permut tid:
     Proper ((≡ₚ) ==> (⊣⊢)) (cctx_interp tid).
@@ -73,12 +63,11 @@ Section cont_context.
   Proof.
     rewrite /cctx_interp. iIntros "H". iIntros ([k L n T]) "%".
     iIntros (args) "HL HT". iMod "H".
-    by iApply ("H" $! (k ◁cont(L, T)%CC) with "[%] HL HT").
+    by iApply ("H" $! (k ◁cont(L, T)) with "[%] HL HT").
   Qed.
 
   Definition cctx_incl (E : elctx) (C1 C2 : cctx): Prop :=
     ∀ tid, lft_ctx -∗ elctx_interp E -∗ cctx_interp tid C1 -∗ cctx_interp tid C2.
-  Global Arguments cctx_incl _%EL _%CC _%CC.
 
   Global Instance cctx_incl_preorder E : PreOrder (cctx_incl E).
   Proof.
@@ -102,7 +91,7 @@ Section cont_context.
     iIntros (x) "Hin". iDestruct "Hin" as %[->|Hin]%elem_of_cons.
     - iIntros (args) "Htl HL HT".
       iMod (HT1T2 with "LFT HE HL HT") as "(HL & HT)".
-      iApply ("H" $! (_ ◁cont(_, _))%CC with "[%] Htl HL HT").
+      iApply ("H" $! (_ ◁cont(_, _)) with "[%] Htl HL HT").
       constructor.
     - iApply (HC1C2 with "LFT HE [H] [%]"); last done.
       iIntros (x') "%". iApply ("H" with "[%]"). by apply elem_of_cons; auto.
@@ -112,7 +101,7 @@ Section cont_context.
   Proof. apply incl_cctx_incl. by set_unfold. Qed.
 
   Lemma cctx_incl_cons E k L n (T1 T2 : vec val n → tctx) C1 C2 :
-    (k ◁cont(L, T1))%CC ∈ C1 →
+    k ◁cont(L, T1) ∈ C1 →
     (∀ args, tctx_incl E L (T2 args) (T1 args)) →
     cctx_incl E C1 C2 →
     cctx_incl E C1 (k ◁cont(L, T2) :: C2).

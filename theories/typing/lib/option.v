@@ -30,7 +30,7 @@ Section option.
       inv_vec p=>o. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (o'). simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
-    iApply (type_cont [] [ϝ ⊑ []]%LL (λ _, [o ◁ _; r ◁ _])%TC) ; [solve_typing..| |].
+    iApply (type_cont [] [ϝ ⊑ₗ []] (λ _, [o ◁ _; r ◁ _])) ; [solve_typing..| |].
     - iIntros (k). simpl_subst.
       iApply type_case_uniq; [solve_typing..|].
         constructor; last constructor; last constructor; left.

@@ -58,7 +58,7 @@ Arguments ty_lfts {_ _} _ {_}.
 Arguments ty_wf_E {_ _} _ {_}.
 
 Definition ty_outlives_E `{typeG Σ} ty `{!TyWf ty} (κ : lft) : elctx :=
-  (λ α, κ ⊑ α)%EL <$> ty.(ty_lfts).
+  (λ α, κ ⊑ₑ α) <$> ty.(ty_lfts).
 
 Lemma ty_outlives_E_elctx_sat `{typeG Σ} E L ty `{!TyWf ty} α β :
   ty.(ty_outlives_E) β ⊆+ E →

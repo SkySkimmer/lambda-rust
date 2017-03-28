@@ -28,7 +28,7 @@ Section fake_shared_box.
       iDestruct "H" as "#H". iIntros "!# * % $". iApply step_fupd_intro. set_solver.
       by iApply ty_shr_mono. }
     wp_seq.
-    iApply (type_type [] _ _ [ x ◁ box (&shr{α}box ty) ]%TC
+    iApply (type_type [] _ _ [ x ◁ box (&shr{α}box ty) ]
             with "[] LFT [] Hna HL Hk [HT]"); last first.
     { by rewrite tctx_interp_singleton tctx_hasty_val. }
     { by rewrite /elctx_interp. }

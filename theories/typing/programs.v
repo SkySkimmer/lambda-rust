@@ -13,7 +13,7 @@ Section typing.
     (∀ tid, lft_ctx -∗ elctx_interp E -∗ na_own tid ⊤ -∗ llctx_interp L 1 -∗
                cctx_interp tid C -∗ tctx_interp tid T -∗
                WP e {{ _, cont_postcondition }})%I.
-  Global Arguments typed_body _%EL _%LL _%CC _%TC _%E.
+  Global Arguments typed_body _ _ _ _ _%E.
 
   Global Instance typed_body_llctx_permut E :
     Proper ((≡ₚ) ==> eq ==> eq ==> eq ==> (⊢)) (typed_body E).
@@ -52,7 +52,7 @@ Section typing.
               llctx_interp L 1 -∗ tctx_interp tid T1 -∗
               WP e {{ v, na_own tid ⊤ ∗
                          llctx_interp L 1 ∗ tctx_interp tid (T2 v) }})%I.
-  Global Arguments typed_instruction _%EL _%LL _%TC _%E _%TC.
+  Global Arguments typed_instruction _ _ _ _%E _.
 
   (** Writing and Reading **)
   Definition typed_write (E : elctx) (L : llctx) (ty1 ty ty2 : type) : iProp Σ :=
@@ -61,7 +61,7 @@ Section typing.
         ∃ (l : loc) vl, ⌜length vl = ty.(ty_size) ∧ v = #l⌝ ∗ l ↦∗ vl ∗
           (▷ l ↦∗: ty.(ty_own) tid ={F}=∗
             llctx_interp L qL ∗ ty2.(ty_own) tid [v]))%I.
-  Global Arguments typed_write _%EL _%LL _%T _%T _%T.
+  Global Arguments typed_write _ _ _%T _%T _%T.
 
   (* Technically speaking, we could remvoe the vl quantifiaction here and use
      mapsto_pred instead (i.e., l ↦∗: ty.(ty_own) tid). However, that would
@@ -69,17 +69,17 @@ Section typing.
      that nobody could possibly have changed the vl (because only half the
      fraction was given). So we go with the definition that is easier to prove. *)
   Definition typed_read (E : elctx) (L : llctx) (ty1 ty ty2 : type) : iProp Σ :=
-    (□ ∀ v tid F qL, ⌜lftE ∪ (↑lrustN) ⊆ F⌝ →
+    (□ ∀ v tid F qL, ⌜lftE ∪ ↑lrustN ⊆ F⌝ →
       lft_ctx -∗ elctx_interp E -∗ na_own tid F -∗
       llctx_interp L qL -∗ ty1.(ty_own) tid [v] ={F}=∗
         ∃ (l : loc) vl q, ⌜v = #l⌝ ∗ l ↦∗{q} vl ∗ ▷ ty.(ty_own) tid vl ∗
               (l ↦∗{q} vl ={F}=∗ na_own tid F ∗
                               llctx_interp L qL ∗ ty2.(ty_own) tid [v]))%I.
-  Global Arguments typed_read _%EL _%LL _%T _%T _%T.
+  Global Arguments typed_read _ _ _%T _%T _%T.
 End typing.
 
 Notation typed_instruction_ty E L T e ty :=
-  (typed_instruction E L T e (λ v : val, [v ◁ ty%list%T]%TC)).
+  (typed_instruction E L T e (λ v : val, [v ◁ ty%list%T])).
 
 Notation typed_val v ty := (∀ E L, typed_instruction_ty E L [] (of_val v) ty).
 
@@ -92,12 +92,11 @@ Section typing_rules.
     typed_body E L C T e -∗ typed_body E L C T e.
   Proof. done. Qed.
 
-  (* TODO: notation scopes need tuing to avoid the %list here. *)
   (* TODO: Proof a version of this that substitutes into a compatible context...
      if we really want to do that. *)
   Lemma type_equivalize_lft E L C T κ1 κ2 e :
-    typed_body ((κ1 ⊑ κ2) :: (κ2 ⊑ κ1) :: E) L C T e →
-    typed_body E ((κ1 ⊑ [κ2]%list) :: L) C T e.
+    typed_body ((κ1 ⊑ₑ κ2) :: (κ2 ⊑ₑ κ1) :: E) L C T e →
+    typed_body E ((κ1 ⊑ₗ [κ2]) :: L) C T e.
   Proof.
     iIntros (He tid) "#LFT #HE Htl [Hκ HL] HC HT".
     iMod (lctx_equalize_lft with "LFT Hκ") as "[Hκ1 Hκ2]".
@@ -145,7 +144,7 @@ Section typing_rules.
 
   Lemma type_newlft {E L C T} κs e :
     Closed [] e →
-    (∀ κ, typed_body E ((κ ⊑ κs) :: L) C T e) -∗
+    (∀ κ, typed_body E ((κ ⊑ₗ κs) :: L) C T e) -∗
     typed_body E L C T (Newlft ;; e).
   Proof.
     iIntros (Hc) "He". iIntros (tid) "#LFT #HE Htl HL HC HT".
@@ -160,7 +159,7 @@ Section typing_rules.
      Right now, we could take two. *)
   Lemma type_endlft E L C T1 T2 κ κs e :
     Closed [] e → UnblockTctx κ T1 T2 →
-    typed_body E L C T2 e -∗ typed_body E ((κ ⊑ κs) :: L) C T1 (Endlft ;; e).
+    typed_body E L C T2 e -∗ typed_body E ((κ ⊑ₗ κs) :: L) C T1 (Endlft ;; e).
   Proof.
     iIntros (Hc Hub) "He". iIntros (tid) "#LFT #HE Htl [Hκ HL] HC HT".
     iDestruct "Hκ" as (Λ) "(% & Htok & #Hend)".
@@ -188,7 +187,7 @@ Section typing_rules.
 
   Lemma type_assign_instr {E L} ty ty1 ty1' p1 p2 :
     typed_write E L ty1 ty ty1' →
-    typed_instruction E L [p1 ◁ ty1; p2 ◁ ty] (p1 <- p2) (λ _, [p1 ◁ ty1']%TC).
+    typed_instruction E L [p1 ◁ ty1; p2 ◁ ty] (p1 <- p2) (λ _, [p1 ◁ ty1']).
   Proof.
     iIntros (Hwrt tid) "#LFT #HE $ HL".
     rewrite tctx_interp_cons tctx_interp_singleton. iIntros "[Hp1 Hp2]".
@@ -214,7 +213,7 @@ Section typing_rules.
 
   Lemma type_deref_instr {E L} ty ty1 ty1' p :
     ty.(ty_size) = 1%nat → typed_read E L ty1 ty ty1' →
-    typed_instruction E L [p ◁ ty1] (!p) (λ v, [p ◁ ty1'; v ◁ ty]%TC).
+    typed_instruction E L [p ◁ ty1] (!p) (λ v, [p ◁ ty1'; v ◁ ty]).
   Proof.
     iIntros (Hsz Hread tid) "#LFT #HE Htl HL Hp".
     rewrite tctx_interp_singleton. wp_bind p. iApply (wp_hasty with "Hp").
@@ -267,7 +266,7 @@ Section typing_rules.
     Z.of_nat (ty.(ty_size)) = n →
     typed_write E L ty1 ty ty1' → typed_read E L ty2 ty ty2' →
     typed_instruction E L [p1 ◁ ty1; p2 ◁ ty2] (p1 <-{n} !p2)
-                      (λ _, [p1 ◁ ty1'; p2 ◁ ty2']%TC).
+                      (λ _, [p1 ◁ ty1'; p2 ◁ ty2']).
   Proof.
     iIntros (Hsz Hwrt Hread tid) "#LFT #HE Htl HL HT".
     iApply (type_memcpy_iris with "[] [] [$LFT $Htl $HE $HL HT]"); try done.

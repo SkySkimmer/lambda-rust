@@ -274,7 +274,7 @@ Section code.
     wp_op. rewrite shift_loc_0. wp_write. wp_op. iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
     wp_apply (wp_memcpy with "[$Hrcbox↦1 $Hx↦]"); [by auto using vec_to_list_length..|].
     iIntros "[Hrcbox↦1 Hx↦]". wp_seq. wp_op. rewrite shift_loc_0. wp_write.
-    iApply (type_type _ _ _ [ #lx ◁ box (uninit (ty_size ty)); #lrc ◁ box (rc ty)]%TC
+    iApply (type_type _ _ _ [ #lx ◁ box (uninit (ty_size ty)); #lrc ◁ box (rc ty)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //=. iFrame.
       iSplitL "Hx↦".
@@ -340,7 +340,7 @@ Section code.
       rewrite [_ ⋅ _]comm frac_op' -[(_ + _)%Qp]assoc. rewrite Qp_div_2. auto. }
     iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
     (* Finish up the proof. *)
-    iApply (type_type _ _ _ [ x ◁ box (&shr{α} rc ty); #lrc2 ◁ box (rc ty)]%TC
+    iApply (type_type _ _ _ [ x ◁ box (&shr{α} rc ty); #lrc2 ◁ box (rc ty)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       unlock. iFrame "Hx". iFrame "Hrc2†". iExists [_]. rewrite heap_mapsto_vec_singleton.
@@ -380,7 +380,7 @@ Section code.
     wp_op. wp_write.
     iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
     (* Finish up the proof. *)
-    iApply (type_type _ _ _ [ rcx ◁ box (&shr{α} rc ty); #lrc2 ◁ box (&shr{α} ty)]%TC
+    iApply (type_type _ _ _ [ rcx ◁ box (&shr{α} rc ty); #lrc2 ◁ box (&shr{α} ty)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val tctx_hasty_val' //.
       unlock. iFrame "Hrcx". iFrame "Hx†". iExists [_]. rewrite heap_mapsto_vec_singleton.
@@ -414,8 +414,8 @@ Section code.
     iIntros (_ ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst.
     rewrite (Nat2Z.id (Σ[ ty; rc ty ]).(ty_size)).
-    iApply (type_cont [] [ϝ ⊑ []]%LL
-                      (λ _, [rcx ◁ box (uninit 1); x ◁ box (Σ[ ty; rc ty ])])%TC) ;
+    iApply (type_cont [] [ϝ ⊑ₗ []]
+                      (λ _, [rcx ◁ box (uninit 1); x ◁ box (Σ[ ty; rc ty ])])) ;
       [solve_typing..| |]; last first.
     { simpl. iAlways. iIntros (k arg). inv_vec arg. simpl_subst.
       iApply type_delete; [solve_typing..|].
@@ -433,7 +433,7 @@ Section code.
       iApply (type_type _ _ _ [ x ◁ own_ptr (ty_size Σ[ ty; rc ty ]) (uninit _);
                                 rcx ◁ box (uninit 1);
                                 #rc' +ₗ #1 ◁ own_ptr (S ty.(ty_size)) ty;
-                                #rc' +ₗ #0 ◁ own_ptr (S ty.(ty_size)) (uninit 1%nat)]%TC
+                                #rc' +ₗ #0 ◁ own_ptr (S ty.(ty_size)) (uninit 1%nat)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
       { unlock. rewrite 3!tctx_interp_cons tctx_interp_singleton.
         rewrite 2!tctx_hasty_val tctx_hasty_val' // tctx_hasty_val' //.
@@ -451,7 +451,7 @@ Section code.
       wp_if. iMod ("Hclose" with "[> $Hrc● $Hrc $Hna]") as "Hna"; first by eauto.
       iApply (type_type _ _ _ [ x ◁ own_ptr (ty_size Σ[ ty; rc ty ]) (uninit _);
                                 rcx ◁ box (uninit 1);
-                                #rc' ◁ rc ty ]%TC
+                                #rc' ◁ rc ty ]
         with "[] LFT HE Hna HL Hk [-]"); last first.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton.
         rewrite !tctx_hasty_val tctx_hasty_val' //. unlock. iFrame.
@@ -485,8 +485,8 @@ Section code.
     iIntros (_ ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst.
     rewrite (Nat2Z.id (option ty).(ty_size)).
-    iApply (type_cont [] [ϝ ⊑ []]%LL
-                      (λ _, [rcx ◁ box (uninit 1); x ◁ box (option ty)])%TC);
+    iApply (type_cont [] [ϝ ⊑ₗ []]
+                      (λ _, [rcx ◁ box (uninit 1); x ◁ box (option ty)]));
       [solve_typing..| |]; last first.
     { simpl. iAlways. iIntros (k arg). inv_vec arg. simpl_subst.
       iApply type_delete; [solve_typing..|].
@@ -505,7 +505,7 @@ Section code.
       iApply (type_type _ _ _ [ x ◁ own_ptr (ty_size (option ty)) (uninit _);
                                 rcx ◁ box (uninit 1);
                                 #rc' +ₗ #1 ◁ own_ptr (S ty.(ty_size)) ty;
-                                #rc' +ₗ #0 ◁ own_ptr (S ty.(ty_size)) (uninit 1%nat)]%TC
+                                #rc' +ₗ #0 ◁ own_ptr (S ty.(ty_size)) (uninit 1%nat)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
       { unlock. rewrite 3!tctx_interp_cons tctx_interp_singleton.
         rewrite 2!tctx_hasty_val tctx_hasty_val' // tctx_hasty_val' //.
@@ -529,7 +529,7 @@ Section code.
         rewrite Pos2Z.inj_sub //. iFrame "Hrc". iRight. iExists _.
         auto with iFrame. }
       iApply (type_type _ _ _ [ x ◁ own_ptr (ty_size (option ty)) (uninit _);
-                                rcx ◁ box (uninit 1)]%TC
+                                rcx ◁ box (uninit 1)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
       { rewrite tctx_interp_cons tctx_interp_singleton.
         rewrite !tctx_hasty_val. unlock. iFrame. }
@@ -559,8 +559,8 @@ Section code.
     intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst. rewrite (Nat2Z.id 2%nat).
-    iApply (type_cont [] [ϝ ⊑ []]%LL
-                      (λ r, [rcx ◁ box (uninit 1); x ◁ box (option $ &uniq{α} ty)])%TC);
+    iApply (type_cont [] [ϝ ⊑ₗ []]
+                      (λ r, [rcx ◁ box (uninit 1); x ◁ box (option $ &uniq{α} ty)]));
       [solve_typing..| |]; last first.
     { simpl. iAlways. iIntros (k arg). inv_vec arg. simpl_subst.
       iApply type_delete; [solve_typing..|].
@@ -588,7 +588,7 @@ Section code.
       iMod ("Hclose1" with "Hα HL") as "HL".
       iApply (type_type _ _ _ [ x ◁ box (uninit 2);
                                  #l +ₗ #1 ◁ &uniq{α} ty;
-                                rcx ◁ box (uninit 1)]%TC
+                                rcx ◁ box (uninit 1)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val tctx_hasty_val' //.
         unlock. iFrame. }
@@ -605,7 +605,7 @@ Section code.
         iRight. iExists _, _, _, _. iFrame "#∗". }
       iMod ("Hclose1" with "Hα HL") as "HL".
       iApply (type_type _ _ _ [ x ◁ box (uninit 2);
-                                rcx ◁ box (uninit 1)]%TC
+                                rcx ◁ box (uninit 1)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
       { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
         unlock. iFrame. }

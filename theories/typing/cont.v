@@ -13,7 +13,7 @@ Section typing.
          args = of_val <$> argsv, only because then solve_typing
          is able to prove it easily. *)
     Forall2 (λ a av, to_val a = Some av ∨ a = of_val av) args argsv →
-    (k ◁cont(L, T'))%CC ∈ C →
+    k ◁cont(L, T') ∈ C →
     tctx_incl E L T (T' (list_to_vec argsv)) →
     typed_body E L C T (k args).
   Proof.
