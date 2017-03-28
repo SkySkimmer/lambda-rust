@@ -120,7 +120,7 @@ Arguments fn_params {_ _} _.
    printing. Once on 8.6pl1, this should work.  *)
 Notation "'fn(∀' x .. x' ',' E ';' T1 ',' .. ',' TN ')' '→' R" :=
   (fn (λ x, (.. (λ x',
-      FP_wf E%EL (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..)%T R%T)..)))
+      FP_wf E%EL (Vector.cons T1%T .. (Vector.cons TN%T Vector.nil) ..) R%T)..)))
   (at level 99, R at level 200, x binder, x' binder,
    format "'fn(∀'  x .. x' ','  E ';'  T1 ','  .. ','  TN ')'  '→'  R") : lrust_type_scope.
 Notation "'fn(∀' x .. x' ',' E ')' '→' R" :=
@@ -128,7 +128,7 @@ Notation "'fn(∀' x .. x' ',' E ')' '→' R" :=
   (at level 99, R at level 200, x binder, x' binder,
    format "'fn(∀'  x .. x' ','  E ')'  '→'  R") : lrust_type_scope.
 Notation "'fn(' E ';' T1 ',' .. ',' TN ')' '→' R" :=
-  (fn (λ _:(), FP_wf E%EL (Vector.cons T1 .. (Vector.cons TN Vector.nil) ..) R%T))
+  (fn (λ _:(), FP_wf E%EL (Vector.cons T1%T .. (Vector.cons TN%T Vector.nil) ..) R%T))
   (at level 99, R at level 200,
    format "'fn(' E ';'  T1 ','  .. ','  TN ')'  '→'  R") : lrust_type_scope.
 Notation "'fn(' E ')' '→' R" :=

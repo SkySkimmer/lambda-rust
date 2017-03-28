@@ -259,7 +259,7 @@ Section code.
   Lemma rc_new_type ty `{!TyWf ty} :
     typed_val (rc_new ty) (fn(∅; ty) → rc ty).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (rcbox); simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (rc); simpl_subst.
@@ -298,7 +298,7 @@ Section code.
   Lemma rc_clone_type ty `{!TyWf ty} :
     typed_val rc_clone (fn(∀ α, ∅; &shr{α} rc ty) → rc ty).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (rc2); simpl_subst.
     rewrite (Nat2Z.id 1). (* Having to do this is rather annoying... *) 
@@ -359,7 +359,7 @@ Section code.
   Lemma rc_deref_type ty `{!TyWf ty} :
     typed_val rc_deref (fn(∀ α, ∅; &shr{α} rc ty) → &shr{α} ty).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst. rewrite (Nat2Z.id 1).
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
@@ -410,7 +410,7 @@ Section code.
     typed_val (rc_try_unwrap ty) (fn(∅; rc ty) → Σ[ ty; rc ty ]).
   Proof.
     (* TODO: There is a *lot* of duplication between this proof and the one for drop. *)
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
     iIntros (_ ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst.
     rewrite (Nat2Z.id (Σ[ ty; rc ty ]).(ty_size)).
@@ -481,7 +481,7 @@ Section code.
   Lemma rc_drop_type ty `{!TyWf ty} :
     typed_val (rc_drop ty) (fn(∅; rc ty) → option ty).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
     iIntros (_ ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst.
     rewrite (Nat2Z.id (option ty).(ty_size)).
@@ -556,7 +556,7 @@ Section code.
   Lemma rc_get_mut_type ty `{!TyWf ty} :
     typed_val rc_get_mut (fn(∀ α, ∅; &uniq{α} rc ty) → option (&uniq{α} ty)).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst. rewrite (Nat2Z.id 2%nat).
     iApply (type_cont [] [ϝ ⊑ₗ []]

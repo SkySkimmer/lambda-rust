@@ -22,7 +22,7 @@ Section refmut_functions.
     typed_val refmut_deref (fn (fun '(α, β) =>
        FP_wf ∅ [# &shr{α}(refmut β ty)]%T (&shr{α}ty))).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
@@ -65,7 +65,7 @@ Section refmut_functions.
     typed_val refmut_derefmut (fn (fun '(α, β) =>
       FP_wf ∅ [# &uniq{α}(refmut β ty)]%T (&uniq{α}ty)%T)).
    Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
@@ -118,7 +118,7 @@ Section refmut_functions.
   Lemma refmut_drop_type ty `{!TyWf ty} :
     typed_val refmut_drop (fn(∀ α, ∅; refmut α ty) → unit).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iIntros (tid) "#LFT #HE Hna HL Hk Hx". rewrite tctx_interp_singleton tctx_hasty_val.
     destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
@@ -174,7 +174,7 @@ Section refmut_functions.
             fn(∀ α, ∅; envty, &uniq{α} ty1) → &uniq{α} ty2, envty)
        → refmut β ty2).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ϝ ret arg).
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ϝ ret arg).
        inv_vec arg=>ref f env. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (f'). simpl_subst.
     iApply (type_newlft [ϝ]). iIntros (κ tid) "#LFT #HE Hna HL Hk (Hf & #Hf' & Href & Henv)".
@@ -196,7 +196,7 @@ Section refmut_functions.
     iAssert (κ ⊑ α ⊓ ν)%I with "[>Hb]" as "#Hκν".
     { iApply (lft_incl_glb with "Hκα"). iApply (frac_bor_lft_incl with "LFT").
       iApply (bor_fracture with "LFT [> -]"); first done. rewrite /= Qp_mult_1_r //. }
-    iApply (type_type ((κ ⊑ₑ α ⊓ ν) :: (α ⊓ ν ⊑ₑ α) :: _)%EL _
+    iApply (type_type ((κ ⊑ₑ α ⊓ ν) :: (α ⊓ ν ⊑ₑ α) :: _) _
         [k ◁cont(_, λ x:vec val 1, [ x!!!0 ◁ box (&uniq{α ⊓ ν}ty2)])]
         [ f' ◁ fn(∀ α, ∅; envty, &uniq{α}ty1) → &uniq{α}ty2;
           #lx ◁ box (&uniq{α ⊓ ν}ty1); env ◁ box envty ]

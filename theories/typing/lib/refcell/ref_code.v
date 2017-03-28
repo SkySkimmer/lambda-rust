@@ -58,7 +58,7 @@ Section ref_functions.
     typed_val ref_clone (fn (fun '(α, β) =>
                 FP_wf ∅ [# &shr{α}(ref β ty)]%T (ref β ty)%T)).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
@@ -120,7 +120,7 @@ Section ref_functions.
     typed_val ref_deref
       (fn (fun '(α, β) => FP_wf ∅ [# &shr{α}(ref β ty)]%T (&shr{α}ty)%T)).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
@@ -156,7 +156,7 @@ Section ref_functions.
   Lemma ref_drop_type ty `{!TyWf ty} :
     typed_val ref_drop (fn(∀ α, ∅; ref α ty) → unit).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iIntros (tid) "#LFT #HE Hna HL Hk Hx". rewrite tctx_interp_singleton tctx_hasty_val.
     destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
@@ -221,7 +221,7 @@ Section ref_functions.
       (fn(∀ β, ∅; ref β ty1, fn(∀ α, ∅; envty, &shr{α}ty1) → &shr{α}ty2, envty)
        → ref β ty2).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ϝ ret arg).
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ϝ ret arg).
        inv_vec arg=>ref f env. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (f'). simpl_subst.
     iApply (type_newlft [ϝ]). iIntros (κ tid) "#LFT #HE Hna HL Hk (Hf & #Hf' & Href & Henv)".

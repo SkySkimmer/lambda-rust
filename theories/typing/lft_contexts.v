@@ -32,7 +32,6 @@ Section lft_contexts.
 
   Definition elctx_interp (E : elctx) : iProp Σ :=
     ([∗ list] x ∈ E, elctx_elt_interp x)%I.
-  Global Arguments elctx_interp _%EL.
   Global Instance elctx_interp_permut :
     Proper ((≡ₚ) ==> (⊣⊢)) elctx_interp.
   Proof. intros ???. by apply big_opL_permutation. Qed.

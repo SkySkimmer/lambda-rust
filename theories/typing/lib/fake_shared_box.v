@@ -11,9 +11,9 @@ Section fake_shared_box.
 
   Lemma fake_shared_box_type ty `{!TyWf ty} :
     typed_val fake_shared_box
-      (fn (fun '(α, β) => FP_wf ∅ [# &shr{α}(&shr{β} ty)] (&shr{α}box ty))).
+      (fn(∀ '(α, β), ∅; &shr{α} &shr{β} ty) → &shr{α} box ty).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iIntros (tid) "#LFT #HE Hna HL Hk HT".
     rewrite tctx_interp_singleton tctx_hasty_val.

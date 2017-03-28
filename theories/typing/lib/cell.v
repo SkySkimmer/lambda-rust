@@ -90,7 +90,7 @@ Section typing.
 
   Lemma cell_new_type ty `{!TyWf ty} : typed_val cell_new (fn(∅; ty) → cell ty).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_jump; [solve_typing..|].
     iIntros (??) "#LFT _ $ Hty". rewrite !tctx_interp_singleton /=. done.
@@ -102,7 +102,7 @@ Section typing.
   Lemma cell_into_inner_type ty `{!TyWf ty} :
     typed_val cell_into_inner (fn(∅; cell ty) → ty).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_jump; [solve_typing..|].
     iIntros (??) "#LFT _ $ Hty". rewrite !tctx_interp_singleton /=. done.
@@ -114,7 +114,7 @@ Section typing.
   Lemma cell_get_mut_type ty `{!TyWf ty} :
     typed_val cell_get_mut (fn(∀ α, ∅; &uniq{α} (cell ty)) → &uniq{α} ty).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_jump; [solve_typing..|]. rewrite /tctx_incl /=.
     iIntros (??) "_ _ $". rewrite !tctx_interp_singleton /tctx_elt_interp /=.
@@ -131,7 +131,7 @@ Section typing.
   Lemma cell_get_type ty `{!TyWf ty} `(!Copy ty) :
     typed_val (cell_get ty) (fn(∀ α, ∅; &shr{α} (cell ty)) → ty).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
     iApply type_letalloc_n; [solve_typing| |iIntros (r); simpl_subst].
@@ -151,7 +151,7 @@ Section typing.
   Lemma cell_replace_type ty `{!TyWf ty} :
     typed_val (cell_replace ty) (fn(∀ α, ∅; &shr{α} cell ty, ty) → ty).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>c x. simpl_subst.
     iApply type_deref; [solve_typing..|].
     iIntros (c'); simpl_subst.

@@ -22,7 +22,7 @@ Section refcell_functions.
   Lemma refcell_new_type ty `{!TyWf ty} :
     typed_val (refcell_new ty) (fn(∅; ty) → refcell ty).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_new; [solve_typing..|].
     iIntros (r tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
@@ -57,7 +57,7 @@ Section refcell_functions.
   Lemma refcell_into_inner_type ty `{!TyWf ty} :
     typed_val (refcell_into_inner ty) (fn(∅; refcell ty) → ty).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_new; [solve_typing..|].
     iIntros (r tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
@@ -92,7 +92,7 @@ Section refcell_functions.
     typed_val refcell_get_mut
               (fn(∀ α, ∅; &uniq{α} (refcell ty)) → &uniq{α} ty)%T.
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
     iIntros (tid) "#LFT #HE Hna HL HC HT".
@@ -143,7 +143,7 @@ Section refcell_functions.
     typed_val refcell_try_borrow
       (fn(∀ α, ∅; &shr{α}(refcell ty)) → option (ref α ty)).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply (type_cont [] [ϝ ⊑ₗ []] (λ _, [x ◁ box (&shr{α} refcell ty);
@@ -250,7 +250,7 @@ Section refcell_functions.
     typed_val refcell_try_borrow_mut
               (fn(∀ α, ∅; &shr{α}(refcell ty)) → option (refmut α ty))%T.
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply (type_cont [] [ϝ ⊑ₗ []] (λ _, [x ◁ box (&shr{α} refcell ty);

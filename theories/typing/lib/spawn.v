@@ -73,9 +73,9 @@ Section spawn.
   Lemma spawn_type envty retty `{!TyWf envty, !TyWf retty}
         `(!Send envty, !Send retty) :
     let E ϝ := envty.(ty_outlives_E) static ++ retty.(ty_outlives_E) static in
-    typed_val spawn (fn(E; fn(∅; envty) → retty, envty) → join_handle retty).
-  Proof. (* FIXME: typed_instruction_ty is not used for printing. *)
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    typed_val spawn (fn(E; (fn(∅; envty) → retty), envty) → join_handle retty).
+  Proof.
+    intros ? E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>f env. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (f'). simpl_subst.
     iApply (type_let _ _ _ _ ([f' ◁ _; env ◁ _])
@@ -120,7 +120,7 @@ Section spawn.
   Lemma join_type retty `{!TyWf retty} :
     typed_val join (fn(∅; join_handle retty) → retty).
   Proof.
-    intros. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>c. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (c'); simpl_subst.
     iApply (type_let _ _ _ _ ([c' ◁ _])
