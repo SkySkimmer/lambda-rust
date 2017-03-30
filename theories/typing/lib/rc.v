@@ -2,7 +2,7 @@ From Coq.QArith Require Import Qcanon.
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import auth csum frac agree.
 From iris.base_logic Require Import big_op.
-From lrust.lang Require Import memcpy.
+From lrust.lang.lib Require Import memcpy.
 From lrust.lifetime Require Import na_borrow.
 From lrust.typing Require Export type.
 From lrust.typing Require Import typing option.

@@ -1,6 +1,6 @@
 From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
-From lrust.lang Require Import memcpy.
+From lrust.lang.lib Require Import memcpy.
 From lrust.lifetime Require Import na_borrow.
 From lrust.typing Require Export type.
 From lrust.typing Require Import typing.

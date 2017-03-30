@@ -17,13 +17,13 @@ theories/lang/adequacy.v
 theories/lang/heap.v
 theories/lang/lang.v
 theories/lang/lifting.v
-theories/lang/memcpy.v
-theories/lang/new_delete.v
 theories/lang/notation.v
 theories/lang/proofmode.v
 theories/lang/races.v
 theories/lang/tactics.v
-theories/lang/spawn.v
+theories/lang/lib/memcpy.v
+theories/lang/lib/new_delete.v
+theories/lang/lib/spawn.v
 theories/typing/base.v
 theories/typing/type.v
 theories/typing/util.v
