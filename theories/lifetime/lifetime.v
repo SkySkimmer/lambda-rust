@@ -51,7 +51,8 @@ Lemma bor_or E κ P Q :
   lft_ctx -∗ &{κ}(P ∨ Q) ={E}=∗ (&{κ}P ∨ &{κ}Q).
 Proof.
   iIntros (?) "#LFT H". rewrite uPred.or_alt.
-  iMod (bor_exists with "LFT H") as ([]) "H"; auto.
+  (* The (A:=...) is needed due to Coq bug #5458 *)
+  iMod (bor_exists (A:=bool) with "LFT H") as ([]) "H"; auto.
 Qed.
 
 Lemma bor_later E κ P :

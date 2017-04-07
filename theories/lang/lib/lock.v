@@ -61,12 +61,8 @@ Section proof.
     wp_seq. wp_alloc l vl as "Hl" "H†". inv_vec vl=>x.
     rewrite heap_mapsto_vec_singleton. (* FIXME shouldn't this also compute now, like bigops do? *)
     wp_let. wp_write.
-    iMod (newlock_inplace with "[HR] Hl") as (γ) "?".
-    { (* FIXME: Can we make it so that we can just say "HR" instead of "[HR]", and the
-         later does not matter? Or at least, "$HR" should work.  Why can't we frame
-         below later? *)
-      done. }
-    iApply "HΦ". done.
+    iMod (newlock_inplace with "HR Hl") as (γ) "?".
+    by iApply "HΦ".
   Qed.
 
   Lemma try_acquire_spec γ l R :
