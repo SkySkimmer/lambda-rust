@@ -12,6 +12,7 @@ Coercion Var : string >-> expr.
 Coercion BNamed : string >-> binder.
 Notation "<>" := BAnon : lrust_binder_scope.
 
+Notation "[ ]" := (@nil expr) : expr_scope.
 Notation "[ x ]" := (@cons expr x%E (@nil expr)) : expr_scope.
 Notation "[ x1 ; x2 ; .. ; xn ]" :=
   (@cons expr x1%E (@cons expr x2%E

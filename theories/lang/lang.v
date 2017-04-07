@@ -20,6 +20,7 @@ Inductive binder := BAnon | BNamed : string → binder.
 Delimit Scope lrust_binder_scope with RustB.
 Bind Scope lrust_binder_scope with binder.
 
+Notation "[ ]" := (@nil binder) : lrust_binder_scope.
 Notation "a :: b" := (@cons binder a%RustB b%RustB)
   (at level 60, right associativity) : lrust_binder_scope.
 Notation "[ x1 ; x2 ; .. ; xn ]" :=

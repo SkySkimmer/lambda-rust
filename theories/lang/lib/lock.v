@@ -2,8 +2,7 @@ From iris.program_logic Require Import weakestpre.
 From iris.base_logic.lib Require Import invariants.
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import excl.
-From lrust.lang Require Import proofmode notation.
-From lrust.lang Require Export lang.
+From lrust.lang Require Import lang proofmode notation.
 Set Default Proof Using "Type".
 
 Definition newlock : val := λ: [], let: "l" := Alloc #1 in "l" <- #false ;; "l".
@@ -54,14 +53,12 @@ Section proof.
     { iNext. iExists false. by iFrame. }
     eauto.
   Qed.
-    
 
   Lemma newlock_spec (R : iProp Σ) :
     {{{ ▷ R }}} newlock [] {{{ l γ, RET #l; is_lock γ l R }}}.
   Proof.
-    iIntros (Φ) "HR HΦ". rewrite -wp_fupd /newlock /=.
+    iIntros (Φ) "HR HΦ". iApply wp_fupd.
     wp_seq. wp_alloc l vl as "Hl" "H†". inv_vec vl=>x.
-    (* FIXME: Something is wrong with the printing of the expression here *)
     rewrite heap_mapsto_vec_singleton. (* FIXME shouldn't this also compute now, like bigops do? *)
     wp_let. wp_write.
     iMod (newlock_inplace with "[HR] Hl") as (γ) "?".
