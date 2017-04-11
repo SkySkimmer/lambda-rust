@@ -28,15 +28,12 @@ Section proof.
     (∃ b : bool, l ↦ #b ∗ if b then True else own γ (Excl ()) ∗ R)%I.
 
   Definition is_lock (γ : lockname) (l : loc) (R : iProp Σ) : iProp Σ :=
-    (cinv N (γ.1) (lock_inv (γ.2) l R))%I.
+    cinv N (γ.1) (lock_inv (γ.2) l R).
 
   Definition own_lock (γ : lockname) : frac → iProp Σ :=
     cinv_own (γ.1).
 
   Definition locked (γ : lockname): iProp Σ := own (γ.2) (Excl ()).
-
-  Lemma locked_exclusive (γ : lockname) : locked γ -∗ locked γ -∗ False.
-  Proof. iIntros "H1 H2". by iDestruct (own_valid_2 with "H1 H2") as %?. Qed.
 
   Global Instance lock_inv_ne γ l : NonExpansive (lock_inv γ l).
   Proof. solve_proper. Qed.
@@ -49,6 +46,18 @@ Section proof.
   Proof. apply _. Qed.
   Global Instance locked_timeless γ : TimelessP (locked γ).
   Proof. apply _. Qed.
+
+  Lemma locked_exclusive (γ : lockname) : locked γ -∗ locked γ -∗ False.
+  Proof. iIntros "H1 H2". by iDestruct (own_valid_2 with "H1 H2") as %?. Qed.
+
+  Lemma is_lock_iff γ l R R' :
+    □ ▷ (R ↔ R') -∗ is_lock γ l R -∗ is_lock γ l R'.
+  Proof.
+    iIntros "#HRR' Hlck". iApply cinv_iff; last done. iNext. iAlways.
+    iSplit; iIntros "Hinv"; iDestruct "Hinv" as (b) "[Hl HR]"; iExists b;
+      iFrame "Hl"; (destruct b; first done); iDestruct "HR" as "[$ HR]";
+      by iApply "HRR'".
+  Qed.
 
   (** The main proofs. *)
   Lemma newlock_inplace (E : coPset) (R : iProp Σ) l (b : bool) :
