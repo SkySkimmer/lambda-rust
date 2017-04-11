@@ -182,8 +182,11 @@ Proof.
 Qed.
 
 (** The stepping relation *)
+Definition Z_of_bool (b : bool) : Z :=
+  if b then 1 else 0.
+
 Definition lit_of_bool (b : bool) : base_lit :=
-  LitInt (if b then 1 else 0).
+  LitInt $ Z_of_bool b.
 
 Definition shift_loc (l : loc) (z : Z) : loc := (l.1, l.2 + z).
 

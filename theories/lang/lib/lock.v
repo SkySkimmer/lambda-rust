@@ -40,22 +40,24 @@ Section proof.
 
   Global Instance lock_inv_ne γ l : NonExpansive (lock_inv γ l).
   Proof. solve_proper. Qed.
-  Global Instance is_lock_ne l : NonExpansive (is_lock γ l).
-  Proof. solve_proper. Qed.
+  Global Instance is_lock_contractive γ l : Contractive (is_lock γ l).
+  Proof. solve_contractive. Qed.
+  Global Instance is_lock_ne γ l : NonExpansive (is_lock γ l).
+  Proof. exact: contractive_ne. Qed.
 
-  (** The main proofs. *)
   Global Instance is_lock_persistent γ l R : PersistentP (is_lock γ l R).
   Proof. apply _. Qed.
   Global Instance locked_timeless γ : TimelessP (locked γ).
   Proof. apply _. Qed.
 
-  Lemma newlock_inplace (E : coPset) (R : iProp Σ) l :
-    ▷ R -∗ l ↦ #false ={E}=∗ ∃ γ, is_lock γ l R ∗ own_lock γ 1%Qp.
+  (** The main proofs. *)
+  Lemma newlock_inplace (E : coPset) (R : iProp Σ) l (b : bool) :
+    l ↦ #b -∗ (if b then True else ▷ R) ={E}=∗ ∃ γ, is_lock γ l R ∗ own_lock γ 1%Qp.
   Proof.
-    iIntros "HR Hl".
+    iIntros "Hl HR".
     iMod (own_alloc (Excl ())) as (γ) "Hγ"; first done.
     iMod (cinv_alloc _ N (lock_inv γ l R) with "[-]") as (γ') "Hlock".
-    { iNext. iExists false. by iFrame. }
+    { iExists b. destruct b; by iFrame. }
     iModIntro. iExists (_, _). eauto.
   Qed.
 
@@ -65,18 +67,18 @@ Section proof.
     iIntros (Φ) "HR HΦ". iApply wp_fupd.
     wp_seq. wp_alloc l vl as "Hl" "H†". inv_vec vl=>x.
     rewrite heap_mapsto_vec_singleton. (* FIXME shouldn't this also compute now, like bigops do? *)
-    wp_let. wp_write.
-    iMod (newlock_inplace with "HR Hl") as (γ) "?".
+    wp_let. wp_write. iMod (newlock_inplace with "Hl HR") as (γ) "?".
     by iApply "HΦ".
   Qed.
 
   Lemma destroy_lock E γ l R :
     ↑N ⊆ E → 
-    is_lock γ l R -∗ own_lock γ 1%Qp ={E}=∗ ∃ (b : bool), l ↦ #b.
+    is_lock γ l R -∗ own_lock γ 1%Qp ={E}=∗ ∃ (b : bool), l ↦ #b ∗ if b then True else ▷ R.
   Proof.
     iIntros (?) "#Hinv Hown".
-    iMod (cinv_cancel with "Hinv Hown") as (b) "[>Hl _]"; first done.
-    eauto.
+    iMod (cinv_cancel with "Hinv Hown") as (b) "[>Hl HR]"; first done.
+    iExists b. destruct b; first by eauto.
+    iDestruct "HR" as "[_ $]". done.
   Qed.
 
   Lemma try_acquire_spec γ l R q :
