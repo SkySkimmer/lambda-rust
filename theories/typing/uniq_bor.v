@@ -14,12 +14,12 @@ Section uniq_bor.
          match vl return _ with
          | [ #(LitLoc l) ] => &{κ} l ↦∗: ty.(ty_own) tid
          | _ => False
-         end%I;
+         end;
        ty_shr κ' tid l :=
-         (∃ l':loc, &frac{κ'}(λ q', l ↦{q'} #l') ∗
-            □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ⊓κ']
-                ={F, F∖↑shrN∖↑lftN}▷=∗ ty.(ty_shr) (κ⊓κ') tid l' ∗ q.[κ⊓κ'])%I
-    |}.
+         ∃ l':loc, &frac{κ'}(λ q', l ↦{q'} #l') ∗
+           □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ⊓κ']
+               ={F, F∖↑shrN∖↑lftN}▷=∗ ty.(ty_shr) (κ⊓κ') tid l' ∗ q.[κ⊓κ']
+    |}%I.
   Next Obligation. by iIntros (q ty tid [|[[]|][]]) "H". Qed.
   Next Obligation.
     move=> κ ty N κ' l tid ??/=. iIntros "#LFT Hshr Htok".

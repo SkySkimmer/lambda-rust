@@ -56,7 +56,7 @@ Section rc.
                      q.[ν] ∗ □ (1.[ν] ={↑lftN,∅}▷=∗ [†ν]))
          | _ => False end;
        ty_shr κ tid l :=
-         ∃ (l' : loc), &frac{κ} (λ q, l ↦∗{q} [ #l']) ∗
+         ∃ (l' : loc), &frac{κ} (λ q, l ↦{q} #l') ∗
            □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ]
              ={F, F∖↑shrN}▷=∗ q.[κ] ∗ ∃ γ ν q' ty', κ ⊑ ν ∗
                 ▷ type_incl ty' ty ∗
@@ -74,6 +74,7 @@ Section rc.
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦"; first done.
     destruct vl as [|[[|l'|]|][|]];
       try by iMod (bor_persistent_tok with "LFT Hb Htok") as "[>[] _]".
+    setoid_rewrite heap_mapsto_vec_singleton.
     iFrame "Htok". iExists _. iFrame "#". rewrite bor_unfold_idx.
     iDestruct "Hb" as (i) "(#Hpb&Hpbown)".
     set (C := (∃ _ _ _ _, _ ∗ _ ∗ _ ∗ &na{_,_,_} _ ∗ _)%I).
@@ -310,7 +311,7 @@ Section code.
     wp_bind (!_)%E.
     iSpecialize ("Hshr" with "[] Hα1"); last iApply (wp_step_fupd with "Hshr"); [done..|].
     iMod (frac_bor_acc with "LFT Hlrc Hα2") as (q') "[Hlrc↦ Hclose]"; first solve_ndisj.
-    rewrite heap_mapsto_vec_singleton. iApply wp_fupd. wp_read.
+    iApply wp_fupd. wp_read.
     iMod ("Hclose" with "[$Hlrc↦]") as "Hα2". iIntros "!> [Hα1 Hproto]".
     iDestruct "Hproto" as (γ ν q'' ty') "(#Hincl & #Hty & #Hinv & #Hrctokb & #Hshr)". iModIntro.
     wp_let. wp_op. rewrite shift_loc_0.
@@ -371,7 +372,7 @@ Section code.
     wp_bind (!_)%E.
     iSpecialize ("Hdelay" with "[] Hα1"); last iApply (wp_step_fupd with "Hdelay"); [done..|].
     iMod (frac_bor_acc with "LFT Hrc' Hα2") as (q') "[Hrc'↦ Hclose2]"; first solve_ndisj.
-    rewrite heap_mapsto_vec_singleton. iApply wp_fupd. wp_read.
+    iApply wp_fupd. wp_read.
     iMod ("Hclose2" with "[$Hrc'↦]") as "Hα2". iIntros "!> [Hα1 Hproto]".
     iDestruct "Hproto" as (γ ν q'' ty') "(#? & #? & #Hinv & #Hrctokb & #Hshr)". iModIntro.
     wp_op. wp_write.
