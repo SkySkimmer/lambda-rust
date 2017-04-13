@@ -46,7 +46,7 @@ Section proof.
 
   (** The main proofs. *)
   Lemma lock_proto_create (E : coPset) (R : iProp Σ) l (b : bool) :
-    l ↦ #b -∗ (if b then True else R) ={E}=∗ ∃ γ, lock_proto γ l R.
+    l ↦ #b -∗ (if b then True else ▷ R) ={E}=∗ ∃ γ, ▷ lock_proto γ l R.
   Proof.
     iIntros "Hl HR".
     iMod (own_alloc (Excl ())) as (γ) "Hγ"; first done.
@@ -55,9 +55,9 @@ Section proof.
 
   Lemma lock_proto_destroy E γ l R :
     ↑N ⊆ E → 
-    lock_proto γ l R ={E}=∗ ∃ (b : bool), l ↦ #b ∗ if b then True else R.
+    ▷ lock_proto γ l R ={E}=∗ ∃ (b : bool), l ↦ #b ∗ if b then True else ▷ R.
   Proof.
-    iIntros (?) "Hlck". iDestruct "Hlck" as (b) "[Hl HR]".
+    iIntros (?) "Hlck". iDestruct "Hlck" as (b) "[>Hl HR]".
     iExists b. iFrame "Hl". destruct b; first done.
     iDestruct "HR" as "[_ $]". done.
   Qed.
@@ -65,9 +65,9 @@ Section proof.
   (* At this point, it'd be really nice to have some sugar for symmetric
      accessors. *)
   Lemma try_acquire_spec E γ l R P :
-    □ (P ={E,∅}=∗ lock_proto γ l R ∗ (lock_proto γ l R ={∅,E}=∗ P)) -∗
+    □ (P ={E,∅}=∗ ▷ lock_proto γ l R ∗ (▷ lock_proto γ l R ={∅,E}=∗ P)) -∗
     {{{ P }}} try_acquire [ #l ] @ E
-    {{{ b, RET #b; (if b is true then locked γ ∗ R else True) ∗ P }}}.
+    {{{ b, RET #b; (if b is true then locked γ ∗ ▷ R else True) ∗ P }}}.
   Proof.
     iIntros "#Hproto !# * HP HΦ".
     wp_rec. iMod ("Hproto" with "HP") as "(Hinv & Hclose)".
@@ -82,8 +82,8 @@ Section proof.
   Qed.
 
   Lemma acquire_spec E γ l R P :
-    □ (P ={E,∅}=∗ lock_proto γ l R ∗ (lock_proto γ l R ={∅,E}=∗ P)) -∗
-    {{{ P }}} acquire [ #l ] @ E {{{ RET #(); locked γ ∗ R ∗ P }}}.
+    □ (P ={E,∅}=∗ ▷ lock_proto γ l R ∗ (▷ lock_proto γ l R ={∅,E}=∗ P)) -∗
+    {{{ P }}} acquire [ #l ] @ E {{{ RET #(); locked γ ∗ ▷ R ∗ P }}}.
   Proof.
     iIntros "#Hproto !# * HP HΦ". iLöb as "IH". wp_rec.
     wp_apply (try_acquire_spec with "Hproto HP"). iIntros ([]).
@@ -92,7 +92,7 @@ Section proof.
   Qed.
 
   Lemma release_spec E γ l R P :
-    □ (P ={E,∅}=∗ lock_proto γ l R ∗ (lock_proto γ l R ={∅,E}=∗ P)) -∗
+    □ (P ={E,∅}=∗ ▷ lock_proto γ l R ∗ (▷ lock_proto γ l R ={∅,E}=∗ P)) -∗
     {{{ locked γ ∗ R ∗ P }}} release [ #l ] @ E {{{ RET #(); P }}}.
   Proof.
     iIntros "#Hproto !# * (Hlocked & HR & HP) HΦ". wp_let.
