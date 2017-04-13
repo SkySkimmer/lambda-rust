@@ -86,13 +86,9 @@ Section proof.
     {{{ P }}} acquire [ #l ] @ E {{{ RET #(); locked γ ∗ R ∗ P }}}.
   Proof.
     iIntros "#Hproto !# * HP HΦ". iLöb as "IH". wp_rec.
-    iPoseProof (try_acquire_spec with "[Hproto] * HP") as "Hacq".
-    { iFrame "Hproto". (* FIXME: Just saying "Hproto" in the pattern above should work. *) }
-    wp_apply "Hacq". (* FIXME: Using `(try_acquire_spec with "[Hproto] * HP")` to avoid the
-                        iPoseProof should work. *)
-    iIntros ([]).
+    wp_apply (try_acquire_spec with "Hproto HP"). iIntros ([]).
     - iIntros "[[Hlked HR] Hown]". wp_if. iApply "HΦ"; iFrame.
-    - iIntros "[_ Hown]". wp_if. iApply ("IH" with "Hown [HΦ]"). auto.
+    - iIntros "[_ Hown]". wp_if. iApply ("IH" with "Hown HΦ").
   Qed.
 
   Lemma release_spec E γ l R P :
