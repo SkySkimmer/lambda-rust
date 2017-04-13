@@ -55,6 +55,12 @@ Proof.
   iMod (bor_exists (A:=bool) with "LFT H") as ([]) "H"; auto.
 Qed.
 
+Lemma bor_iff_proper κ P P': ▷ □ (P ↔ P') -∗ □ (&{κ}P ↔ &{κ}P').
+Proof.
+  iIntros "#HP !#". iSplit; iIntros "?"; iApply bor_iff; try done.
+  iNext. iAlways. iSplit; iIntros "?"; iApply "HP"; done.
+Qed.
+
 Lemma bor_later E κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ}(▷ P) ={E,E∖↑lftN}▷=∗ &{κ}P.

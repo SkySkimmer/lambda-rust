@@ -53,6 +53,7 @@ theories/typing/lib/fake_shared_box.v
 theories/typing/lib/cell.v
 theories/typing/lib/spawn.v
 theories/typing/lib/rc.v
+theories/typing/lib/mutex.v
 theories/typing/lib/refcell/refcell.v
 theories/typing/lib/refcell/ref.v
 theories/typing/lib/refcell/refmut.v
