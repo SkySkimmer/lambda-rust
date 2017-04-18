@@ -361,6 +361,84 @@ Section code.
     iApply type_jump; solve_typing.
   Qed.
 
+  Definition weak_drop ty : val :=
+    funrec: <> ["w"] :=
+    withcont: "k":
+      let: "w'" := !"w" in
+      let: "weak" := !("w'" +ₗ #1) in
+      if: "weak" = #1 then
+        delete [ #(2 + ty.(ty_size)); "w'" ];;
+        "k" []
+      else
+        "w'" +ₗ #1 <- "weak" - #1;;
+        "k" []
+    cont: "k" [] :=
+      let: "r" := new [ #0] in
+      delete [ #1; "w"];; return: ["r"].
 
-
+  Lemma weak_drop_type ty `{!TyWf ty} :
+    typed_val (weak_drop ty) (fn(∅; weak ty) → unit).
+  Proof.
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    iIntros (_ ϝ ret arg). inv_vec arg=>w. simpl_subst.
+    iApply (type_cont [] [ϝ ⊑ₗ []] (λ _, [w ◁ box (uninit 1)]));
+      [solve_typing..| |]; last first.
+    { simpl. iAlways. iIntros (k arg). inv_vec arg. simpl_subst.
+      iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
+      iApply type_delete; [solve_typing..|].
+      iApply type_jump; solve_typing. }
+    iIntros (k). simpl_subst.
+    iApply type_deref; [solve_typing..|]; iIntros (w'); simpl_subst.
+    iIntros (tid) "#LFT #HE Hna HL Hk [Hw [Hw' _]]".
+    rewrite !tctx_hasty_val [[w]]lock. destruct w' as [[|lw|]|]; try done. wp_op.
+    iDestruct "Hw'" as (γ ν) "[#Hpersist Hwtok]".
+    iAssert (∃ wv : Z, shift_loc lw 1 ↦ #wv ∗
+        ((⌜wv = 1⌝ ∗ na_own tid ⊤ ∗
+          ∃ s, lw ↦ s ∗ (shift_loc lw 2 ↦∗: λ vl, ⌜length vl = ty.(ty_size)⌝) ∗
+               † lw … (2 + ty_size ty)) ∨
+         (⌜wv > 1⌝ ∗ (shift_loc lw 1 ↦ #(wv - 1) ={⊤}=∗ na_own tid ⊤))))%I
+      with "[>Hna Hwtok]" as (wv) "[Hlw [(% & Hna & H)|[% Hclose]]]".
+    { iPoseProof "Hpersist" as (ty') "([>Hszeq _] & Hinv & _ & _)".
+      iDestruct "Hszeq" as %Hszeq.
+      iMod (na_inv_open with "Hinv Hna") as "(Hrcproto & Hna & Hclose)"; [solve_ndisj..|].
+      iDestruct "Hrcproto" as ([st weakc]) "[>Hrc● Hrcst]".
+      iDestruct (own_valid_2 with "Hrc● Hwtok") as
+          %[[_ Hweak%nat_included]%prod_included [Hval _]]%auth_valid_discrete_2.
+      destruct weakc; first by simpl in *; lia.
+      iMod (own_update_2 with "Hrc● Hwtok") as "Hrc●".
+      { apply auth_update_dealloc, prod_local_update_2,
+              (cancel_local_update_empty 1%nat), _. }
+      destruct st as [[[q'' strong]| |]|]; try done.
+      - iExists _. iDestruct "Hrcst" as (q0) "(Hlw & >$ & Hrcst)". iRight.
+        iSplitR; first by auto with lia. iIntros "!>?". iApply "Hclose". iFrame.
+        iExists _. iFrame. iExists _. iFrame. simpl. destruct Pos.of_succ_nat; try done.
+        by rewrite /= Pos.pred_double_succ.
+      - iExists _. iDestruct "Hrcst" as "[Hlw >$]". iRight.
+        iSplitR; first by auto with lia. iIntros "!>?". iApply "Hclose". iFrame.
+        iExists _. iFrame. simpl. destruct Pos.of_succ_nat; try done.
+        by rewrite /= Pos.pred_double_succ.
+      - iExists _. iDestruct "Hrcst" as "(>Hlw & >$ & >H† & >H)". destruct weakc.
+        + iLeft. iSplitR; first done. iMod ("Hclose" with "[$Hna Hrc●]") as "$".
+          { iExists _. iFrame. }
+          rewrite Hszeq. auto with iFrame.
+        + iRight. iSplitR; first by auto with lia. iIntros "!>?". iApply "Hclose".
+          iFrame. iExists _. iFrame. simpl. destruct Pos.of_succ_nat; try done.
+          by rewrite /= Pos.pred_double_succ. }
+    - subst. wp_read. wp_let. wp_op=>[_|//]. wp_if.
+      iApply (type_type _ _ _ [ w ◁ box (uninit 1); #lw ◁ box (uninit (2 + ty.(ty_size))) ]
+              with "[] LFT HE Hna HL Hk [-]"); last first.
+      { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
+        unlock. iFrame. iDestruct "H" as (?) "(? & H↦ & ?)". iDestruct "H↦" as (?) "[? %]".
+        rewrite /= freeable_sz_full_S. iFrame. iExists (_::_::_).
+        rewrite 2!heap_mapsto_vec_cons shift_loc_assoc uninit_own. iFrame.
+        iIntros "!>!%". simpl. congruence. }
+      iApply type_delete; [solve_typing..|].
+      iApply type_jump; solve_typing.
+    - wp_read. wp_let. wp_op=>[|_]; first lia. wp_if. wp_op. wp_op. wp_write.
+      iMod ("Hclose" with "Hlw") as "Hna".
+      iApply (type_type _ _ _ [ w ◁ box (uninit 1) ]
+        with "[] LFT HE Hna HL Hk [-]"); last first.
+      { unlock. by rewrite tctx_interp_singleton tctx_hasty_val. }
+      iApply type_jump; solve_typing.
+  Qed.
 End code.
