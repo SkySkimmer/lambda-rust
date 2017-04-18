@@ -105,5 +105,262 @@ Section weak.
 End weak.
 
 Section code.
+  Context `{!typeG Σ, !rcG Σ}.
+
+  Definition rc_upgrade : val :=
+    funrec: <> ["w"] :=
+      let: "r" := new [ #2 ] in
+    withcont: "k":
+      let: "w'" := !"w" in
+      let: "w''" := !"w'" in
+      let: "strong" := !("w''" +ₗ #0) in
+      if: "strong" = #0 then
+        "r" <-{Σ none} ();;
+        "k" []
+      else
+        "w''" +ₗ #0 <- "strong" + #1;;
+        "r" <-{Σ some} "w''";;
+        "k" []
+    cont: "k" [] :=
+      delete [ #1; "w" ];; return: ["r"].
+
+  Lemma rc_upgrade_type ty `{!TyWf ty} :
+    typed_val rc_upgrade (fn(∀ α, ∅; &shr{α} weak ty) → option (rc ty)).
+  Proof.
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ϝ ret arg). inv_vec arg=>w. simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst.
+    rewrite (Nat2Z.id 2). (* Having to do this is rather annoying... *)
+    iApply (type_cont [] [ϝ ⊑ₗ []]
+                      (λ _, [w ◁ box (&shr{α} weak ty); r ◁ box (option (rc ty))])) ;
+      [solve_typing..| |]; last first.
+    { simpl. iAlways. iIntros (k arg). inv_vec arg. simpl_subst.
+      iApply type_delete; [solve_typing..|].
+      iApply type_jump; solve_typing. }
+    iIntros (k). simpl_subst.
+    iApply type_deref; [solve_typing..|]; iIntros (w'); simpl_subst.
+    iIntros (tid) "#LFT #HE Hna HL Hk [Hw [Hw' [Hr _]]]".
+    rewrite !tctx_hasty_val [[w]]lock.
+    destruct w' as [[|lw|]|]; try done. iDestruct "Hw'" as (l') "[#Hlw #Hshr]".
+    iDestruct (ownptr_uninit_own with "Hr") as (lr vlr) "(% & Hr & Hr†)".
+    subst r. inv_vec vlr=>r0 r1. rewrite !heap_mapsto_vec_cons.
+    iDestruct "Hr" as "(Hr1 & Hr2 & _)".
+    (* All right, we are done preparing our context. Let's get going. *)
+    iMod (lctx_lft_alive_tok α with "HE HL") as (q) "([Hα1 Hα2] & HL & Hclose1)"; [solve_typing..|].
+    wp_bind (!_)%E.
+    iSpecialize ("Hshr" with "[] Hα1"); last iApply (wp_step_fupd with "Hshr"); [done..|].
+    iMod (frac_bor_acc with "LFT Hlw Hα2") as (q') "[Hlw↦ Hclose]"; first solve_ndisj.
+    iApply wp_fupd. wp_read.
+    iMod ("Hclose" with "[$Hlw↦]") as "Hα2". iIntros "!> [Hα1 Hproto]".
+    iDestruct "Hproto" as (γ ν) "#(Hpersist & Hwtokb)".
+    iModIntro. wp_let. wp_op. rewrite shift_loc_0.
+    (* Finally, finally... opening the thread-local Rc protocol. *)
+    iPoseProof "Hpersist" as (ty') "(_ & Hinv & _ & _)".
+    iMod (na_inv_open with "Hinv Hna") as "(Hrcproto & Hna & Hclose2)"; [solve_ndisj..|].
+    iMod (na_bor_acc with "LFT Hwtokb Hα1 Hna") as "(>Hwtok & Hna & Hclose3)"; [solve_ndisj..|].
+    iDestruct "Hrcproto" as ([st weakc]) "[>Hrc● Hrcst]".
+    iDestruct (own_valid_2 with "Hrc● Hwtok") as
+      %[[_ Hweak%nat_included]%prod_included [Hval _]]%auth_valid_discrete_2.
+    destruct st as [[[q'' strong]| |]|]; try done.
+    - (* Success case. *)
+      iDestruct "Hrcst" as (qb) "(Hl'1 & Hl'2 & Hl'† & >Hq''q0 & [Hν1 Hν2] & Hν†)".
+      iDestruct "Hq''q0" as %Hq''q0.
+      wp_read. wp_let. wp_op=>[//|_]. wp_if. wp_op. rewrite shift_loc_0. wp_op. wp_write.
+      (* Closing the invariant. *)
+      iMod (own_update with "Hrc●") as "[Hrc● Hrctok2]".
+      { apply auth_update_alloc, prod_local_update_1,
+        (op_local_update_discrete _ _ (Some (Cinl ((qb/2)%Qp, 1%positive))))=>-[/= Hqa _].
+        split; simpl; last done. apply frac_valid'.
+        rewrite -Hq''q0 comm_L -{2}(Qp_div_2 qb).
+        apply Qcplus_le_mono_l. rewrite -{1}(Qcplus_0_l (_ / _)%Qp).
+        apply Qcplus_le_mono_r, Qp_ge_0. }
+      rewrite right_id -Some_op Cinl_op pair_op.
+      iMod ("Hclose3" with "[$Hwtok] Hna") as "[Hα1 Hna]".
+      iMod ("Hclose2" with "[Hrc● Hl'1 Hl'2 Hl'† Hν2 Hν† $Hna]") as "Hna".
+      { iExists _. iFrame "Hrc●". iExists _. rewrite Z.add_comm. iFrame.
+        rewrite [_ ⋅ _]comm frac_op' -[(_ + _)%Qp]assoc Qp_div_2. auto. }
+      iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
+      (* Finish up the proof. *)
+      iApply (type_type _ _ _ [ w ◁ box (&shr{α} weak ty); #lr ◁ box (uninit 2);
+                                #l' ◁ rc ty ]
+          with "[] LFT HE Hna HL Hk [-]"); last first.
+      { rewrite 2!tctx_interp_cons tctx_interp_singleton tctx_hasty_val !tctx_hasty_val' //.
+        unlock. iFrame "Hr† Hw". iSplitL "Hr1 Hr2".
+        - setoid_rewrite uninit_own. iExists [_;_].
+          rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton. auto with iFrame.
+        - iRight. auto with iFrame. }
+      iApply (type_sum_assign (option (rc ty))); [solve_typing..|].
+      iApply type_jump; solve_typing.
+    - (* Failure : dropping *)
+      (* TODO : The two failure cases are almost identical. *)
+      iDestruct "Hrcst" as "[Hl'1 Hl'2]". wp_read. wp_let. wp_op=>[_|//]. wp_if.
+      (* Closing the invariant. *)
+      iMod ("Hclose3" with "[$Hwtok] Hna") as "[Hα1 Hna]".
+      iMod ("Hclose2" with "[Hrc● Hl'1 Hl'2 $Hna]") as "Hna".
+      { iExists _. auto with iFrame. }
+      iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
+      (* Finish up the proof. *)
+      iApply (type_type _ _ _ [ w ◁ box (&shr{α} weak ty); #lr ◁ box (uninit 2) ]
+          with "[] LFT HE Hna HL Hk [-]"); last first.
+      { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
+        unlock. iFrame. setoid_rewrite uninit_own. iExists [_;_].
+        rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton. auto with iFrame. }
+      iApply (type_sum_unit (option (rc ty))); [solve_typing..|].
+      iApply type_jump; solve_typing.
+    - (* Failure : general case *)
+      destruct weakc as [|weakc]; first by simpl in *; lia.
+      iDestruct "Hrcst" as "[Hl'1 Hrcst]". wp_read. wp_let. wp_op=>[_|//]. wp_if.
+      (* Closing the invariant. *)
+      iMod ("Hclose3" with "[$Hwtok] Hna") as "[Hα1 Hna]".
+      iMod ("Hclose2" with "[Hrc● Hl'1 Hrcst $Hna]") as "Hna".
+      { iExists _. auto with iFrame. }
+      iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
+      (* Finish up the proof. *)
+      iApply (type_type _ _ _ [ w ◁ box (&shr{α} weak ty); #lr ◁ box (uninit 2) ]
+          with "[] LFT HE Hna HL Hk [-]"); last first.
+      { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
+        unlock. iFrame. setoid_rewrite uninit_own. iExists [_;_].
+        rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton. auto with iFrame. }
+      iApply (type_sum_unit (option (rc ty))); [solve_typing..|].
+      iApply type_jump; solve_typing.
+  Qed.
+
+  Definition rc_downgrade : val :=
+    funrec: <> ["rc"] :=
+      let: "r" := new [ #1 ] in
+      let: "rc'" := !"rc" in
+      let: "rc''" := !"rc'" in
+      let: "weak" := !("rc''" +ₗ #1) in
+      "rc''" +ₗ #1 <- "weak" + #1;;
+      "r" <- "rc''";;
+      delete [ #1; "rc" ];; return: ["r"].
+
+  Lemma rc_downgrade_type ty `{!TyWf ty} :
+    typed_val rc_downgrade (fn(∀ α, ∅; &shr{α} rc ty) → weak ty).
+  Proof.
+    (* TODO : this is almost identical to rc_clone *)
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst.
+    rewrite (Nat2Z.id 1). (* Having to do this is rather annoying... *)
+    iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
+    iIntros (tid) "#LFT #HE Hna HL Hk [Hx [Hrc' [Hr _]]]".
+    rewrite !tctx_hasty_val [[x]]lock.
+    destruct rc' as [[|lrc|]|]; try done. iDestruct "Hrc'" as (l') "[#Hlrc #Hshr]".
+    iDestruct (ownptr_uninit_own with "Hr") as (lr vlr) "(% & Hr & Hr†)".
+    subst r. inv_vec vlr=>r. rewrite heap_mapsto_vec_singleton.
+    (* All right, we are done preparing our context. Let's get going. *)
+    iMod (lctx_lft_alive_tok α with "HE HL") as (q) "([Hα1 Hα2] & HL & Hclose1)"; [solve_typing..|].
+    wp_bind (!_)%E.
+    iSpecialize ("Hshr" with "[] Hα1"); last iApply (wp_step_fupd with "Hshr"); [done..|].
+    iMod (frac_bor_acc with "LFT Hlrc Hα2") as (q') "[Hlrc↦ Hclose]"; first solve_ndisj.
+    iApply wp_fupd. wp_read.
+    iMod ("Hclose" with "[$Hlrc↦]") as "Hα2". iIntros "!> [Hα1 Hproto]".
+    iDestruct "Hproto" as (γ ν q'') "#(Hαν & Hpersist & Hrctokb)".
+    iModIntro. wp_let. wp_op.
+    (* Finally, finally... opening the thread-local Rc protocol. *)
+    iPoseProof "Hpersist" as (ty') "(_ & Hinv & _ & _)".
+    iMod (na_inv_open with "Hinv Hna") as "(Hrcproto & Hna & Hclose2)"; [solve_ndisj..|].
+    iMod (na_bor_acc with "LFT Hrctokb Hα1 Hna") as "(>Hrctok & Hna & Hclose3)"; [solve_ndisj..|].
+    iDestruct "Hrcproto" as ([st weakc]) "[>Hrc● Hrcst]".
+    iDestruct (own_valid_2 with "Hrc● Hrctok") as %[[[[=]|(?&[[q0 weak0]| |]&[=<-]&?&Hincl)]
+               %option_included _]%prod_included [Hval _]]%auth_valid_discrete_2;
+    setoid_subst; try done; last first.
+    { exfalso. destruct Hincl as [Hincl|Hincl]. by inversion Hincl.
+      apply csum_included in Hincl. naive_solver. }
+    iDestruct "Hrcst" as (qb) "(Hl'1 & Hl'2 & Hrcst)".
+    wp_read. wp_let. wp_op. wp_op. wp_write. wp_write.
+    (* And closing it again. *)
+    iMod (own_update with "Hrc●") as "[Hrc● Hrctok2]".
+    { by apply auth_update_alloc, prod_local_update_2, (op_local_update_discrete _ _ 1%nat). }
+    iMod ("Hclose3" with "[$Hrctok] Hna") as "[Hα1 Hna]".
+    iMod ("Hclose2" with "[Hrc● Hl'1 Hl'2 Hrcst $Hna]") as "Hna".
+    { iExists _. iFrame "Hrc●". iExists _. rewrite /Z.add Pos.add_1_r. iFrame. }
+    iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
+    (* Finish up the proof. *)
+    iApply (type_type _ _ _ [ x ◁ box (&shr{α} rc ty); #lr ◁ box (weak ty)]
+        with "[] LFT HE Hna HL Hk [-]"); last first.
+    { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
+      unlock. iFrame "Hx". iFrame "Hr†". iExists [_].
+      rewrite heap_mapsto_vec_singleton /=. eauto 10 with iFrame. }
+    iApply type_delete; [solve_typing..|].
+    iApply type_jump; solve_typing.
+  Qed.
+
+  (* Exact same code as downgrade *)
+  Definition weak_clone : val :=
+    funrec: <> ["w"] :=
+      let: "r" := new [ #1 ] in
+      let: "w'" := !"w" in
+      let: "w''" := !"w'" in
+      let: "weak" := !("w''" +ₗ #1) in
+      "w''" +ₗ #1 <- "weak" + #1;;
+      "r" <- "w''";;
+      delete [ #1; "w" ];; return: ["r"].
+
+  Lemma weak_clone_type ty `{!TyWf ty} :
+    typed_val weak_clone (fn(∀ α, ∅; &shr{α} weak ty) → weak ty).
+  Proof.
+    (* TODO : this is almost identical to rc_clone *)
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+    iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst.
+    rewrite (Nat2Z.id 1). (* Having to do this is rather annoying... *)
+    iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
+    iIntros (tid) "#LFT #HE Hna HL Hk [Hx [Hrc' [Hr _]]]".
+    rewrite !tctx_hasty_val [[x]]lock.
+    destruct rc' as [[|lrc|]|]; try done. iDestruct "Hrc'" as (l') "[#Hlrc #Hshr]".
+    iDestruct (ownptr_uninit_own with "Hr") as (lr vlr) "(% & Hr & Hr†)".
+    subst r. inv_vec vlr=>r. rewrite heap_mapsto_vec_singleton.
+    (* All right, we are done preparing our context. Let's get going. *)
+    iMod (lctx_lft_alive_tok α with "HE HL") as (q) "([Hα1 Hα2] & HL & Hclose1)"; [solve_typing..|].
+    wp_bind (!_)%E.
+    iSpecialize ("Hshr" with "[] Hα1"); last iApply (wp_step_fupd with "Hshr"); [done..|].
+    iMod (frac_bor_acc with "LFT Hlrc Hα2") as (q') "[Hlrc↦ Hclose]"; first solve_ndisj.
+    iApply wp_fupd. wp_read.
+    iMod ("Hclose" with "[$Hlrc↦]") as "Hα2". iIntros "!> [Hα1 Hproto]".
+    iDestruct "Hproto" as (γ ν) "#[Hpersist Hwtokb]".
+    iModIntro. wp_let. wp_op.
+    (* Finally, finally... opening the thread-local Rc protocol. *)
+    iPoseProof "Hpersist" as (ty') "(_ & Hinv & _ & _)".
+    iAssert (∃ wv : Z, shift_loc l' 1 ↦ #wv ∗ (shift_loc l' 1 ↦ #(wv + 1) ={⊤}=∗
+               na_own tid ⊤ ∗ (q / 2).[α] ∗ own γ weak_tok))%I
+      with "[> Hna Hα1]" as (wv) "[Hwv Hclose2]".
+    { iMod (na_inv_open with "Hinv Hna") as "(Hrcproto & Hna & Hclose2)"; [solve_ndisj..|].
+      iMod (na_bor_acc with "LFT Hwtokb Hα1 Hna") as "(>Hwtok & Hna & Hclose3)"; [solve_ndisj..|].
+      iDestruct "Hrcproto" as ([st weakc]) "[>Hrc● Hrcst]".
+      iDestruct (own_valid_2 with "Hrc● Hwtok") as
+        %[[_ Hweak%nat_included]%prod_included [Hval _]]%auth_valid_discrete_2.
+      iMod (own_update with "Hrc●") as "[Hrc● $]".
+      { by apply auth_update_alloc, prod_local_update_2,
+           (op_local_update_discrete _ _ 1%nat). }
+      destruct st as [[[q'' strong]| |]|]; try done.
+      - iExists _. iDestruct "Hrcst" as (q0) "(Hl'1 & >$ & Hrcst)".
+        iIntros "!> Hl'2". iMod ("Hclose3" with "[$Hwtok] Hna") as "[$ Hna]".
+        iApply ("Hclose2" with "[- $Hna]"). iExists _. iFrame "Hrc●".
+        iExists _. rewrite /Z.add /= Pos.add_1_r. iFrame.
+      - iExists _. iDestruct "Hrcst" as "[Hl'1 >$]". iIntros "!> Hl'2".
+        iMod ("Hclose3" with "[$Hwtok] Hna") as "[$ Hna]".
+        iApply ("Hclose2" with "[- $Hna]"). iExists _. iFrame "Hrc●".
+        rewrite /Z.add /= Pos.add_1_r. iFrame.
+      - destruct weakc as [|weakc]; first by simpl in Hweak; lia.
+        iExists _. iDestruct "Hrcst" as "(Hl'1 & >$ & Hrcst)". iIntros "!> Hl'2".
+        iMod ("Hclose3" with "[$Hwtok] Hna") as "[$ Hna]".
+        iApply ("Hclose2" with "[- $Hna]"). iExists _. iFrame "Hrc●".
+        rewrite /Z.add /= Pos.add_1_r. iFrame. }
+    wp_read. wp_let. wp_op. wp_op. wp_write.
+    iMod ("Hclose2" with "Hwv") as "(Hna & Hα1 & Hwtok)".
+    iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL". wp_write.
+    (* Finish up the proof. *)
+    iApply (type_type _ _ _ [ x ◁ box (&shr{α} weak ty); #lr ◁ box (weak ty)]
+        with "[] LFT HE Hna HL Hk [-]"); last first.
+    { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
+      unlock. iFrame. iExists [_]. rewrite heap_mapsto_vec_singleton /=.
+      auto 10 with iFrame. }
+    iApply type_delete; [solve_typing..|].
+    iApply type_jump; solve_typing.
+  Qed.
+
+
 
 End code.

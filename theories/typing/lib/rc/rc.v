@@ -185,7 +185,7 @@ Section rc.
       iDestruct "Hvl" as (γ ν q) "(#Hpersist & Htk & Hν)".
       iRight. iExists _, _, _. iFrame "#∗". by iApply rc_persist_type_incl.
     - iIntros "* #Hshr". iDestruct "Hshr" as (l') "[Hfrac Hshr]". iExists l'.
-      iFrame "Hfrac". iIntros "!# * % Htok". iMod ("Hshr" with "[% //] Htok") as "{Hshr} H".
+      iIntros "{$Hfrac} !# * % Htok". iMod ("Hshr" with "[% //] Htok") as "{Hshr} H".
       iModIntro. iNext. iMod "H" as "[$ H]".
       iDestruct "H" as (γ ν q') "(Hlft & Hpersist & Hna)".
       iExists _, _, _. iFrame. by iApply rc_persist_type_incl.
@@ -365,27 +365,27 @@ Section code.
 
   Definition rc_clone : val :=
     funrec: <> ["rc"] :=
-      let: "rc2" := new [ #1 ] in
+      let: "r" := new [ #1 ] in
       let: "rc'" := !"rc" in
       let: "rc''" := !"rc'" in
-      let: "count" := !("rc''" +ₗ #0) in
-      "rc''" +ₗ #0 <- "count" +#1;;
-      "rc2" <- "rc''";;
-      delete [ #1; "rc" ];; return: ["rc2"].
+      let: "strong" := !("rc''" +ₗ #0) in
+      "rc''" +ₗ #0 <- "strong" +#1;;
+      "r" <- "rc''";;
+      delete [ #1; "rc" ];; return: ["r"].
 
   Lemma rc_clone_type ty `{!TyWf ty} :
     typed_val rc_clone (fn(∀ α, ∅; &shr{α} rc ty) → rc ty).
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (rc2); simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst.
     rewrite (Nat2Z.id 1). (* Having to do this is rather annoying... *)
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
-    iIntros (tid) "#LFT #HE Hna HL Hk [Hx [Hrc' [Hrc2 _]]]".
+    iIntros (tid) "#LFT #HE Hna HL Hk [Hx [Hrc' [Hr _]]]".
     rewrite !tctx_hasty_val [[x]]lock.
     destruct rc' as [[|lrc|]|]; try done. iDestruct "Hrc'" as (l') "[#Hlrc #Hshr]".
-    iDestruct (ownptr_uninit_own with "Hrc2") as (lrc2 vlrc2) "(% & Hrc2 & Hrc2†)".
-    subst rc2. inv_vec vlrc2=>rc2. rewrite heap_mapsto_vec_singleton.
+    iDestruct (ownptr_uninit_own with "Hr") as (lr vlr) "(% & Hr & Hr†)".
+    subst r. inv_vec vlr=>r. rewrite heap_mapsto_vec_singleton.
     (* All right, we are done preparing our context. Let's get going. *)
     iMod (lctx_lft_alive_tok α with "HE HL") as (q) "([Hα1 Hα2] & HL & Hclose1)"; [solve_typing..|].
     wp_bind (!_)%E.
@@ -421,10 +421,10 @@ Section code.
       rewrite [_ ⋅ _]comm frac_op' -[(_ + _)%Qp]assoc Qp_div_2. auto. }
     iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
     (* Finish up the proof. *)
-    iApply (type_type _ _ _ [ x ◁ box (&shr{α} rc ty); #lrc2 ◁ box (rc ty)]
+    iApply (type_type _ _ _ [ x ◁ box (&shr{α} rc ty); #lr ◁ box (rc ty)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
-      unlock. iFrame "Hx". iFrame "Hrc2†". iExists [_].
+      unlock. iFrame "Hx". iFrame "Hr†". iExists [_].
       rewrite heap_mapsto_vec_singleton /=. eauto 10 with iFrame. }
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
