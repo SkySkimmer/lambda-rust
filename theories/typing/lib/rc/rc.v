@@ -356,7 +356,7 @@ Section code.
     wp_op. rewrite shift_loc_0. wp_write. wp_op. wp_write.
     wp_op. iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
     wp_apply (wp_memcpy with "[$Hrcbox↦2 $Hx↦]"); [by auto using vec_to_list_length..|].
-    iIntros "[Hrcbox↦2 Hx↦]". wp_seq. wp_op. rewrite shift_loc_0. wp_write.
+    iIntros "[Hrcbox↦2 Hx↦]". wp_seq. wp_write.
     iApply (type_type _ _ _ [ #lx ◁ box (uninit (ty_size ty)); #lrc ◁ box (rc ty)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //=. iFrame.
@@ -760,6 +760,5 @@ Section code.
 
   (* TODO: * fn make_mut(this: &mut Rc<T>) -> &mut T
              Needs a Clone bound, how do we model this?
-           * Weak references?
    *)
 End code.
