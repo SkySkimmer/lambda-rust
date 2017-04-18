@@ -55,7 +55,10 @@ Section rc.
   Definition rc_persist tid ν (γ : gname) (l : loc) (ty : type) : iProp Σ :=
     (∃ ty', ▷ type_incl ty' ty ∗
               na_inv tid rc_invN (rc_inv tid ν γ l ty') ∗
-              ty.(ty_shr) ν tid (shift_loc l 2) ∗
+              (* We use this disjunction, and not simply [ty_shr] here,
+                 because [weak_new] cannot prove ty_shr, even for a dead
+                 lifetime. *)
+              (ty.(ty_shr) ν tid (shift_loc l 2) ∨ [†ν]) ∗
               □ (1.[ν] ={↑lftN,∅}▷=∗ [†ν]))%I.
 
   Global Instance rc_persist_ne ν γ l n :
@@ -68,10 +71,11 @@ Section rc.
   Lemma rc_persist_type_incl tid ν γ l ty1 ty2:
     type_incl ty1 ty2 -∗ rc_persist tid ν γ l ty1 -∗ rc_persist tid ν γ l ty2.
   Proof.
-    iIntros "#Hincl H". iDestruct "H" as (ty) "#(?&?&?&?)". iExists ty.
+    iIntros "#Hincl H". iDestruct "H" as (ty) "#(?&?& Hs &?)". iExists ty.
     iFrame "#". iSplit.
     - iNext. by iApply type_incl_trans.
-    - iDestruct "Hincl" as "(_&_&Hincls)". by iApply "Hincls".
+    - iDestruct "Hs" as "[?|?]"; last auto.
+      iLeft. iDestruct "Hincl" as "(_&_&Hincls)". by iApply "Hincls".
   Qed.
 
   Program Definition rc (ty : type) :=
@@ -134,7 +138,8 @@ Section rc.
         { rewrite /rc_inv. iExists (Some $ Cinl (_, _), _). iFrame. iExists _.
           iFrame "#∗". rewrite Qp_div_2; auto. }
         iMod (ty_share with "LFT HP Hν1") as "[??]"; first solve_ndisj.
-        iExists _, _, _. iFrame. iExists ty. iFrame "#". by iApply type_incl_refl. }
+        iExists _, _, _. iFrame. iExists ty. iFrame "#". iSplitR; last by auto.
+          by iApply type_incl_refl. }
       iDestruct "HX" as (γ ν q') "(#Hpersist & Hrctok)".
       iMod ("Hclose2" with "[] Hrctok") as "[HX $]"; first by (unfold X; auto 10).
       iAssert C with "[>HX]" as "#$".
@@ -327,7 +332,7 @@ Section code.
       "rcbox" +ₗ #0 <- #1;;
       "rcbox" +ₗ #1 <- #1;;
       "rcbox" +ₗ #2 <-{ty.(ty_size)} !"x";;
-      "rc" +ₗ #0 <- "rcbox";;
+      "rc" <- "rcbox";;
       delete [ #ty.(ty_size); "x"];; return: ["rc"].
 
   Lemma rc_new_type ty `{!TyWf ty} :
@@ -458,7 +463,9 @@ Section code.
     iApply wp_fupd. wp_read.
     iMod ("Hclose2" with "[$Hrc'↦]") as "Hα2". iIntros "!> [Hα1 #Hproto] !>".
     iDestruct "Hproto" as (γ ν q'') "#(Hαν & Hpersist & _)".
-    iDestruct "Hpersist" as (ty') "(_ & _ & Hshr & _)".
+    iDestruct "Hpersist" as (ty') "(_ & _ & [Hshr|Hν†] & _)"; last first.
+    { iMod (lft_incl_dead with "Hαν Hν†") as "Hα†". done.
+      iDestruct (lft_tok_dead with "Hα1 Hα†") as "[]". }
     wp_op. wp_write. iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
     (* Finish up the proof. *)
     iApply (type_type _ _ _ [ rcx ◁ box (&shr{α} rc ty); #lrc2 ◁ box (&shr{α} ty)]

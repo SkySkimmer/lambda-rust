@@ -441,4 +441,47 @@ Section code.
       { unlock. by rewrite tctx_interp_singleton tctx_hasty_val. }
       iApply type_jump; solve_typing.
   Qed.
+
+  Definition weak_new ty : val :=
+    funrec: <> [] :=
+      let: "rcbox" := new [ #(2 + ty.(ty_size))%nat ] in
+      let: "w" := new [ #1 ] in
+      "rcbox" +ₗ #0 <- #0;;
+      "rcbox" +ₗ #1 <- #1;;
+      "w" <- "rcbox";;
+      return: ["w"].
+
+  Lemma weak_new_type ty `{!TyWf ty} :
+    typed_val (weak_new ty) (fn(∅) → weak ty).
+  Proof.
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (_ ϝ ret arg). inv_vec arg. simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (rcbox); simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (w); simpl_subst.
+    iIntros (tid) "#LFT #HE Hna HL Hk [Hw [Hrcbox _]]".
+    rewrite (Nat2Z.id (2 + ty.(ty_size))) !tctx_hasty_val.
+    iDestruct (ownptr_uninit_own with "Hrcbox") as (lrcbox vlrcbox)
+       "(% & Hrcbox↦ & Hrcbox†)". subst rcbox. inv_vec vlrcbox=>??? /=.
+    iDestruct (heap_mapsto_vec_cons with "Hrcbox↦") as "[Hrcbox↦0 Hrcbox↦1]".
+    iDestruct (heap_mapsto_vec_cons with "Hrcbox↦1") as "[Hrcbox↦1 Hrcbox↦2]".
+    iDestruct (ownptr_uninit_own with "Hw") as (lw vlw) "(% & Hw↦ & Hw†)". subst w.
+    inv_vec vlw=>?. rewrite heap_mapsto_vec_singleton.
+    (* All right, we are done preparing our context. Let's get going. *)
+    wp_op. rewrite shift_loc_0. wp_write. wp_op. wp_write.
+    iMod (lft_create with "LFT") as (ν) "[Hν #Hν†]"; first done.
+    iPoseProof ("Hν†" with "Hν") as "H†". wp_bind (_ <- _)%E.
+    iApply wp_mask_mono; last iApply (wp_step_fupd with "H†"); [solve_ndisj..|].
+    wp_write. iIntros "#Hν !>". wp_seq.
+    iApply (type_type _ _ _ [ #lw ◁ box (weak ty)]
+        with "[] LFT HE Hna HL Hk [> -]"); last first.
+    { rewrite tctx_interp_singleton tctx_hasty_val' //=. iFrame.
+      iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame.
+      iMod (own_alloc (● _ ⋅ ◯ _)) as (γ) "[??]"; last (iExists _, _; iFrame).
+      { apply auth_valid_discrete_2. by split. }
+      iExists ty. iFrame "Hν†". iSplitR; first by iApply type_incl_refl.
+      iSplitL; last by iRight. iMod (na_inv_alloc with "[-]") as "$"; last done.
+      iExists _. iFrame. rewrite freeable_sz_full_S shift_loc_assoc. iFrame.
+      iExists _. iFrame. rewrite vec_to_list_length. auto. }
+    iApply type_jump; solve_typing.
+  Qed.
 End code.
