@@ -55,6 +55,7 @@ theories/typing/lib/spawn.v
 theories/typing/lib/rc/rc.v
 theories/typing/lib/rc/weak.v
 theories/typing/lib/mutex/mutex.v
+theories/typing/lib/mutex/mutexguard.v
 theories/typing/lib/refcell/refcell.v
 theories/typing/lib/refcell/ref.v
 theories/typing/lib/refcell/refmut.v
