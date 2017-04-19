@@ -83,4 +83,8 @@ Section mutex.
     iExists _, _. iSplit; first by iApply shr_bor_shorten.
     iApply lft_incl_trans; done.
   Qed.
+
+  Global Instance mutex_wf ty `{!TyWf ty} : TyWf (mutex ty) :=
+    { ty_lfts := ty.(ty_lfts); ty_wf_E := ty.(ty_wf_E) }.
+
 End mutex.

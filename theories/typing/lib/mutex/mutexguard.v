@@ -75,4 +75,8 @@ Section mguard.
       iMod "Hshr" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
       iApply ty_shr_mono; try done. iApply lft_intersect_mono. iApply lft_incl_refl. done.
   Qed.
+
+  Global Instance mutexguard_wf α ty `{!TyWf ty} : TyWf (mutexguard α ty) :=
+    { ty_lfts := [α]; ty_wf_E := ty.(ty_wf_E) ++ ty.(ty_outlives_E) α }.
+
 End mguard.

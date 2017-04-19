@@ -149,7 +149,7 @@ Section rwlock.
     iExists _, _. iFrame. iApply lft_incl_trans; auto.
   Qed.
 
-  Global Instance join_handle_wf ty `{!TyWf ty} : TyWf (rwlock ty) :=
+  Global Instance rwlock_wf ty `{!TyWf ty} : TyWf (rwlock ty) :=
     { ty_lfts := ty.(ty_lfts); ty_wf_E := ty.(ty_wf_E) }.
 
   Global Instance rwlock_type_ne : TypeNonExpansive rwlock.
