@@ -45,21 +45,20 @@ Section proof.
   Qed.
 
   (** The main proofs. *)
-  Lemma lock_proto_create (E : coPset) (R : iProp Σ) l (b : bool) :
-    l ↦ #b -∗ (if b then True else ▷ R) ={E}=∗ ∃ γ, ▷ lock_proto γ l R.
+  Lemma lock_proto_create (R : iProp Σ) l (b : bool) :
+    l ↦ #b -∗ (if b then True else ▷ R) ==∗ ∃ γ, ▷ lock_proto γ l R.
   Proof.
     iIntros "Hl HR".
     iMod (own_alloc (Excl ())) as (γ) "Hγ"; first done.
     iExists _, _. iFrame "Hl". destruct b; first done. by iFrame.
   Qed.
 
-  Lemma lock_proto_destroy E γ l R :
-    ↑N ⊆ E → 
-    ▷ lock_proto γ l R ={E}=∗ ∃ (b : bool), l ↦ #b ∗ if b then True else ▷ R.
+  Lemma lock_proto_destroy γ l R :
+    lock_proto γ l R -∗ ∃ (b : bool), l ↦ #b ∗ if b then True else R.
   Proof.
-    iIntros (?) "Hlck". iDestruct "Hlck" as (b) "[>Hl HR]".
+    iIntros "Hlck". iDestruct "Hlck" as (b) "[Hl HR]".
     iExists b. iFrame "Hl". destruct b; first done.
-    iDestruct "HR" as "[_ $]". done.
+    iDestruct "HR" as "[_ $]".
   Qed.
 
   (* At this point, it'd be really nice to have some sugar for symmetric
