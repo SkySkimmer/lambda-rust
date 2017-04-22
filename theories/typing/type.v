@@ -83,18 +83,21 @@ Existing Instances tyl_wf_nil tyl_wf_cons.
 Fixpoint tyl_lfts `{typeG Σ} tyl {WF : TyWfLst tyl} : list lft :=
   match WF with
   | tyl_wf_nil => []
+  | tyl_wf_cons ty [] _ _ => ty.(ty_lfts)
   | tyl_wf_cons ty tyl _ _ => ty.(ty_lfts) ++ tyl.(tyl_lfts)
   end.
 
 Fixpoint tyl_wf_E `{typeG Σ} tyl {WF : TyWfLst tyl} : elctx :=
   match WF with
   | tyl_wf_nil => []
+  | tyl_wf_cons ty [] _ _ => ty.(ty_wf_E)
   | tyl_wf_cons ty tyl _ _ => ty.(ty_wf_E) ++ tyl.(tyl_wf_E)
   end.
 
 Fixpoint tyl_outlives_E `{typeG Σ} tyl {WF : TyWfLst tyl} (κ : lft) : elctx :=
   match WF with
   | tyl_wf_nil => []
+  | tyl_wf_cons ty [] _ _ => ty.(ty_outlives_E) κ
   | tyl_wf_cons ty tyl _ _ => ty.(ty_outlives_E) κ ++ tyl.(tyl_outlives_E) κ
   end.
 
@@ -103,8 +106,9 @@ Lemma tyl_outlives_E_elctx_sat `{typeG Σ} E L tyl {WF : TyWfLst tyl} α β :
   lctx_lft_incl E L α β →
   elctx_sat E L (tyl.(tyl_outlives_E) α).
 Proof.
-  induction WF as [|???? IH]=>/=.
+  induction WF as [|? [] ?? IH]=>/=.
   - solve_typing.
+  - intros. by eapply ty_outlives_E_elctx_sat.
   - intros. apply elctx_sat_app, IH; [eapply ty_outlives_E_elctx_sat| |]=>//;
       (etrans; [|done]); solve_typing.
 Qed.

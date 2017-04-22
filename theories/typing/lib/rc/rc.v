@@ -970,8 +970,8 @@ Section code.
       iApply type_let; [apply rc_drop_type|solve_typing|]. iIntros (drop). simpl_subst.
       iApply (type_letcall ()); [try solve_typing..|].
       { (* FIXME : solve_typing should be able to do this. *)
-        move=>ϝ' /=. replace (ty_outlives_E (option ty) ϝ') with (ty_outlives_E ty ϝ').
-        solve_typing. by rewrite /ty_outlives_E /= app_nil_r. }
+        move=>ϝ' /=. change (ty_outlives_E (option ty) ϝ') with (ty_outlives_E ty ϝ').
+        solve_typing. }
       iIntros (content). simpl_subst.
       iApply type_delete; [solve_typing..|].
       iApply type_assign; [solve_typing..|].
