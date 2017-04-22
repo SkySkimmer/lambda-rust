@@ -1,5 +1,4 @@
 From iris.program_logic Require Import weakestpre.
-From iris.base_logic.lib Require Import cancelable_invariants.
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import excl.
 From lrust.lang Require Import lang proofmode notation.
@@ -14,14 +13,14 @@ Definition release : val := λ: ["l"], "l" <-ˢᶜ #false.
 
 (** The CMRA we need. *)
 (* Not bundling heapG, as it may be shared with other users. *)
-Class lockG Σ := LockG { lock_tokG :> inG Σ (exclR unitC); lock_cinvG :> cinvG Σ }.
-Definition lockΣ : gFunctors := #[GFunctor (exclR unitC); cinvΣ].
+Class lockG Σ := LockG { lock_tokG :> inG Σ (exclR unitC) }.
+Definition lockΣ : gFunctors := #[GFunctor (exclR unitC)].
 
 Instance subG_lockΣ {Σ} : subG lockΣ Σ → lockG Σ.
 Proof. solve_inG. Qed.
 
 Section proof.
-  Context `{!lrustG Σ, !lockG Σ} (N : namespace).
+  Context `{!lrustG Σ, !lockG Σ}.
 
   Definition lock_proto (γ : gname) (l : loc) (R : iProp Σ) : iProp Σ :=
     (∃ b : bool, l ↦ #b ∗ if b then True else own γ (Excl ()) ∗ R)%I.
