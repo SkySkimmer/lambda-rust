@@ -61,6 +61,16 @@ Section proof.
     iDestruct "HR" as "[_ $]".
   Qed.
 
+  Lemma newlock_spec (R : iProp Σ) :
+    {{{ ▷ R }}} newlock [] {{{ l γ, RET #l; ▷ lock_proto γ l R ∗ † l … 1 }}}.
+  Proof.
+    (* FIXME: Why is there no space between (l : loc)(γ : gname) as printed? *)
+    iIntros (Φ) "HR HΦ". wp_lam. wp_alloc l vl as "Hl" "H†". inv_vec vl=>v.
+    rewrite heap_mapsto_vec_singleton -wp_fupd. wp_let. wp_write.
+    iMod (lock_proto_create with "Hl HR") as (γ) "Hproto".
+    iApply "HΦ". by iFrame.
+  Qed.
+
   (* At this point, it'd be really nice to have some sugar for symmetric
      accessors. *)
   Lemma try_acquire_spec E γ l R P :
