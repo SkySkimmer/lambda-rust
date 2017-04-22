@@ -29,7 +29,7 @@ Section mguard.
     }
   *)
 
-  Program Definition mutex_guard (α : lft) (ty : type) :=
+  Program Definition mutexguard (α : lft) (ty : type) :=
     {| ty_size := 1;
        ty_own tid vl :=
          match vl return _ with
@@ -80,3 +80,60 @@ Section mguard.
     { ty_lfts := [α]; ty_wf_E := ty.(ty_wf_E) ++ ty.(ty_outlives_E) α }.
 
 End mguard.
+
+Section code.
+  Context `{!typeG Σ, !lockG Σ}.
+
+  Lemma mutex_acc E γ l ty tid q α κ :
+    ↑lftN ⊆ E → ↑mutexN ⊆ E →
+    let R := (&{κ} shift_loc l 1 ↦∗: ty_own ty tid)%I in
+    lft_ctx -∗ &shr{α,mutexN} lock_proto γ l R -∗ α ⊑ κ -∗
+    □ ((q).[α] ={E,∅}=∗ ▷ lock_proto γ l R ∗ (▷ lock_proto γ l R ={∅,E}=∗ (q).[α])).
+  Proof.
+    (* FIXME: This should work: iIntros (?? R). *) intros ?? R.
+    iIntros "#LFT #Hshr #Hlincl !# Htok".
+    iMod (shr_bor_acc_tok with "LFT Hshr Htok") as "[Hproto Hclose1]"; [done..|].
+    iMod (fupd_intro_mask') as "Hclose2"; last iModIntro; first solve_ndisj.
+    iFrame. iIntros "Hproto". iMod "Hclose2" as "_".
+    iMod ("Hclose1" with "Hproto") as "$". done.
+  Qed.
+
+  Definition mutex_lock : val :=
+    funrec: <> ["mutex"] :=
+      let: "m" := !"mutex" in
+      let: "guard" := new [ #1 ] in
+      acquire ["m"];;
+      "guard" +ₗ #0 <- "m";;
+      delete [ #1; "mutex"];; return: ["guard"].
+
+  Lemma mutex_lock_type ty `{!TyWf ty} :
+    typed_val mutex_lock (fn(∀ α, ∅; &shr{α} mutex ty) → mutexguard α ty).
+  Proof.
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_deref; [solve_typing..|]; iIntros (m); simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (g); simpl_subst.
+    rewrite (Nat2Z.id 1). (* Having to do this is rather annoying... *)
+    (* Switch to Iris. *)
+    iIntros (tid) "#LFT #HE Hna HL Hk [Hg [Hx [Hm _]]]".
+    rewrite !tctx_hasty_val [[x]]lock /=.
+    destruct m as [[|lm|]|]; try done. iDestruct "Hm" as (γ κ') "[#Hshr #Hακ']".
+    iDestruct (ownptr_uninit_own with "Hg") as (lg vlg) "(% & Hg & Hg†)".
+    subst g. inv_vec vlg=>g. rewrite heap_mapsto_vec_singleton.
+    (* All right, we are done preparing our context. Let's get going. *)
+    iMod (lctx_lft_alive_tok α with "HE HL") as (q) "(Hα & HL & Hclose1)"; [solve_typing..|].
+    wp_apply (acquire_spec with "[] Hα"); first by iApply (mutex_acc with "LFT Hshr Hακ'").
+    iIntros "[Hlocked [Hcont Htok]]". wp_seq. wp_op. rewrite shift_loc_0. wp_write.
+    iMod ("Hclose1" with "Htok HL") as "HL".
+    (* Switch back to typing mode. *)
+    iApply (type_type _ _ _ [ x ◁ own_ptr _ _; #lg ◁ box (mutexguard α ty)]
+        with "[] LFT HE Hna HL Hk"); last first.
+    (* TODO: It would be nice to say [{#}] as the last spec pattern to clear the context in there. *)
+    { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
+      unlock. iFrame. iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame "Hg".
+      iExists _, _. iFrame "#∗". }
+    iApply type_delete; [solve_typing..|].
+    iApply type_jump; solve_typing.
+  Qed.
+
+End code.

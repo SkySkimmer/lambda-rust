@@ -5,7 +5,8 @@ From iris.algebra Require Import excl.
 From lrust.lang Require Import lang proofmode notation.
 Set Default Proof Using "Type".
 
-Definition newlock : val := λ: [], let: "l" := Alloc #1 in "l" <- #false ;; "l".
+Definition mklock_unlocked : val := λ: ["l"], "l" <- #false.
+Definition mklock_locked : val := λ: ["l"], "l" <- #true.
 Definition try_acquire : val := λ: ["l"], CAS "l" #false #true.
 Definition acquire : val :=
   rec: "acquire" ["l"] := if: try_acquire ["l"] then #() else "acquire" ["l"].
@@ -59,6 +60,22 @@ Section proof.
     iIntros "Hlck". iDestruct "Hlck" as (b) "[Hl HR]".
     iExists b. iFrame "Hl". destruct b; first done.
     iDestruct "HR" as "[_ $]".
+  Qed.
+
+  Lemma mklock_unlocked_spec (R : iProp Σ) (l : loc) v :
+    {{{ l ↦ v ∗ ▷ R }}} mklock_unlocked [ #l ] {{{ γ, RET #(); ▷ lock_proto γ l R }}}.
+  Proof.
+    iIntros (Φ) "[Hl HR] HΦ". wp_lam. rewrite -wp_fupd. wp_write.
+    iMod (lock_proto_create with "Hl HR") as (γ) "Hproto".
+    iApply "HΦ". by iFrame.
+  Qed.
+
+  Lemma mklock_locked_spec (R : iProp Σ) (l : loc) v :
+    {{{ l ↦ v }}} mklock_locked [ #l ] {{{ γ, RET #(); ▷ lock_proto γ l R }}}.
+  Proof.
+    iIntros (Φ) "Hl HΦ". wp_lam. rewrite -wp_fupd. wp_write.
+    iMod (lock_proto_create with "Hl [//]") as (γ) "Hproto".
+    iApply "HΦ". by iFrame.
   Qed.
 
   (* At this point, it'd be really nice to have some sugar for symmetric
