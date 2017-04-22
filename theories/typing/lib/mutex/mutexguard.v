@@ -114,6 +114,7 @@ Section code.
     iApply type_deref; [solve_typing..|]; iIntros (m); simpl_subst.
     iApply type_new; [solve_typing..|]; iIntros (g); simpl_subst.
     rewrite (Nat2Z.id 1). (* Having to do this is rather annoying... *)
+    (* Switch to Iris. *)
     iIntros (tid) "#LFT #HE Hna HL Hk [Hg [Hx [Hm _]]]".
     rewrite !tctx_hasty_val [[x]]lock /=.
     destruct m as [[|lm|]|]; try done. iDestruct "Hm" as (γ κ') "[#Hshr #Hακ']".

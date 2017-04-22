@@ -280,7 +280,7 @@ Section typing_rules.
     rewrite tctx_interp_cons tctx_interp_singleton. auto.
   Qed.
 
-  Lemma type_memcpy {E L} ty1 ty2 (n : Z) C T T' ty ty1' ty2' p1 p2 e:
+  Lemma type_memcpy {E L} ty ty1 ty2 (n : Z) C T T' ty1' ty2' p1 p2 e:
     Closed [] e →
     tctx_extract_ctx E L [p1 ◁ ty1; p2 ◁ ty2] T T' →
     typed_write E L ty1 ty ty1' →

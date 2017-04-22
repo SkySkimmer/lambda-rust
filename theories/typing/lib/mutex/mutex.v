@@ -88,3 +88,50 @@ Section mutex.
     { ty_lfts := ty.(ty_lfts); ty_wf_E := ty.(ty_wf_E) }.
 
 End mutex.
+
+Section code.
+  Context `{!typeG Σ, !lockG Σ}.
+
+  Definition mutex_new ty : val :=
+    funrec: <> ["x"] :=
+      let: "m" := new [ #(mutex ty).(ty_size) ] in
+      "m" +ₗ #1 <-{ty.(ty_size)} !"x";;
+      mklock_unlocked ["m" +ₗ #0];;
+      delete [ #ty.(ty_size); "x"];; return: ["m"].
+
+  Lemma mutex_new_type ty `{!TyWf ty} :
+    typed_val (mutex_new ty) (fn(∅; ty) → mutex ty).
+  Proof.
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (m); simpl_subst.
+    rewrite (Nat2Z.id (S ty.(ty_size))). (* FIXME: Having to do this after every type_new is rather annoying... *)
+    (* FIXME: The following should work.  We could then go into Iris later.
+    iApply (type_memcpy ty); [solve_typing..|]. *)
+    (* Switch to Iris. *)
+    iIntros (tid) "#LFT #HE Hna HL Hk [Hm [Hx _]]".
+    rewrite !tctx_hasty_val /=.
+    iDestruct (ownptr_uninit_own with "Hm") as (lm vlm) "(% & Hm & Hm†)".
+    subst m. inv_vec vlm=>m vlm. simpl. iDestruct (heap_mapsto_vec_cons with "Hm") as "[Hm0 Hm]".
+    destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
+    iDestruct (heap_mapsto_ty_own with "Hx") as (vl) "[>Hx Hxown]".
+    (* All right, we are done preparing our context. Let's get going. *)
+    wp_op. wp_apply (wp_memcpy with "[$Hm $Hx]"); [by rewrite vec_to_list_length..|].
+    iIntros "[Hm Hx]". wp_seq. wp_op. rewrite shift_loc_0. wp_lam.
+    wp_write.
+    (* Switch back to typing mode. *)
+    iApply (type_type _ _ _ [ #lx ◁ box (uninit ty.(ty_size)); #lm ◁ box (mutex ty)]
+        with "[] LFT HE Hna HL Hk"); last first.
+    (* TODO: It would be nice to say [{#}] as the last spec pattern to clear the context in there. *)
+    { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val' // tctx_hasty_val' //.
+      iFrame. iSplitL "Hx".
+      - iExists _. iFrame. rewrite uninit_own vec_to_list_length.
+          by iNext. (* FIXME: Just "done" should work here. *)
+      - iExists (_ :: vl). rewrite heap_mapsto_vec_cons. iFrame.
+        (* FIXME: Why does calling `iFrame` twice even make a difference? *)
+        iFrame. eauto. }
+    iApply type_delete; [solve_typing..|].
+    iApply type_jump; solve_typing.
+  Qed.
+
+End code.

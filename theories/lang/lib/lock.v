@@ -5,7 +5,8 @@ From iris.algebra Require Import excl.
 From lrust.lang Require Import lang proofmode notation.
 Set Default Proof Using "Type".
 
-Definition newlock : val := λ: [], let: "l" := Alloc #1 in "l" <- #false ;; "l".
+Definition mklock_unlocked : val := λ: ["l"], "l" <- #false.
+Definition mklock_locked : val := λ: ["l"], "l" <- #true.
 Definition try_acquire : val := λ: ["l"], CAS "l" #false #true.
 Definition acquire : val :=
   rec: "acquire" ["l"] := if: try_acquire ["l"] then #() else "acquire" ["l"].
@@ -61,13 +62,19 @@ Section proof.
     iDestruct "HR" as "[_ $]".
   Qed.
 
-  Lemma newlock_spec (R : iProp Σ) :
-    {{{ ▷ R }}} newlock [] {{{ l γ, RET #l; ▷ lock_proto γ l R ∗ † l … 1 }}}.
+  Lemma mklock_unlocked_spec (R : iProp Σ) (l : loc) v :
+    {{{ l ↦ v ∗ ▷ R }}} mklock_unlocked [ #l ] {{{ γ, RET #(); ▷ lock_proto γ l R }}}.
   Proof.
-    (* FIXME: Why is there no space between (l : loc)(γ : gname) as printed? *)
-    iIntros (Φ) "HR HΦ". wp_lam. wp_alloc l vl as "Hl" "H†". inv_vec vl=>v.
-    rewrite heap_mapsto_vec_singleton -wp_fupd. wp_let. wp_write.
+    iIntros (Φ) "[Hl HR] HΦ". wp_lam. rewrite -wp_fupd. wp_write.
     iMod (lock_proto_create with "Hl HR") as (γ) "Hproto".
+    iApply "HΦ". by iFrame.
+  Qed.
+
+  Lemma mklock_locked_spec (R : iProp Σ) (l : loc) v :
+    {{{ l ↦ v }}} mklock_locked [ #l ] {{{ γ, RET #(); ▷ lock_proto γ l R }}}.
+  Proof.
+    iIntros (Φ) "Hl HΦ". wp_lam. rewrite -wp_fupd. wp_write.
+    iMod (lock_proto_create with "Hl [//]") as (γ) "Hproto".
     iApply "HΦ". by iFrame.
   Qed.
 
