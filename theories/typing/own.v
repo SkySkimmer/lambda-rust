@@ -257,13 +257,14 @@ Section typing.
     iExists vl. iFrame. by rewrite Nat2Z.id uninit_own.
   Qed.
 
-  Lemma type_new E L C T x (n : Z) e :
+  Lemma type_new {E L C T} (n' : nat) x (n : Z) e :
     Closed (x :b: []) e →
     0 ≤ n →
-    (∀ (v : val) (n' := Z.to_nat n),
+    n' = Z.to_nat n →
+    (∀ (v : val),
         typed_body E L C ((v ◁ own_ptr n' (uninit n')) :: T) (subst' x v e)) -∗
     typed_body E L C T (let: x := new [ #n ] in e).
-  Proof. iIntros. iApply type_let; [by apply type_new_instr|solve_typing..]. Qed.
+  Proof. iIntros. subst. iApply type_let; [by apply type_new_instr|solve_typing..]. Qed.
 
   Lemma type_new_subtype ty E L C T x (n : Z) e :
     Closed (x :b: []) e →
@@ -309,17 +310,18 @@ Section typing.
     (∀ (v : val), typed_body E L C ((v ◁ own_ptr 1 ty)::T') (subst x v e)) -∗
     typed_body E L C T (letalloc: x <- p in e).
   Proof.
-    iIntros. iApply type_new.
+    iIntros (??? Hsz) "**". iApply type_new.
     - rewrite /Closed /=. rewrite !andb_True.
       eauto 10 using is_closed_weaken with set_solver.
     - done.
-    - iIntros (xv) "/=".
+    - solve_typing.
+    - iIntros (xv) "/=". rewrite -Hsz.
       assert (subst x xv (x <- p ;; e)%E = (xv <- p ;; subst x xv e)%E) as ->.
       { (* TODO : simpl_subst should be able to do this. *)
         unfold subst=>/=. repeat f_equal.
         - by rewrite bool_decide_true.
         - eapply is_closed_subst. done. set_solver. }
-      iApply type_assign; [|solve_typing|by eapply write_own|done].
+      iApply type_assign; [|solve_typing|by eapply write_own|solve_typing].
       apply subst_is_closed; last done. apply is_closed_of_val.
   Qed.
 
@@ -335,6 +337,7 @@ Section typing.
     - rewrite /Closed /=. rewrite !andb_True.
       eauto 10 using is_closed_of_val, is_closed_weaken with set_solver.
     - lia.
+    - done.
     - iIntros (xv) "/=".
       assert (subst x xv (x <-{ty.(ty_size)} !p ;; e)%E =
               (xv <-{ty.(ty_size)} !p ;; subst x xv e)%E) as ->.

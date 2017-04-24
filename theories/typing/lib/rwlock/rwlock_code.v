@@ -24,10 +24,9 @@ Section rwlock_functions.
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ret ϝ arg). inv_vec arg=>x. simpl_subst.
-    iApply type_new; [solve_typing..|].
+    iApply (type_new (S ty.(ty_size))); [solve_typing..|].
     iIntros (r tid) "#LFT HE Hna HL Hk HT". simpl_subst.
-    rewrite (Nat2Z.id (S ty.(ty_size))) tctx_interp_cons
-            tctx_interp_singleton !tctx_hasty_val.
+    rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hr Hx]". destruct x as [[|lx|]|]; try done.
     iDestruct "Hx" as "[Hx Hx†]". iDestruct "Hx" as (vl) "[Hx↦ Hx]".
     destruct r as [[|lr|]|]; try done. iDestruct "Hr" as "[Hr Hr†]".
@@ -60,10 +59,9 @@ Section rwlock_functions.
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ret ϝ arg). inv_vec arg=>x. simpl_subst.
-    iApply type_new; [solve_typing..|].
+    iApply (type_new ty.(ty_size)); [solve_typing..|].
     iIntros (r tid) "#LFT HE Hna HL Hk HT". simpl_subst.
-    rewrite (Nat2Z.id (ty.(ty_size))) tctx_interp_cons
-            tctx_interp_singleton !tctx_hasty_val.
+    rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hr Hx]". destruct x as [[|lx|]|]; try done.
     iDestruct "Hx" as "[Hx Hx†]".
     iDestruct "Hx" as ([|[[]|]vl]) "[Hx↦ Hx]"; try iDestruct "Hx" as ">[]".

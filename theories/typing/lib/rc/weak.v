@@ -129,8 +129,7 @@ Section code.
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>w. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst.
-    rewrite (Nat2Z.id 2). (* Having to do this is rather annoying... *)
+    iApply (type_new 2); [solve_typing..|]; iIntros (r); simpl_subst.
     iApply (type_cont [] [ϝ ⊑ₗ []]
                       (λ _, [w ◁ box (&shr{α} weak ty); r ◁ box (option (rc ty))])) ;
       [solve_typing..| |]; last first.
@@ -241,8 +240,7 @@ Section code.
     (* TODO : this is almost identical to rc_clone *)
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
     iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst.
-    rewrite (Nat2Z.id 1). (* Having to do this is rather annoying... *)
+    iApply (type_new 1); [solve_typing..|]; iIntros (r); simpl_subst.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
     iIntros (tid) "#LFT #HE Hna HL Hk [Hx [Hrc' [Hr _]]]".
     rewrite !tctx_hasty_val [[x]]lock.
@@ -304,8 +302,7 @@ Section code.
     (* TODO : this is almost identical to rc_clone *)
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
     iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst.
-    rewrite (Nat2Z.id 1). (* Having to do this is rather annoying... *)
+    iApply (type_new 1); [solve_typing..|]; iIntros (r); simpl_subst.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
     iIntros (tid) "#LFT #HE Hna HL Hk [Hx [Hrc' [Hr _]]]".
     rewrite !tctx_hasty_val [[x]]lock.
@@ -456,10 +453,9 @@ Section code.
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (rcbox); simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (w); simpl_subst.
-    iIntros (tid) "#LFT #HE Hna HL Hk [Hw [Hrcbox _]]".
-    rewrite (Nat2Z.id (2 + ty.(ty_size))) !tctx_hasty_val.
+    iApply (type_new (2 + ty.(ty_size))); [solve_typing..|]; iIntros (rcbox); simpl_subst.
+    iApply (type_new 1); [solve_typing..|]; iIntros (w); simpl_subst.
+    iIntros (tid) "#LFT #HE Hna HL Hk [Hw [Hrcbox _]]". rewrite !tctx_hasty_val.
     iDestruct (ownptr_uninit_own with "Hrcbox") as (lrcbox vlrcbox)
        "(% & Hrcbox↦ & Hrcbox†)". subst rcbox. inv_vec vlrcbox=>??? /=.
     iDestruct (heap_mapsto_vec_cons with "Hrcbox↦") as "[Hrcbox↦0 Hrcbox↦1]".

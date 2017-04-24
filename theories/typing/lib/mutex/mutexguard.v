@@ -112,8 +112,7 @@ Section code.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|]; iIntros (m); simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (g); simpl_subst.
-    rewrite (Nat2Z.id 1). (* Having to do this is rather annoying... *)
+    iApply (type_new 1); [solve_typing..|]; iIntros (g); simpl_subst.
     (* Switch to Iris. *)
     iIntros (tid) "#LFT #HE Hna HL Hk [Hg [Hx [Hm _]]]".
     rewrite !tctx_hasty_val [[x]]lock /=.

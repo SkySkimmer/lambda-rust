@@ -359,10 +359,10 @@ Section code.
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (rcbox); simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (rc); simpl_subst.
+    iApply (type_new (2 + ty.(ty_size))); [solve_typing..|]; iIntros (rcbox); simpl_subst.
+    iApply (type_new 1); [solve_typing..|]; iIntros (rc); simpl_subst.
     iIntros (tid) "#LFT #HE Hna HL Hk [Hrc [Hrcbox [Hx _]]]".
-    rewrite (Nat2Z.id (2 + ty.(ty_size))) !tctx_hasty_val.
+    rewrite !tctx_hasty_val.
     iDestruct (ownptr_own with "Hx") as (lx vlx) "(% & Hx↦ & Hx & Hx†)". subst x.
     iDestruct (ownptr_uninit_own with "Hrcbox")
       as (lrcbox vlrcbox) "(% & Hrcbox↦ & Hrcbox†)". subst rcbox. inv_vec vlrcbox=>???.
@@ -402,8 +402,7 @@ Section code.
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst.
-    rewrite (Nat2Z.id 1). (* Having to do this is rather annoying... *)
+    iApply (type_new 1); [solve_typing..|]; iIntros (r); simpl_subst.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
     iIntros (tid) "#LFT #HE Hna HL Hk [Hx [Hrc' [Hr _]]]".
     rewrite !tctx_hasty_val [[x]]lock.
@@ -466,7 +465,7 @@ Section code.
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst. rewrite (Nat2Z.id 1).
+    iApply (type_new 1); [solve_typing..|]; iIntros (x); simpl_subst.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
     iIntros (tid) "#LFT #HE Hna HL Hk [Hrcx [#Hrc' [Hx _]]]".
     rewrite !tctx_hasty_val [[rcx]]lock.
@@ -528,8 +527,7 @@ Section code.
     (* TODO: There is a *lot* of duplication between this proof and the one for drop. *)
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
     iIntros (_ ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst.
-    rewrite (Nat2Z.id (Σ[ ty; rc ty ]).(ty_size)).
+    iApply (type_new (Σ[ ty; rc ty ]).(ty_size)); [solve_typing..|]; iIntros (r); simpl_subst.
     iApply (type_cont [] [ϝ ⊑ₗ []]
                       (λ _, [rcx ◁ box (uninit 1); r ◁ box (Σ[ ty; rc ty ])])) ;
       [solve_typing..| |]; last first.
@@ -623,8 +621,7 @@ Section code.
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
     iIntros (_ ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst.
-    rewrite (Nat2Z.id (option ty).(ty_size)).
+    iApply (type_new (option ty).(ty_size)); [solve_typing..|]; iIntros (r); simpl_subst.
     iApply (type_cont [] [ϝ ⊑ₗ []]
                       (λ _, [rcx ◁ box (uninit 1); r ◁ box (option ty)]));
       [solve_typing..| |]; last first.
@@ -714,7 +711,7 @@ Section code.
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst. rewrite (Nat2Z.id 2%nat).
+    iApply (type_new 2); [solve_typing..|]; iIntros (r); simpl_subst.
     iApply (type_cont [] [ϝ ⊑ₗ []]
                       (λ _, [rcx ◁ box (uninit 1); r ◁ box (option $ &uniq{α} ty)]));
       [solve_typing..| |]; last first.
@@ -835,7 +832,7 @@ Section code.
   Proof.
     intros Hclone E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst. rewrite (Nat2Z.id 1%nat).
+    iApply (type_new 1); [solve_typing..|]; iIntros (r); simpl_subst.
     iApply (type_cont [] [ϝ ⊑ₗ []]
                       (λ _, [rcx ◁ box (uninit 1); r ◁ box (&uniq{α} ty)]));
       [solve_typing..| |]; last first.
