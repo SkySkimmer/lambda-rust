@@ -151,7 +151,7 @@ Section code.
     iIntros (tid) "#LFT #HE Hna HL Hk [Hx [Hm _]]".
     rewrite !tctx_hasty_val /=.
     iDestruct (ownptr_uninit_own with "Hx") as (lx vlx) "(% & Hx & Hx†)".
-    subst x. (* FIXME: Shouldn't things be printed as "#x"? *)
+    subst x. simpl.
     destruct m as [[|lm|]|]; try done. iDestruct "Hm" as "[Hm Hm†]".
     iDestruct (heap_mapsto_ty_own with "Hm") as (vlm) "[>Hm Hvlm]".
     inv_vec vlm=>m vlm. destruct m as [[|m|]|]; try by iDestruct "Hvlm" as ">[]".
