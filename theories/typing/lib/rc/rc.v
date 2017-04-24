@@ -46,7 +46,7 @@ Section rc.
       | _ => True
       end)%I.
 
-  Global Instance rc_type_ne ν γ l n :
+  Global Instance rc_inv_ne ν γ l n :
     Proper (type_dist2 n ==> dist n) (rc_inv tid ν γ l).
   Proof.
     solve_proper_core ltac:(fun _ => f_type_equiv || f_contractive || f_equiv).

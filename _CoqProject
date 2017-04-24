@@ -25,6 +25,7 @@ theories/lang/lib/memcpy.v
 theories/lang/lib/new_delete.v
 theories/lang/lib/spawn.v
 theories/lang/lib/lock.v
+theories/lang/lib/arc.v
 theories/typing/base.v
 theories/typing/type.v
 theories/typing/util.v
