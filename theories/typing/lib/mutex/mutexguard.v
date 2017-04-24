@@ -185,6 +185,45 @@ Section code.
     iApply type_jump; solve_typing.
   Qed.
 
+  Definition mutexguard_deref : val := mutexguard_derefmut.
+
+  Lemma mutexguard_deref_type ty `{!TyWf ty} :
+    typed_val mutexguard_derefmut (fn (fun '(α, β) =>
+      FP_wf ∅ [# &shr{α}(mutexguard β ty)]%T (&shr{α}ty)%T)).
+  Proof.
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros ([α β] ϝ ret arg). inv_vec arg=>g. simpl_subst.
+    iApply type_deref; [solve_typing..|]; iIntros (g'); simpl_subst.
+    (* Switch to Iris. *)
+    iIntros (tid) "#LFT #HE Hna HL Hk [Hg [Hg' _]]".
+    rewrite !tctx_hasty_val [[g]]lock /=.
+    destruct g' as [[|lg|]|]; try done. simpl.
+    iDestruct "Hg'" as (lm) "[Hlg Hshr]".
+    iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "([Hα1 Hα2] & HL & Hclose1)";
+      [solve_typing..|].
+    iMod (frac_bor_acc with "LFT Hlg Hα1") as (qlx') "[H↦ Hclose2]"; first done.
+    iMod (lctx_lft_alive_tok β with "HE HL") as (qβ) "(Hβ & HL & Hclose3)";
+      [solve_typing..|].
+    iDestruct (lft_intersect_acc with "Hβ Hα2") as (qβα) "[Hα2β Hclose4]".
+    wp_bind (!_)%E. iApply (wp_step_fupd with "[Hshr Hα2β]");
+         [done| |by iApply ("Hshr" with "[] Hα2β")|]; first done.
+    wp_read. iIntros "[#Hshr Hα2β] !>". wp_let.
+    iDestruct ("Hclose4" with "Hα2β") as "[Hβ Hα2]".
+    iMod ("Hclose3" with "Hβ HL") as "HL".
+    iMod ("Hclose2" with "H↦") as "Hα1".
+    iMod ("Hclose1" with "[$] HL") as "HL".
+    iDestruct (lctx_lft_incl_incl α β with "HL HE") as "#Hαβ"; [solve_typing..|].
+    (* Switch back to typing mode. *)
+    iApply (type_type _ _ _ [ g ◁ own_ptr _ _; #lm +ₗ #1 ◁ &shr{α} ty ]
+        with "[] LFT HE Hna HL Hk"); last first.
+    { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
+      unlock. iFrame. iApply ty_shr_mono; last done.
+      iApply lft_incl_glb; last by iApply lft_incl_refl. done. }
+    iApply type_letalloc_1; [solve_typing..|]; iIntros (r); simpl_subst.
+    iApply type_delete; [solve_typing..|].
+    iApply type_jump; solve_typing.
+  Qed.
+
   Definition mutexguard_drop : val :=
     funrec: <> ["g"] :=
       let: "m" := !"g" in

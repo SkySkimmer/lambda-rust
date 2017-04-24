@@ -54,12 +54,7 @@ Section refmut_functions.
   Qed.
 
   (* Turning a refmut into a unique borrow. *)
-  Definition refmut_derefmut : val :=
-    funrec: <> ["x"] :=
-      let: "x'" := !"x" in
-      let: "r'" := !"x'" in
-      letalloc: "r" <- "r'" in
-      delete [ #1; "x"];; return: ["r"].
+  Definition refmut_derefmut : val := refmut_deref.
 
   Lemma refmut_derefmut_type ty `{!TyWf ty} :
     typed_val refmut_derefmut (fn (fun '(α, β) =>
