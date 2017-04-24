@@ -112,6 +112,8 @@ Section rwlockreadguard.
     lctx_lft_eq E L α1 α2 → eqtype E L ty1 ty2 →
     eqtype E L (rwlockreadguard α1 ty1) (rwlockreadguard α2 ty2).
   Proof. intros. by eapply rwlockreadguard_proper. Qed.
+
+  (* TODO: In Rust, the read guard is Sync if ty is Send+Sync. *)
 End rwlockreadguard.
 
 Hint Resolve rwlockreadguard_mono' rwlockreadguard_proper' : lrust_typing.

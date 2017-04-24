@@ -79,6 +79,9 @@ Section mguard.
   Global Instance mutexguard_wf α ty `{!TyWf ty} : TyWf (mutexguard α ty) :=
     { ty_lfts := [α]; ty_wf_E := ty.(ty_wf_E) ++ ty.(ty_outlives_E) α }.
 
+  (* TODO: Contractivity, compat with lft_incl and eqtype.
+     MutexGuard is Sync if T is Send. *)
+
 End mguard.
 
 Section code.

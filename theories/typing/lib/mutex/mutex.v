@@ -87,6 +87,8 @@ Section mutex.
   Global Instance mutex_wf ty `{!TyWf ty} : TyWf (mutex ty) :=
     { ty_lfts := ty.(ty_lfts); ty_wf_E := ty.(ty_wf_E) }.
 
+  (* TODO: Non-expansiveness, compat with eqtype, Send+Sync if ty is Send. *)
+
 End mutex.
 
 Section code.
