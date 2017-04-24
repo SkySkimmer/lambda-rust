@@ -27,7 +27,7 @@ Section proof.
 
   Definition locked (γ : gname): iProp Σ := own γ (Excl ()).
 
-  Global Instance lock_inv_ne γ l : NonExpansive (lock_proto γ l).
+  Global Instance lock_proto_ne γ l : NonExpansive (lock_proto γ l).
   Proof. solve_proper. Qed.
 
   Global Instance locked_timeless γ : TimelessP (locked γ).

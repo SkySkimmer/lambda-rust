@@ -87,7 +87,19 @@ Section mutex.
   Global Instance mutex_wf ty `{!TyWf ty} : TyWf (mutex ty) :=
     { ty_lfts := ty.(ty_lfts); ty_wf_E := ty.(ty_wf_E) }.
 
-  (* TODO: Non-expansiveness, compat with eqtype, Send+Sync if ty is Send. *)
+  Global Instance mutex_type_ne : TypeNonExpansive mutex.
+  Proof.
+    constructor;
+      solve_proper_core ltac:(fun _ => exact: type_dist2_S ||
+                                              f_type_equiv || f_contractive || f_equiv).
+  Qed.
+
+  Global Instance mutex_ne : NonExpansive mutex.
+  Proof.
+    constructor; solve_proper_core ltac:(fun _ => (eapply ty_size_ne; try reflexivity) || f_equiv).
+  Qed.
+
+  (* TODO: compat with eqtype, Send+Sync if ty is Send. *)
 
 End mutex.
 
