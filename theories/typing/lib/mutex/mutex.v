@@ -174,4 +174,41 @@ Section code.
     iApply type_jump; solve_typing.
   Qed.
 
+  Definition mutex_get_mut : val :=
+    funrec: <> ["m"] :=
+      let: "m'" := !"m" in
+      "m" <- ("m'" +ₗ #1);;
+      return: ["m"].
+
+  Lemma mutex_get_mut_type ty `{!TyWf ty} :
+    typed_val mutex_get_mut (fn(∀ α, ∅; &uniq{α} mutex ty) → &uniq{α} ty).
+  Proof.
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ϝ ret arg); inv_vec arg=>m; simpl_subst.
+    iApply type_deref; [solve_typing..|]; iIntros (m'); simpl_subst.
+    (* Go to Iris *)
+    iIntros (tid) "#LFT #HE Hna HL Hk [Hm [Hm' _]]".
+    rewrite !tctx_hasty_val [[m]]lock.
+    destruct m' as [[|lm'|]|]; try done. simpl.
+    iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose1)";
+      [solve_typing..|].
+    iMod (bor_acc_cons with "LFT Hm' Hα") as "[Hm' Hclose2]"; first done.
+    wp_op. iDestruct "Hm'" as (vl) "[H↦ Hm']".
+    destruct vl as [|[[|m'|]|] vl]; try done. simpl.
+    iDestruct (heap_mapsto_vec_cons with "H↦") as "[H↦1 H↦2]".
+    iDestruct "Hm'" as "[% Hvl]".
+    iMod ("Hclose2" $! (shift_loc lm' 1 ↦∗: ty_own ty tid)%I with "[H↦1] [H↦2 Hvl]") as "[Hbor Hα]".
+    { iIntros "!> Hlm' !>". iNext. clear vl. iDestruct "Hlm'" as (vl) "[H↦ Hlm']".
+      iExists (_ :: _). rewrite heap_mapsto_vec_cons. do 2 iFrame. done. }
+    { iExists vl. iFrame. }
+    iMod ("Hclose1" with "Hα HL") as "HL".
+    (* Switch back to typing mode. *)
+    iApply (type_type _ _ _ [ m ◁ own_ptr _ _; #(shift_loc lm' 1) ◁ &uniq{α} ty]
+        with "[] LFT HE Hna HL Hk"); last first.
+    { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
+      unlock. iFrame. }
+    iApply type_assign; [solve_typing..|].
+    iApply type_jump; solve_typing.
+  Qed.
+
 End code.
