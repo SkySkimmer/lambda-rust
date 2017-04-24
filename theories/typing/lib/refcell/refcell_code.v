@@ -24,10 +24,9 @@ Section refcell_functions.
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_new; [solve_typing..|].
+    iApply (type_new (S ty.(ty_size))); [solve_typing..|].
     iIntros (r tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
-    rewrite (Nat2Z.id (S ty.(ty_size))) tctx_interp_cons
-            tctx_interp_singleton !tctx_hasty_val.
+    rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hr Hx]".
     iDestruct (ownptr_own with "Hx") as (lx vlx) "(% & Hx↦ & Hx & Hx†)". subst x.
     iDestruct (ownptr_uninit_own with "Hr") as (lr vlr) "(% & Hr↦ & Hr†)". subst r.
@@ -59,10 +58,9 @@ Section refcell_functions.
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_new; [solve_typing..|].
+    iApply (type_new ty.(ty_size)); [solve_typing..|].
     iIntros (r tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
-    rewrite (Nat2Z.id (ty.(ty_size))) tctx_interp_cons
-            tctx_interp_singleton !tctx_hasty_val.
+    rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hr Hx]".
     iDestruct (ownptr_own with "Hx") as (lx vlx) "(% & >Hx↦ & Hx & Hx†)". subst x.
     inv_vec vlx=>-[[|?|?]|????] vl; try iDestruct "Hx" as ">[]". simpl vec_to_list.

@@ -287,6 +287,7 @@ Lemma elctx_sat_submseteq `{invG Σ, lftG Σ} E E' L :
   E' ⊆+ E → elctx_sat E L E'.
 Proof. iIntros (HE' ?) "_ !# H". by iApply big_sepL_submseteq. Qed.
 
+(* TODO: This is not really the right file for stuff like this. *)
 Hint Constructors Forall Forall2 elem_of_list : lrust_typing.
 Hint Resolve of_val_unlock : lrust_typing.
 Hint Resolve
@@ -298,6 +299,9 @@ Hint Resolve
   : lrust_typing.
 
 Hint Resolve elctx_sat_submseteq | 100 : lrust_typing.
+
+Hint Extern 1 (@eq nat _ (Z.to_nat _)) => (etrans; [symmetry; exact: Nat2Z.id | reflexivity]) : lrust_typing.
+Hint Extern 1 (@eq nat (Z.to_nat _) _) => (etrans; [exact: Nat2Z.id | reflexivity]) : lrust_typing.
 
 (* FIXME : I would prefer using a [Hint Resolve <-] for this, but
    unfortunately, this is not preserved across modules. See:

@@ -155,7 +155,7 @@ Section typing.
       iIntros (α ϝ ret arg). inv_vec arg=>c x. simpl_subst.
     iApply type_deref; [solve_typing..|].
     iIntros (c'); simpl_subst.
-    iApply type_new; [solve_typing..|]. iIntros (r); simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst.
     (* Drop to Iris level. *)
     iIntros (tid) "#LFT #HE Htl HL HC".
     rewrite 3!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
@@ -170,11 +170,11 @@ Section typing.
     iDestruct (ty_size_eq with "Hrown") as ">Heq". iDestruct "Heq" as %Heq.
     (* FIXME: Changing the order of $Hr↦ $Hc'↦ breaks applying...?? *)
     wp_apply (wp_memcpy with "[$Hr↦ $Hc'↦]").
-    { by rewrite Heq Nat2Z.id. }
+    { by rewrite Heq. }
     { f_equal. done. }
     iIntros "[Hr↦ Hc'↦]". wp_seq.
     iDestruct "Hx" as "[Hx↦ Hx†]". iDestruct "Hx↦" as (vx) "[Hx↦ Hxown]".
-    rewrite Nat2Z.id. iDestruct (ty_size_eq with "Hxown") as "#%".
+    iDestruct (ty_size_eq with "Hxown") as "#%".
     wp_apply (wp_memcpy with "[$Hc'↦ $Hx↦]"); try by f_equal.
     iIntros "[Hc'↦ Hx↦]". wp_seq.
     iMod ("Hclose2" with "[Hc'↦ Hxown] Htl") as "[Htok Htl]"; first by auto with iFrame.

@@ -104,8 +104,9 @@ Section code.
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (m); simpl_subst.
-    rewrite (Nat2Z.id (S ty.(ty_size))). (* FIXME: Having to do this after every type_new is rather annoying... *)
+    (* FIXME: It should be possible to infer the `S ty.(ty_size)` here.
+       This should be done in the @eq external hints added in lft_contexts.v. *)
+    iApply (type_new (S ty.(ty_size))); [solve_typing..|]; iIntros (m); simpl_subst.
     (* FIXME: The following should work.  We could then go into Iris later.
     iApply (type_memcpy ty); [solve_typing..|]. *)
     (* Switch to Iris. *)
@@ -145,13 +146,12 @@ Section code.
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>m. simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (x); simpl_subst.
-    rewrite (Nat2Z.id ty.(ty_size)).
+    iApply (type_new ty.(ty_size)); [solve_typing..|]; iIntros (x); simpl_subst.
     (* Switch to Iris. *)
     iIntros (tid) "#LFT #HE Hna HL Hk [Hx [Hm _]]".
     rewrite !tctx_hasty_val /=.
     iDestruct (ownptr_uninit_own with "Hx") as (lx vlx) "(% & Hx & Hx†)".
-    subst x. (* FIXME: Shouldn't things be printed as "#x"? *)
+    subst x. simpl.
     destruct m as [[|lm|]|]; try done. iDestruct "Hm" as "[Hm Hm†]".
     iDestruct (heap_mapsto_ty_own with "Hm") as (vlm) "[>Hm Hvlm]".
     inv_vec vlm=>m vlm. destruct m as [[|m|]|]; try by iDestruct "Hvlm" as ">[]".

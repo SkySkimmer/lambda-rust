@@ -24,8 +24,8 @@ Section lazy_lft.
     iApply (type_newlft []). iIntros (α).
     iApply (type_new_subtype (Π[uninit 1;uninit 1])); [solve_typing..|].
       iIntros (t). simpl_subst.
-    iApply type_new; [solve_typing|]. iIntros (f). simpl_subst.
-    iApply type_new; [solve_typing|]. iIntros (g). simpl_subst.
+    iApply type_new; [solve_typing..|]. iIntros (f). simpl_subst.
+    iApply type_new; [solve_typing..|]. iIntros (g). simpl_subst.
     iApply type_int. iIntros (v42). simpl_subst.
     iApply type_assign; [solve_typing..|].
     iApply (type_assign _ (&shr{α}_)); [solve_typing..|].
