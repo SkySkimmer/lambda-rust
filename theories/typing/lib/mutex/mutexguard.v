@@ -104,7 +104,7 @@ Section code.
       let: "guard" := new [ #1 ] in
       acquire ["m"];;
       "guard" +ₗ #0 <- "m";;
-      delete [ #1; "mutex"];; return: ["guard"].
+      delete [ #1; "mutex" ];; return: ["guard"].
 
   Lemma mutex_lock_type ty `{!TyWf ty} :
     typed_val mutex_lock (fn(∀ α, ∅; &shr{α} mutex ty) → mutexguard α ty).
@@ -132,6 +132,37 @@ Section code.
       unlock. iFrame. iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame "Hg".
       iExists _, _. iFrame "#∗". }
     iApply type_delete; [solve_typing..|].
+    iApply type_jump; solve_typing.
+  Qed.
+
+  Definition mutexguard_drop : val :=
+    funrec: <> ["g"] :=
+      let: "m" := !"g" in
+      release ["m"];;
+      delete [ #1; "g" ];;
+      let: "r" := new [ #0 ] in return: ["r"].
+
+  Lemma mutexguard_drop_type ty `{!TyWf ty} :
+    typed_val mutexguard_drop (fn(∀ α, ∅; mutexguard α ty) → unit).
+  Proof.
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ϝ ret arg). inv_vec arg=>g. simpl_subst.
+    iApply type_deref; [solve_typing..|]; iIntros (m); simpl_subst.
+    (* Switch to Iris. *)
+    iIntros (tid) "#LFT #HE Hna HL Hk [Hg [Hm _]]".
+    rewrite !tctx_hasty_val [[g]]lock /=.
+    destruct m as [[|lm|]|]; try done. iDestruct "Hm" as (γ β) "(Hlcked & #Hαβ & #Hshr & Hcnt)".
+    (* All right, we are done preparing our context. Let's get going. *)
+    iMod (lctx_lft_alive_tok α with "HE HL") as (q) "(Hα & HL & Hclose1)"; [solve_typing..|].
+    wp_apply (release_spec with "[] [Hα $Hlcked Hcnt]"); first by iApply (mutex_acc with "LFT Hshr Hαβ").
+    { by iFrame. }
+    iIntros "Htok". wp_seq. iMod ("Hclose1" with "Htok HL") as "HL".
+    (* Switch back to typing mode. *)
+    iApply (type_type _ _ _ [ g ◁ own_ptr _ _ ]
+        with "[] LFT HE Hna HL Hk"); last first.
+    { rewrite tctx_interp_singleton tctx_hasty_val. unlock. iFrame. }
+    iApply type_delete; [solve_typing..|].
+    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst.
     iApply type_jump; solve_typing.
   Qed.
 
