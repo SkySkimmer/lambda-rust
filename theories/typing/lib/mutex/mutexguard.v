@@ -79,6 +79,18 @@ Section mguard.
   Global Instance mutexguard_wf α ty `{!TyWf ty} : TyWf (mutexguard α ty) :=
     { ty_lfts := [α]; ty_wf_E := ty.(ty_wf_E) ++ ty.(ty_outlives_E) α }.
 
+  Global Instance mutexguard_type_contractive α : TypeContractive (mutexguard α).
+  Proof.
+    constructor;
+      solve_proper_core ltac:(fun _ => f_type_equiv || f_contractive || f_equiv
+                                    || exact: type_dist2_S).
+  Qed.
+  Global Instance mutexguard_ne α : NonExpansive (mutexguard α).
+  Proof. apply type_contractive_ne, _. Qed.
+
+  (* TODO: compat with lft_incl and eqtype.
+     MutexGuard is Sync if T is Send. *)
+
 End mguard.
 
 Section code.
@@ -255,4 +267,7 @@ Section code.
     iApply type_jump; solve_typing.
   Qed.
 
+  (* TODO:
+     Should we do try_lock?
+   *)
 End code.

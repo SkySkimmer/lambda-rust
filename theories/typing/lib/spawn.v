@@ -56,6 +56,9 @@ Section join_handle.
   Qed.
   Global Instance join_handle_ne : NonExpansive join_handle.
   Proof. apply type_contractive_ne, _. Qed.
+
+  (* TODO: Looks like in Rust, we have T: Send -> JoinHandle<T>: Send and
+     T:Sync -> JoinHandle<T>: Sync. *)
 End join_handle.
 
 Section spawn.
