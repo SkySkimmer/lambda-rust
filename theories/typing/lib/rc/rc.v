@@ -8,6 +8,8 @@ From lrust.typing Require Export type.
 From lrust.typing Require Import typing option.
 Set Default Proof Using "Type".
 
+(* TODO : weak_count strong_count *)
+
 Definition rc_stR :=
   prodUR (optionUR (csumR (prodR fracR positiveR) (exclR unitC))) natUR.
 Class rcG Σ :=

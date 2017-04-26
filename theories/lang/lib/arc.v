@@ -7,7 +7,7 @@ From iris.algebra Require Import excl csum frac auth.
 From lrust.lang Require Import lang proofmode notation new_delete.
 Set Default Proof Using "Type".
 
-(* TODO : get_mut, make_mut, try_unwrap *)
+(* TODO : get_mut, make_mut *)
 
 Definition clone_arc : val :=
   rec: "clone" ["l"] :=
@@ -32,25 +32,32 @@ Definition upgrade : val :=
       if: CAS "l" "strong" ("strong" + #1) then #true
       else "upgrade" ["l"].
 
-Definition drop_weak dealloc `{Closed [] dealloc} : val :=
-  rec: "drop" ["l"] :=
+Definition drop_weak : val :=
+  rec: "drop" ["l"; "dealloc"] :=
     let: "weak" := !ˢᶜ("l" +ₗ #1) in
     if: CAS ("l" +ₗ #1) "weak" ("weak" - #1) then
-      if: "weak" = #1 then dealloc else #()
-    else "drop" ["l"].
+      if: "weak" = #1 then "dealloc" [] else #()
+    else "drop" ["l"; "dealloc"].
 
-Definition drop_arc drop dealloc `{Closed [] drop, Closed [] dealloc} : val :=
-  rec: "drop" ["l"] :=
+Definition drop_arc : val :=
+  rec: "drop_arc" ["l"; "drop"; "dealloc"] :=
     let: "strong" := !ˢᶜ"l" in
     if: CAS "l" "strong" ("strong" - #1) then
       if: "strong" = #1 then
-        drop;;
-        drop_weak dealloc ["l"]
+        "drop" [];;
+        drop_weak ["l"; "dealloc"]
       else #()
-    else "drop" ["l"].
+    else "drop_arc" ["l"; "drop"; "dealloc"].
 
 Definition try_unwrap : val :=
-  rec: "try_unwrap" ["l"] := CAS "l" #1 #0.
+  λ: ["l"], CAS "l" #1 #0.
+
+Definition try_unwrap_full : val :=
+  λ: ["l"],
+    if: CAS "l" #1 #0 then
+      if: !ˢᶜ("l" +ₗ #1) = #1 then #0
+      else "l" <- #1;; #1
+    else #2.
 
 (** The CMRA we need. *)
 (* Not bundling heapG, as it may be shared with other users. *)
@@ -62,19 +69,16 @@ Definition arcΣ : gFunctors := #[GFunctor (authR arc_stR)].
 Instance subG_arcΣ {Σ} : subG arcΣ Σ → arcG Σ.
 Proof. solve_inG. Qed.
 
-Definition arc_tok q : authR arc_stR :=
-  ◯ (Some $ Cinl (q, 1%positive), 0%nat).
-Definition arc_dropping_tok : authR arc_stR :=
-  ◯ (Some $ Cinr $ Excl (), 0%nat).
-Definition weak_tok : authR arc_stR := ◯ (None, 1%nat).
+Section def.
+  Context `{!lrustG Σ, !arcG Σ} (P1 : Qp → iProp Σ) (P2 : iProp Σ) (N : namespace).
 
-Section arc.
-  Context `{!lrustG Σ, !arcG Σ} (N : namespace) (P1 : Qp → iProp Σ)
-          {HP1:Fractional P1} (P2 : iProp Σ).
-  Set Default Proof Using "HP1".
+  Definition arc_tok γ q : iProp Σ :=
+    own γ (◯ (Some $ Cinl (q, 1%positive), 0%nat)).
+  Definition weak_tok γ : iProp Σ :=
+    own γ (◯ (None, 1%nat)).
 
-  Instance P1_AsFractional q : AsFractional (P1 q) P1 q.
-  Proof. done. Qed.
+  Global Instance arc_tok_timeless γ q : TimelessP (arc_tok γ q) := _.
+  Global Instance weak_tok_timeless γ : TimelessP (weak_tok γ) := _.
 
   Definition arc_inv (γ : gname) (l : loc) : iProp Σ :=
     (∃ st : arc_stR, own γ (● st) ∗
@@ -92,22 +96,50 @@ Section arc.
   Definition is_arc (γ : gname) (l : loc) : iProp Σ :=
     inv N (arc_inv γ l).
 
+  Global Instance is_arc_persistent γ l : PersistentP (is_arc γ l) := _.
+
   Definition arc_tok_acc (γ : gname) P E : iProp Σ :=
-    (□ (P ={E,∅}=∗ ∃ q, own γ (arc_tok q) ∗ (own γ (arc_tok q) ={∅,E}=∗ P)))%I.
+    (□ (P ={E,∅}=∗ ∃ q, arc_tok γ q ∗ (arc_tok γ q ={∅,E}=∗ P)))%I.
 
   Definition weak_tok_acc (γ : gname) P E : iProp Σ :=
-    (□ (P ={E,∅}=∗ own γ weak_tok ∗ (own γ weak_tok ={∅,E}=∗ P)))%I.
+    (□ (P ={E,∅}=∗ weak_tok γ ∗ (weak_tok γ ={∅,E}=∗ P)))%I.
 
-  Definition dealloc_spec dealloc P : iProp Σ :=
-    ({{{ P ∗ P2 }}} dealloc {{{ RET #(); P }}})%I.
+  Definition dealloc_spec l (dealloc : val) P : iProp Σ :=
+    ({{{ P ∗ l ↦ #0 ∗ shift_loc l 1 ↦ #0 ∗ P2}}} dealloc []
+     {{{ RET #(); P }}})%I.
 
-  Definition unwrap_spec unwrap P : iProp Σ :=
-    ({{{ P ∗ P1 1 }}} unwrap {{{ RET #(); P ∗ P2 }}})%I.
+  Definition drop_spec (drop : val) P : iProp Σ :=
+    ({{{ P ∗ P1 1 }}} drop [] {{{ RET #(); P ∗ P2 }}})%I.
+End def.
+
+Section arc.
+  Context `{!lrustG Σ, !arcG Σ} (P1 : Qp → iProp Σ) {HP1:Fractional P1}
+          (P2 : iProp Σ) (N : namespace).
+
+  Instance P1_AsFractional q : AsFractional (P1 q) P1 q.
+  Proof using HP1. done. Qed.
+
+  Global Instance arc_inv_ne n :
+    Proper (pointwise_relation _ (dist n) ==> dist n ==> eq ==> eq ==> dist n)
+           arc_inv.
+  Proof. solve_proper. Qed.
+  Global Instance arc_inv_proper :
+    Proper (pointwise_relation _ (≡) ==> (≡) ==> eq ==> eq ==> (≡))
+           arc_inv.
+  Proof. solve_proper. Qed.
+
+  Global Instance is_arc_contractive n :
+    Proper (pointwise_relation _ (dist_later n) ==> dist_later n ==> eq ==> eq ==> eq ==> dist n)
+           is_arc.
+  Proof. solve_contractive. Qed.
+  Global Instance is_arc_proper :
+    Proper (pointwise_relation _ (≡) ==> (≡) ==> eq ==> eq ==> eq ==> (≡)) is_arc.
+  Proof. solve_proper. Qed.
 
   Lemma create_arc E l :
-    l ↦ #1 -∗ shift_loc l 1 ↦ #1 -∗ P1 1 ={E}=∗
-      ∃ γ q, is_arc γ l ∗ P1 q ∗ own γ (arc_tok q).
-  Proof.
+    l ↦ #1 -∗ shift_loc l 1 ↦ #1 -∗ P1 1%Qp ={E}=∗
+      ∃ γ q, is_arc P1 P2 N γ l ∗ P1 q ∗ arc_tok γ q.
+  Proof using HP1.
     iIntros "Hl1 Hl2 [HP1 HP1']".
     iMod (own_alloc ((● (Some $ Cinl ((1/2)%Qp, xH), O) ⋅
                       ◯ (Some $ Cinl ((1/2)%Qp, xH), O)))) as (γ) "[H● H◯]"; first done.
@@ -116,44 +148,45 @@ Section arc.
   Qed.
 
   Lemma create_weak E l :
-    l ↦ #0 -∗ shift_loc l 1 ↦ #1 -∗ P2 ={E}=∗ ∃ γ, is_arc γ l ∗ own γ weak_tok.
+    l ↦ #0 -∗ shift_loc l 1 ↦ #1 -∗ P2 ={E}=∗ ∃ γ, is_arc P1 P2 N γ l ∗ weak_tok γ.
   Proof.
     iIntros "Hl1 Hl2 HP2".
     iMod (own_alloc ((● (None, 1%nat) ⋅ ◯ (None, 1%nat)))) as (γ) "[H● H◯]"; first done.
     iExists _. iFrame. iApply inv_alloc. iExists _. iFrame.
   Qed.
 
-  Lemma arc_tok_auth_val st q :
-    ✓ (● st ⋅ arc_tok q) →
-    ∃ q' strong weak, st = (Some $ Cinl (q', strong), weak) ∧
-                      if decide (strong = xH) then q = q'
-                      else ∃ q'', (q' = q + q'')%Qp.
+  Lemma arc_tok_auth_val st γ q :
+    own γ (● st) -∗ arc_tok γ q -∗
+    ⌜∃ q' strong weak, st = (Some $ Cinl (q', strong), weak) ∧
+                       if decide (strong = xH) then q = q'
+                        else ∃ q'', q' = (q + q'')%Qp⌝.
   Proof.
-    move=>/auth_valid_discrete_2 [/prod_included [/option_included Hincl _] [Hval _]].
+    iIntros "H● Htok". iDestruct (own_valid_2 with "H● Htok") as
+        %[[Hincl%option_included _]%prod_included [Hval _]]%auth_valid_discrete_2.
     destruct st, Hincl as [[=]|(?&?&[= <-]&?&[Hincl|Hincl%csum_included])];
       simpl in *; subst.
-    - setoid_subst. eexists _, _, _. by split.
+    - setoid_subst. iExists _, _, _. by iSplit.
     - destruct Hincl as [->|[(?&[]&[=<-]&->&
              [[??]%frac_included%Qp_lt_sum  ?%pos_included]%prod_included)|
         (?&?&[=]&?)]]; first done.
-      eexists _, _, _. split=>//. simpl in *. destruct decide; [subst;lia|eauto].
+      iExists _, _, _. iSplit=>//. simpl in *. destruct decide; [subst;lia|eauto].
   Qed.
 
   Lemma clone_arc_spec (γ : gname) (l : loc) (P : iProp Σ) :
-    is_arc γ l -∗ arc_tok_acc γ P (⊤ ∖ ↑N) -∗
+    is_arc P1 P2 N γ l -∗ arc_tok_acc γ P (⊤ ∖ ↑N) -∗
     {{{ P }}} clone_arc [ #l]
-    {{{ q', RET #(); P ∗ own γ (arc_tok q') ∗ P1 q' }}}.
-  Proof.
+    {{{ q', RET #(); P ∗ arc_tok γ q' ∗ P1 q' }}}.
+  Proof using HP1.
     iIntros "#INV #Hacc !# * HP HΦ". iLöb as "IH". wp_rec. wp_bind (!ˢᶜ_)%E.
     iInv N as (st) "[>H● H]" "Hclose1".
     iMod ("Hacc" with "HP") as (?) "[Hown Hclose2]".
-    iDestruct (own_valid_2 with "H● Hown") as %(?& strong &?&[-> _])%arc_tok_auth_val.
+    iDestruct (arc_tok_auth_val with "H● Hown") as %(?& strong &?&[-> _]).
     iDestruct "H" as (?) "[H H']". wp_read. iMod ("Hclose2" with "Hown") as "HP".
     iModIntro. iMod ("Hclose1" with "[H H' H●]") as "_".
     { iExists _. auto with iFrame. }
     iModIntro. wp_let. wp_op. wp_bind (CAS _ _ _). iInv N as (st) "[>H● H]" "Hclose1".
     iMod ("Hacc" with "HP") as (?) "[Hown Hclose2]".
-    iDestruct (own_valid_2 with "H● Hown") as %(?&strong'&?&[-> _])%arc_tok_auth_val.
+    iDestruct (arc_tok_auth_val with "H● Hown") as %(?&strong'&?&[-> _]).
     iDestruct "H" as (q) "(Hl & Hl1 & >Heq & [HP1 HP1'])". iDestruct "Heq" as %Heq.
     destruct (decide (strong = strong')) as [->|?].
     - wp_apply (wp_cas_int_suc with "Hl"); first done. iIntros "Hl".
@@ -175,21 +208,21 @@ Section arc.
       iModIntro. wp_apply (wp_if _ false). iApply ("IH" with "HP HΦ").
   Qed.
 
-  Lemma downgrade_arc_spec (γ : gname) (l : loc) (P : iProp Σ) :
-    is_arc γ l -∗ arc_tok_acc γ P (⊤ ∖ ↑N) -∗
-    {{{ P }}} downgrade [ #l] {{{ RET #(); P ∗ own γ weak_tok }}}.
+  Lemma downgrade_spec (γ : gname) (l : loc) (P : iProp Σ) :
+    is_arc P1 P2 N γ l -∗ arc_tok_acc γ P (⊤ ∖ ↑N) -∗
+    {{{ P }}} downgrade [ #l] {{{ RET #(); P ∗ weak_tok γ }}}.
   Proof.
     iIntros "#INV #Hacc !# * HP HΦ". iLöb as "IH". wp_rec. wp_op. wp_bind (!ˢᶜ_)%E.
     iInv N as (st) "[>H● H]" "Hclose1".
     iMod ("Hacc" with "HP") as (?) "[Hown Hclose2]".
-    iDestruct (own_valid_2 with "H● Hown") as %(?&?& weak &[-> _])%arc_tok_auth_val.
+    iDestruct (arc_tok_auth_val with "H● Hown") as %(?&?& weak &[-> _]).
     iDestruct "H" as (?) "(H & H' & H'')". wp_read. iMod ("Hclose2" with "Hown") as "HP".
     iModIntro. iMod ("Hclose1" with "[H H' H'' H●]") as "_".
     { iExists _. auto with iFrame. }
     iModIntro. wp_let. wp_op. wp_bind (CAS _ _ _). wp_op.
     iInv N as (st) "[>H● H]" "Hclose1".
     iMod ("Hacc" with "HP") as (?) "[Hown Hclose2]".
-    iDestruct (own_valid_2 with "H● Hown") as %(?&?& weak' &[-> _])%arc_tok_auth_val.
+    iDestruct (arc_tok_auth_val with "H● Hown") as %(?&?& weak' &[-> _]).
     iDestruct "H" as (q) "(Hl & Hl1 & >Heq & HP1)". iDestruct "Heq" as %Heq.
     destruct (decide (weak = weak')) as [<-|Hw].
     - wp_apply (wp_cas_int_suc with "Hl1"); first done. iIntros "Hl1".
@@ -209,25 +242,26 @@ Section arc.
       iModIntro. wp_apply (wp_if _ false). iApply ("IH" with "HP HΦ").
   Qed.
 
-  Lemma weak_tok_auth_val st :
-    ✓ (● st ⋅ weak_tok) → ∃ st' weak, st = (st', S weak) ∧ ✓ st'.
+  Lemma weak_tok_auth_val γ st :
+    own γ (● st) -∗ weak_tok γ -∗ ⌜∃ st' weak, st = (st', S weak) ∧ ✓ st'⌝.
   Proof.
-    move=>/auth_valid_discrete_2 [/prod_included
-                [/option_included Hincl /nat_included Hincl'] [Hval _]].
+    iIntros "H● Htok". iDestruct (own_valid_2 with "H● Htok") as
+        %[[Hincl%option_included Hincl'%nat_included]%prod_included [Hval _]]
+         %auth_valid_discrete_2.
     destruct st as [?[]], Hincl as [_|(?&?&[=]&?)]; simpl in *; try lia. eauto.
   Qed.
 
   Lemma clone_weak_spec (γ : gname) (l : loc) (P : iProp Σ) :
-    is_arc γ l -∗ weak_tok_acc γ P (⊤ ∖ ↑N) -∗
-    {{{ P }}} clone_weak [ #l] {{{ RET #(); P ∗ own γ weak_tok }}}.
+    is_arc P1 P2 N γ l -∗ weak_tok_acc γ P (⊤ ∖ ↑N) -∗
+    {{{ P }}} clone_weak [ #l] {{{ RET #(); P ∗ weak_tok γ }}}.
   Proof.
     iIntros "#INV #Hacc !# * HP HΦ". iLöb as "IH". wp_rec. wp_op. wp_bind (!ˢᶜ_)%E.
     iAssert (□ (P ={⊤,∅}=∗ ∃ w : Z, shift_loc l 1 ↦ #w ∗
-              (shift_loc l 1 ↦ #(w + 1) ={∅,⊤}=∗ P ∗ own γ weak_tok) ∧
+              (shift_loc l 1 ↦ #(w + 1) ={∅,⊤}=∗ P ∗ weak_tok γ) ∧
               (shift_loc l 1 ↦ #w ={∅,⊤}=∗ P)))%I as "#Hproto".
     { iIntros "!# HP". iInv N as (st) "[>H● H]" "Hclose1".
       iMod ("Hacc" with "HP") as "[Hown Hclose2]".
-      iDestruct (own_valid_2 with "H● Hown") as %(st' & weak & -> & Hval)%weak_tok_auth_val.
+      iDestruct (weak_tok_auth_val with "H● Hown") as %(st' & weak & -> & Hval).
       destruct st' as [[[]| |]|]; try done; iExists _.
       - iDestruct "H" as (?) "(? & >$ & ?)". iIntros "!>"; iSplit; iIntros "?";
         iMod ("Hclose2" with "Hown") as "HP".
@@ -265,18 +299,18 @@ Section arc.
       iModIntro. wp_apply (wp_if _ false). by iApply ("IH" with "Hown").
   Qed.
 
-  Lemma upgrade_arc_spec (γ : gname) (l : loc) (P : iProp Σ) :
-    is_arc γ l -∗ weak_tok_acc γ P (⊤ ∖ ↑N) -∗
+  Lemma upgrade_spec (γ : gname) (l : loc) (P : iProp Σ) :
+    is_arc P1 P2 N γ l -∗ weak_tok_acc γ P (⊤ ∖ ↑N) -∗
     {{{ P }}} upgrade [ #l]
-    {{{ (b : bool) q, RET #b; P ∗ if b then own γ (arc_tok q) ∗ P1 q else True }}}.
-  Proof.
+    {{{ (b : bool) q, RET #b; P ∗ if b then arc_tok γ q ∗ P1 q else True }}}.
+  Proof using HP1.
     iIntros "#INV #Hacc !# * HP HΦ". iLöb as "IH". wp_rec. wp_bind (!ˢᶜ_)%E.
     iAssert (□ (P ={⊤,∅}=∗ ∃ s : Z, l ↦ #s ∗
-              (⌜s ≠ 0⌝ -∗ l ↦ #(s + 1) ={∅,⊤}=∗ ∃ q, P ∗ own γ (arc_tok q) ∗ ▷ P1 q) ∧
+              (⌜s ≠ 0⌝ -∗ l ↦ #(s + 1) ={∅,⊤}=∗ ∃ q, P ∗ arc_tok γ q ∗ ▷ P1 q) ∧
               (l ↦ #s ={∅,⊤}=∗ P)))%I as "#Hproto".
     { iIntros "!# HP". iInv N as (st) "[>H● H]" "Hclose1".
       iMod ("Hacc" with "HP") as "[Hown Hclose2]".
-      iDestruct (own_valid_2 with "H● Hown") as %(st' & weak & -> & Hval)%weak_tok_auth_val.
+      iDestruct (weak_tok_auth_val with "H● Hown") as %(st' & weak & -> & Hval).
       destruct st' as [[[]| |]|]; try done; iExists _.
       - iDestruct "H" as (q) "(>$ & ? & >Heq & [HP1 HP1'])". iDestruct "Heq" as %Heq.
         iIntros "!>"; iSplit; iMod ("Hclose2" with "Hown") as "HP".
@@ -311,17 +345,18 @@ Section arc.
         iModIntro. wp_apply (wp_if _ false). by iApply ("IH" with "Hown").
   Qed.
 
-  Lemma drop_weak_spec dealloc `{Closed [] dealloc} (γ : gname) (l : loc) P :
-    is_arc γ l -∗ dealloc_spec dealloc P -∗
-    {{{ P ∗ own γ weak_tok }}} drop_weak dealloc [ #l] {{{ RET #() ; P }}}.
+  Lemma drop_weak_spec (dealloc : val) (γ : gname) (l : loc) P :
+    is_arc P1 P2 N γ l -∗ dealloc_spec P2 l dealloc P -∗
+    {{{ P ∗ weak_tok γ }}} drop_weak [ #l; dealloc] {{{ RET #() ; P }}}.
   Proof.
     iIntros "#INV #Hdealloc !# * [HP Hown] HΦ". iLöb as "IH". wp_rec. wp_op.
     wp_bind (!ˢᶜ_)%E.
-    iAssert (□ (own γ weak_tok ={⊤,⊤ ∖ ↑N}=∗ ∃ w : Z, shift_loc l 1 ↦ #w ∗
-              (shift_loc l 1 ↦ #(w - 1) ={⊤ ∖ ↑N,⊤}=∗ ⌜w ≠ 1⌝ ∨ ▷ P2) ∧
-              (shift_loc l 1 ↦ #w ={⊤ ∖ ↑N,⊤}=∗ own γ weak_tok)))%I as "#Hproto".
+    iAssert (□ (weak_tok γ ={⊤,⊤ ∖ ↑N}=∗ ∃ w : Z, shift_loc l 1 ↦ #w ∗
+              (shift_loc l 1 ↦ #(w - 1) ={⊤ ∖ ↑N,⊤}=∗ ⌜w ≠ 1⌝ ∨
+               ▷ P2 ∗ l ↦ #0 ∗ shift_loc l 1 ↦ #0) ∧
+              (shift_loc l 1 ↦ #w ={⊤ ∖ ↑N,⊤}=∗ weak_tok γ)))%I as "#Hproto".
     { iIntros "!# Hown". iInv N as (st) "[>H● H]" "Hclose1".
-      iDestruct (own_valid_2 with "H● Hown") as %(st' & weak & -> & Hval)%weak_tok_auth_val.
+      iDestruct (weak_tok_auth_val with "H● Hown") as %(st' & weak & -> & Hval).
       destruct st' as [[[]| |]|]; try done; iExists _.
       - iDestruct "H" as (q) "(? & >$ & >Heq & HP1)". iIntros "!>"; iSplit; iIntros "Hl1".
         + iMod ("Hclose1" with "[>-]") as "_"; last iLeft; auto with lia.
@@ -337,12 +372,13 @@ Section arc.
                   (cancel_local_update_empty 1%nat), _. }
           iFrame. by replace (S (S weak) - 1) with (S weak:Z) by lia.
         + iFrame. iApply "Hclose1". iExists _. auto with iFrame.
-      - iDestruct "H" as "(? & >$ & HP2)". iIntros "!>"; iSplit; iIntros "Hl1".
+      - iDestruct "H" as "(>? & >$ & HP2)". iIntros "!>"; iSplit; iIntros "Hl1".
         + iMod (own_update_2 with "H● Hown") as "H●".
           { apply auth_update_dealloc, prod_local_update_2,
                   (cancel_local_update_empty 1%nat), _. }
           destruct weak as [|weak].
-          * iMod ("Hclose1" with "[-HP2]") as "_"; last by auto. iExists _. iFrame.
+          * iMod ("Hclose1" with "[-HP2 H Hl1]") as "_"; last by auto with iFrame.
+            iExists _. iFrame.
           * iMod ("Hclose1" with "[>-]") as "_"; last iLeft; auto with lia.
             iExists _. iFrame. by replace (S (S weak) - 1) with (S weak:Z) by lia.
         + iFrame. iApply "Hclose1". iExists _. auto with iFrame. }
@@ -353,26 +389,26 @@ Section arc.
     - wp_apply (wp_cas_int_suc with "Hw"); first done. iIntros "Hw".
       iDestruct "Hclose" as "[Hclose _]". iMod ("Hclose" with "Hw") as "HP2". iModIntro.
       wp_apply (wp_if _ true). wp_op=>[->|?]; wp_if; last by iApply "HΦ".
-      iDestruct "HP2" as "[%|HP2]"; first done. by iApply ("Hdealloc" with "[$HP $HP2]").
+      iDestruct "HP2" as "[%|(? & ? & ? )]"; first done.
+      iApply ("Hdealloc" with "[-HΦ]"); iFrame.
     - wp_apply (wp_cas_int_fail with "Hw"); try done. iIntros "Hw".
       iDestruct "Hclose" as "[_ Hclose]". iMod ("Hclose" with "Hw") as "Hown". iModIntro.
       wp_apply (wp_if _ false). by iApply ("IH" with "HP Hown").
   Qed.
 
-  Lemma drop_arc_spec drop dealloc `{Closed [] drop, Closed [] dealloc}
-        (γ : gname) (q: Qp) (l : loc) P :
-    is_arc γ l -∗ unwrap_spec drop P -∗ dealloc_spec dealloc P -∗
-    {{{ P ∗ own γ (arc_tok q) ∗ P1 q }}} drop_arc drop dealloc [ #l]
+  Lemma drop_arc_spec (drop dealloc : val) (γ : gname) (q: Qp) (l : loc) P :
+    is_arc P1 P2 N γ l -∗ drop_spec P1 P2 drop P -∗ dealloc_spec P2 l dealloc P -∗
+    {{{ P ∗ arc_tok γ q ∗ P1 q }}} drop_arc  [ #l; drop; dealloc]
     {{{ RET #() ; P }}}.
-  Proof.
+  Proof using HP1.
     iIntros "#INV #Hdrop #Hdealloc !# * (HP & Hown & HP1) HΦ". iLöb as "IH".
     wp_rec. wp_bind (!ˢᶜ_)%E. iInv N as (st) "[>H● H]" "Hclose".
-    iDestruct (own_valid_2 with "H● Hown") as %(?& s &?&[-> _])%arc_tok_auth_val.
+    iDestruct (arc_tok_auth_val with "H● Hown") as %(?& s &?&[-> _]).
     iDestruct "H" as (?) "[H H']". wp_read. iMod ("Hclose" with "[H H' H●]") as "_".
     { iExists _. auto with iFrame. }
     iModIntro. wp_let. wp_op. wp_bind (CAS _ _ _).
     iInv N as (st) "[>H● H]" "Hclose".
-    iDestruct (own_valid_2 with "H● Hown") as %(q' & s' & w &[-> Hqq'])%arc_tok_auth_val.
+    iDestruct (arc_tok_auth_val with "H● Hown") as %(q' & s' & w &[-> Hqq']).
     iDestruct "H" as (q'') "(Hs & Hw & >Hq'' & HP1')". iDestruct "Hq''" as %Hq''.
     destruct (decide (s = s')) as [<-|?].
     - wp_apply (wp_cas_int_suc with "Hs"); first done. iIntros "Hs".
@@ -384,7 +420,7 @@ Section arc.
           by apply (op_local_update _ _ (Some (Cinr (Excl ())))). }
         iMod ("Hclose" with "[H● Hs Hw]") as "_"; first by iExists _; do 2 iFrame.
         iModIntro. wp_apply (wp_if _ true). wp_op=>[_|//]; wp_if.
-        rewrite -Hq''. wp_apply ("Hdrop" with "[$HP1 $HP1' $HP]"). iIntros "[HP HP2]".
+        rewrite -{1}Hq''. wp_apply ("Hdrop" with "[$HP1 $HP1' $HP]"). iIntros "[HP HP2]".
         wp_seq. iApply (drop_weak_spec with "INV Hdealloc [> -HΦ] HΦ").
         iInv N as ([st ?]) "[>H● H]" "Hclose".
         iDestruct (own_valid_2 with "H● H◯")
@@ -411,14 +447,13 @@ Section arc.
   Qed.
 
   Lemma try_unwrap_spec (γ : gname) (q: Qp) (l : loc) :
-    is_arc γ l -∗
-    {{{ own γ (arc_tok q) ∗ P1 q }}} try_unwrap [ #l]
+    is_arc P1 P2 N γ l -∗
+    {{{ arc_tok γ q ∗ P1 q }}} try_unwrap [ #l]
     {{{ (b : bool), RET #b ;
-        if b then P1 1 ∗ (P2 ={⊤}=∗ own γ weak_tok)
-        else own γ (arc_tok q) ∗ P1 q }}}.
-  Proof.
+        if b then P1 1 ∗ (P2 ={⊤}=∗ weak_tok γ) else arc_tok γ q ∗ P1 q }}}.
+  Proof using HP1.
     iIntros "#INV !# * [Hown HP1] HΦ". wp_rec. iInv N as (st) "[>H● H]" "Hclose".
-    iDestruct (own_valid_2 with "H● Hown") as %(q' & s & w &[-> Hqq'])%arc_tok_auth_val.
+    iDestruct (arc_tok_auth_val with "H● Hown") as %(q' & s & w &[-> Hqq']).
     iDestruct "H" as (q'') "(Hs & Hw & >Hq'' & HP1')". iDestruct "Hq''" as %Hq''.
     destruct (decide (s = xH)) as [->|?].
     - wp_apply (wp_cas_int_suc with "Hs"); first done. iIntros "Hs".
@@ -442,4 +477,15 @@ Section arc.
       iMod ("Hclose" with "[Hs Hw HP1' H●]") as "_"; first by iExists _; auto with iFrame.
       iApply ("HΦ" $! false). by iFrame.
   Qed.
+
+  (* Lemma try_unwrap_spec (γ : gname) (q: Qp) (l : loc) : *)
+  (*   is_arc γ l -∗ *)
+  (*   {{{ own γ (arc_tok q) ∗ P1 q }}} get_mut [ #l] *)
+  (*   {{{ (b : bool), RET #b ; *)
+  (*       if b then P1 1 ∗ (P1 1 ={⊤}=∗ ∃ γ' q', own γ' (arc_tok q') ∗ P1 q') *)
+  (*       else own γ (arc_tok q) ∗ P1 q }}}. *)
+  (* Proof. *)
+
 End arc.
+
+Typeclasses Opaque is_arc arc_tok weak_tok.
