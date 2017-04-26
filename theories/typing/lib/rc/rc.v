@@ -8,8 +8,6 @@ From lrust.typing Require Export type.
 From lrust.typing Require Import typing option.
 Set Default Proof Using "Type".
 
-(* TODO : weak_count strong_count *)
-
 Definition rc_stR :=
   prodUR (optionUR (csumR (prodR fracR positiveR) (exclR unitC))) natUR.
 Class rcG Σ :=
@@ -346,6 +344,120 @@ Section code.
           destruct strong=>//=. by rewrite Pos.pred_double_succ.
   Qed.
 
+  Definition rc_strong_count : val :=
+    funrec: <> ["rc"] :=
+      let: "r" := new [ #1 ] in
+      let: "rc'" := !"rc" in
+      let: "rc''" := !"rc'" in
+      let: "strong" := !("rc''" +ₗ #0) in
+      "r" <- "strong";;
+      delete [ #1; "rc" ];; return: ["r"].
+
+  Lemma rc_strong_count_type ty `{!TyWf ty} :
+    typed_val rc_strong_count (fn(∀ α, ∅; &shr{α} rc ty) → int).
+  Proof.
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply (type_new 1); [solve_typing..|]; iIntros (r); simpl_subst.
+    iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
+    iIntros (tid) "#LFT #HE Hna HL Hk [Hx [Hrc' [Hr _]]]".
+    rewrite !tctx_hasty_val [[x]]lock [[r]]lock.
+    destruct rc' as [[|lrc|]|]; try done. iDestruct "Hrc'" as (l') "[#Hlrc #Hshr]".
+    (* All right, we are done preparing our context. Let's get going. *)
+    iMod (lctx_lft_alive_tok α with "HE HL") as (q) "([Hα1 Hα2] & HL & Hclose1)"; [solve_typing..|].
+    wp_bind (!_)%E.
+    iSpecialize ("Hshr" with "[] Hα1"); last iApply (wp_step_fupd with "Hshr"); [done..|].
+    iMod (frac_bor_acc with "LFT Hlrc Hα2") as (q') "[Hlrc↦ Hclose]"; first solve_ndisj.
+    iApply wp_fupd. wp_read.
+    iMod ("Hclose" with "[$Hlrc↦]") as "Hα2". iIntros "!> [Hα1 Hproto]".
+    iDestruct "Hproto" as (γ ν q'') "#(Hαν & Hpersist & Hrctokb)".
+    iModIntro. wp_let. wp_op. rewrite shift_loc_0.
+    (* Finally, finally... opening the thread-local Rc protocol. *)
+    iPoseProof "Hpersist" as (ty') "(_ & Hinv & _ & _)".
+    iMod (na_inv_open with "Hinv Hna") as "(Hrcproto & Hna & Hclose2)"; [solve_ndisj..|].
+    iMod (na_bor_acc with "LFT Hrctokb Hα1 Hna") as "(>Hrctok & Hna & Hclose3)"; [solve_ndisj..|].
+    iDestruct "Hrcproto" as ([st weak]) "[>Hrc● Hrcst]".
+    iDestruct (own_valid_2 with "Hrc● Hrctok") as %[[[[=]|(?&[[q0 s0]| |]&[=<-]&?&Hincl)]
+               %option_included _]%prod_included [Hval _]]%auth_valid_discrete_2;
+    setoid_subst; try done; last first.
+    { exfalso. destruct Hincl as [Hincl|Hincl]. by inversion Hincl.
+      apply csum_included in Hincl. naive_solver. }
+    iDestruct "Hrcst" as (qb) "(Hl'1 & Hl'2 & Hl'† & >% & Hνtok & Hν†)".
+    wp_read. wp_let.
+    (* And closing it again. *)
+    iMod ("Hclose3" with "[$Hrctok] Hna") as "[Hα1 Hna]".
+    iMod ("Hclose2" with "[Hrc● Hl'1 Hl'2 Hl'† Hνtok Hν† $Hna]") as "Hna".
+    { iExists _. iFrame "Hrc●". iExists _. auto with iFrame. }
+    iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
+    (* Finish up the proof. *)
+    iApply (type_type _ _ _ [ x ◁ box (&shr{α} rc ty); r ◁ box (uninit 1);
+                              #(Z.pos s0) ◁ int ]
+        with "[] LFT HE Hna HL Hk [-]"); last first.
+    { unlock.
+      rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val tctx_hasty_val' //.
+      iFrame. }
+    iApply type_assign; [solve_typing..|].
+    iApply type_delete; [solve_typing..|].
+    iApply type_jump; solve_typing.
+  Qed.
+
+  Definition rc_weak_count : val :=
+    funrec: <> ["rc"] :=
+      let: "r" := new [ #1 ] in
+      let: "rc'" := !"rc" in
+      let: "rc''" := !"rc'" in
+      let: "strong" := !("rc''" +ₗ #1) in
+      "r" <- "strong";;
+      delete [ #1; "rc" ];; return: ["r"].
+
+  Lemma rc_weak_count_type ty `{!TyWf ty} :
+    typed_val rc_weak_count (fn(∀ α, ∅; &shr{α} rc ty) → int).
+  Proof.
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply (type_new 1); [solve_typing..|]; iIntros (r); simpl_subst.
+    iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
+    iIntros (tid) "#LFT #HE Hna HL Hk [Hx [Hrc' [Hr _]]]".
+    rewrite !tctx_hasty_val [[x]]lock [[r]]lock.
+    destruct rc' as [[|lrc|]|]; try done. iDestruct "Hrc'" as (l') "[#Hlrc #Hshr]".
+    (* All right, we are done preparing our context. Let's get going. *)
+    iMod (lctx_lft_alive_tok α with "HE HL") as (q) "([Hα1 Hα2] & HL & Hclose1)"; [solve_typing..|].
+    wp_bind (!_)%E.
+    iSpecialize ("Hshr" with "[] Hα1"); last iApply (wp_step_fupd with "Hshr"); [done..|].
+    iMod (frac_bor_acc with "LFT Hlrc Hα2") as (q') "[Hlrc↦ Hclose]"; first solve_ndisj.
+    iApply wp_fupd. wp_read.
+    iMod ("Hclose" with "[$Hlrc↦]") as "Hα2". iIntros "!> [Hα1 Hproto]".
+    iDestruct "Hproto" as (γ ν q'') "#(Hαν & Hpersist & Hrctokb)".
+    iModIntro. wp_let. wp_op.
+    (* Finally, finally... opening the thread-local Rc protocol. *)
+    iPoseProof "Hpersist" as (ty') "(_ & Hinv & _ & _)".
+    iMod (na_inv_open with "Hinv Hna") as "(Hrcproto & Hna & Hclose2)"; [solve_ndisj..|].
+    iMod (na_bor_acc with "LFT Hrctokb Hα1 Hna") as "(>Hrctok & Hna & Hclose3)"; [solve_ndisj..|].
+    iDestruct "Hrcproto" as ([st weak]) "[>Hrc● Hrcst]".
+    iDestruct (own_valid_2 with "Hrc● Hrctok") as %[[[[=]|(?&[[q0 weak0]| |]&[=<-]&?&Hincl)]
+               %option_included _]%prod_included [Hval _]]%auth_valid_discrete_2;
+    setoid_subst; try done; last first.
+    { exfalso. destruct Hincl as [Hincl|Hincl]. by inversion Hincl.
+      apply csum_included in Hincl. naive_solver. }
+    iDestruct "Hrcst" as (qb) "(Hl'1 & Hl'2 & Hl'† & >% & Hνtok & Hν†)".
+    wp_read. wp_let.
+    (* And closing it again. *)
+    iMod ("Hclose3" with "[$Hrctok] Hna") as "[Hα1 Hna]".
+    iMod ("Hclose2" with "[Hrc● Hl'1 Hl'2 Hl'† Hνtok Hν† $Hna]") as "Hna".
+    { iExists _. iFrame "Hrc●". iExists _. auto with iFrame. }
+    iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
+    (* Finish up the proof. *)
+    iApply (type_type _ _ _ [ x ◁ box (&shr{α} rc ty); r ◁ box (uninit 1);
+                              #(S weak) ◁ int ]
+        with "[] LFT HE Hna HL Hk [-]"); last first.
+    { unlock.
+      rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val tctx_hasty_val' //.
+      iFrame. }
+    iApply type_assign; [solve_typing..|].
+    iApply type_delete; [solve_typing..|].
+    iApply type_jump; solve_typing.
+  Qed.
+
   Definition rc_new ty : val :=
     funrec: <> ["x"] :=
       let: "rcbox" := new [ #(2 + ty.(ty_size))%nat ] in
@@ -425,7 +537,7 @@ Section code.
     iMod (na_inv_open with "Hinv Hna") as "(Hrcproto & Hna & Hclose2)"; [solve_ndisj..|].
     iMod (na_bor_acc with "LFT Hrctokb Hα1 Hna") as "(>Hrctok & Hna & Hclose3)"; [solve_ndisj..|].
     iDestruct "Hrcproto" as ([st weak]) "[>Hrc● Hrcst]".
-    iDestruct (own_valid_2 with "Hrc● Hrctok") as %[[[[=]|(?&[[q0 weak0]| |]&[=<-]&?&Hincl)]
+    iDestruct (own_valid_2 with "Hrc● Hrctok") as %[[[[=]|(?&[[q0 s0]| |]&[=<-]&?&Hincl)]
                %option_included _]%prod_included [Hval _]]%auth_valid_discrete_2;
     setoid_subst; try done; last first.
     { exfalso. destruct Hincl as [Hincl|Hincl]. by inversion Hincl.
