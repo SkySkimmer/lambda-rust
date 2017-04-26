@@ -29,6 +29,32 @@ Definition rc_shrN := rcN .@ "shr".
 Section rc.
   Context `{!typeG Σ, !rcG Σ}.
 
+  (* The RC can be in four different states :
+       - The living state, meaning that some strong reference exists. The
+         authoritative state is something like (Some (Cinl (q, strong)), weak),
+         where q is the total fraction owned by strong references, strong is
+         the number of strong references and weak is the number of weak
+         references.
+       - The "dropping" state, meaning that the last strong reference has been
+         dropped, and that the content in being dropped. The authoritative
+         state is something like (Some (Cinr (Excl ())), weak), where weak is
+         the number of weak references. The client owning the Excl also owns
+         the content of the box.
+         In our case, this state is not really necesary, because we do not
+         properly support dropping the content, but just copy it out of the RC
+         box. However, including it is more realistic, and this state is
+         still necessary for Arc anyway.
+       - The weak state, meaning that there only exists weak references. The
+         authoritative state is something like (None, weak), where weak is the
+         number of weak references.
+       - The dead state, meaning that no reference exist anymore.
+
+   Note that when we are in the living or dropping states, the weak reference
+   count stored in the heap is actually one plus the actual number of weak
+   references. This hack (which also exists in Rust's implementation) makes the
+   implementation of weak_drop easier, because it does not have to check the
+   strong count. *)
+
   Definition rc_inv tid ν (γ : gname) (l : loc) (ty : type) : iProp Σ :=
     (∃ st : rc_stR, own γ (● st) ∗
       match st with
@@ -406,8 +432,10 @@ Section code.
       let: "r" := new [ #1 ] in
       let: "rc'" := !"rc" in
       let: "rc''" := !"rc'" in
-      let: "strong" := !("rc''" +ₗ #1) in
-      "r" <- "strong";;
+      let: "weak" := !("rc''" +ₗ #1) in
+      let: "one" := #1 in
+      let: "weak" := "weak" - "one" in
+      "r" <- "weak";;
       delete [ #1; "rc" ];; return: ["r"].
 
   Lemma rc_weak_count_type ty `{!TyWf ty} :
@@ -453,6 +481,8 @@ Section code.
     { unlock.
       rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val tctx_hasty_val' //.
       iFrame. }
+    iApply type_int. iIntros (?). simpl_subst.
+    iApply type_minus; [solve_typing..|]. iIntros (?). simpl_subst.
     iApply type_assign; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
