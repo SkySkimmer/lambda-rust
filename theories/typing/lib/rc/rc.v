@@ -103,8 +103,6 @@ Section rc.
     iIntros (ty E κ l tid q ?) "#LFT Hb Htok".
     iMod (bor_exists with "LFT Hb") as (vl) "Hb"; first done.
     iMod (bor_sep with "LFT Hb") as "[H↦ Hb]"; first done.
-    (* Ideally, we'd change ty_shr to say "l ↦{q} #l" in the fractured borrow,
-       but that would be additional work here... *)
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦"; first done.
     destruct vl as [|[[|l'|]|][|]];
       try by iMod (bor_persistent_tok with "LFT Hb Htok") as "[>[] _]".
@@ -393,7 +391,7 @@ Section code.
       let: "rc'" := !"rc" in
       let: "rc''" := !"rc'" in
       let: "strong" := !("rc''" +ₗ #0) in
-      "rc''" +ₗ #0 <- "strong" +#1;;
+      "rc''" +ₗ #0 <- "strong" + #1;;
       "r" <- "rc''";;
       delete [ #1; "rc" ];; return: ["r"].
 
@@ -507,7 +505,8 @@ Section code.
         Skip;;
         (* Return content *)
         "r" <-{ty.(ty_size),Σ 0} !("rc'" +ₗ #2);;
-        (* Decrement weak, and deallocate if appropriate *)
+        (* Decrement weak (removing the one weak ref collectively held by all
+           strong refs), and deallocate if weak count reached 0. *)
         let: "weak" := !("rc'" +ₗ #1) in
         if: "weak" = #1 then
           delete [ #(2 + ty.(ty_size)); "rc'" ];;
@@ -602,7 +601,8 @@ Section code.
       if: "strong" = #1 then
         (* Return content. *)
         "r" <-{ty.(ty_size),Σ some} !("rc'" +ₗ #2);;
-        (* Decrement weak, and deallocate if appropriate *)
+        (* Decrement weak (removing the one weak ref collectively held by all
+           strong refs), and deallocate if weak count reached 0. *)
         let: "weak" := !("rc'" +ₗ #1) in
         if: "weak" = #1 then
           delete [ #(2 + ty.(ty_size)); "rc'" ];;
