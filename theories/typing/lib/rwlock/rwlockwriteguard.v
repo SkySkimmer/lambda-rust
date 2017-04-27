@@ -116,7 +116,7 @@ Section rwlockwriteguard.
     eqtype E L (rwlockwriteguard α1 ty1) (rwlockwriteguard α2 ty2).
   Proof. intros. by eapply rwlockwriteguard_proper. Qed.
 
-  (* TODO: In Rust, the read guard is Sync if ty is Send+Sync. *)
+  (* TODO: In Rust, the write guard is Sync if ty is Send+Sync. *)
 End rwlockwriteguard.
 
 Hint Resolve rwlockwriteguard_mono' rwlockwriteguard_proper' : lrust_typing.

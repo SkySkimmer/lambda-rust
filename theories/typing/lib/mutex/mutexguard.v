@@ -267,7 +267,5 @@ Section code.
     iApply type_jump; solve_typing.
   Qed.
 
-  (* TODO:
-     Should we do try_lock?
-   *)
+  (* TODO: Should we do try_lock? *)
 End code.
