@@ -17,8 +17,7 @@ Section join_handle.
     {| ty_size := 1;
        ty_own tid vl :=
          match vl return _ with
-         | [ #(LitLoc l) ] =>
-           ∃ ty', ▷ type_incl ty' ty ∗ join_handle spawnN l (join_inv tid ty')
+         | [ #(LitLoc l) ] =>join_handle spawnN l (join_inv tid ty)
          | _ => False
          end%I;
        ty_shr κ tid l := True%I |}.
@@ -34,8 +33,9 @@ Section join_handle.
   Proof.
     iIntros "#Hincl". iSplit; first done. iSplit; iAlways.
     - iIntros "* Hvl". destruct vl as [|[[|vl|]|] [|]]; try done.
-      iDestruct "Hvl" as (ty) "[Hincl' ?]". iExists ty. iFrame.
-      iApply (type_incl_trans with "Hincl'"). done.
+      simpl. iApply (join_handle_impl with "[] Hvl"). iIntros "!# * Hown".
+      iDestruct (box_type_incl with "Hincl") as "{Hincl} (_ & Hincl & _)".
+      iApply "Hincl". done.
     - iIntros "* _". auto.
   Qed.
 
@@ -57,8 +57,22 @@ Section join_handle.
   Global Instance join_handle_ne : NonExpansive join_handle.
   Proof. apply type_contractive_ne, _. Qed.
 
-  (* TODO: Looks like in Rust, we have T: Send -> JoinHandle<T>: Send and
-     T:Sync -> JoinHandle<T>: Sync. *)
+  Global Instance join_handle_send ty :
+    Send ty → Send (join_handle ty).
+  Proof.
+    iIntros (??? vl) "Hvl". destruct vl as [|[[|vl|]|] [|]]; try done.
+    simpl. iApply (join_handle_impl with "[] Hvl"). iIntros "!# * Hv".
+    unfold join_inv. iApply own_send. (* FIXME: Why does "iApply send_change_tid" not work? *)
+    done.
+  Qed.
+
+  Global Instance join_handle_sync ty :
+    Sync (join_handle ty).
+  Proof.
+    iIntros (????) "**". (* FIXME: Why did it throw away the assumption we should have gotten? *)
+    done.
+  Qed.
+
 End join_handle.
 
 Section spawn.
@@ -88,7 +102,7 @@ Section spawn.
       iApply (spawn_spec _ (join_inv tid retty) with "[-]");
                               first solve_to_val; last first; last simpl_subst.
       { iIntros "!> *". rewrite tctx_interp_singleton tctx_hasty_val.
-        iIntros "?". iExists retty. iFrame. iApply type_incl_refl. }
+        iIntros "?". by iFrame. }
       iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let.
       (* FIXME this is horrible. *)
       refine (let Hcall := type_call' _ [] [] f' [] [env:expr]
@@ -129,12 +143,10 @@ Section spawn.
     iApply (type_let _ _ _ _ ([c' ◁ _])
                              (λ r, [r ◁ box retty])); try solve_typing; [|].
     { iIntros (tid) "#LFT _ $ $".
-      rewrite tctx_interp_singleton tctx_hasty_val. iIntros "Hc'".
-      destruct c' as [[|c'|]|]; try done. iDestruct "Hc'" as (ty') "[#Hsub Hc']".
-      iApply (join_spec with "Hc'"). iNext. iIntros "* Hret".
-      rewrite tctx_interp_singleton tctx_hasty_val.
-      iDestruct (box_type_incl with "[$Hsub]") as "(_ & Hincl & _)".
-      iApply "Hincl". done. }
+      rewrite tctx_interp_singleton tctx_hasty_val. iIntros "Hc".
+      destruct c' as [[|c'|]|]; try done.
+      iApply (join_spec with "Hc"). iNext. iIntros "* Hret".
+      rewrite tctx_interp_singleton tctx_hasty_val. done. }
     iIntros (r); simpl_subst. iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.
