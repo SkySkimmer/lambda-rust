@@ -931,24 +931,35 @@ Section code.
       if: "strong" = #1 then
         let: "weak" := !("rc''" +ₗ #1) in
         if: "weak" = #1 then
+          (* This is the last strong ref, and there is no weak ref.
+             We just return a deep ptr into the Rc. *)
           "r" <- "rc''" +ₗ #2;;
           "k" []
         else
+          (* This is the last strong ref, but there are weak refs.
+             We make ourselves a new Rc, move the content, and mark the old one killed
+             (strong count becomes 0, strong idx removed from weak cnt).
+             We store the new Rc in our argument (which is a &uniq rc),
+             and return a deep ptr into it. *)
           "rc''" +ₗ #0 <- #0;;
           "rc''" +ₗ #1 <- "weak" - #1;;
+          (* Inlined rc_new("rc''" +ₗ #2) begins. *)
           let: "rcbox" := new [ #(2 + ty.(ty_size))%nat ] in
           "rcbox" +ₗ #0 <- #1;;
           "rcbox" +ₗ #1 <- #1;;
           "rcbox" +ₗ #2 <-{ty.(ty_size)} !"rc''" +ₗ #2;;
           "rc'" <- "rcbox";;
+          (* Inlined rc_new ends. *)
           "r" <- "rcbox" +ₗ #2;;
           "k" []
       else
+        (* There are other strong refs, we have to make a copy and clone the content. *)
         let: "x" := new [ #1 ] in
         "x" <- "rc''" +ₗ #2;;
         let: "clone" := clone in
         letcall: "c" := "clone" ["x"]%E in (* FIXME : why do I need %E here ? *)
         Endlft;;
+        (* Inlined rc_new("c") begins. *)
         let: "rcbox" := new [ #(2 + ty.(ty_size))%nat ] in
         "rcbox" +ₗ #0 <- #1;;
         "rcbox" +ₗ #1 <- #1;;
@@ -956,6 +967,7 @@ Section code.
         delete [ #ty.(ty_size); "c"];;
         let: "rc''" := !"rc'" in
         letalloc: "rcold" <- "rc''" in
+          (* Inlined rc_new ends. *)
         "rc'" <- "rcbox";;
         (* FIXME : here, we are dropping the old rc pointer. In the
            case another strong reference has been dropped while
