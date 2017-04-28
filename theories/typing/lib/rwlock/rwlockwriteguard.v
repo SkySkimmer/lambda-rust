@@ -116,6 +116,7 @@ Section rwlockwriteguard.
     eqtype E L (rwlockwriteguard α1 ty1) (rwlockwriteguard α2 ty2).
   Proof. intros. by eapply rwlockwriteguard_proper. Qed.
 
+  (* Rust requires the type to also be Send.  Not sure why. *)
   Global Instance rwlockwriteguard_sync α ty :
     Sync ty → Sync (rwlockwriteguard α ty).
   Proof.

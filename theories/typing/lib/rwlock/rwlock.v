@@ -189,7 +189,7 @@ Section rwlock.
     eqtype E L ty1 ty2 → eqtype E L (rwlock ty1) (rwlock ty2).
   Proof. eapply rwlock_proper. Qed.
 
-  (* TODO : apparently, we don't need to require ty to be sync,
+  (* Apparently, we don't need to require ty to be sync,
      contrarily to Rust's implementation. *)
   Global Instance rwlock_send :
     Send ty → Send (rwlock ty).
