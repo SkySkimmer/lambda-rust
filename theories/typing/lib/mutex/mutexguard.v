@@ -88,9 +88,18 @@ Section mguard.
   Global Instance mutexguard_ne α : NonExpansive (mutexguard α).
   Proof. apply type_contractive_ne, _. Qed.
 
-  (* TODO: compat with lft_incl and eqtype.
-     MutexGuard is Sync if T is Send. *)
+  (* TODO: compat with lft_incl and eqtype. *)
 
+  Global Instance mutexguard_sync α ty :
+    Sync ty → Sync (mutexguard α ty).
+  Proof.
+    move=>?????/=. apply uPred.exist_mono=>?. do 6 f_equiv.
+    by rewrite sync_change_tid.
+  Qed.
+
+  (* POSIX requires the unlock to occur from the thread that acquired
+     the lock, so Rust does not implement Send for RwLockWriteGuard. We could
+     prove this. *)
 End mguard.
 
 Section code.
