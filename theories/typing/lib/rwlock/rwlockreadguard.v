@@ -113,15 +113,16 @@ Section rwlockreadguard.
     eqtype E L (rwlockreadguard α1 ty1) (rwlockreadguard α2 ty2).
   Proof. intros. by eapply rwlockreadguard_proper. Qed.
 
+  (* Rust requires the type to also be Send.  Not sure why. *)
   Global Instance rwlockreadguard_sync α ty :
     Sync ty → Sync (rwlockreadguard α ty).
   Proof.
     move=>?????/=. apply uPred.exist_mono=>?. by rewrite sync_change_tid.
   Qed.
 
-  (* Probably for reasons related to the underlying representation,
-     Rust does not implement Send for RwLockWriteGuard. We could prove
-     this. *)
+  (* POSIX requires the unlock to occur from the thread that acquired
+     the lock, so Rust does not implement Send for RwLockWriteGuard. We could
+     prove this. *)
 End rwlockreadguard.
 
 Hint Resolve rwlockreadguard_mono' rwlockreadguard_proper' : lrust_typing.
