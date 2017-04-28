@@ -37,31 +37,19 @@ Definition upgrade : val :=
       else "upgrade" ["l"].
 
 Definition drop_weak : val :=
-  rec: "drop" ["l"; "dealloc"] :=
+  rec: "drop" ["l"] :=
     let: "weak" := !ˢᶜ("l" +ₗ #1) in
-    if: CAS ("l" +ₗ #1) "weak" ("weak" - #1) then
-      if: "weak" = #1 then "dealloc" [] else #()
-    else "drop" ["l"; "dealloc"].
+    if: CAS ("l" +ₗ #1) "weak" ("weak" - #1) then "weak" = #1
+    else "drop" ["l"].
 
 Definition drop_arc : val :=
-  rec: "drop_arc" ["l"; "drop"; "dealloc"] :=
+  rec: "drop" ["l"] :=
     let: "strong" := !ˢᶜ"l" in
-    if: CAS "l" "strong" ("strong" - #1) then
-      if: "strong" = #1 then
-        "drop" [];;
-        drop_weak ["l"; "dealloc"]
-      else #()
-    else "drop_arc" ["l"; "drop"; "dealloc"].
+    if: CAS "l" "strong" ("strong" - #1) then "strong" = #1
+    else "drop" ["l"].
 
 Definition try_unwrap : val :=
   λ: ["l"], CAS "l" #1 #0.
-
-Definition try_unwrap_full : val :=
-  λ: ["l"],
-    if: CAS "l" #1 #0 then
-      if: !ˢᶜ("l" +ₗ #1) = #1 then #0
-      else "l" <- #1;; #1
-    else #2.
 
 Definition is_unique : val :=
   λ: ["l"],
@@ -72,6 +60,13 @@ Definition is_unique : val :=
       "unique"
     else
       #false.
+
+Definition try_unwrap_full : val :=
+  λ: ["l"],
+    if: CAS "l" #1 #0 then
+      if: !ˢᶜ("l" +ₗ #1) = #1 then "l" <- #1;; #0
+      else #1
+    else #2.
 
 (** The CMRA we need. *)
 (* Not bundling heapG, as it may be shared with other users. *)
@@ -123,10 +118,6 @@ Section def.
 
   Definition weak_tok_acc (γ : gname) P E : iProp Σ :=
     (□ (P ={E,∅}=∗ weak_tok γ ∗ (weak_tok γ ={∅,E}=∗ P)))%I.
-
-  Definition dealloc_spec l (dealloc : val) P : iProp Σ :=
-    ({{{ P ∗ l ↦ #0 ∗ shift_loc l 1 ↦ #0 ∗ P2}}} dealloc []
-     {{{ RET #(); P }}})%I.
 
   Definition drop_spec (drop : val) P : iProp Σ :=
     ({{{ P ∗ P1 1 }}} drop [] {{{ RET #(); P ∗ P2 }}})%I.
@@ -221,12 +212,12 @@ Section arc.
       iMod ("Hclose1" with "[Hl Hw H● HP1']") as "_".
       { iExists _. iFrame. iExists _. rewrite /= [xH ⋅ _]comm_L. iFrame.
         rewrite [(q / 2)%Qp ⋅ _]comm frac_op' -[(_ + _)%Qp]assoc Qp_div_2 left_id_L. auto. }
-      iModIntro. wp_apply (wp_if _ true). wp_value. iApply "HΦ". iFrame.
+      iModIntro. wp_case. iApply "HΦ". iFrame.
     - wp_apply (wp_cas_int_fail with "Hl"); [done|congruence|]. iIntros "Hl".
       iMod ("Hclose2" with "Hown") as "HP". iModIntro.
       iMod ("Hclose1" with "[-HP HΦ]") as "_".
       { iExists _. iFrame. iExists q. auto with iFrame. }
-      iModIntro. wp_apply (wp_if _ false). iApply ("IH" with "HP HΦ").
+      iModIntro. wp_case. iApply ("IH" with "HP HΦ").
   Qed.
 
   Lemma downgrade_spec (γ : gname) (l : loc) (P : iProp Σ) :
@@ -257,18 +248,18 @@ Section arc.
       iMod ("Hclose1" with "[-Hown' HP HΦ]") as "_".
       { iExists _. iFrame. iExists _.
         rewrite Z.add_comm (Nat2Z.inj_add 1). auto with iFrame. }
-      iModIntro. wp_apply (wp_if _ true). wp_value. iApply "HΦ". iFrame.
+      iModIntro. wp_case. iApply "HΦ". iFrame.
     - destruct wlock.
       + iDestruct "Hl1" as "[Hl1 >%]". subst.
         wp_apply (wp_cas_int_fail with "Hl1"); [done..|].
         iIntros "Hl1". iMod ("Hclose1" with "[-HP HΦ]") as "_".
         { iExists _. auto with iFrame. }
-        iModIntro. wp_apply (wp_if _ false). iApply ("IH" with "HP HΦ").
+        iModIntro. wp_case. iApply ("IH" with "HP HΦ").
       + wp_apply (wp_cas_int_fail with "Hl1"); [done| |].
         { contradict Hw. split=>//. apply SuccNat2Pos.inj. lia. }
         iIntros "Hl1". iMod ("Hclose1" with "[-HP HΦ]") as "_".
         { iExists _. auto with iFrame. }
-        iModIntro. wp_apply (wp_if _ false). iApply ("IH" with "HP HΦ").
+        iModIntro. wp_case. iApply ("IH" with "HP HΦ").
   Qed.
 
   Lemma weak_tok_auth_val γ st :
@@ -321,10 +312,10 @@ Section arc.
     destruct (decide (w = w')) as [<-|].
     - wp_apply (wp_cas_int_suc with "H↦"); first done. iIntros "H↦".
       iDestruct "Hclose" as "[Hclose _]". iMod ("Hclose" with "H↦"). iModIntro.
-      wp_apply (wp_if _ true). wp_value. by iApply "HΦ".
+      wp_case. by iApply "HΦ".
     - wp_apply (wp_cas_int_fail with "H↦"); try done. iIntros "H↦".
       iDestruct "Hclose" as "[_ Hclose]". iMod ("Hclose" with "H↦") as "Hown".
-      iModIntro. wp_apply (wp_if _ false). by iApply ("IH" with "Hown").
+      iModIntro. wp_case. by iApply ("IH" with "Hown").
   Qed.
 
   Lemma upgrade_spec (γ : gname) (l : loc) (P : iProp Σ) :
@@ -368,18 +359,18 @@ Section arc.
       + wp_apply (wp_cas_int_suc with "H↦"); first done. iIntros "H↦".
         iDestruct "Hclose" as "[Hclose _]".
         iMod ("Hclose" with "[//] H↦") as (q) "(?&?&?)". iModIntro.
-        wp_apply (wp_if _ true). wp_value. iApply "HΦ". iFrame.
+        wp_case. iApply "HΦ". iFrame.
       + wp_apply (wp_cas_int_fail with "H↦"); try done. iIntros "H↦".
         iDestruct "Hclose" as "[_ Hclose]". iMod ("Hclose" with "H↦") as "Hown".
-        iModIntro. wp_apply (wp_if _ false). by iApply ("IH" with "Hown").
+        iModIntro. wp_case. by iApply ("IH" with "Hown").
   Qed.
 
-  Lemma drop_weak_spec (dealloc : val) (γ : gname) (l : loc) P :
-    is_arc P1 P2 N γ l -∗ dealloc_spec P2 l dealloc P -∗
-    {{{ P ∗ weak_tok γ }}} drop_weak [ #l; dealloc] {{{ RET #() ; P }}}.
+  Lemma drop_weak_spec (γ : gname) (l : loc) :
+    is_arc P1 P2 N γ l -∗
+    {{{ weak_tok γ }}} drop_weak [ #l]
+    {{{ (b : bool), RET #b ; if b then P2 ∗ l ↦ #0 ∗ shift_loc l 1 ↦ #0 else True }}}.
   Proof.
-    iIntros "#INV #Hdealloc !# * [HP Hown] HΦ". iLöb as "IH". wp_rec. wp_op.
-    wp_bind (!ˢᶜ_)%E.
+    iIntros "#INV !# * Hown HΦ". iLöb as "IH". wp_rec. wp_op. wp_bind (!ˢᶜ_)%E.
     iAssert (□ (weak_tok γ ={⊤,⊤ ∖ ↑N}=∗ ∃ w : Z, shift_loc l 1 ↦ #w ∗
               (shift_loc l 1 ↦ #(w - 1) ={⊤ ∖ ↑N,⊤}=∗ ⌜w ≠ 1⌝ ∨
                ▷ P2 ∗ l ↦ #0 ∗ shift_loc l 1 ↦ #0) ∧
@@ -418,26 +409,39 @@ Section arc.
     iMod ("Hproto" with "Hown") as (w') "[Hw Hclose]". destruct (decide (w = w')) as [<-|?].
     - wp_apply (wp_cas_int_suc with "Hw"); first done. iIntros "Hw".
       iDestruct "Hclose" as "[Hclose _]". iMod ("Hclose" with "Hw") as "HP2". iModIntro.
-      wp_apply (wp_if _ true). wp_op=>[->|?]; wp_if; last by iApply "HΦ".
-      iDestruct "HP2" as "[%|(? & ? & ? )]"; first done.
-      iApply ("Hdealloc" with "[-HΦ]"); iFrame.
+      wp_case. wp_op=>[->|?]; iApply "HΦ"=>//.
+      by iDestruct "HP2" as "[%|$]".
     - wp_apply (wp_cas_int_fail with "Hw"); try done. iIntros "Hw".
-      iDestruct "Hclose" as "[_ Hclose]". iMod ("Hclose" with "Hw") as "Hown". iModIntro.
-      wp_apply (wp_if _ false). by iApply ("IH" with "HP Hown").
+      iDestruct "Hclose" as "[_ Hclose]". iMod ("Hclose" with "Hw") as "Hown".
+      iModIntro. wp_case. by iApply ("IH" with "Hown").
   Qed.
 
-  Lemma drop_arc_spec (drop dealloc : val) (γ : gname) (q: Qp) (l : loc) P :
-    is_arc P1 P2 N γ l -∗ drop_spec P1 P2 drop P -∗ dealloc_spec P2 l dealloc P -∗
-    {{{ P ∗ arc_tok γ q ∗ P1 q }}} drop_arc  [ #l; drop; dealloc]
-    {{{ RET #() ; P }}}.
+  Lemma close_last_strong γ l :
+    is_arc P1 P2 N γ l -∗ own γ (◯ (Some (Cinr (Excl ())), 0%nat)) -∗ P2
+    ={⊤}=∗ weak_tok γ.
+  Proof.
+    iIntros "INV H◯ HP2". iInv N as ([st ?]) "[>H● H]" "Hclose".
+    iDestruct (own_valid_2 with "H● H◯")
+      as %[[[[=]|Hincl]%option_included _]%prod_included [? _]]%auth_valid_discrete_2.
+    simpl in Hincl. destruct Hincl as (?&?&[=<-]&->&[?|[]%exclusive_included]);
+        try done; try apply _. setoid_subst.
+    iMod (own_update_2 with "H● H◯") as "[H● $]".
+    { apply auth_update, prod_local_update', (op_local_update _ _ 1%nat)=>//.
+      apply delete_option_local_update, _. }
+    iApply "Hclose". iExists _. by iFrame.
+  Qed.
+
+  Lemma drop_arc_spec (γ : gname) (q: Qp) (l : loc) :
+    is_arc P1 P2 N γ l -∗
+    {{{ arc_tok γ q ∗ P1 q }}} drop_arc  [ #l]
+    {{{ (b : bool), RET #b ; if b then P1 1 ∗ (P2 ={⊤}=∗ weak_tok γ) else True }}}.
   Proof using HP1.
-    iIntros "#INV #Hdrop #Hdealloc !# * (HP & Hown & HP1) HΦ". iLöb as "IH".
+    iIntros "#INV !# * [Hown HP1] HΦ". iLöb as "IH".
     wp_rec. wp_bind (!ˢᶜ_)%E. iInv N as (st) "[>H● H]" "Hclose".
     iDestruct (arc_tok_auth_val with "H● Hown") as %(?& s &?&?&[-> _]).
     iDestruct "H" as (?) "(? & ? & ? & ?)". wp_read.
-    iMod ("Hclose" with "[-HP Hown HP1 HΦ]") as "_". { iExists _. auto with iFrame. }
-    iModIntro. wp_let. wp_op. wp_bind (CAS _ _ _).
-    iInv N as (st) "[>H● H]" "Hclose".
+    iMod ("Hclose" with "[-Hown HP1 HΦ]") as "_". { iExists _. auto with iFrame. }
+    iModIntro. wp_let. wp_op. wp_bind (CAS _ _ _). iInv N as (st) "[>H● H]" "Hclose".
     iDestruct (arc_tok_auth_val with "H● Hown") as %(q' & s' & wl & w &[-> Hqq']).
     iDestruct "H" as (q'') "(>Hq'' & HP1' & Hs & Hw)". iDestruct "Hq''" as %Hq''.
     destruct (decide (s = s')) as [<-|?].
@@ -449,32 +453,21 @@ Section arc.
           etrans; first apply cancel_local_update_empty, _.
           by apply (op_local_update _ _ (Some (Cinr (Excl ())))). }
         iMod ("Hclose" with "[H● Hs Hw]") as "_"; first by iExists _; do 2 iFrame.
-        iModIntro. wp_apply (wp_if _ true). wp_op=>[_|//]; wp_if.
-        rewrite -{1}Hq''. wp_apply ("Hdrop" with "[$HP1 $HP1' $HP]"). iIntros "[HP HP2]".
-        wp_seq. iApply (drop_weak_spec with "INV Hdealloc [> -HΦ] HΦ").
-        iInv N as ([st ?]) "[>H● H]" "Hclose".
-        iDestruct (own_valid_2 with "H● H◯")
-          as %[[[[=]|Hincl]%option_included _]%prod_included [? _]]%auth_valid_discrete_2.
-        simpl in Hincl. destruct Hincl as (?&?&[=<-]&->&[?|[]%exclusive_included]);
-          try done; try apply _. setoid_subst.
-        iMod (own_update_2 with "H● H◯") as "[H● $]".
-        { apply auth_update, prod_local_update', (op_local_update _ _ 1%nat)=>//.
-          apply delete_option_local_update, _. }
-        iFrame. iApply "Hclose". iExists _. by iFrame.
+        iModIntro. wp_case. iApply wp_fupd. wp_op=>[_|//].
+        iApply ("HΦ"). rewrite -{2}Hq''. iFrame. by iApply close_last_strong.
       + destruct Hqq' as [? ->].
         rewrite -[in (_, _)](Pos.succ_pred s) // -[wl in Cinl (_, wl)]left_id
                 -Pos.add_1_l -2!pair_op -Cinl_op Some_op.
         iMod (own_update_2 _ _ _ _ with "H● Hown") as "H●".
         { apply auth_update_dealloc, prod_local_update_1, @cancel_local_update_empty, _. }
-        iMod ("Hclose" with "[- HΦ HP]") as "_".
+        iMod ("Hclose" with "[- HΦ]") as "_".
         { iExists _. iFrame. iExists (q + q'')%Qp. iFrame. iSplit; last by destruct s.
           iIntros "!> !%". rewrite assoc -Hq''. f_equal. apply comm, _. }
-        iModIntro. wp_apply (wp_if _ true). wp_op. by intros [=->]. intros _.
-        wp_if. by iApply "HΦ".
+        iModIntro. wp_case. wp_op=>[|_]. by intros [=->]. by iApply "HΦ".
     - wp_apply (wp_cas_int_fail with "Hs"); [done|congruence|]. iIntros "Hs".
-      iSpecialize ("IH" with "HP Hown HP1 HΦ").
+      iSpecialize ("IH" with "Hown HP1 HΦ").
       iMod ("Hclose" with "[- IH]") as "_"; first by iExists _; auto with iFrame.
-      by iApply (wp_if _ false).
+      iModIntro. by wp_case.
   Qed.
 
   Lemma try_unwrap_spec (γ : gname) (q: Qp) (l : loc) :
@@ -493,16 +486,7 @@ Section arc.
         etrans; first apply cancel_local_update_empty, _.
         by apply (op_local_update _ _ (Some (Cinr (Excl ())))). }
       iMod ("Hclose" with "[H● Hs Hw]") as "_"; first by iExists _; do 2 iFrame.
-      iApply ("HΦ" $! true). rewrite -{1}Hq''. iFrame. iIntros "!> HP2".
-      iInv N as ([st ?]) "[>H● H]" "Hclose".
-      iDestruct (own_valid_2 with "H● H◯")
-        as %[[[[=]|Hincl]%option_included _]%prod_included [? _]]%auth_valid_discrete_2.
-      simpl in Hincl. destruct Hincl as (?&?&[=<-]&->&[?|[]%exclusive_included]);
-        try done; try apply _. setoid_subst.
-      iMod (own_update_2 with "H● H◯") as "[H● $]".
-      { apply auth_update, prod_local_update', (op_local_update _ _ 1%nat)=>//.
-        apply delete_option_local_update, _. }
-      iApply "Hclose". iExists _. by iFrame.
+      iApply ("HΦ" $! true). rewrite -{1}Hq''. iFrame. by iApply close_last_strong.
     - wp_apply (wp_cas_int_fail with "Hs"); [done|congruence|]. iIntros "Hs".
       iMod ("Hclose" with "[-Hown HP1 HΦ]") as "_"; first by iExists _; auto with iFrame.
       iApply ("HΦ" $! false). by iFrame.
@@ -523,18 +507,17 @@ Section arc.
     - iDestruct "Hw" as "[Hw %]". subst.
       iApply (wp_cas_int_fail with "Hw")=>//. iNext. iIntros "Hw".
       iMod ("Hclose" with "[-HΦ Hown HP1]") as "_"; first by iExists _; eauto with iFrame.
-      iModIntro. iApply (wp_if _ false). iModIntro. wp_value. iApply "HΦ". iFrame.
+      iModIntro. wp_case. iApply "HΦ". iFrame.
     - iApply (wp_cas_int_fail with "Hw"); [done|lia|]. iNext. iIntros "Hw".
       iMod ("Hclose" with "[-HΦ Hown HP1]") as "_"; first by iExists _; eauto with iFrame.
-      iModIntro. iApply (wp_if _ false). iModIntro. wp_value. iApply "HΦ". iFrame.
+      iModIntro. wp_case. iApply "HΦ". iFrame.
     - iApply (wp_cas_int_suc with "Hw")=>//. iNext. iIntros "Hw".
       iMod (own_update_2 with "H● Hown") as "[H● H◯]".
       { by apply auth_update, prod_local_update_1, option_local_update,
                  csum_local_update_l, prod_local_update_2,
                  (alloc_option_local_update (Excl ())). }
       iMod ("Hclose" with "[-HΦ HP1 H◯]") as "_"; first by iExists _; eauto with iFrame.
-      iModIntro. iApply (wp_if _ true). iNext. wp_bind (!ˢᶜ_)%E.
-      iInv N as ([st ?]) "[>H● H]" "Hclose".
+      iModIntro. wp_case. wp_bind (!ˢᶜ_)%E. iInv N as ([st ?]) "[>H● H]" "Hclose".
       iDestruct (own_valid_2 with "H● H◯") as
         %[[[[=]|Hincl]%option_included _]%prod_included [? _]]%auth_valid_discrete_2.
       simpl in Hincl. destruct Hincl as (? & ? & [=<-] & -> & [|Hincl]); last first.
@@ -567,6 +550,52 @@ Section arc.
         iMod ("Hclose" with "[H●]") as "_"; first by iExists _; iFrame.
         iModIntro. wp_seq. wp_op=>[_|//]. wp_let. wp_op. wp_write. iApply "HΦ".
         iDestruct "Hq" as %<-. iFrame.
+  Qed.
+
+  Lemma try_unwrap_full_spec (γ : gname) (q: Qp) (l : loc) :
+    is_arc P1 P2 N γ l -∗
+    {{{ arc_tok γ q ∗ P1 q }}} try_unwrap_full [ #l]
+    {{{ (x : fin 3), RET #x ;
+        match x : nat with
+        (* No other reference : we get everything. *)
+        | 0%nat => l ↦ #1 ∗ shift_loc l 1 ↦ #1 ∗ P1 1
+        (* No other strong, but there are weaks : we get P1,
+           plus the option to get a weak if we pay P1. *)
+        | 1%nat => P1 1 ∗ (P2 ={⊤}=∗ weak_tok γ)
+        (* There are other strong : we get back what we gave at the first place. *)
+        | _ (* 2 *) => arc_tok γ q ∗ P1 q
+        end }}}.
+  Proof using HP1.
+    iIntros "#INV !# * [Hown HP1] HΦ". wp_rec. wp_bind (CAS _ _ _).
+    iInv N as (st) "[>H● H]" "Hclose".
+    iDestruct (arc_tok_auth_val with "H● Hown") as %(q' & s & wl & w &[-> Hqq']).
+    iDestruct "H" as (q'') "(>Hq'' & HP1' & Hs & Hw)". iDestruct "Hq''" as %Hq''.
+    destruct (decide (s = xH)) as [->|?].
+    - wp_apply (wp_cas_int_suc with "Hs")=>//. iIntros "Hs".
+      destruct Hqq' as [<- ->]. iMod (own_update_2 with "H● Hown") as "[H● H◯]".
+      { apply auth_update, prod_local_update_1. rewrite -[x in (x, _)]right_id.
+        etrans; first apply cancel_local_update_empty, _.
+        by apply (op_local_update _ _ (Some (Cinr (Excl ())))). }
+      iCombine "HP1" "HP1'" as "HP1". rewrite Hq''. clear Hq'' q''.
+      iMod ("Hclose" with "[H● Hs Hw]") as "_"; first by iExists _; do 2 iFrame.
+      clear w. iModIntro. wp_case. wp_op. wp_bind (!ˢᶜ_)%E.
+      iInv N as ([st w']) "[>H● H]" "Hclose".
+      iDestruct (own_valid_2 with "H● H◯")
+        as %[[[[=]|Hincl]%option_included _]%prod_included [? _]]%auth_valid_discrete_2.
+      simpl in Hincl. destruct Hincl as (?&?&[=<-]&->&[?|[]%exclusive_included]);
+        [|by apply _|done]. setoid_subst. iDestruct "H" as "[Hl Hl1]".
+      wp_read. destruct w'.
+      + iMod (own_update_2 with "H● H◯") as "H●".
+        { apply auth_update_dealloc, prod_local_update_1,
+                delete_option_local_update, _. }
+        iMod ("Hclose" with "[H●]") as "_"; first by iExists _; iFrame. iModIntro.
+        wp_op=>[_|//]. wp_if. wp_write. iApply ("HΦ" $! 0%fin). iFrame.
+      + iMod ("Hclose" with "[H● Hl Hl1]") as "_"; first by iExists _; do 2 iFrame.
+        iModIntro. wp_op; [lia|intros _]. wp_if. iApply ("HΦ" $! 1%fin). iFrame.
+        by iApply close_last_strong.
+    - wp_apply (wp_cas_int_fail with "Hs"); [done|congruence|]. iIntros "Hs".
+      iMod ("Hclose" with "[H● Hs Hw HP1']") as "_"; first by iExists _; auto with iFrame.
+      iModIntro. wp_case. iApply ("HΦ" $! 2%fin). iFrame.
   Qed.
 End arc.
 

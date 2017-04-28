@@ -214,8 +214,7 @@ Section rwlock_functions.
             iExists _. iFrame. iExists _, _. iSplitR; first done. iFrame "#∗".
             rewrite Qp_div_2. iSplitL; last done.
             iIntros "!> Hν". iApply "Hh". rewrite -lft_dead_or. auto. }
-        iMod ("Hclose''" with "[$INV]") as "Hβtok1".
-        iApply (wp_if _ true). iIntros "!>!>".
+        iMod ("Hclose''" with "[$INV]") as "Hβtok1". iModIntro. wp_case.
         iMod ("Hclose'" with "[$]") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
         iApply (type_type  _ _ _
                    [ x ◁ box (&shr{α}(rwlock ty)); r ◁ box (uninit 2);
@@ -229,8 +228,8 @@ Section rwlock_functions.
         simpl. iApply type_jump; solve_typing.
       + iApply (wp_cas_int_fail with "Hlx"); try done. iNext. iIntros "Hlx".
         iMod ("Hclose''" with "[Hlx Hownst Hst]") as "Hβtok1"; first by iExists _; iFrame.
-        iModIntro. iApply (wp_if _ false). iNext.
-        iMod ("Hclose'" with "[$]") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
+        iModIntro. wp_case. iMod ("Hclose'" with "[$]") as "Hα".
+        iMod ("Hclose" with "Hα HL") as "HL".
         iSpecialize ("Hk" with "[]"); first solve_typing.
         iApply ("Hk" $! [#] with "Hna HL").
         rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame.
@@ -278,7 +277,7 @@ Section rwlock_functions.
       iNext. iIntros "Hlx".
       iMod ("Hclose''" with "[Hlx Hownst Hst]") as "Hβtok"; first by iExists _; iFrame.
       iMod ("Hclose'" with "Hβtok") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
-      iModIntro. iApply (wp_if _ false). iNext.
+      iModIntro. wp_case.
       iApply (type_type _ _ _
               [ x ◁ box (&shr{α}(rwlock ty)); r ◁ box (uninit 2) ]
               with "[] LFT HE Hna HL Hk"); first last.
@@ -290,7 +289,7 @@ Section rwlock_functions.
       iMod (own_update with "Hownst") as "[Hownst ?]".
       { by eapply auth_update_alloc, (op_local_update_discrete _ _ writing_st). }
       iMod ("Hclose''" with "[Hlx Hownst]") as "Hβtok". { iExists _. iFrame. }
-      iModIntro. iApply (wp_if _ true). iNext. iMod ("Hclose'" with "Hβtok") as "Hα".
+      iModIntro. wp_case. iMod ("Hclose'" with "Hβtok") as "Hα".
       iMod ("Hclose" with "Hα HL") as "HL".
       iApply (type_type  _ _ _
                    [ x ◁ box (&shr{α}(rwlock ty)); r ◁ box (uninit 2);

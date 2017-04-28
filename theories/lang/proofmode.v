@@ -22,6 +22,7 @@ Ltac wp_done :=
   | |- language.to_val _ = Some _ => solve_to_val
   | |- Forall _ [] => fast_by apply List.Forall_nil
   | |- Forall _ (_ :: _) => apply List.Forall_cons; wp_done
+  | |- _ ≤ _ => lia
   | _ => fast_done
   end.
 
@@ -119,7 +120,7 @@ Tactic Notation "wp_case" :=
   lazymatch goal with
   | |- _ ⊢ wp ?E ?e ?Q => reshape_expr e ltac:(fun K e' =>
     match eval hnf in e' with
-    | Case _ _ _ =>
+    | Case _ _ =>
       wp_bind_core K;
       etrans; [|eapply wp_case; wp_done];
       simpl_subst; wp_finish
