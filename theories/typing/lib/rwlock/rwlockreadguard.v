@@ -119,9 +119,9 @@ Section rwlockreadguard.
     move=>?????/=. apply uPred.exist_mono=>?. by rewrite sync_change_tid.
   Qed.
 
-  (* Probably for reasons related to the underlying representation,
-     Rust does not implement Send for RwLockWriteGuard. We could prove
-     this. *)
+  (* POSIX requires the unlock to occur from the thread that acquired
+     the lock, so Rust does not implement Send for RwLockWriteGuard. We could
+     prove this. *)
 End rwlockreadguard.
 
 Hint Resolve rwlockreadguard_mono' rwlockreadguard_proper' : lrust_typing.
