@@ -116,7 +116,16 @@ Section rwlockwriteguard.
     eqtype E L (rwlockwriteguard α1 ty1) (rwlockwriteguard α2 ty2).
   Proof. intros. by eapply rwlockwriteguard_proper. Qed.
 
-  (* TODO: In Rust, the write guard is Sync if ty is Send+Sync. *)
+  Global Instance rwlockwriteguard_sync α ty :
+    Sync ty → Sync (rwlockwriteguard α ty).
+  Proof.
+    move=>?????/=. apply uPred.exist_mono=>?. do 6 f_equiv.
+    by rewrite sync_change_tid.
+  Qed.
+
+  (* Probably for reasons related to the underlying representation,
+     Rust does not implement Send for RwLockWriteGuard. We could prove
+     this. *)
 End rwlockwriteguard.
 
 Hint Resolve rwlockwriteguard_mono' rwlockwriteguard_proper' : lrust_typing.

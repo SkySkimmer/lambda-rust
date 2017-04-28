@@ -113,7 +113,15 @@ Section rwlockreadguard.
     eqtype E L (rwlockreadguard α1 ty1) (rwlockreadguard α2 ty2).
   Proof. intros. by eapply rwlockreadguard_proper. Qed.
 
-  (* TODO: In Rust, the read guard is Sync if ty is Send+Sync. *)
+  Global Instance rwlockreadguard_sync α ty :
+    Sync ty → Sync (rwlockreadguard α ty).
+  Proof.
+    move=>?????/=. apply uPred.exist_mono=>?. by rewrite sync_change_tid.
+  Qed.
+
+  (* Probably for reasons related to the underlying representation,
+     Rust does not implement Send for RwLockWriteGuard. We could prove
+     this. *)
 End rwlockreadguard.
 
 Hint Resolve rwlockreadguard_mono' rwlockreadguard_proper' : lrust_typing.
