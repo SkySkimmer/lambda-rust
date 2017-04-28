@@ -7,7 +7,11 @@ From iris.algebra Require Import excl csum frac auth.
 From lrust.lang Require Import lang proofmode notation new_delete.
 Set Default Proof Using "Type".
 
-(* TODO : get_mut, make_mut *)
+Definition strong_count : val :=
+  λ: ["l"], !ˢᶜ"l".
+
+Definition weak_count : val :=
+  λ: ["l"], !ˢᶜ("l" +ₗ #1).
 
 Definition clone_arc : val :=
   rec: "clone" ["l"] :=
@@ -181,6 +185,40 @@ Section arc.
     - destruct Hincl as [->|[(?&[[??]?]&[=<-]&->&[[[??]%frac_included%Qp_lt_sum
         ?%pos_included]%prod_included _]%prod_included)|(?&?&[=]&?)]]; first done.
       iExists _, _, _, _. iSplit=>//. simpl in *. destruct decide; [subst;lia|eauto].
+  Qed.
+
+  Lemma strong_count_spec (γ : gname) (l : loc) (P : iProp Σ) :
+    is_arc P1 P2 N γ l -∗ arc_tok_acc γ P (⊤ ∖ ↑N) -∗
+    {{{ P }}} strong_count [ #l] {{{ (c : nat), RET #c; P ∗ ⌜(c > 0)%nat⌝ }}}.
+  Proof using HP1.
+    iIntros "#INV #Hacc !# * HP HΦ". iLöb as "IH". wp_rec.
+    iInv N as (st) "[>H● H]" "Hclose1".
+    iMod ("Hacc" with "HP") as (?) "[Hown Hclose2]".
+    iDestruct (arc_tok_auth_val with "H● Hown") as %(?& strong &?&?&[-> _]).
+    iDestruct "H" as (?) "(Hq & HP1 & H↦ & Hw)". wp_read.
+    iMod ("Hclose2" with "Hown") as "HP". iModIntro.
+    iMod ("Hclose1" with "[-HP HΦ]") as "_"; [iExists _; auto with iFrame|].
+    iModIntro. rewrite -positive_nat_Z. iApply "HΦ". auto with iFrame lia.
+  Qed.
+
+  (* FIXME : in the case the weak count is locked, we can possibly
+     return -1. This problem already exists in Rust. *)
+  Lemma weak_count_spec (γ : gname) (l : loc) (P : iProp Σ) :
+    is_arc P1 P2 N γ l -∗ arc_tok_acc γ P (⊤ ∖ ↑N) -∗
+    {{{ P }}} weak_count [ #l] {{{ (c : Z), RET #c; P ∗ ⌜c >= -1⌝ }}}.
+  Proof using HP1.
+    iIntros "#INV #Hacc !# * HP HΦ". iLöb as "IH". wp_rec. wp_op.
+    iInv N as (st) "[>H● H]" "Hclose1".
+    iMod ("Hacc" with "HP") as (?) "[Hown Hclose2]".
+    iDestruct (arc_tok_auth_val with "H● Hown") as %(?& strong &wl&?&[-> _]).
+    iDestruct "H" as (?) "(Hq & HP1 & H↦ & Hw)". destruct wl.
+    - iDestruct "Hw" as ">[Hw %]". wp_read.
+      iMod ("Hclose2" with "Hown") as "HP". iModIntro.
+      iMod ("Hclose1" with "[-HP HΦ]") as "_"; [iExists _; auto with iFrame|].
+      iApply "HΦ". auto with iFrame lia.
+    - wp_read. iMod ("Hclose2" with "Hown") as "HP". iModIntro.
+      iMod ("Hclose1" with "[-HP HΦ]") as "_"; [iExists _; auto with iFrame|].
+      iApply "HΦ". auto with iFrame lia.
   Qed.
 
   Lemma clone_arc_spec (γ : gname) (l : loc) (P : iProp Σ) :
