@@ -130,8 +130,6 @@ Section rc.
     iIntros (ty E κ l tid q ?) "#LFT Hb Htok".
     iMod (bor_exists with "LFT Hb") as (vl) "Hb"; first done.
     iMod (bor_sep with "LFT Hb") as "[H↦ Hb]"; first done.
-    (* Ideally, we'd change ty_shr to say "l ↦{q} #l" in the fractured borrow,
-       but that would be additional work here... *)
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦"; first done.
     destruct vl as [|[[|l'|]|][|]];
       try by iMod (bor_persistent_tok with "LFT Hb Htok") as "[>[] _]".
@@ -538,7 +536,7 @@ Section code.
       let: "rc'" := !"rc" in
       let: "rc''" := !"rc'" in
       let: "strong" := !("rc''" +ₗ #0) in
-      "rc''" +ₗ #0 <- "strong" +#1;;
+      "rc''" +ₗ #0 <- "strong" + #1;;
       "r" <- "rc''";;
       delete [ #1; "rc" ];; return: ["r"].
 
@@ -652,7 +650,8 @@ Section code.
         Skip;;
         (* Return content *)
         "r" <-{ty.(ty_size),Σ 0} !("rc'" +ₗ #2);;
-        (* Decrement weak, and deallocate if appropriate *)
+        (* Decrement weak (removing the one weak ref collectively held by all
+           strong refs), and deallocate if weak count reached 0. *)
         let: "weak" := !("rc'" +ₗ #1) in
         if: "weak" = #1 then
           delete [ #(2 + ty.(ty_size)); "rc'" ];;
@@ -747,7 +746,8 @@ Section code.
       if: "strong" = #1 then
         (* Return content. *)
         "r" <-{ty.(ty_size),Σ some} !("rc'" +ₗ #2);;
-        (* Decrement weak, and deallocate if appropriate *)
+        (* Decrement weak (removing the one weak ref collectively held by all
+           strong refs), and deallocate if weak count reached 0. *)
         let: "weak" := !("rc'" +ₗ #1) in
         if: "weak" = #1 then
           delete [ #(2 + ty.(ty_size)); "rc'" ];;
@@ -932,24 +932,35 @@ Section code.
       if: "strong" = #1 then
         let: "weak" := !("rc''" +ₗ #1) in
         if: "weak" = #1 then
+          (* This is the last strong ref, and there is no weak ref.
+             We just return a deep ptr into the Rc. *)
           "r" <- "rc''" +ₗ #2;;
           "k" []
         else
+          (* This is the last strong ref, but there are weak refs.
+             We make ourselves a new Rc, move the content, and mark the old one killed
+             (strong count becomes 0, strong idx removed from weak cnt).
+             We store the new Rc in our argument (which is a &uniq rc),
+             and return a deep ptr into it. *)
           "rc''" +ₗ #0 <- #0;;
           "rc''" +ₗ #1 <- "weak" - #1;;
+          (* Inlined rc_new("rc''" +ₗ #2) begins. *)
           let: "rcbox" := new [ #(2 + ty.(ty_size))%nat ] in
           "rcbox" +ₗ #0 <- #1;;
           "rcbox" +ₗ #1 <- #1;;
           "rcbox" +ₗ #2 <-{ty.(ty_size)} !"rc''" +ₗ #2;;
           "rc'" <- "rcbox";;
+          (* Inlined rc_new ends. *)
           "r" <- "rcbox" +ₗ #2;;
           "k" []
       else
+        (* There are other strong refs, we have to make a copy and clone the content. *)
         let: "x" := new [ #1 ] in
         "x" <- "rc''" +ₗ #2;;
         let: "clone" := clone in
         letcall: "c" := "clone" ["x"]%E in (* FIXME : why do I need %E here ? *)
         Endlft;;
+        (* Inlined rc_new("c") begins. *)
         let: "rcbox" := new [ #(2 + ty.(ty_size))%nat ] in
         "rcbox" +ₗ #0 <- #1;;
         "rcbox" +ₗ #1 <- #1;;
@@ -957,6 +968,7 @@ Section code.
         delete [ #ty.(ty_size); "c"];;
         let: "rc''" := !"rc'" in
         letalloc: "rcold" <- "rc''" in
+          (* Inlined rc_new ends. *)
         "rc'" <- "rcbox";;
         (* FIXME : here, we are dropping the old rc pointer. In the
            case another strong reference has been dropped while

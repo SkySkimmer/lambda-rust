@@ -82,9 +82,6 @@ End cell.
 Section typing.
   Context `{typeG Σ}.
 
-  (* TODO RJ: Consider setting this globally. *)
-  Arguments ty_own : simpl never.
-
   (* Constructing a cell. *)
   Definition cell_new : val := funrec: <> ["x"] := return: ["x"].
 

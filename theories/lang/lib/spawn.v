@@ -47,7 +47,8 @@ Definition finish_handle (c : loc) (Ψ : val → iProp Σ) : iProp Σ :=
   (∃ γf γj v, own γf (Excl ()) ∗ shift_loc c 1 ↦ v ∗ inv N (spawn_inv γf γj c Ψ))%I.
 
 Definition join_handle (c : loc) (Ψ : val → iProp Σ) : iProp Σ :=
-  (∃ γf γj, own γj (Excl ()) ∗ † c … 2 ∗ inv N (spawn_inv γf γj c Ψ))%I.
+  (∃ γf γj Ψ', own γj (Excl ()) ∗ † c … 2 ∗ inv N (spawn_inv γf γj c Ψ') ∗
+   □ (∀ v, Ψ' v -∗ Ψ v))%I.
 
 Global Instance spawn_inv_ne n γf γj c :
   Proper (pointwise_relation val (dist n) ==> dist n) (spawn_inv γf γj c).
@@ -96,7 +97,7 @@ Qed.
 Lemma join_spec (Ψ : val → iProp Σ) c :
   {{{ join_handle c Ψ }}} join [ #c] {{{ v, RET v; Ψ v }}}.
 Proof.
-  iIntros (Φ) "H HΦ". iDestruct "H" as (γf γj) "(Hj & H† & #?)".
+  iIntros (Φ) "H HΦ". iDestruct "H" as (γf γj Ψ') "(Hj & H† & #? & #HΨ')".
   iLöb as "IH". wp_rec.
   wp_bind (!ˢᶜ _)%E. iInv N as "[[_ >Hj']|Hinv]" "Hclose".
   { iExFalso. iCombine "Hj" "Hj'" as "Hj". iDestruct (own_valid with "Hj") as "%".
@@ -112,8 +113,17 @@ Proof.
   iModIntro. iApply wp_if. iNext. wp_op. wp_read. wp_let.
   iAssert (c ↦∗ [ #true; v])%I with "[Hc Hd]" as "Hc".
   { rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton. iFrame. }
-  wp_free; first done. iApply "HΦ". done.
+  wp_free; first done. iApply "HΦ". iApply "HΨ'". done.
 Qed.
+
+Lemma join_handle_impl (Ψ1 Ψ2 : val → iProp Σ) c :
+  □ (∀ v, Ψ1 v -∗ Ψ2 v) -∗ join_handle c Ψ1 -∗ join_handle c Ψ2.
+Proof.
+  iIntros "#HΨ Hhdl". iDestruct "Hhdl" as (γf γj Ψ') "(Hj & H† & #? & #HΨ')".
+  iExists γf, γj, Ψ'. iFrame "#∗". iIntros "!# * ?".
+  iApply "HΨ". iApply "HΨ'". done.
+Qed.
+
 End proof.
 
 Typeclasses Opaque finish_handle join_handle.
