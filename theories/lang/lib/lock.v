@@ -44,6 +44,14 @@ Section proof.
     by iApply "HRR'".
   Qed.
 
+  Lemma lock_proto_iff_proper γ l R R' :
+    □ (R ↔ R') -∗ □ (lock_proto γ l R ↔ lock_proto γ l R').
+  Proof.
+    iIntros "#HR !#". iSplit; iIntros "Hlck"; iApply (lock_proto_iff with "[HR] Hlck").
+    - done.
+    - iAlways; iSplit; iIntros; by iApply "HR".
+  Qed.
+
   (** The main proofs. *)
   Lemma lock_proto_create (R : iProp Σ) l (b : bool) :
     l ↦ #b -∗ (if b then True else ▷ R) ==∗ ∃ γ, ▷ lock_proto γ l R.

@@ -202,6 +202,13 @@ Section heap.
     iFrame "Hm". by iApply "Hwand".
   Qed.
 
+  Lemma heap_mapsto_pred_iff_proper l q Φ1 Φ2 :
+    □ (∀ vl, Φ1 vl ↔ Φ2 vl) -∗ □ (l ↦∗{q}: Φ1 ↔ l ↦∗{q}: Φ2).
+  Proof.
+    iIntros "#HΦ !#". iSplit; iIntros; iApply (heap_mapsto_pred_wand with "[-]"); try done; [|];
+    iIntros; by iApply "HΦ".
+  Qed.
+
   Lemma heap_mapsto_vec_combine l q vl :
     vl ≠ [] →
     l ↦∗{q} vl ⊣⊢ own heap_name (◯ [^op list] i ↦ v ∈ vl,

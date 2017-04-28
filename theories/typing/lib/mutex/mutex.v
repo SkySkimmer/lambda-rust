@@ -99,7 +99,24 @@ Section mutex.
     constructor; solve_proper_core ltac:(fun _ => (eapply ty_size_ne; try reflexivity) || f_equiv).
   Qed.
 
-  (* TODO: compat with eqtype, Send+Sync if ty is Send. *)
+  Global Instance mutex_send ty :
+    Send ty → Send (mutex ty).
+  Proof.
+    iIntros (??? [|[[| |n]|]vl]); try done. iIntros "[$ Hvl]".
+    by iApply send_change_tid.
+  Qed.
+
+  Global Instance mutex_sync ty :
+    Send ty → Sync (mutex ty).
+  Proof.
+    iIntros (???? l) "Hshr". iDestruct "Hshr" as (γ κ') "[Hshr Hincl]".
+    iExists _, _. iFrame "Hincl". iApply (shr_bor_iff with "[] Hshr"). iNext.
+    iApply lock_proto_iff_proper. iApply bor_iff_proper. iNext.
+    iApply heap_mapsto_pred_iff_proper.
+    iAlways; iIntros; iSplit; iIntros; by iApply send_change_tid.
+  Qed.
+
+  (* TODO: compat with eqtype. *)
 
 End mutex.
 
