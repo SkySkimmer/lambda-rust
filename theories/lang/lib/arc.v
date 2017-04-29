@@ -27,6 +27,7 @@ Definition downgrade : val :=
   rec: "downgrade" ["l"] :=
     let: "weak" := !ˢᶜ("l" +ₗ #1) in
     if: "weak" = #(-1) then
+      (* -1 in weak indicates that somebody locked the counts; let's spin. *)
       "downgrade" ["l"]
     else
       if: CAS ("l" +ₗ #1) "weak" ("weak" + #1) then #()
@@ -42,6 +43,9 @@ Definition upgrade : val :=
 
 Definition drop_weak : val :=
   rec: "drop" ["l"] :=
+    (* This can ignore the lock because the lock is only held when there
+       are no other weak refs in existence, so this code will never be called
+       with the lock held. *)
     let: "weak" := !ˢᶜ("l" +ₗ #1) in
     if: CAS ("l" +ₗ #1) "weak" ("weak" - #1) then "weak" = #1
     else "drop" ["l"].
@@ -57,6 +61,7 @@ Definition try_unwrap : val :=
 
 Definition is_unique : val :=
   λ: ["l"],
+    (* Try to acquire the lock for the last ref by CASing weak count from 1 to -1. *)
     if: CAS ("l" +ₗ #1) #1 #(-1) then
       let: "strong" := !ˢᶜ"l" in
       let: "unique" := "strong" = #1 in
@@ -128,6 +133,10 @@ Section def.
 End def.
 
 Section arc.
+  (* P1 is the thing that is shared by strong reference owners (in practice,
+     this is the lifetime token), and P2 is the thing that is owned by the
+     protocol when only weak references are left (in practice, P2 is the
+     ownership of the underlying memory incl. deallocation). *)
   Context `{!lrustG Σ, !arcG Σ} (P1 : Qp → iProp Σ) {HP1:Fractional P1}
           (P2 : iProp Σ) (N : namespace).
 
@@ -598,7 +607,7 @@ Section arc.
         (* No other reference : we get everything. *)
         | 0%nat => l ↦ #1 ∗ shift_loc l 1 ↦ #1 ∗ P1 1
         (* No other strong, but there are weaks : we get P1,
-           plus the option to get a weak if we pay P1. *)
+           plus the option to get a weak if we pay P2. *)
         | 1%nat => P1 1 ∗ (P2 ={⊤}=∗ weak_tok γ)
         (* There are other strong : we get back what we gave at the first place. *)
         | _ (* 2 *) => arc_tok γ q ∗ P1 q

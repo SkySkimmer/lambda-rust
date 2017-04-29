@@ -11,6 +11,11 @@ Definition acquire : val :=
   rec: "acquire" ["l"] := if: try_acquire ["l"] then #() else "acquire" ["l"].
 Definition release : val := λ: ["l"], "l" <-ˢᶜ #false.
 
+(* It turns out that we need an accessor-based spec so that we can put the
+   protocol into shared borrows.  Cancellable invariants don't work because
+   their cancelling view shift has a non-empty mask, and it would have to be
+   executed in the consequence view shift of a borrow. *)
+
 (** The CMRA we need. *)
 (* Not bundling heapG, as it may be shared with other users. *)
 Class lockG Σ := LockG { lock_tokG :> inG Σ (exclR unitC) }.
