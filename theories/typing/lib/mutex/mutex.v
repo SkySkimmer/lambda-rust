@@ -10,15 +10,6 @@ Set Default Proof Using "Type".
 
 Definition mutexN := lrustN .@ "mutex".
 
-(* This type is an experiment in defining a Rust type on top of a non-typesysten-specific
-   interface, like the one provided by lang.lib.lock.
-   It turns out that we need an accessor-based spec for this purpose, so that
-   we can put the protocol into shared borrows.  Cancellable invariants
-   don't work because their cancelling view shift has a non-empty mask,
-   and it would have to be executed in the consequence view shift of
-   a borrow.
-*)
-
 Section mutex.
   Context `{!typeG Σ, !lockG Σ}.
 
@@ -99,6 +90,26 @@ Section mutex.
     constructor; solve_proper_core ltac:(fun _ => (eapply ty_size_ne; try reflexivity) || f_equiv).
   Qed.
 
+  Global Instance mutex_mono E L : Proper (eqtype E L ==> subtype E L) mutex.
+  Proof.
+    move=>ty1 ty2 /eqtype_unfold EQ. iIntros (?) "HL".
+    iDestruct (EQ with "HL") as "#EQ". iIntros "!# #HE". clear EQ.
+    iDestruct ("EQ" with "HE") as "(% & #Howni & _) {EQ}".
+    iSplit; last iSplit.
+    - simpl. iPureIntro. f_equiv. done.
+    - iIntros "!# * Hvl". destruct vl as [|[[| |n]|]vl]; try done.
+      simpl. iDestruct "Hvl" as "[$ Hvl]". by iApply "Howni".
+    - iIntros "!# * Hshr". iDestruct "Hshr" as (γ κ') "[Hshr Hincl]".
+      iExists _, _. iFrame "Hincl". iApply (shr_bor_iff with "[] Hshr"). iNext.
+      iApply lock_proto_iff_proper. iApply bor_iff_proper. iNext.
+      iApply heap_mapsto_pred_iff_proper.
+      iAlways; iIntros; iSplit; iIntros; by iApply "Howni".
+  Qed.
+
+  Global Instance mutex_proper E L :
+    Proper (eqtype E L ==> eqtype E L) mutex.
+  Proof. by split; apply mutex_mono. Qed.
+
   Global Instance mutex_send ty :
     Send ty → Send (mutex ty).
   Proof.
@@ -115,8 +126,6 @@ Section mutex.
     iApply heap_mapsto_pred_iff_proper.
     iAlways; iIntros; iSplit; iIntros; by iApply send_change_tid.
   Qed.
-
-  (* TODO: compat with eqtype. *)
 
 End mutex.
 

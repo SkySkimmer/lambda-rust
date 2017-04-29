@@ -88,7 +88,38 @@ Section mguard.
   Global Instance mutexguard_ne α : NonExpansive (mutexguard α).
   Proof. apply type_contractive_ne, _. Qed.
 
-  (* TODO: compat with lft_incl and eqtype. *)
+  Global Instance mutexguard_mono E L :
+    Proper (flip (lctx_lft_incl E L) ==> eqtype E L ==> subtype E L) mutexguard.
+  Proof.
+    intros α1 α2 Hα ty1 ty2 Hty. generalize Hty. rewrite eqtype_unfold. iIntros (Hty' q) "HL".
+    iDestruct (Hty' with "HL") as "#Hty". clear Hty'. iDestruct (Hα with "HL") as "#Hα".
+    iIntros "!# #HE". iDestruct ("Hα" with "HE") as "{Hα} Hα".
+    iDestruct ("Hty" with "HE") as "(%&#Ho&#Hs) {HE Hty}". iSplit; [done|iSplit; iAlways].
+    - iIntros (tid [|[[]|][]]) "H"; try done. simpl.
+      iDestruct "H" as (γ β) "(Hcl & #H⊑ & #Hinv & Hown)".
+      iExists γ, β. iFrame. iSplit; last iSplit.
+      + by iApply lft_incl_trans.
+      + iApply (shr_bor_shorten with "Hα").
+        iApply (shr_bor_iff with "[] Hinv"). iNext.
+        iApply lock_proto_iff_proper. iApply bor_iff_proper. iNext.
+        iApply heap_mapsto_pred_iff_proper.
+        iAlways; iIntros; iSplit; iIntros; by iApply "Ho".
+      + iApply bor_iff; last done. iNext.
+        iApply heap_mapsto_pred_iff_proper.
+        iAlways; iIntros; iSplit; iIntros; by iApply "Ho".
+    - iIntros (κ tid l) "H". iDestruct "H" as (l') "H". iExists l'.
+      iDestruct "H" as "[$ #H]". iIntros "!# * % Htok".
+      iMod (lft_incl_acc with "[] Htok") as (q') "[Htok Hclose]"; first solve_ndisj.
+      { iApply lft_intersect_mono. done. iApply lft_incl_refl. }
+      iMod ("H" with "[] Htok") as "Hshr". done. iModIntro. iNext.
+      iMod "Hshr" as "[Hshr Htok]". iMod ("Hclose" with "Htok") as "$".
+      iApply ty_shr_mono; try done. iApply lft_intersect_mono. done. iApply lft_incl_refl.
+      by iApply "Hs".
+  Qed.
+
+  Global Instance mutexguard_proper E L :
+    Proper (lctx_lft_eq E L ==> eqtype E L ==> eqtype E  L) mutexguard.
+  Proof. intros ??[]???. split; by apply mutexguard_mono. Qed.
 
   Global Instance mutexguard_sync α ty :
     Sync ty → Sync (mutexguard α ty).
