@@ -78,23 +78,24 @@ End join_handle.
 Section spawn.
   Context `{!typeG Σ, !spawnG Σ}.
 
-  Definition spawn : val :=
-    funrec: <> ["f"; "env"] :=
-      let: "f'" := !"f" in
+  Definition spawn (f : val) : val :=
+    funrec: <> ["env"] :=
+      let: "f" := f in
       let: "join" := spawn [λ: ["c"],
-                            letcall: "r" := "f'" ["env":expr] in
+                            letcall: "r" := "f" ["env":expr] in
                             finish ["c"; "r"]] in
       letalloc: "r" <- "join" in
-      delete [ #1; "f"];; return: ["r"].
+      return: ["r"].
 
-  Lemma spawn_type envty retty `{!TyWf envty, !TyWf retty}
+  Lemma spawn_type envty retty f `{!TyWf envty, !TyWf retty}
         `(!Send envty, !Send retty) :
+    typed_val f (fn(∅; envty) → retty) →
     let E ϝ := envty.(ty_outlives_E) static ++ retty.(ty_outlives_E) static in
-    typed_val spawn (fn(E; (fn(∅; envty) → retty), envty) → join_handle retty).
+    typed_val (spawn f) (fn(E; envty) → join_handle retty).
   Proof.
-    intros ? E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
-      iIntros (_ ϝ ret arg). inv_vec arg=>f env. simpl_subst.
-    iApply type_deref; [solve_typing..|]. iIntros (f'). simpl_subst.
+    intros Hf ? E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (_ ϝ ret arg). inv_vec arg=>env. simpl_subst.
+    iApply type_let; [apply Hf|solve_typing|]. iIntros (f'). simpl_subst.
     iApply (type_let _ _ _ _ ([f' ◁ _; env ◁ _])
                      (λ j, [j ◁ join_handle retty])); try solve_typing; [|].
     { (* The core of the proof: showing that spawn is safe. *)
@@ -124,7 +125,6 @@ Section spawn.
     iIntros (v). simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_assign; [solve_typing..|].
-    iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.
 

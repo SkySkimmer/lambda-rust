@@ -9,29 +9,29 @@ Set Default Proof Using "Type".
 Section code.
   Context `{typeG Σ}.
 
-  Definition take ty : val :=
-    funrec: <> ["x"; "f"; "env"] :=
+  Definition take ty (f : val) : val :=
+    funrec: <> ["x"; "env"] :=
       let: "x'" := !"x" in
-      let: "f'" := !"f" in
+      let: "f" := f in
       letalloc: "t" <-{ty.(ty_size)} !"x'" in
-      letcall: "r" := "f'" ["env"; "t"]%E in
+      letcall: "r" := "f" ["env"; "t"]%E in
       Endlft;;
       "x'" <-{ty.(ty_size)} !"r";;
-      delete [ #1; "x"];; delete [ #1; "f"];;  delete [ #ty.(ty_size); "r"];;
+      delete [ #1; "x"];;  delete [ #ty.(ty_size); "r"];;
       let: "r" := new [ #0] in return: ["r"].
 
-  Lemma take_type ty envty `{!TyWf ty, !TyWf envty} :
-    typed_val (take ty)
-      (fn(∀ α, ∅; &uniq{α} ty, fn(∅; envty, ty) → ty, envty) → unit).
+  Lemma take_type ty envty f `{!TyWf ty, !TyWf envty} :
+    typed_val f (fn(∅; envty, ty) → ty) →
+    typed_val (take ty f) (fn(∀ α, ∅; &uniq{α} ty, envty) → unit).
   Proof.
-    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ϝ ret arg).
-      inv_vec arg=>x f env. simpl_subst.
+    intros Hf E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ϝ ret arg).
+      inv_vec arg=>x env. simpl_subst.
     iApply type_deref; [solve_typing..|]; iIntros (x'); simpl_subst.
-    iApply type_deref; [solve_typing..|]; iIntros (f'); simpl_subst.
+    iApply type_let; [apply Hf|solve_typing|]; iIntros (f'); simpl_subst.
     iApply (type_new ty.(ty_size)); [solve_typing..|]; iIntros (t); simpl_subst.
     (* Switch to Iris. *)
-    iIntros (tid) "#LFT #HE Hna HL Hk [Ht [Hf [Hf' [Hx [Hx' [Henv _]]]]]]".
-    rewrite !tctx_hasty_val [[x]]lock [[f]]lock [[f']]lock [[env]]lock.
+    iIntros (tid) "#LFT #HE Hna HL Hk (Ht & Hf' & Hx & Hx' & Henv & _)".
+    rewrite !tctx_hasty_val [[x]]lock [[f']]lock [[env]]lock.
     iDestruct (ownptr_uninit_own with "Ht") as (tl tvl) "(% & >Htl & Htl†)". subst t. simpl.
     destruct x' as [[|lx'|]|]; try done. simpl.
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose1)"; [solve_typing..|].
@@ -78,15 +78,13 @@ Section code.
     iMod ("Hclose2" with "Hϝ HL") as "HL".
     iMod ("Hclose1" with "Hα HL") as "HL".
     (* Finish up the proof. *)
-    iApply (type_type _ _ _ [ x ◁ _; f ◁ _; #lr ◁ box (uninit ty.(ty_size)) ]
+    iApply (type_type _ _ _ [ x ◁ _; #lr ◁ box (uninit ty.(ty_size)) ]
         with "[] LFT HE Hna HL Hk [-]"); last first.
-    { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val tctx_hasty_val' //.
+    { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val tctx_hasty_val' //.
       unlock. iFrame. iExists _. rewrite uninit_own. iFrame. auto using vec_to_list_length. }
-    iApply type_delete; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
     iApply (type_new _); [solve_typing..|]; iIntros (r); simpl_subst.
     iApply type_jump; solve_typing.
   Qed.
-
 End code.

@@ -204,27 +204,26 @@ Section ref_functions.
   Qed.
 
   (* Apply a function within the ref, typically for accessing a component. *)
-  Definition ref_map : val :=
-    funrec: <> ["ref"; "f"; "env"] :=
-      let: "f'" := !"f" in
+  Definition ref_map (f : val) : val :=
+    funrec: <> ["ref"; "env"] :=
+      let: "f" := f in
       Newlft;;
       let: "x'" := !"ref" in
       letalloc: "x" <- "x'" in
-      letcall: "r" := "f'" ["env"; "x"]%E in
+      letcall: "r" := "f" ["env"; "x"]%E in
       let: "r'" := !"r" in delete [ #1; "r"];;
       Endlft;;
       "ref" <- "r'";;
-      delete [ #1; "f"];; return: ["ref"].
+      return: ["ref"].
 
-  Lemma ref_map_type ty1 ty2 envty `{!TyWf ty1, !TyWf ty2, !TyWf envty} :
-    typed_val ref_map
-      (fn(∀ β, ∅; ref β ty1, fn(∀ α, ∅; envty, &shr{α}ty1) → &shr{α}ty2, envty)
-       → ref β ty2).
+  Lemma ref_map_type ty1 ty2 f envty `{!TyWf ty1, !TyWf ty2, !TyWf envty} :
+    typed_val f (fn(∀ α, ∅; envty, &shr{α}ty1) → &shr{α}ty2) →
+    typed_val (ref_map f) (fn(∀ α, ∅; ref α ty1, envty) → ref α ty2).
   Proof.
-    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ϝ ret arg).
-       inv_vec arg=>ref f env. simpl_subst.
-    iApply type_deref; [solve_typing..|]. iIntros (f'). simpl_subst.
-    iApply (type_newlft [ϝ]). iIntros (κ tid) "#LFT #HE Hna HL Hk (Hf & #Hf' & Href & Henv)".
+    intros Hf E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ϝ ret arg).
+       inv_vec arg=>ref env. simpl_subst.
+    iApply type_let; [apply Hf | solve_typing |]. iIntros (f'). simpl_subst.
+    iApply (type_newlft [ϝ]). iIntros (κ tid) "#LFT #HE Hna HL Hk (#Hf' & Href & Henv & _)".
     rewrite (tctx_hasty_val _ ref). destruct ref as [[|lref|]|]; try done.
     iDestruct "Href" as "[Href Href†]".
     iDestruct "Href" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Href";
@@ -267,15 +266,12 @@ Section ref_functions.
     iApply wp_mask_mono; last iApply (wp_step_fupd with "Hκ'†"); auto with ndisj.
     wp_seq. iIntros "Hκ'† !>". iMod ("Hν" with "[Hκ'†]") as "Hν";
       first by rewrite -lft_dead_or; auto. wp_seq. wp_write.
-    iApply (type_type _ [_] _
-        [ f ◁ box (fn(∀ α, ∅; envty, &shr{α}ty1) → &shr{α}ty2);
-          #lref ◁ box (ref α ty2) ]
+    iApply (type_type _ [_] _ [ #lref ◁ box (ref α ty2) ]
        with "[] LFT HE Hna [HL] Hk"); first last.
-    { iFrame. rewrite big_sepL_singleton tctx_hasty_val. iExists _. iSplit. done.
+    { rewrite tctx_interp_singleton. iExists _. iSplit. done.
       iFrame. iExists [_;_]. rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
       iFrame. destruct r' as [[]|]=>//=. auto 10 with iFrame. }
     { rewrite /llctx_interp /=; auto. }
-    iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.
 End ref_functions.
