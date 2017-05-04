@@ -22,6 +22,7 @@ theories/lang/proofmode.v
 theories/lang/races.v
 theories/lang/tactics.v
 theories/lang/lib/memcpy.v
+theories/lang/lib/swap.v
 theories/lang/lib/new_delete.v
 theories/lang/lib/spawn.v
 theories/lang/lib/lock.v
@@ -57,6 +58,7 @@ theories/typing/lib/take_mut.v
 theories/typing/lib/rc/rc.v
 theories/typing/lib/rc/weak.v
 theories/typing/lib/arc.v
+theories/typing/lib/swap.v
 theories/typing/lib/mutex/mutex.v
 theories/typing/lib/mutex/mutexguard.v
 theories/typing/lib/refcell/refcell.v
