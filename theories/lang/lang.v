@@ -165,16 +165,20 @@ Fixpoint subst (x : string) (es : expr) (e : expr)  : expr :=
 
 Definition subst' (mx : binder) (es : expr) : expr → expr :=
   match mx with BNamed x => subst x es | BAnon => id end.
+
 Fixpoint subst_l (xl : list binder) (esl : list expr) (e : expr) : option expr :=
   match xl, esl with
   | [], [] => Some e
   | x::xl, es::esl => subst' x es <$> subst_l xl esl e
   | _, _ => None
   end.
+Arguments subst_l _%RustB _ _%E.
 
 Definition subst_v (xl : list binder) (vsl : vec val (length xl))
                    (e : expr) : expr :=
   Vector.fold_right2 (λ b, subst' b ∘ of_val) e _ (list_to_vec xl) vsl.
+Arguments subst_v _%RustB _ _%E.
+
 Lemma subst_v_eq (xl : list binder) (vsl : vec val (length xl)) e :
   Some $ subst_v xl vsl e = subst_l xl (of_val <$> vec_to_list vsl) e.
 Proof.
