@@ -151,21 +151,21 @@ Section refmut_functions.
   Qed.
 
   (* Apply a function within the refmut, typically for accessing a component. *)
-  Definition refmut_map (f : val) : val :=
-    funrec: <> ["ref"; "env"] :=
-      let: "f" := f in
+  Definition refmut_map (call_once : val) : val :=
+    funrec: <> ["ref"; "f"] :=
+      let: "call_once" := call_once in
       Newlft;;
       let: "x'" := !"ref" in
       letalloc: "x" <- "x'" in
-      letcall: "r" := "f" ["env"; "x"]%E in
+      letcall: "r" := "call_once" ["f"; "x"]%E in
       let: "r'" := !"r" in delete [ #1; "r"];;
       Endlft;;
       "ref" <- "r'";;
       return: ["ref"].
 
-  Lemma refmut_map_type ty1 ty2 f envty `{!TyWf ty1, !TyWf ty2, !TyWf envty} :
-    typed_val f (fn(∀ α, ∅; envty, &uniq{α}ty1) → &uniq{α}ty2) →
-    typed_val (refmut_map f) (fn(∀ α, ∅; refmut α ty1, envty) → refmut α ty2).
+  Lemma refmut_map_type ty1 ty2 call_once fty `{!TyWf ty1, !TyWf ty2, !TyWf fty} :
+    typed_val call_once (fn(∀ α, ∅; fty, &uniq{α}ty1) → &uniq{α}ty2) → (* fty : for<'a>, FnOnce(&'a ty1) -> &'a ty2, as witnessed by the impl call_once *)
+    typed_val (refmut_map call_once) (fn(∀ α, ∅; refmut α ty1, fty) → refmut α ty2).
   Proof.
     intros Hf E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ϝ ret arg).
        inv_vec arg=>ref env. simpl_subst.
@@ -191,8 +191,8 @@ Section refmut_functions.
       iApply (bor_fracture with "LFT [> -]"); first done. rewrite /= Qp_mult_1_r //. }
     iApply (type_type ((κ ⊑ₑ α ⊓ ν) :: (α ⊓ ν ⊑ₑ α) :: _) _
         [k ◁cont(_, λ x:vec val 1, [ x!!!0 ◁ box (&uniq{α ⊓ ν}ty2)])]
-        [ f' ◁ fn(∀ α, ∅; envty, &uniq{α}ty1) → &uniq{α}ty2;
-          #lx ◁ box (&uniq{α ⊓ ν}ty1); env ◁ box envty ]
+        [ f' ◁ fn(∀ α, ∅; fty, &uniq{α}ty1) → &uniq{α}ty2;
+          #lx ◁ box (&uniq{α ⊓ ν}ty1); env ◁ box fty ]
        with "[] LFT [] Hna HL [-H† Hlx Henv Hbor]"); swap 1 2; swap 3 4.
     { iSplitL; last iSplitL; [done|iApply lft_intersect_incl_l|iApply "HE"]. }
     { iApply (type_call (α ⊓ ν)); solve_typing. }

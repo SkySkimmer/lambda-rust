@@ -78,20 +78,20 @@ End join_handle.
 Section spawn.
   Context `{!typeG Σ, !spawnG Σ}.
 
-  Definition spawn (f : val) : val :=
-    funrec: <> ["env"] :=
-      let: "f" := f in
+  Definition spawn (call_once : val) : val :=
+    funrec: <> ["f"] :=
+      let: "call_once" := call_once in
       let: "join" := spawn [λ: ["c"],
-                            letcall: "r" := "f" ["env":expr] in
+                            letcall: "r" := "call_once" ["f":expr] in
                             finish ["c"; "r"]] in
       letalloc: "r" <- "join" in
       return: ["r"].
 
-  Lemma spawn_type envty retty f `{!TyWf envty, !TyWf retty}
-        `(!Send envty, !Send retty) :
-    typed_val f (fn(∅; envty) → retty) →
-    let E ϝ := envty.(ty_outlives_E) static ++ retty.(ty_outlives_E) static in
-    typed_val (spawn f) (fn(E; envty) → join_handle retty).
+  Lemma spawn_type fty retty call_once `{!TyWf fty, !TyWf retty}
+        `(!Send fty, !Send retty) :
+    typed_val call_once (fn(∅; fty) → retty) → (* fty : FnOnce() -> retty, as witnessed by the impl call_once *)
+    let E ϝ := fty.(ty_outlives_E) static ++ retty.(ty_outlives_E) static in
+    typed_val (spawn call_once) (fn(E; fty) → join_handle retty).
   Proof.
     intros Hf ? E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (_ ϝ ret arg). inv_vec arg=>env. simpl_subst.
@@ -107,7 +107,7 @@ Section spawn.
       iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let.
       (* FIXME this is horrible. *)
       refine (let Hcall := type_call' _ [] [] f' [] [env:expr]
-                (λ _:(), FP_wf ∅ [# envty] retty) in _).
+                (λ _:(), FP_wf ∅ [# fty] retty) in _).
       specialize (Hcall (rec: "_k" ["r"] := finish [ #c; "r"])%V ()).
       erewrite of_val_unlock in Hcall; last done.
       iApply (Hcall with "LFT HE Htl [] [Hfin]").

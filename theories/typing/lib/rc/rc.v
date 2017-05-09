@@ -984,7 +984,7 @@ Section code.
       delete [ #1; "rc"];; return: ["r"].
 
   Lemma rc_make_mut_type ty `{!TyWf ty} clone :
-    typed_val clone (fn(∀ α, ∅; &shr{α} ty) → ty) →
+    typed_val clone (fn(∀ α, ∅; &shr{α} ty) → ty) → (* ty : Clone, as witnessed by the impl clone *)
     typed_val (rc_make_mut ty clone) (fn(∀ α, ∅; &uniq{α} rc ty) → &uniq{α} ty).
   Proof.
     intros Hclone E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".

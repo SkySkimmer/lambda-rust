@@ -9,20 +9,20 @@ Set Default Proof Using "Type".
 Section code.
   Context `{typeG Σ}.
 
-  Definition take ty (f : val) : val :=
-    funrec: <> ["x"; "env"] :=
+  Definition take ty (call_once : val) : val :=
+    funrec: <> ["x"; "f"] :=
       let: "x'" := !"x" in
-      let: "f" := f in
+      let: "call_once" := call_once in
       letalloc: "t" <-{ty.(ty_size)} !"x'" in
-      letcall: "r" := "f" ["env"; "t"]%E in
+      letcall: "r" := "call_once" ["f"; "t"]%E in
       Endlft;;
       "x'" <-{ty.(ty_size)} !"r";;
       delete [ #1; "x"];;  delete [ #ty.(ty_size); "r"];;
       let: "r" := new [ #0] in return: ["r"].
 
-  Lemma take_type ty envty f `{!TyWf ty, !TyWf envty} :
-    typed_val f (fn(∅; envty, ty) → ty) →
-    typed_val (take ty f) (fn(∀ α, ∅; &uniq{α} ty, envty) → unit).
+  Lemma take_type ty fty call_once `{!TyWf ty, !TyWf fty} :
+    typed_val call_once (fn(∅; fty, ty) → ty) → (* fty : FnOnce(ty) -> ty, as witnessed by the impl call_once *)
+    typed_val (take ty call_once) (fn(∀ α, ∅; &uniq{α} ty, fty) → unit).
   Proof.
     intros Hf E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ϝ ret arg).
       inv_vec arg=>x env. simpl_subst.
@@ -53,7 +53,7 @@ Section code.
     iApply (wp_let' _ _ _ _ k _ EQk). simpl_subst. iNext.
     iApply (type_type ((β ⊑ₑ ϝ) :: _) [β ⊑ₗ []]
         [k ◁cont(_, λ x:vec val 1, [ x!!!0 ◁ box ty])]
-        [ f' ◁ fn(∅; envty, ty) → ty; #tl ◁ box ty; env ◁ box envty ]
+        [ f' ◁ fn(∅; fty, ty) → ty; #tl ◁ box ty; env ◁ box fty ]
        with "[] LFT [] Hna [Hβ Hβ†] [-Hf' Htl Htl† Hx'vl Henv]"); swap 1 3; swap 4 5.
     { rewrite /llctx_interp. iSplitL; last done. (* FIXME: iSplit should work as one side is 'True', thus persistent. *)
       iExists β. simpl. iSplit; first by rewrite left_id. iFrame "∗#". }
