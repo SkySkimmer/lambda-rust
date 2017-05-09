@@ -166,8 +166,7 @@ Section code.
     (* TODO: It would be nice to say [{#}] as the last spec pattern to clear the context in there. *)
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val' // tctx_hasty_val' //.
       iFrame. iSplitL "Hx".
-      - iExists _. iFrame. rewrite uninit_own vec_to_list_length.
-          by iNext. (* FIXME: Just "done" should work here. *)
+      - iExists _. iFrame. by rewrite uninit_own vec_to_list_length.
       - iExists (_ :: vl). rewrite heap_mapsto_vec_cons. iFrame.
         (* FIXME: Why does calling `iFrame` twice even make a difference? *)
         iFrame. eauto. }
