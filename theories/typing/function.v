@@ -76,7 +76,8 @@ Section fn.
     intros tid vl. unfold typed_body.
     do 12 f_equiv. f_contractive. do 16 ((eapply fp_E_proper; try reflexivity) || exact: Hfp || f_equiv).
     - rewrite !cctx_interp_singleton /=. do 5 f_equiv.
-      rewrite !tctx_interp_singleton /tctx_elt_interp /=. repeat (apply Hfp || f_equiv).
+      rewrite !tctx_interp_singleton /tctx_elt_interp /=.
+      do 5 f_equiv. apply type_dist2_dist. apply Hfp.
     - rewrite /tctx_interp !big_sepL_zip_with /=. do 4 f_equiv.
       cut (∀ n tid p i, Proper (dist n ==> dist n)
         (λ (l : list _), ∀ ty, ⌜l !! i = Some ty⌝ → tctx_elt_interp tid (p ◁ ty))%I).
