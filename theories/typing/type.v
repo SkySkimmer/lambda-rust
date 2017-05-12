@@ -51,7 +51,7 @@ Instance: Params (@ty_size) 2.
 Instance: Params (@ty_own) 2.
 Instance: Params (@ty_shr) 2.
 
-Arguments ty_own {_ _} _ _ !_ / : simpl nomatch.
+Arguments ty_own {_ _} !_ _ _ / : simpl nomatch.
 
 Class TyWf `{typeG Σ} (ty : type) := { ty_lfts : list lft; ty_wf_E : elctx }.
 Arguments ty_lfts {_ _} _ {_}.
@@ -370,7 +370,7 @@ Section type_contractive.
   Proof.
     intros ???. constructor.
     - done.
-    - intros. destruct n; first done; simpl. f_equiv. f_equiv. done.
+    - intros. destruct n; first done; simpl. f_equiv. done.
     - intros. solve_contractive.
   Qed.
 End type_contractive.

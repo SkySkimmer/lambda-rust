@@ -185,7 +185,7 @@ Section code.
           with "[] LFT HE Hna HL Hk [-]"); last first.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton tctx_hasty_val !tctx_hasty_val' //.
         unlock. iFrame "Hr† Hw". iSplitL "Hr1 Hr2".
-        - setoid_rewrite uninit_own. iExists [_;_].
+        - iExists [_;_].
           rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton. auto with iFrame.
         - iRight. auto with iFrame. }
       iApply (type_sum_assign (option (rc ty))); [solve_typing..|].
@@ -202,7 +202,7 @@ Section code.
       iApply (type_type _ _ _ [ w ◁ box (&shr{α} weak ty); #lr ◁ box (uninit 2) ]
           with "[] LFT HE Hna HL Hk [-]"); last first.
       { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
-        unlock. iFrame. setoid_rewrite uninit_own. iExists [_;_].
+        unlock. iFrame. iExists [_;_].
         rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton. auto with iFrame. }
       iApply (type_sum_unit (option (rc ty))); [solve_typing..|].
       iApply type_jump; solve_typing.
@@ -218,7 +218,7 @@ Section code.
       iApply (type_type _ _ _ [ w ◁ box (&shr{α} weak ty); #lr ◁ box (uninit 2) ]
           with "[] LFT HE Hna HL Hk [-]"); last first.
       { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
-        unlock. iFrame. setoid_rewrite uninit_own. iExists [_;_].
+        unlock. iFrame. iExists [_;_].
         rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton. auto with iFrame. }
       iApply (type_sum_unit (option (rc ty))); [solve_typing..|].
       iApply type_jump; solve_typing.
@@ -427,9 +427,9 @@ Section code.
       { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
         unlock. iFrame. iDestruct "H" as (?) "(? & H↦ & ?)". iDestruct "H↦" as (?) "[? %]".
         rewrite /= freeable_sz_full_S. iFrame. iExists (_::_::_).
-        rewrite 2!heap_mapsto_vec_cons shift_loc_assoc uninit_own. iFrame.
-        iIntros "!>!%". simpl. congruence. }
-      iApply type_delete; [solve_typing..|].
+        rewrite 2!heap_mapsto_vec_cons shift_loc_assoc. iFrame.
+        iIntros "!> !%". simpl. congruence. }
+      iApply type_delete; [try solve_typing..|].
       iApply type_jump; solve_typing.
     - wp_read. wp_let. wp_op=>[|_]; first lia. wp_if. wp_op. wp_op. wp_write.
       iMod ("Hclose" with "Hlw") as "Hna".

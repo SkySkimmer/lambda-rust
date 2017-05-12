@@ -751,7 +751,7 @@ Section arc.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
     iApply (type_sum_unit (option ty)); [solve_typing..|].
     iIntros (tid) "#LFT #HE Hna HL Hk [Hr [Hrcx [Hrc' _]]]".
-    rewrite !tctx_hasty_val [[rcx]]lock [[r]]lock. destruct rc' as [[|rc'|]|]=>//=.
+    rewrite !tctx_hasty_val. destruct rc' as [[|rc'|]|]=>//=.
     iAssert (shared_arc_own rc' ty tid)%I with "[>Hrc']" as "Hrc'".
     { iDestruct "Hrc'" as "[?|$]"; last done. iApply arc_own_share; solve_ndisj. }
     iDestruct "Hrc'" as (γ ν q) "(#Hpersist & Htok & Hν)".
@@ -759,7 +759,9 @@ Section arc.
       [by iDestruct "Hpersist" as "[$?]"|done|].
     iNext. iIntros (b) "Hdrop". wp_bind (if: _ then _ else _)%E.
     iApply (wp_wand _ _ (λ _, ty_own (box (option ty)) tid [r])%I with "[Hdrop Hr]").
-    { unlock. destruct b; wp_if=>//. destruct r as [[]|]=>//=.
+    { destruct b; wp_if=>//. destruct r as [[]|]; try done.
+      (* FIXME: 'simpl' reveals a match here.  Didn't we forbid that for ty_own? *)
+      rewrite {3}[option]lock. simpl. rewrite -{2 3}lock. (* FIXME: Tried using contextual pattern, did not work. *)
       iDestruct "Hr" as "[Hr ?]". iDestruct "Hr" as ([|d vl]) "[H↦ Hown]";
         first by iDestruct "Hown" as (???) "[>% ?]".
       rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[H↦0 H↦1]".
@@ -772,8 +774,8 @@ Section arc.
       iDestruct "Hlen" as %[= ?]. iApply (wp_memcpy with "[$H↦1 $H↦]"); [congruence..|].
       iNext. iIntros "[? Hrc']". wp_seq. iMod ("Hdrop" with "[Hrc' H†]") as "Htok".
       { unfold P2. auto with iFrame. }
-      wp_apply (drop_weak_spec with "[//] Htok"). iIntros ([]); last first.
-      { iIntros "_". wp_if. iFrame. iExists (_::_). rewrite heap_mapsto_vec_cons.
+      wp_apply (drop_weak_spec with "[//] Htok"). unlock. iIntros ([]); last first.
+      { iIntros "_". wp_if. unlock. iFrame. iExists (_::_). rewrite heap_mapsto_vec_cons.
         iFrame. iExists 1%nat, _, []. rewrite /= right_id_L Max.max_0_r.
         auto 10 with iFrame. }
       iIntros "([H† H1] & H2 & H3)". iDestruct "H1" as (vl') "[H1 Heq]".
@@ -820,7 +822,7 @@ Section arc.
       rewrite !heap_mapsto_vec_cons shift_loc_assoc. iFrame. auto. }
     iIntros (?) "_". wp_seq.
     (* Finish up the proof. *)
-    iApply (type_type _ _ _ [ rcx ◁ box (uninit 1); r ◁ box unit ]
+    iApply (type_type _ _ _ [ rcx ◁ box (uninit 1); r ◁ box (uninit 0) ]
             with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val. unlock. iFrame.
       by rewrite tctx_hasty_val. }
@@ -862,7 +864,7 @@ Section arc.
     iIntros ([]) "H"; wp_if.
     - iDestruct "H" as "[Hν Hend]". rewrite -(lock [r]). destruct r as [[|r|]|]=>//=.
       iDestruct "Hr" as "[Hr >Hfree]". iDestruct "Hr" as (vl0) "[>Hr Hown]".
-      rewrite uninit_own. iDestruct "Hown" as ">Hlen".
+      iDestruct "Hown" as ">Hlen".
       destruct vl0 as [|? vl0]=>//; iDestruct "Hlen" as %[=Hlen0].
       rewrite heap_mapsto_vec_cons. iDestruct "Hr" as "[Hr0 Hr1]".
       iDestruct "Hpersist" as "(Ha & _ & H†)". wp_bind (_ <- _)%E.

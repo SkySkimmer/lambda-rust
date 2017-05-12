@@ -232,8 +232,6 @@ Section typing.
     rewrite /typed_body. iNext. iIntros "*". iApply "Hf".
   Qed.
 
-  From iris.proofmode Require Import environments. (* FIXME: remove. *)
-
   (* In principle, proving this hard-coded to an empty L would be sufficient --
      but then we would have to require elctx_sat as an Iris assumption. *)
   Lemma type_call_iris' E L (κs : list lft) {A} x qκs qL tid
@@ -276,8 +274,7 @@ Section typing.
       { iApply (bor_fracture with "LFT"); first done. by rewrite Qp_mult_1_r. }
       iApply ("Hf" with "LFT [] Htl [Htk] [Hk HκsI HL]").
       + iApply "HE'". iIntros "{$# Hf Hinh HE' LFT HE %}".
-        iInduction κs as [|κ κs] "IH" forall "Hκs"=> //=.
-        iSplitL.
+        iInduction κs as [|κ κs] "IH" forall "Hκs"=> //=. iSplitL.
         { iApply lft_incl_trans; first done. iApply lft_intersect_incl_l. }
         iApply "IH". iAlways. iApply lft_incl_trans; first done. iApply lft_intersect_incl_r.
       + iSplitL; last done. iExists ϝ. iSplit; first by rewrite /= left_id.

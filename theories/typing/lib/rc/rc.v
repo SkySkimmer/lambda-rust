@@ -712,13 +712,13 @@ Section code.
         { unlock. rewrite 3!tctx_interp_cons tctx_interp_singleton. iFrame "Hr Hrc".
           rewrite 1!tctx_hasty_val tctx_hasty_val' //. iFrame "Hrcx".
           rewrite shift_loc_0 /=. iFrame. iExists [_; _].
-          rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton uninit_own.
+          rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
           auto with iFrame. }
         iApply (type_delete (Π[uninit 2;uninit ty.(ty_size)])); [solve_typing..|].
         iApply type_jump; solve_typing.
       + rewrite (tctx_hasty_val' _ (#rc' +ₗ #2)); last done.
         iDestruct "Hrc" as "[Hrc H†2]". wp_op=>[?|_]. lia. wp_if. wp_op. wp_op. wp_write.
-        setoid_rewrite uninit_own. iMod ("Hproto" with "[H†1 H†2] H↦weak Hrc") as "Hna".
+        iMod ("Hproto" with "[H†1 H†2] H↦weak Hrc") as "Hna".
         { rewrite -freeable_sz_full_S -(freeable_sz_split _ 2 ty.(ty_size)). iFrame. }
         iApply (type_type _ _ _
              [ r ◁ own_ptr (ty_size Σ[ ty; rc ty ]) (Σ[ ty; rc ty]);
@@ -807,13 +807,13 @@ Section code.
         { unlock. rewrite 3!tctx_interp_cons tctx_interp_singleton. iFrame "Hr Hrc".
           rewrite 1!tctx_hasty_val tctx_hasty_val' //. iFrame "Hrcx".
           rewrite shift_loc_0 /=. iFrame. iExists [_; _].
-          rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton uninit_own.
+          rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
           auto with iFrame. }
         iApply (type_delete (Π[uninit 2;uninit ty.(ty_size)])); [solve_typing..|].
         iApply type_jump; solve_typing.
       + rewrite (tctx_hasty_val' _ (#rc' +ₗ #2)); last done.
         iDestruct "Hrc" as "[Hrc H†2]". wp_op=>[?|_]. lia. wp_if. wp_op. wp_op. wp_write.
-        setoid_rewrite uninit_own. iMod ("Hproto" with "[H†1 H†2] H↦weak Hrc") as "Hna".
+        iMod ("Hproto" with "[H†1 H†2] H↦weak Hrc") as "Hna".
         { rewrite -freeable_sz_full_S -(freeable_sz_split _ 2 ty.(ty_size)). iFrame. }
         iApply (type_type _ _ _
              [ r ◁ own_ptr (ty_size (option ty)) (option ty); rcx ◁ box (uninit 1) ]

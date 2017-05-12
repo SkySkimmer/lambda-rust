@@ -209,7 +209,7 @@ Section util.
     - iIntros "H". iDestruct "H" as (vl) "(% & Hl & _ & $)". subst v.
       iExists vl. iSplit; done.
     - iIntros "H". iDestruct "H" as (vl) "(% & Hl & $)". subst v.
-      iExists vl. rewrite uninit_own vec_to_list_length.
+      iExists vl. rewrite /= vec_to_list_length.
       eauto with iFrame.
   Qed.
 End util.
@@ -242,7 +242,7 @@ Section typing.
     iDestruct "Hown" as "[H↦ H†]". iDestruct "H↦" as (vl) "[>H↦ Hown]".
     iDestruct (ty_size_eq with "Hown") as "#>%".
     iExists l, vl, _. iFrame "∗#". iSplitR; first done. iIntros "!> Hl !> !>".
-    iExists _. iFrame. by iApply uninit_own.
+    iExists _. iFrame. done.
   Qed.
 
   Lemma type_new_instr {E L} (n : Z) :
@@ -254,7 +254,7 @@ Section typing.
     iApply wp_new; first done. iModIntro.
     iIntros (l vl) "(% & H† & Hlft)". subst. rewrite tctx_interp_singleton tctx_hasty_val.
     iNext. rewrite freeable_sz_full Z2Nat.id //. iFrame.
-    iExists vl. iFrame. by rewrite Nat2Z.id uninit_own.
+    iExists vl. iFrame. by rewrite Nat2Z.id.
   Qed.
 
   Lemma type_new {E L C T} (n' : nat) x (n : Z) e :

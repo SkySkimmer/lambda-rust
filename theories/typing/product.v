@@ -6,6 +6,9 @@ Set Default Proof Using "Type".
 Section product.
   Context `{typeG Σ}.
 
+  (* "Pre"-unit.  We later define the full unit as the empty product.  That's
+     convertible, but products are opaque in some hint DBs, so this does make a
+     difference. *)
   Program Definition unit0 : type :=
     {| ty_size := 0; ty_own tid vl := ⌜vl = []⌝%I; ty_shr κ tid l := True%I |}.
   Next Obligation. iIntros (tid vl) "%". by subst. Qed.

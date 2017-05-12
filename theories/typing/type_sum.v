@@ -35,13 +35,13 @@ Section case.
     - rewrite /own_ptr /=. iDestruct (ty.(ty_size_eq) with "Hown") as %<-.
       iSplitL "H↦i Hfi"; last iSplitR "H↦vl'' Hfvl''".
       + rewrite shift_loc_0. iFrame. iExists [ #i]. rewrite heap_mapsto_vec_singleton.
-        iFrame. iExists [_], []. auto.
+        iFrame. auto.
       + eauto with iFrame.
       + rewrite -EQlen app_length minus_plus -(shift_loc_assoc_nat _ 1).
-        iFrame. iExists _. iFrame. rewrite uninit_own. auto.
+        iFrame. iExists _. iFrame. auto.
     - rewrite /= -EQlen app_length -(Nat.add_1_l (_+_)) -!freeable_sz_split. iFrame.
       iExists (#i :: vl' ++ vl''). iNext. rewrite heap_mapsto_vec_cons heap_mapsto_vec_app.
-      iFrame. iExists i, vl', vl''. rewrite /= -EQlen app_length nth_lookup EQty /=. auto.
+      iFrame. iExists i, vl', vl''. rewrite /= app_length nth_lookup EQty /=. auto.
   Qed.
 
   Lemma type_case_own E L C T T' p n tyl el :
