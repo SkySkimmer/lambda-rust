@@ -15,7 +15,6 @@ Section code.
       let: "call_once" := call_once in
       letalloc: "t" <-{ty.(ty_size)} !"x'" in
       letcall: "r" := "call_once" ["f"; "t"]%E in
-      Endlft;;
       "x'" <-{ty.(ty_size)} !"r";;
       delete [ #1; "x"];;  delete [ #ty.(ty_size); "r"];;
       let: "r" := new [ #0] in return: ["r"].
@@ -31,7 +30,7 @@ Section code.
     iApply (type_new ty.(ty_size)); [solve_typing..|]; iIntros (t); simpl_subst.
     (* Switch to Iris. *)
     iIntros (tid) "#LFT #HE Hna HL Hk (Ht & Hf' & Hx & Hx' & Henv & _)".
-    rewrite !tctx_hasty_val [[x]]lock [[f']]lock [[env]]lock.
+    rewrite !tctx_hasty_val [[x]]lock [[env]]lock [fn _]lock. 
     iDestruct (ownptr_uninit_own with "Ht") as (tl tvl) "(% & >Htl & Htl†)". subst t. simpl.
     destruct x' as [[|lx'|]|]; try done. simpl.
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose1)"; [solve_typing..|].
@@ -40,39 +39,22 @@ Section code.
     iDestruct (heap_mapsto_ty_own with "Hx'") as (x'vl) "[>Hx'↦ Hx'vl]".
     wp_apply (wp_memcpy with "[$Htl $Hx'↦]"); [by auto using vec_to_list_length..|].
     iIntros "[Htl Hx'↦]". wp_seq.
-    (* Prepare the lifetime, call the function.
-       In principle, we could try to make the β we create here the ϝ of the called
-       function, but that seems to actually be more work because we could not use
-       the lemmas proven in function.v. *)
-    iMod (lft_create with "LFT") as (β) "[Hβ Hβ†]"; first done.
-    iMod (bor_create with "LFT Hϝ") as "[Hβϝ Hβ†ϝ]"; first done.
-    iDestruct (frac_bor_lft_incl β ϝ with "LFT [>Hβϝ]") as "#Hβϝ".
-    { iApply (bor_fracture with "LFT"); first done. by rewrite Qp_mult_1_r. }
-    match goal with | |- context [(WP (_ [?k']) {{_, _}})%I] =>
-      assert (∃ k, to_val k' = Some k) as [k EQk] by (eexists; solve_to_val) end.
-    iApply (wp_let' _ _ _ _ k _ EQk). simpl_subst. iNext.
-    iApply (type_type ((β ⊑ₑ ϝ) :: _) [β ⊑ₗ []]
-        [k ◁cont(_, λ x:vec val 1, [ x!!!0 ◁ box ty])]
-        [ f' ◁ fn(∅; fty, ty) → ty; #tl ◁ box ty; env ◁ box fty ]
-       with "[] LFT [] Hna [Hβ Hβ†] [-Hf' Htl Htl† Hx'vl Henv]"); swap 1 3; swap 4 5.
-    { rewrite /llctx_interp. iSplitL; last done. (* FIXME: iSplit should work as one side is 'True', thus persistent. *)
-      iExists β. simpl. iSplit; first by rewrite left_id. iFrame "∗#". }
-    { iSplitL; last iApply "HE". iExact "Hβϝ". }
-    { iApply (type_call ()); solve_typing. (* This is showing that the lifetime bounds of f' are satisfied. *) }
-    { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val tctx_hasty_val' //.
-      unlock. iFrame. iExists _. iFrame. }
+    (* Call the function. *)
+    wp_let. unlock.
+    iApply (type_call_iris _ [ϝ] tt with "LFT HE Hna [Hϝ] [Hf'] [Henv Htl Htl† Hx'vl]"). 4: iExact "Hf'". (* FIXME: Removing the [ ] around Hf' in the spec pattern diverges. *)
+    { solve_typing. }
+    { solve_to_val. }
+    { simpl. rewrite (right_id static). done. }
+    { simpl. rewrite !tctx_hasty_val. iFrame. iSplit; last done.
+      rewrite tctx_hasty_val' //. iFrame. iExists _. iFrame. }
     (* Prove the continuation of the function call. *)
-    iIntros (? ->%elem_of_list_singleton arg) "Hna Hβ". inv_vec arg=>r.
-    iIntros "[Hr _]". rewrite tctx_hasty_val /=.
+    iIntros (r) "Hna Hϝ Hr". simpl.
     iDestruct (ownptr_own with "Hr") as (lr rvl) "(% & Hlr & Hrvl & Hlr†)". subst r.
-    apply of_to_val in EQk. rewrite EQk. iApply wp_rec; try (done || apply _).
+    iApply wp_rec; try (done || apply _).
     { repeat econstructor. } simpl_subst. iNext.
-    iDestruct "Hβ" as "[Hβ _]". iDestruct "Hβ" as (Λ) "(% & Hβ & #Hβ†)".
-    simpl in *. subst β. rewrite (left_id static). iSpecialize ("Hβ†" with "Hβ").
-    wp_bind Endlft. iApply wp_mask_mono; last iApply (wp_step_fupd with "Hβ†"); auto with ndisj.
-    wp_seq. iIntros "#Hβ† !>". wp_seq.
+    rewrite (right_id static).
     wp_apply (wp_memcpy with "[$Hx'↦ $Hlr]"); [by auto using vec_to_list_length..|].
-    iIntros "[Hlx' Hlr]". wp_seq. iMod ("Hβ†ϝ" with "Hβ†") as ">Hϝ".
+    iIntros "[Hlx' Hlr]". wp_seq.
     iMod ("Hclose3" with "[Hlx' Hrvl]") as "[Hlx' Hα]".
     { iExists _. iFrame. }
     iMod ("Hclose2" with "Hϝ HL") as "HL".

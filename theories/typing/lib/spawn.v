@@ -105,23 +105,15 @@ Section spawn.
       { iIntros "!> *". rewrite tctx_interp_singleton tctx_hasty_val.
         iIntros "?". by iFrame. }
       iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let.
-      (* FIXME this is horrible. *)
-      refine (let Hcall := type_call' _ [] [] [] f' [env:expr]
-                (λ _:(), FP_wf ∅ [# fty] retty) in _).
-      specialize (Hcall (rec: "_k" ["r"] := finish [ #c; "r"])%V ()).
-      erewrite of_val_unlock in Hcall; last done.
-      iApply (Hcall with "LFT HE Htl [] [Hfin]").
-      - constructor.
+      iApply (type_call_iris _ [] tt 1%Qp with "LFT HE Htl [] [Hf'] [Henv]"). 4: iExact "Hf'". (* FIXME: Removing the [ ] around Hf' in the spec pattern diverges. *)
       - solve_typing.
-      - by rewrite /llctx_interp /=.
-      - rewrite /cctx_interp. iIntros "* Hin".
-        iDestruct "Hin" as %Hin%elem_of_list_singleton. subst x.
-        rewrite /cctx_elt_interp. iIntros "* ?? Hret". inv_vec args=>arg /=.
+      - solve_to_val.
+      - iApply lft_tok_static.
+      - iSplitL; last done. (* FIXME: iSplit should work, the RHS is persistent. *)
+        rewrite !tctx_hasty_val. iApply @send_change_tid. done.
+      - iIntros (r) "Htl _ Hret".
         wp_rec. iApply (finish_spec with "[$Hfin Hret]"); last auto.
-        rewrite tctx_interp_singleton tctx_hasty_val. by iApply @send_change_tid.
-      - rewrite tctx_interp_cons tctx_interp_singleton. iSplitL "Hf'".
-        + rewrite !tctx_hasty_val. by iApply @send_change_tid.
-        + rewrite !tctx_hasty_val. by iApply @send_change_tid. }
+        by iApply @send_change_tid. }
     iIntros (v). simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_assign; [solve_typing..|].

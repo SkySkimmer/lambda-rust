@@ -294,19 +294,19 @@ Section typing.
   Qed.
 
   Lemma type_call_iris E (κs : list lft) {A} x qκs tid
-        p (ps : list path) (k : expr) (fp : A → fn_params (length ps)) :
+        f (ps : list path) (k : expr) (fp : A → fn_params (length ps)) :
     (∀ ϝ, elctx_sat (((λ κ, ϝ ⊑ₑ κ) <$> κs) ++ E) [] ((fp x).(fp_E) ϝ)) →
     is_Some (to_val k) →
     lft_ctx -∗ elctx_interp E -∗ na_own tid ⊤ -∗
     qκs.[lft_intersect_list κs] -∗
-    tctx_elt_interp tid (p ◁ fn fp) -∗
+    (fn fp).(ty_own) tid [f] -∗
     ([∗ list] y ∈ zip_with TCtx_hasty ps (box <$> vec_to_list (fp x).(fp_tys)), tctx_elt_interp tid y) -∗
     (∀ ret, na_own tid top -∗ qκs.[lft_intersect_list κs] -∗
              (box (fp x).(fp_ty)).(ty_own) tid [ret] -∗ 
              WP k [of_val ret] {{ _, cont_postcondition }}) -∗
-    WP (call: p ps → k) {{ _, cont_postcondition }}.
+    WP (call: f ps → k) {{ _, cont_postcondition }}.
   Proof.
-    iIntros (HE Hk') "#LFT #HE Htl Hκs Hf Hargs Hk".
+    iIntros (HE Hk') "#LFT #HE Htl Hκs Hf Hargs Hk". rewrite -tctx_hasty_val.
     iApply (type_call_iris' with "LFT HE Htl [] Hκs Hf Hargs [Hk]"); [done..| |].
     - instantiate (1 := 1%Qp). by rewrite /llctx_interp.
     - iIntros "* Htl _". iApply "Hk". done.
