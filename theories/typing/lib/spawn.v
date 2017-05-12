@@ -106,7 +106,7 @@ Section spawn.
         iIntros "?". by iFrame. }
       iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let.
       (* FIXME this is horrible. *)
-      refine (let Hcall := type_call' _ [] [] f' [] [env:expr]
+      refine (let Hcall := type_call' _ [] [] [] f' [env:expr]
                 (λ _:(), FP_wf ∅ [# fty] retty) in _).
       specialize (Hcall (rec: "_k" ["r"] := finish [ #c; "r"])%V ()).
       erewrite of_val_unlock in Hcall; last done.
