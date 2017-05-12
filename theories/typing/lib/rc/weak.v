@@ -279,7 +279,7 @@ Section code.
     iApply (type_type _ _ _ [ x ◁ box (&shr{α} rc ty); #lr ◁ box (weak ty)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
-      unlock. iFrame "Hx". iFrame "Hr†". iExists [_].
+      unlock. iFrame "Hx". iFrame "Hr†". iExists [# #l'].
       rewrite heap_mapsto_vec_singleton /=. eauto 10 with iFrame. }
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
@@ -352,7 +352,7 @@ Section code.
     iApply (type_type _ _ _ [ x ◁ box (&shr{α} weak ty); #lr ◁ box (weak ty)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
-      unlock. iFrame. iExists [_]. rewrite heap_mapsto_vec_singleton /=.
+      unlock. iFrame. iExists [# #l']. rewrite heap_mapsto_vec_singleton /=.
       auto 10 with iFrame. }
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.

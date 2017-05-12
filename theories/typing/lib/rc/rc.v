@@ -590,8 +590,8 @@ Section code.
     iApply (type_type _ _ _ [ x ◁ box (&shr{α} rc ty); #lr ◁ box (rc ty)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
-      unlock. iFrame "Hx". iFrame "Hr†". iExists [_].
-      rewrite heap_mapsto_vec_singleton /=. eauto 10 with iFrame. }
+      unlock. iFrame "Hx". iFrame "Hr†". iExists [# #l'].
+      rewrite heap_mapsto_vec_singleton /=. simpl. eauto 10 with iFrame. }
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.

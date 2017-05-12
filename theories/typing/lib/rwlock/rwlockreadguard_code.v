@@ -137,7 +137,7 @@ Section rwlockreadguard_functions.
       iApply (type_type _ _ _ [ x ◁ box (uninit 1); #lx' ◁ rwlockreadguard α ty]
               with "[] LFT HE Hna HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val
-                tctx_hasty_val' //=. auto 10 with iFrame. }
+                tctx_hasty_val' //=; simpl. auto 10 with iFrame. }
       iApply type_jump; solve_typing.
   Qed.
 End rwlockreadguard_functions.
