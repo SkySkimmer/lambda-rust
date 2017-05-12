@@ -105,9 +105,6 @@ Section spawn.
       { iIntros "!> *". rewrite tctx_interp_singleton tctx_hasty_val.
         iIntros "?". by iFrame. }
       iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let.
-      iApply (type_call_iris _ [] [] tt with "HE [] [] [Hf']"). 5: iExact "Hf'". (* FIXME: Removing the [ ] around Hf' in the spec pattern diverges. *)
-      solve_typing. solve_to_val. rewrite /llctx_interp. done. iApply lft_tok_static.
-      iFrame. done.
       (* FIXME this is horrible. *)
       refine (let Hcall := type_call' _ [] [] f' [] [env:expr]
                 (λ _:(), FP_wf ∅ [# fty] retty) in _).
