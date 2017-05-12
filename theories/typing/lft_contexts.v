@@ -171,6 +171,26 @@ Section lft_contexts.
     iApply "Hclose". iFrame.
   Qed.
 
+  Lemma lctx_lft_alive_tok_list κs F q :
+    ↑lftN ⊆ F → Forall lctx_lft_alive κs →
+      elctx_interp E -∗ llctx_interp L q ={F}=∗
+         ∃ q', q'.[lft_intersect_list κs] ∗ llctx_interp L q' ∗
+                   (q'.[lft_intersect_list κs] -∗ llctx_interp L q' ={F}=∗ llctx_interp L q).
+  Proof.
+    iIntros (? Hκs) "#HE". iInduction κs as [|κ κs] "IH" forall (q Hκs).
+    { iIntros "HL !>". iExists _. iFrame "HL". iSplitL; first iApply lft_tok_static.
+      iIntros "_ $". done. }
+    inversion_clear Hκs.
+    iIntros "HL". iMod (lctx_lft_alive_tok κ with "HE HL") as (q') "(Hκ & HL & Hclose1)"; [solve_typing..|].
+    iMod ("IH" with "* [//] HL") as (q'') "(Hκs & HL & Hclose2)".
+    destruct (Qp_lower_bound q' q'') as (qq & q0  & q'0 & -> & ->).
+    iExists qq. iDestruct "HL" as "[$ HL2]". iDestruct "Hκ" as "[Hκ1 Hκ2]".
+    iDestruct "Hκs" as "[Hκs1 Hκs2]". iModIntro. simpl. rewrite -lft_tok_sep. iSplitL "Hκ1 Hκs1".
+    { by iFrame. }
+    iIntros "[Hκ1 Hκs1] HL1". iMod ("Hclose2" with "[$Hκs1 $Hκs2] [$HL1 $HL2]") as "HL".
+    iMod ("Hclose1" with "[$Hκ1 $Hκ2] HL") as "HL". done.
+  Qed.
+
   Lemma lctx_lft_alive_static : lctx_lft_alive static.
   Proof.
     iIntros (F qL ?) "_ $". iExists 1%Qp. iSplitL. by iApply lft_tok_static. auto.
@@ -219,27 +239,6 @@ Section lft_contexts.
     κ ⊑ₑ κ' ∈ E → lctx_lft_alive κ → lctx_lft_alive κ'.
   Proof.
     intros. by eapply lctx_lft_alive_incl, lctx_lft_incl_external.
-  Qed.
-
-  Lemma lctx_lft_alive_list κs ϝ `{!frac_borG Σ} :
-    Forall lctx_lft_alive κs →
-    ∀ (F : coPset) (qL : Qp),
-      ↑lftN ⊆ F → lft_ctx -∗ elctx_interp E -∗
-         llctx_interp L qL ={F}=∗ elctx_interp ((λ κ, ϝ ⊑ₑ κ) <$> κs) ∗
-                                   ([†ϝ] ={F}=∗ llctx_interp L qL).
-  Proof.
-    iIntros (Hκs F qL ?) "#LFT #HE". iInduction κs as [|κ κs] "IH" forall (qL Hκs).
-    { iIntros "$ !>". rewrite /elctx_interp /=; auto. }
-    iIntros "[HL1 HL2]". inversion Hκs as [|?? Hκ Hκs']. clear Hκs. subst.
-    iMod ("IH" with "[% //] HL2") as "[#Hκs Hclose1] {IH}".
-    iMod (Hκ with "HE HL1") as (q) "[Hκ Hclose2]"; first done.
-    iMod (bor_create with "LFT [Hκ]") as "[Hκ H†]"; first done. iApply "Hκ".
-    iDestruct (frac_bor_lft_incl _ _ q with "LFT [> Hκ]") as "#Hincl".
-    { iApply (bor_fracture with "LFT [>-]"); first done. simpl.
-      rewrite Qp_mult_1_r. done. (* FIXME: right_id? *) }
-    iModIntro. iFrame "#". iIntros "#Hϝ†".
-    iMod ("H†" with "Hϝ†") as ">Hκ". iMod ("Hclose2" with "Hκ") as "$".
-    by iApply "Hclose1".
   Qed.
 
   (* External lifetime context satisfiability *)

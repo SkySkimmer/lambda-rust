@@ -232,59 +232,113 @@ Section typing.
     rewrite /typed_body. iNext. iIntros "*". iApply "Hf".
   Qed.
 
-  Lemma type_call' {A} E L T p (κs : list lft) (ps : list path)
-                         (fp : A → fn_params (length ps)) (k : val) x :
-    Forall (lctx_lft_alive E L) κs →
+  From iris.proofmode Require Import environments. (* FIXME: remove. *)
+
+  (* In principle, proving this hard-coded to an empty L would be sufficient --
+     but then we would have to require elctx_sat as an Iris assumption. *)
+  Lemma type_call_iris' E L (κs : list lft) {A} x qκs qL tid
+        p (ps : list path) (k : expr) (fp : A → fn_params (length ps)) :
     (∀ ϝ, elctx_sat (((λ κ, ϝ ⊑ₑ κ) <$> κs) ++ E) L ((fp x).(fp_E) ϝ)) →
-    typed_body E L [k ◁cont(L, λ v : vec _ 1, (v!!!0 ◁ box (fp x).(fp_ty)) :: T)]
-               ((p ◁ fn fp) ::
-                zip_with TCtx_hasty ps (box <$> (vec_to_list (fp x).(fp_tys))) ++
-                T)
-               (call: p ps → k).
+    is_Some (to_val k) →
+    lft_ctx -∗ elctx_interp E -∗ na_own tid ⊤ -∗ llctx_interp L qL -∗
+    qκs.[lft_intersect_list κs] -∗
+    tctx_elt_interp tid (p ◁ fn fp) -∗
+    ([∗ list] y ∈ zip_with TCtx_hasty ps (box <$> vec_to_list (fp x).(fp_tys)), tctx_elt_interp tid y) -∗
+    (∀ ret, na_own tid top -∗ llctx_interp L qL -∗ qκs.[lft_intersect_list κs] -∗
+             (box (fp x).(fp_ty)).(ty_own) tid [ret] -∗ 
+             WP k [of_val ret] {{ _, cont_postcondition }}) -∗
+    WP (call: p ps → k) {{ _, cont_postcondition }}.
   Proof.
-    iIntros (Hκs HE tid) "#LFT #HE Htl HL HC (Hf & Hargs & HT)".
-    wp_apply (wp_hasty with "Hf"). iIntros (v) "% Hf".
-    iApply (wp_app_vec _ _ (_::_) ((λ v, ⌜v = (λ: ["_r"], (#() ;; #()) ;; k ["_r"])%V⌝):::
+    iIntros (HE [k' Hk']) "#LFT #HE Htl HL Hκs Hf Hargs Hk". rewrite -(of_to_val k k') //.
+    clear dependent k. wp_apply (wp_hasty with "Hf"). iIntros (v) "% Hf".
+    iApply (wp_app_vec _ _ (_::_) ((λ v, ⌜v = (λ: ["_r"], (#() ;; #()) ;; k' ["_r"])%V⌝):::
                vmap (λ ty (v : val), tctx_elt_interp tid (v ◁ box ty)) (fp x).(fp_tys))%I
             with "[Hargs]"); first wp_done.
     - rewrite /=. iSplitR "Hargs".
       { simpl. iApply wp_value; last done. solve_to_val. }
-      clear dependent k p.
-      rewrite /tctx_interp vec_to_list_map !zip_with_fmap_r
-              (zip_with_zip (λ e ty, (e, _))) zip_with_zip !big_sepL_fmap.
-      iApply (big_sepL_mono' with "Hargs"); last done. iIntros (i [p ty]) "HT/=".
-      iApply (wp_hasty with "HT"). setoid_rewrite tctx_hasty_val. iIntros (?) "? $".
+      remember (fp_tys (fp x)) as tys. clear dependent k' p HE fp x.
+      iInduction ps as [|p ps] "IH" forall (tys); first by simpl.
+      simpl in tys. inv_vec tys=>ty tys. simpl.
+      iDestruct "Hargs" as "[HT Hargs]". iSplitL "HT".
+      + iApply (wp_hasty with "HT"). iIntros (?). rewrite tctx_hasty_val. iIntros "? $".
+      + iApply "IH". done.
     - simpl. change (@length expr ps) with (length ps).
       iIntros (vl'). inv_vec vl'=>kv vl.
       iIntros "/= [% Hvl]". subst kv. iDestruct "Hf" as (fb kb xb e ?) "[EQ [EQl #Hf]]".
-      iDestruct "EQ" as %[=->]. iDestruct "EQl" as %EQl. revert vl fp HE.
-      rewrite <-EQl=>vl fp HE. iApply wp_rec; try done.
+      iDestruct "EQ" as %[=->]. iDestruct "EQl" as %EQl.
+      revert vl fp HE. rewrite <-EQl=>vl fp HE. iApply wp_rec; try done.
       { rewrite -fmap_cons Forall_fmap Forall_forall=>? _. rewrite /= to_of_val. eauto. }
       { rewrite -fmap_cons -(subst_v_eq (fb::kb::xb) (_:::_:::vl)) //. }
       iNext. iMod (lft_create with "LFT") as (ϝ) "[Htk #Hinh]"; first done.
-      iSpecialize ("Hf" $! x ϝ _ vl).
-      iDestruct (HE ϝ with "HL") as "#HE'".
-      iMod (lctx_lft_alive_list with "LFT [# $HE //] HL") as "[#HEE Hclose]"; [done..|].
-      iApply ("Hf" with "LFT [>] Htl [Htk] [HC HT Hclose]").
-      + iApply "HE'". iFrame "#". auto.
+      iSpecialize ("Hf" $! x ϝ _ vl). iDestruct (HE ϝ with "HL") as "#HE'".
+      iMod (bor_create _ ϝ with "LFT Hκs") as "[Hκs HκsI]"; first done.
+      iDestruct (frac_bor_lft_incl with "LFT [>Hκs]") as "#Hκs".
+      { iApply (bor_fracture with "LFT"); first done. by rewrite Qp_mult_1_r. }
+      iApply ("Hf" with "LFT [] Htl [Htk] [Hk HκsI HL]").
+      + iApply "HE'". iFrame "#". iClear "Hf Hinh HE' LFT HE". clear.
+        (* FIXME: iInduction κs as [|κ κs] "IH". fails. *)
+        iRevert "Hκs". rewrite /coq_tactics.of_envs /=.
+        rewrite uPred.sep_elim_r. induction κs; iIntros "_ #Hκs"; simpl; first done.
+        iSplitL.
+        { iApply lft_incl_trans; first done. iApply lft_intersect_incl_l. }
+        iApply IHκs; first by auto. iAlways.
+        iApply lft_incl_trans; first done. iApply lft_intersect_incl_r.
       + iSplitL; last done. iExists ϝ. iSplit; first by rewrite /= left_id.
         iFrame "#∗".
       + iIntros (y) "IN". iDestruct "IN" as %->%elem_of_list_singleton.
-        iIntros (args) "Htl [HL _] Hret". inv_vec args=>r.
-        iDestruct "HL" as  (κ') "(EQ & Htk & _)". iDestruct "EQ" as %EQ.
+        iIntros (args) "Htl [Hϝ _] [Hret _]". inv_vec args=>r.
+        iDestruct "Hϝ" as  (κ') "(EQ & Htk & _)". iDestruct "EQ" as %EQ.
         rewrite /= left_id in EQ. subst κ'. simpl. wp_rec. wp_bind Endlft.
-        iSpecialize ("Hinh" with "Htk").
+        iSpecialize ("Hinh" with "Htk"). iClear "Hκs".
         iApply (wp_mask_mono (↑lftN)); first done.
         iApply (wp_step_fupd with "Hinh"); [solve_ndisj..|]. wp_seq.
-        iIntros "#Htok !>". wp_seq. iMod ("Hclose" with "Htok") as "HL".
-        iSpecialize ("HC" with "[]"); first by (iPureIntro; apply elem_of_list_singleton).
-        iApply ("HC" $! [#r] with "Htl HL").
-        rewrite tctx_interp_singleton tctx_interp_cons. iFrame.
+        iIntros "#Htok !>". wp_seq. iMod ("HκsI" with "Htok") as ">Hκs".
+        iApply ("Hk" with "Htl HL Hκs"). rewrite tctx_hasty_val. done.
       + rewrite /tctx_interp vec_to_list_map !zip_with_fmap_r
                 (zip_with_zip (λ v ty, (v, _))) zip_with_zip !big_sepL_fmap.
         iApply (big_sepL_mono' with "Hvl"); last done. by iIntros (i [v ty']).
   Qed.
 
+  Lemma type_call_iris E (κs : list lft) {A} x qκs tid
+        p (ps : list path) (k : expr) (fp : A → fn_params (length ps)) :
+    (∀ ϝ, elctx_sat (((λ κ, ϝ ⊑ₑ κ) <$> κs) ++ E) [] ((fp x).(fp_E) ϝ)) →
+    is_Some (to_val k) →
+    lft_ctx -∗ elctx_interp E -∗ na_own tid ⊤ -∗
+    qκs.[lft_intersect_list κs] -∗
+    tctx_elt_interp tid (p ◁ fn fp) -∗
+    ([∗ list] y ∈ zip_with TCtx_hasty ps (box <$> vec_to_list (fp x).(fp_tys)), tctx_elt_interp tid y) -∗
+    (∀ ret, na_own tid top -∗ qκs.[lft_intersect_list κs] -∗
+             (box (fp x).(fp_ty)).(ty_own) tid [ret] -∗ 
+             WP k [of_val ret] {{ _, cont_postcondition }}) -∗
+    WP (call: p ps → k) {{ _, cont_postcondition }}.
+  Proof.
+    iIntros (HE Hk') "#LFT #HE Htl Hκs Hf Hargs Hk".
+    iApply (type_call_iris' with "LFT HE Htl [] Hκs Hf Hargs [Hk]"); [done..| |].
+    - instantiate (1 := 1%Qp). by rewrite /llctx_interp.
+    - iIntros "* Htl _". iApply "Hk". done.
+  Qed.
+
+  Lemma type_call' E L (κs : list lft) T p (ps : list path)
+                   {A} (fp : A → fn_params (length ps)) (k : val) x :
+    Forall (lctx_lft_alive E L) κs →
+    (∀ ϝ, elctx_sat (((λ κ, ϝ ⊑ₑ κ) <$> κs) ++ E) L ((fp x).(fp_E) ϝ)) →
+    typed_body E L [k ◁cont(L, λ v : vec _ 1, (v!!!0 ◁ box (fp x).(fp_ty)) :: T)]
+               ((p ◁ fn fp) ::
+                zip_with TCtx_hasty ps (box <$> vec_to_list (fp x).(fp_tys)) ++
+                T)
+               (call: p ps → k).
+  Proof.
+    iIntros (Hκs HE tid) "#LFT #HE Htl HL HC (Hf & Hargs & HT)".
+    iMod (lctx_lft_alive_tok_list _ _ κs with "HE HL") as (q) "(Hκs & HL & Hclose)"; [done..|].
+    iApply (type_call_iris' with "LFT HE Htl HL Hκs Hf Hargs"); [done|solve_to_val|].
+    iIntros (r) "Htl HL Hκs Hret". iMod ("Hclose" with "Hκs HL") as "HL".
+    iSpecialize ("HC" with "[]"); first by (iPureIntro; apply elem_of_list_singleton).
+    iApply ("HC" $! [#r] with "Htl HL").
+    rewrite tctx_interp_cons tctx_hasty_val. iFrame.
+  Qed.
+
+  (* Specialized type_call':  Adapted for use by solve_typing; fixed "list of
+     alive lifetimes" to be the local ones. *)
   Lemma type_call {A} x E L C T T' T'' p (ps : list path)
                         (fp : A → fn_params (length ps)) k :
     p ◁ fn fp ∈ T →

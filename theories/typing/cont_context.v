@@ -25,7 +25,7 @@ Section cont_context.
 
   Definition cctx_elt_interp (tid : thread_id) (x : cctx_elt) : iProp Σ :=
     let '(k ◁cont(L, T)) := x in
-    (∀ args, na_own tid ⊤ -∗ llctx_interp L 1 -∗ tctx_interp tid (T args) -∗
+    (∀ args, na_own tid top -∗ llctx_interp L 1 -∗ tctx_interp tid (T args) -∗
          WP k (of_val <$> (args : list _)) {{ _, cont_postcondition }})%I.
   Definition cctx_interp (tid : thread_id) (C : cctx) : iProp Σ :=
     (∀ (x : cctx_elt), ⌜x ∈ C⌝ -∗ cctx_elt_interp tid x)%I.
