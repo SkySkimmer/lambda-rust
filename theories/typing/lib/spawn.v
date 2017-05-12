@@ -62,8 +62,7 @@ Section join_handle.
   Proof.
     iIntros (??? vl) "Hvl". destruct vl as [|[[|vl|]|] [|]]; try done.
     simpl. iApply (join_handle_impl with "[] Hvl"). iIntros "!# * Hv".
-    unfold join_inv. iApply own_send. (* FIXME: Why does "iApply send_change_tid" not work? *)
-    done.
+    unfold join_inv. iApply @send_change_tid. done.
   Qed.
 
   Global Instance join_handle_sync ty :
