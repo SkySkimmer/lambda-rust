@@ -1066,7 +1066,7 @@ Section code.
         - iMod ("Hclose2" $! (shift_loc l 2 ↦∗: ty.(ty_own) tid)%I
             with "[Hrc' Hl1 Hl2 Hl†] Hl3") as "[Hty Hβ]"; first auto.
           { iIntros "!> H". iExists [_]. rewrite heap_mapsto_vec_singleton /=.
-            auto with iFrame. }
+            iFrame. simpl. auto with iFrame. }
           by iApply (ty_share with "LFT Hty Hβ").
         - iDestruct "Hty" as (γ ν q') "(Hpersist & Hown & Hν)".
           iDestruct "Hpersist" as (ty') "(Hty' & ? & #[?|Hν†] & ?)";
