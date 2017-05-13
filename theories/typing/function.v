@@ -274,7 +274,7 @@ Section typing.
       { iApply (bor_fracture with "LFT"); first done. by rewrite Qp_mult_1_r. }
       iApply ("Hf" with "LFT [] Htl [Htk] [Hk HκsI HL]").
       + iApply "HE'". iIntros "{$# Hf Hinh HE' LFT HE %}".
-        iInduction κs as [|κ κs] "IH" forall "Hκs"=> //=. iSplitL.
+        iInduction κs as [|κ κs] "IH"=> //=. iSplitL.
         { iApply lft_incl_trans; first done. iApply lft_intersect_incl_l. }
         iApply "IH". iAlways. iApply lft_incl_trans; first done. iApply lft_intersect_incl_r.
       + iSplitL; last done. iExists ϝ. iSplit; first by rewrite /= left_id.
