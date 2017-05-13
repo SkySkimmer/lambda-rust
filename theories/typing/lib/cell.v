@@ -188,6 +188,30 @@ Section typing.
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.
+
+  (* Create a shared cell from a mutable borrow.
+     Called alias::one in Rust. *)
+  Definition fake_shared_cell : val :=
+    funrec: <> ["x"] :=
+      let: "x'" := !"x" in
+      letalloc: "r" <- "x'" in
+      delete [ #1; "x"];; return: ["r"].
+
+  Lemma fake_shared_cell_type ty `{!TyWf ty} :
+    typed_val fake_shared_cell (fn(∀ α, ∅; &uniq{α} ty) → &shr{α} cell ty).
+  Proof.
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
+    iIntros (tid) "#LFT #HE Hna HL Hk HT".
+    rewrite tctx_interp_singleton tctx_hasty_val.
+    iApply (type_type _ _ _ [ x ◁ box (&uniq{α}cell ty) ]
+            with "[] LFT HE Hna HL Hk [HT]"); last first.
+    { by rewrite tctx_interp_singleton tctx_hasty_val. }
+    iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
+    iApply (type_letalloc_1 (&shr{α}cell ty)); [solve_typing..|]. iIntros (r). simpl_subst.
+    iApply type_delete; [solve_typing..|].
+    iApply type_jump; solve_typing.
+  Qed.
 End typing.
 
 Hint Resolve cell_mono' cell_proper' : lrust_typing.

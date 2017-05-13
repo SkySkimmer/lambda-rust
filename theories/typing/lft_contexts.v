@@ -182,7 +182,7 @@ Section lft_contexts.
       iIntros "_ $". done. }
     inversion_clear Hκs.
     iIntros "HL". iMod (lctx_lft_alive_tok κ with "HE HL") as (q') "(Hκ & HL & Hclose1)"; [solve_typing..|].
-    iMod ("IH" with "* [//] HL") as (q'') "(Hκs & HL & Hclose2)".
+    iMod ("IH" with "[//] HL") as (q'') "(Hκs & HL & Hclose2)".
     destruct (Qp_lower_bound q' q'') as (qq & q0  & q'0 & -> & ->).
     iExists qq. iDestruct "HL" as "[$ HL2]". iDestruct "Hκ" as "[Hκ1 Hκ2]".
     iDestruct "Hκs" as "[Hκs1 Hκs2]". iModIntro. simpl. rewrite -lft_tok_sep. iSplitL "Hκ1 Hκs1".
