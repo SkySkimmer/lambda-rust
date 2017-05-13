@@ -65,13 +65,8 @@ Section join_handle.
     unfold join_inv. iApply @send_change_tid. done.
   Qed.
 
-  Global Instance join_handle_sync ty :
-    Sync (join_handle ty).
-  Proof.
-    iIntros (????) "**". (* FIXME: Why did it throw away the assumption we should have gotten? *)
-    done.
-  Qed.
-
+  Global Instance join_handle_sync ty : Sync (join_handle ty).
+  Proof. iIntros (????) "_ //". Qed.
 End join_handle.
 
 Section spawn.
