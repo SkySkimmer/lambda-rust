@@ -37,7 +37,7 @@ Section lazy_lft.
     iApply (type_assign _ (&shr{α}int)); [solve_typing..|].
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_endlft; [solve_typing..|].
-    iApply (type_delete (Π[&shr{_}_;&shr{_}_])%T); [solve_typing..|].
+    iApply (type_delete (Π[&shr{α}_;&shr{α}_])%T); [solve_typing..|].
     iApply type_delete; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.

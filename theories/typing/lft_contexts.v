@@ -151,6 +151,36 @@ Section lft_contexts.
     κ ⊑ₑ κ' ∈ E → lctx_lft_incl κ' κ'' → lctx_lft_incl κ κ''.
   Proof. intros. etrans; last done. by eapply lctx_lft_incl_external. Qed.
 
+  Lemma lctx_lft_incl_intersect κ κ' κ'' :
+    lctx_lft_incl κ κ' → lctx_lft_incl κ κ'' →
+    lctx_lft_incl κ (κ' ⊓ κ'').
+  Proof.
+    iIntros (Hκ' Hκ'' ?) "HL".
+    iDestruct (Hκ' with "HL") as "#Hκ'".
+    iDestruct (Hκ'' with "HL") as "#Hκ''".
+    iIntros "!# #HE". iApply lft_incl_glb. by iApply "Hκ'". by iApply "Hκ''".
+  Qed.
+
+  Lemma lctx_lft_incl_intersect_l κ κ' κ'' :
+    lctx_lft_incl κ κ' →
+    lctx_lft_incl (κ ⊓ κ'') κ'.
+  Proof.
+    iIntros (Hκ' ?) "HL".
+    iDestruct (Hκ' with "HL") as "#Hκ'".
+    iIntros "!# #HE". iApply lft_incl_trans.
+      by iApply lft_intersect_incl_l. by iApply "Hκ'".
+  Qed.
+
+  Lemma lctx_lft_incl_intersect_r κ κ' κ'' :
+    lctx_lft_incl κ κ' →
+    lctx_lft_incl (κ'' ⊓ κ) κ'.
+  Proof.
+    iIntros (Hκ' ?) "HL".
+    iDestruct (Hκ' with "HL") as "#Hκ'".
+    iIntros "!# #HE". iApply lft_incl_trans.
+      by iApply lft_intersect_incl_r. by iApply "Hκ'".
+  Qed.
+
   (* Lifetime aliveness *)
 
   Definition lctx_lft_alive (κ : lft) : Prop :=
@@ -286,26 +316,14 @@ Lemma elctx_sat_submseteq `{invG Σ, lftG Σ} E E' L :
   E' ⊆+ E → elctx_sat E L E'.
 Proof. iIntros (HE' ?) "_ !# H". by iApply big_sepL_submseteq. Qed.
 
-(* TODO: This is not really the right file for stuff like this. *)
-Hint Constructors Forall Forall2 elem_of_list : lrust_typing.
-Hint Resolve of_val_unlock : lrust_typing.
 Hint Resolve
      lctx_lft_incl_relf lctx_lft_incl_static lctx_lft_incl_local'
-     lctx_lft_incl_external'
+     lctx_lft_incl_external' lctx_lft_incl_intersect
+     lctx_lft_incl_intersect_l lctx_lft_incl_intersect_r
      lctx_lft_alive_static lctx_lft_alive_local lctx_lft_alive_external
      elctx_sat_nil elctx_sat_lft_incl elctx_sat_app elctx_sat_refl
-     submseteq_cons submseteq_inserts_l submseteq_inserts_r
   : lrust_typing.
 
 Hint Resolve elctx_sat_submseteq | 100 : lrust_typing.
-
-Hint Extern 1 (@eq nat _ (Z.to_nat _)) => (etrans; [symmetry; exact: Nat2Z.id | reflexivity]) : lrust_typing.
-Hint Extern 1 (@eq nat (Z.to_nat _) _) => (etrans; [exact: Nat2Z.id | reflexivity]) : lrust_typing.
-
-(* FIXME : I would prefer using a [Hint Resolve <-] for this, but
-   unfortunately, this is not preserved across modules. See:
-     https://coq.inria.fr/bugs/show_bug.cgi?id=5189
-   This should be fixed in the next version of Coq. *)
-Hint Extern 1 (_ ∈ _ ++ _) => apply <- @elem_of_app : lrust_typing.
 
 Hint Opaque elctx_sat lctx_lft_alive lctx_lft_incl : lrust_typing.

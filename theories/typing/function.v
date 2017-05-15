@@ -241,9 +241,10 @@ Section typing.
     lft_ctx -∗ elctx_interp E -∗ na_own tid ⊤ -∗ llctx_interp L qL -∗
     qκs.[lft_intersect_list κs] -∗
     tctx_elt_interp tid (p ◁ fn fp) -∗
-    ([∗ list] y ∈ zip_with TCtx_hasty ps (box <$> vec_to_list (fp x).(fp_tys)), tctx_elt_interp tid y) -∗
+    ([∗ list] y ∈ zip_with TCtx_hasty ps (box <$> vec_to_list (fp x).(fp_tys)),
+                   tctx_elt_interp tid y) -∗
     (∀ ret, na_own tid top -∗ llctx_interp L qL -∗ qκs.[lft_intersect_list κs] -∗
-             (box (fp x).(fp_ty)).(ty_own) tid [ret] -∗ 
+             (box (fp x).(fp_ty)).(ty_own) tid [ret] -∗
              WP k [of_val ret] {{ _, cont_postcondition }}) -∗
     WP (call: p ps → k) {{ _, cont_postcondition }}.
   Proof.
@@ -276,7 +277,8 @@ Section typing.
       + iApply "HE'". iIntros "{$# Hf Hinh HE' LFT HE %}".
         iInduction κs as [|κ κs] "IH"=> //=. iSplitL.
         { iApply lft_incl_trans; first done. iApply lft_intersect_incl_l. }
-        iApply "IH". iAlways. iApply lft_incl_trans; first done. iApply lft_intersect_incl_r.
+        iApply "IH". iAlways. iApply lft_incl_trans; first done.
+        iApply lft_intersect_incl_r.
       + iSplitL; last done. iExists ϝ. iSplit; first by rewrite /= left_id.
         iFrame "#∗".
       + iIntros (y) "IN". iDestruct "IN" as %->%elem_of_list_singleton.
@@ -300,9 +302,10 @@ Section typing.
     lft_ctx -∗ elctx_interp E -∗ na_own tid ⊤ -∗
     qκs.[lft_intersect_list κs] -∗
     (fn fp).(ty_own) tid [f] -∗
-    ([∗ list] y ∈ zip_with TCtx_hasty ps (box <$> vec_to_list (fp x).(fp_tys)), tctx_elt_interp tid y) -∗
+    ([∗ list] y ∈ zip_with TCtx_hasty ps (box <$> vec_to_list (fp x).(fp_tys)),
+                   tctx_elt_interp tid y) -∗
     (∀ ret, na_own tid top -∗ qκs.[lft_intersect_list κs] -∗
-             (box (fp x).(fp_ty)).(ty_own) tid [ret] -∗ 
+             (box (fp x).(fp_ty)).(ty_own) tid [ret] -∗
              WP k [of_val ret] {{ _, cont_postcondition }}) -∗
     WP (call: f ps → k) {{ _, cont_postcondition }}.
   Proof.

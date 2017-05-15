@@ -991,7 +991,6 @@ Section arc.
          "rcbox" +ₗ #1 <- #1;;
          "rcbox" +ₗ #2 <-{ty.(ty_size)} !"c";;
          delete [ #ty.(ty_size); "c"];;
-         let: "arc''" := !"arc'" in
          "arc'" <- "rcbox";;
          letalloc: "rcold" <- "arc''" in
          (* FIXME : here, we are dropping the old arc pointer. In the
@@ -1069,57 +1068,32 @@ Section arc.
       iApply type_jump; solve_typing.
     - iIntros "[Htok Hν]". wp_case. wp_apply wp_new=>//.
       iIntros (l [|?[]]) "/= (% & H† & Hl)"; try lia. wp_let. wp_op.
-      rewrite heap_mapsto_vec_singleton. wp_write. wp_let. wp_bind (of_val clone).
+      rewrite heap_mapsto_vec_singleton. wp_write. wp_let.
+      wp_bind (of_val clone).
       iApply (wp_wand with "[Hna]").
-      { iApply (Hclone _ [] with "LFT HE Hna");
-        rewrite /llctx_interp /tctx_interp //. }
-      clear Hclone clone. iIntros (clone) "(Hna & _ & [Hclone _])".
-      rewrite tctx_hasty_val. simpl.
-      iDestruct "Hclone" as (fb kb xb ecl ?) "(Heq & % & Hclone)".
-      iDestruct "Heq" as %[=->]. destruct xb as [|?[]]=>//. wp_rec.
-      iMod (lft_create with "LFT") as (β) "[Hβ #Hβ†]"=>//.
-      iMod (bor_create _ β with "LFT Hα2") as "[Hαβ Hα2]"=>//.
-      iMod (bor_fracture (λ q', (q / 2 * q').[α])%I with "LFT [Hαβ]") as "Hαβ'"=>//.
-      { by rewrite Qp_mult_1_r. }
-      iDestruct (frac_bor_lft_incl with "LFT Hαβ'") as "#Hαβ". iClear "Hαβ'".
+      { iApply (Hclone _ [] with "LFT HE Hna"); rewrite /llctx_interp /tctx_interp //. }
+      clear Hclone clone. iIntros (clone) "(Hna & _ & [Hclone _])". rewrite tctx_hasty_val.
       iDestruct "Hs" as "[Hs|Hν']"; last by iDestruct (lft_tok_dead with "Hν Hν'") as "[]".
-      iMod (bor_create _ β with "LFT Hν") as "[Hνβ Hν]"=>//.
-      iMod (bor_fracture (λ q, (q' * q).[ν])%I with "LFT [Hνβ]") as "Hνβ'"=>//.
-      { by rewrite Qp_mult_1_r. }
-      iDestruct (frac_bor_lft_incl with "LFT Hνβ'") as "#Hνβ". iClear "Hνβ'".
-      erewrite <-!(of_to_val (λ: ["_r"], _)%E); [|solve_to_val..].
-      set (K := LamV ["_r"]%RustB _).
-      iApply ("Hclone" $! β β K [# #l] tid with "LFT [] Hna [Hβ] [-H† Hl]")=>/=;
-             last 1 first.
-      { rewrite /tctx_interp big_sepL_singleton tctx_hasty_val' //. simpl.
-        rewrite /= freeable_sz_full. iFrame. iExists [_].
-        rewrite heap_mapsto_vec_singleton /=. iFrame.
-        iApply (ty_shr_mono with "Hνβ Hs"). }
-      { refine ((λ HE : elctx_sat ((β ⊑ₑ α)::_) [] _, _) _).
-        iApply (HE 1%Qp with "[] [$Hαβ $HE]"); by rewrite /llctx_interp. solve_typing. }
-      { rewrite /llctx_interp big_sepL_singleton. iExists β. iFrame "∗#".
-        rewrite left_id //. }
-      rewrite /K /=. clear K. iIntros (?). rewrite elem_of_list_singleton.
-      iIntros "%". subst. iIntros (cl) "Hna Hβ Hcl". inv_vec cl=>cl. simpl. wp_let.
-      rewrite [llctx_interp [β ⊑ₗ []] 1]/llctx_interp big_sepL_singleton.
-      iDestruct "Hβ" as (β') "(Hβeq & Hβ & Hβend)". rewrite /= left_id.
-      iDestruct "Hβeq" as %<-. wp_bind Skip. iSpecialize ("Hβend" with "Hβ").
-      iApply wp_mask_mono; last iApply (wp_step_fupd with "Hβend"); [solve_ndisj..|].
-      wp_seq. iIntros "#Hβ !>". wp_seq. wp_rec.
-      iMod ("Hα2" with "Hβ") as "Hα2". iMod ("Hν" with "Hβ") as "Hν".
-      wp_apply wp_new=>//. iIntros (l' vl) "(% & Hl'† & Hl')". wp_let. wp_op.
-      rewrite shift_loc_0. destruct vl as [|?[|??]]; simpl in *; try lia.
+      iDestruct (lft_intersect_acc with "Hα2 Hν") as (q'') "[Hαν Hclose3]".
+      rewrite -[α ⊓ ν](right_id_L).
+      iApply (type_call_iris _ [α ⊓ ν] (α ⊓ ν) _ _ _ [_] with
+              "LFT HE Hna Hαν Hclone [Hl H†]"); [solve_typing|solve_to_val| |].
+      { rewrite big_sepL_singleton tctx_hasty_val' //. rewrite /= freeable_sz_full.
+        iFrame. iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame.
+        iApply ty_shr_mono; last done. iApply lft_intersect_incl_r. }
+      iIntros ([[|cl|]|]) "Hna Hαν Hcl //". wp_rec.
+      iDestruct "Hcl" as "[Hcl Hcl†]". iDestruct "Hcl" as (vl) "[Hcl↦ Hown]".
+      iDestruct (ty_size_eq with "Hown") as "#%".
+      iDestruct ("Hclose3" with "Hαν") as "[Hα2 Hν]".
+      wp_apply wp_new=>//. iIntros (l' vl') "(% & Hl'† & Hl')". wp_let. wp_op.
+      rewrite shift_loc_0. destruct vl' as [|?[|??]]; simpl in *; try lia.
       rewrite !heap_mapsto_vec_cons shift_loc_assoc.
       iDestruct "Hl'" as "(Hl' & Hl'1 & Hl'2)". wp_write. wp_op. wp_write. wp_op.
-      rewrite tctx_interp_singleton tctx_hasty_val.
-      destruct cl as [[|cl|]|]; try by iDestruct "Hcl" as "[]".
-      iDestruct "Hcl" as "[Hcl Hcl†]". iDestruct "Hcl" as (vl) "[>Hcl↦ Hown]".
-      iDestruct (ty_size_eq with "Hown") as "#>%".
       wp_apply (wp_memcpy with "[$Hl'2 $Hcl↦]"); [lia..|]. iIntros "[Hl'2 Hcl↦]".
       wp_seq. rewrite freeable_sz_full.
       wp_apply (wp_delete with "[$Hcl↦ Hcl†]");
         [lia|by replace (length vl) with (ty.(ty_size))|].
-      iIntros "_". wp_seq. wp_read. wp_let. wp_write.
+      iIntros "_". wp_seq. wp_write.
       iMod ("Hclose2" $! (shift_loc l' 2 ↦∗: ty_own ty tid)%I with
           "[Hrc'↦ Hl' Hl'1  Hl'†] [Hl'2 Hown]") as "[Hl' Hα1]".
       { iIntros "!> H". iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame.
