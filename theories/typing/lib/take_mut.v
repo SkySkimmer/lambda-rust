@@ -20,7 +20,8 @@ Section code.
       let: "r" := new [ #0] in return: ["r"].
 
   Lemma take_type ty fty call_once `{!TyWf ty, !TyWf fty} :
-    typed_val call_once (fn(∅; fty, ty) → ty) → (* fty : FnOnce(ty) -> ty, as witnessed by the impl call_once *)
+    (* fty : FnOnce(ty) -> ty, as witnessed by the impl call_once *)
+    typed_val call_once (fn(∅; fty, ty) → ty) →
     typed_val (take ty call_once) (fn(∀ α, ∅; &uniq{α} ty, fty) → unit).
   Proof.
     intros Hf E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ϝ ret arg).
@@ -30,7 +31,7 @@ Section code.
     iApply (type_new ty.(ty_size)); [solve_typing..|]; iIntros (t); simpl_subst.
     (* Switch to Iris. *)
     iIntros (tid) "#LFT #HE Hna HL Hk (Ht & Hf' & Hx & Hx' & Henv & _)".
-    rewrite !tctx_hasty_val [[x]]lock [[env]]lock [fn _]lock. 
+    rewrite !tctx_hasty_val [[x]]lock [[env]]lock [fn _]lock.
     iDestruct (ownptr_uninit_own with "Ht") as (tl tvl) "(% & >Htl & Htl†)". subst t. simpl.
     destruct x' as [[|lx'|]|]; try done. simpl.
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose1)"; [solve_typing..|].
@@ -41,12 +42,10 @@ Section code.
     iIntros "[Htl Hx'↦]". wp_seq.
     (* Call the function. *)
     wp_let. unlock.
-    iApply (type_call_iris _ [ϝ] tt with "LFT HE Hna [Hϝ] [Hf'] [Henv Htl Htl† Hx'vl]"). 4: iExact "Hf'". (* FIXME: Removing the [ ] around Hf' in the spec pattern diverges. *)
-    { solve_typing. }
-    { solve_to_val. }
-    { simpl. rewrite (right_id static). done. }
-    { simpl. rewrite !tctx_hasty_val. iFrame. iSplit; last done.
-      rewrite tctx_hasty_val' //. iFrame. iExists _. iFrame. }
+    iApply (type_call_iris _ [ϝ] () [_; _]
+      with "LFT HE Hna [Hϝ] Hf' [Henv Htl Htl† Hx'vl]"); [solve_typing|solve_to_val| | |].
+    { by rewrite /= (right_id static). }
+    { rewrite /= !tctx_hasty_val tctx_hasty_val' //. iFrame. iExists _. iFrame. }
     (* Prove the continuation of the function call. *)
     iIntros (r) "Hna Hϝ Hr". simpl.
     iDestruct (ownptr_own with "Hr") as (lr rvl) "(% & Hlr & Hrvl & Hlr†)". subst r.
@@ -66,7 +65,7 @@ Section code.
       unlock. iFrame. iExists _. rewrite uninit_own. iFrame. auto using vec_to_list_length. }
     iApply type_delete; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
-    iApply (type_new _); [solve_typing..|]; iIntros (r); simpl_subst.
+    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst.
     iApply type_jump; solve_typing.
   Qed.
 End code.

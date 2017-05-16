@@ -234,8 +234,8 @@ Section typing.
 
   (* In principle, proving this hard-coded to an empty L would be sufficient --
      but then we would have to require elctx_sat as an Iris assumption. *)
-  Lemma type_call_iris' E L (κs : list lft) {A} x qκs qL tid
-        p (ps : list path) (k : expr) (fp : A → fn_params (length ps)) :
+  Lemma type_call_iris' E L (κs : list lft) {A} x (ps : list path) qκs qL tid
+        p (k : expr) (fp : A → fn_params (length ps)) :
     (∀ ϝ, elctx_sat (((λ κ, ϝ ⊑ₑ κ) <$> κs) ++ E) L ((fp x).(fp_E) ϝ)) →
     is_Some (to_val k) →
     lft_ctx -∗ elctx_interp E -∗ na_own tid ⊤ -∗ llctx_interp L qL -∗
@@ -295,8 +295,8 @@ Section typing.
         iApply (big_sepL_mono' with "Hvl"); last done. by iIntros (i [v ty']).
   Qed.
 
-  Lemma type_call_iris E (κs : list lft) {A} x qκs tid
-        f (ps : list path) (k : expr) (fp : A → fn_params (length ps)) :
+  Lemma type_call_iris E (κs : list lft) {A} x (ps : list path) qκs tid
+        f (k : expr) (fp : A → fn_params (length ps)) :
     (∀ ϝ, elctx_sat (((λ κ, ϝ ⊑ₑ κ) <$> κs) ++ E) [] ((fp x).(fp_E) ϝ)) →
     is_Some (to_val k) →
     lft_ctx -∗ elctx_interp E -∗ na_own tid ⊤ -∗

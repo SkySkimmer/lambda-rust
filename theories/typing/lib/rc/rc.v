@@ -1074,7 +1074,7 @@ Section code.
       wp_let. wp_let. rewrite tctx_interp_singleton tctx_hasty_val.
       iDestruct (lft_intersect_acc with "Hα2 Hν") as (q'') "[Hαν Hclose3]".
       rewrite -[α ⊓ ν](right_id_L).
-      iApply (type_call_iris _ [α ⊓ ν] (α ⊓ ν) _ _ _ [_]
+      iApply (type_call_iris _ [α ⊓ ν] (α ⊓ ν) [_]
               with "LFT HE Hna Hαν Hclone [H† H↦lr]"); [solve_typing|solve_to_val| |].
       { rewrite big_sepL_singleton tctx_hasty_val' //. rewrite /= freeable_sz_full_S.
         iFrame. iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame.
@@ -1107,11 +1107,7 @@ Section code.
         iFrame "∗#". auto. }
       iApply type_letalloc_1; [solve_typing..|]. iIntros (rcold). simpl_subst.
       iApply type_let. apply rc_drop_type. solve_typing. iIntros (drop). simpl_subst.
-      iApply (type_letcall ()); try solve_typing.
-      { (* FIXME : solve_typing should be able to do this. *)
-        move=>ϝ' /=. change (ty_outlives_E (option ty) ϝ') with (ty_outlives_E ty ϝ').
-        solve_typing. }
-      iIntros (content). simpl_subst.
+      iApply (type_letcall ()); [solve_typing..|]. iIntros (content). simpl_subst.
       iApply type_delete; [solve_typing..|].
       iApply type_assign; [solve_typing..|].
       iApply type_jump; solve_typing.

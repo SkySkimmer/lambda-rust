@@ -185,7 +185,7 @@ Section refmut_functions.
     iDestruct (lft_intersect_acc with "Hα Hν") as (?) "[Hαν Hclose3]".
     iDestruct (lft_intersect_acc with "Hαν Hϝ") as (?) "[Hανϝ Hclose4]".
     rewrite -[ϝ in (α ⊓ ν) ⊓ ϝ](right_id_L).
-    iApply (type_call_iris _ [α ⊓ ν; ϝ] (α ⊓ ν) _ _ _ [_; _]
+    iApply (type_call_iris _ [α ⊓ ν; ϝ] (α ⊓ ν) [_; _]
             with "LFT HE Hna [Hανϝ] Hf' [$Henv Hlx H† Hbor]");
       [solve_typing|solve_to_val|done| |].
     { rewrite big_sepL_singleton tctx_hasty_val' //. rewrite /= freeable_sz_full.

@@ -1,5 +1,6 @@
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import list.
+From lrust.typing Require Import lft_contexts.
 From lrust.typing Require Export type.
 Set Default Proof Using "Type".
 
@@ -242,8 +243,17 @@ Section typing.
   Lemma prod_app E L tyl1 tyl2 :
     eqtype E L (Π[Π tyl1; Π tyl2]) (Π(tyl1 ++ tyl2)).
   Proof. by rewrite -prod_flatten_r -prod_flatten_l. Qed.
+
+  Lemma ty_outlives_E_elctx_sat_product E L tyl {Wf : TyWfLst tyl} α:
+    elctx_sat E L (tyl_outlives_E tyl α) →
+    elctx_sat E L (ty_outlives_E (Π tyl) α).
+  Proof.
+    intro Hsat. eapply eq_ind; first done. clear Hsat. rewrite /ty_outlives_E /=.
+    induction Wf as [|ty [] ?? IH]=>//=. rewrite IH fmap_app //.
+  Qed.
 End typing.
 
 Arguments product : simpl never.
 Hint Opaque product : lrust_typing lrust_typing_merge.
-Hint Resolve product_mono' product_proper' : lrust_typing.
+Hint Resolve product_mono' product_proper' ty_outlives_E_elctx_sat_product
+  : lrust_typing.

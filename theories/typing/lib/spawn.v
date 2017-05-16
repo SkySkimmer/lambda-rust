@@ -99,12 +99,9 @@ Section spawn.
       { iIntros "!> *". rewrite tctx_interp_singleton tctx_hasty_val.
         iIntros "?". by iFrame. }
       iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let. unlock.
-      iApply (type_call_iris _ [] tt 1%Qp with "LFT HE Htl [] [Hf'] [Henv]"). 4: iExact "Hf'". (* FIXME: Removing the [ ] around Hf' in the spec pattern diverges. *)
-      - solve_typing.
-      - solve_to_val.
-      - iApply lft_tok_static.
-      - iSplitL; last done. (* FIXME: iSplit should work, the RHS is persistent. *)
-        rewrite tctx_hasty_val. iApply @send_change_tid. done.
+      iApply (type_call_iris _ [] () [_] with "LFT HE Htl [] Hf' [Henv]");
+        [solve_typing|solve_to_val|iApply (lft_tok_static 1%Qp)| |].
+      - by rewrite big_sepL_singleton tctx_hasty_val send_change_tid.
       - iIntros (r) "Htl _ Hret".
         wp_rec. iApply (finish_spec with "[$Hfin Hret]"); last auto.
         by iApply @send_change_tid. }

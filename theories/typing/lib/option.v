@@ -1,5 +1,5 @@
 From iris.proofmode Require Import tactics.
-From lrust.typing Require Import typing.
+From lrust.typing Require Import typing lib.panic.
 Set Default Proof Using "Type".
 
 Section option.
@@ -64,6 +64,32 @@ Section option.
     + left. iApply type_letalloc_n; [solve_typing..|]. iIntros (r). simpl_subst.
       iApply (type_delete (Π[uninit _;uninit _;uninit _])); [solve_typing..|].
       iApply type_delete; [solve_typing..|].
+      iApply type_jump; solve_typing.
+  Qed.
+
+  Definition option_unwrap τ : val :=
+    funrec: <> ["o"] :=
+      case: !"o" of
+      [ let: "panic" := panic in
+        letcall: "r" := "panic" [] in
+        return: ["r"];
+
+        letalloc: "r" <-{τ.(ty_size)} !("o" +ₗ #1) in
+        delete [ #(S τ.(ty_size)); "o"];;
+        return: ["r"]].
+
+  Lemma option_unwrap_type τ `{!TyWf τ} :
+    typed_val (option_unwrap τ) (fn(∅; option τ) → τ).
+  Proof.
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros ([] ϝ ret p). inv_vec p=>o. simpl_subst.
+    iApply type_case_own; [solve_typing|]. constructor; last constructor; last constructor.
+    + right. iApply type_let; [iApply panic_type|solve_typing|].
+        iIntros (panic). simpl_subst.
+      iApply (type_letcall ()); [solve_typing..|]. iIntros (r). simpl_subst.
+      iApply type_jump; solve_typing.
+    + left. iApply type_letalloc_n; [solve_typing..|]. iIntros (r). simpl_subst.
+      iApply (type_delete (Π[uninit _;uninit _;uninit _])); [solve_typing..|].
       iApply type_jump; solve_typing.
   Qed.
 End option.

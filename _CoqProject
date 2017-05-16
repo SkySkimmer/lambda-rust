@@ -50,6 +50,7 @@ theories/typing/fixpoint.v
 theories/typing/type_sum.v
 theories/typing/typing.v
 theories/typing/soundness.v
+theories/typing/lib/panic.v
 theories/typing/lib/option.v
 theories/typing/lib/fake_shared_box.v
 theories/typing/lib/cell.v
@@ -78,3 +79,4 @@ theories/typing/examples/rebor.v
 theories/typing/examples/unbox.v
 theories/typing/examples/init_prod.v
 theories/typing/examples/lazy_lft.v
+theories/typing/examples/nonlexical.v

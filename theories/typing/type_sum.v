@@ -262,4 +262,14 @@ Section case.
     iIntros (?? -> ??? Hr ?) "?". subst. rewrite -(Z2Nat.id i) //.
     by iApply type_seq; [eapply type_sum_memcpy_instr, Hr|done|done].
   Qed.
+
+  Lemma ty_outlives_E_elctx_sat_sum E L tyl {Wf : TyWfLst tyl} α:
+    elctx_sat E L (tyl_outlives_E tyl α) →
+    elctx_sat E L (ty_outlives_E (sum tyl) α).
+  Proof.
+    intro Hsat. eapply eq_ind; first done. clear Hsat. rewrite /ty_outlives_E /=.
+    induction Wf as [|ty [] ?? IH]=>//=. rewrite IH fmap_app //.
+  Qed.
 End case.
+
+Hint Resolve ty_outlives_E_elctx_sat_sum : lrust_typing.
