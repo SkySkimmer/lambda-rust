@@ -9,7 +9,7 @@ Section sum.
   Context `{typeG Σ}.
 
   Program Definition emp : type :=
-    {| ty_size := 1%nat;
+    {| ty_size := 1%nat; (* This is 1 so that emp is equal to the empty sum. *)
        ty_own tid vl := False%I;
        ty_shr κ tid l := False%I |}.
   Next Obligation. iIntros (tid vl) "[]". Qed.
