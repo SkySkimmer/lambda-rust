@@ -15,7 +15,7 @@ Section lazy_lft.
       let: "23" := #23 in "g" <- "23";;
       "t" +ₗ #1 <- "g";;
       let: "r" := new [ #0] in
-      Endlft;; delete [ #2; "t"];; delete [ #1; "f"];; delete [ #1; "g"];; "return" ["r"].
+      Endlft;; delete [ #2; "t"];; delete [ #1; "f"];; delete [ #1; "g"];; return: ["r"].
 
   Lemma lazy_lft_type : typed_val lazy_lft (fn(∅) → unit).
   Proof.

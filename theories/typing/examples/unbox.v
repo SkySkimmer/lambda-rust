@@ -9,7 +9,7 @@ Section unbox.
     funrec: <> ["b"] :=
        let: "b'" := !"b" in let: "bx" := !"b'" in
        letalloc: "r" <- "bx" +ₗ #0 in
-       delete [ #1; "b"] ;; "return" ["r"].
+       delete [ #1; "b"] ;; return: ["r"].
 
   Lemma ubox_type :
     typed_val unbox (fn(∀ α, ∅; &uniq{α}box (Π[int; int])) → &uniq{α} int).

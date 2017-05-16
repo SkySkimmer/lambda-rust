@@ -48,7 +48,7 @@ Section rc.
          authoritative state is something like (None, weak), where weak is the
          number of weak references.
        - The dead state, meaning that no reference exist anymore. The
-         authoritat state is something like (None, 0).
+         authoritative state is something like (None, 0).
 
    Note that when we are in the living or dropping states, the weak reference
    count stored in the heap is actually one plus the actual number of weak

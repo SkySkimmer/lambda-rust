@@ -14,7 +14,7 @@ Section rebor.
        let: "y'" := !"y" in
        letalloc: "r" <- "y'" in
        Endlft ;; delete [ #2; "t1"] ;; delete [ #2; "t2"] ;;
-                 delete [ #1; "x"] ;; "return" ["r"].
+                 delete [ #1; "x"] ;; return: ["r"].
 
   Lemma rebor_type :
     typed_val rebor (fn(∅; Π[int; int], Π[int; int]) → int).

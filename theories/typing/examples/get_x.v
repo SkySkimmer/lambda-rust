@@ -9,7 +9,7 @@ Section get_x.
     funrec: <> ["p"] :=
        let: "p'" := !"p" in
        letalloc: "r" <- "p'" +ₗ #0 in
-       delete [ #1; "p"] ;; "return" ["r"].
+       delete [ #1; "p"] ;; return: ["r"].
 
   Lemma get_x_type :
     typed_val get_x (fn(∀ α, ∅; &uniq{α} Π[int; int]) → &shr{α} int).
