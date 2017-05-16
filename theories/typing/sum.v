@@ -8,8 +8,10 @@ Set Default Proof Using "Type".
 Section sum.
   Context `{typeG Σ}.
 
-  Program Definition emp : type :=
-    {| ty_size := 1%nat; (* This is 1 so that emp is equal to the empty sum. *)
+  (* We define the actual empty type as being the empty sum, so that it is
+     convertible to it (and in particular, we can partern-match on it). *)
+  Program Definition emp0 : type :=
+    {| ty_size := 1%nat;
        ty_own tid vl := False%I;
        ty_shr κ tid l := False%I |}.
   Next Obligation. iIntros (tid vl) "[]". Qed.
@@ -20,30 +22,17 @@ Section sum.
   Qed.
   Next Obligation. iIntros (κ κ' tid l) "#Hord []". Qed.
 
-  Global Instance emp_wf : TyWf emp := { ty_lfts := []; ty_wf_E := [] }.
-
-  Global Instance emp_empty : Empty type := emp.
-
-  Global Instance emp_copy : Copy ∅.
-  Proof. split; first by apply _. iIntros (????????) "? []". Qed.
-
-  Global Instance emp_send : Send ∅.
-  Proof. iIntros (???) "[]". Qed.
-
-  Global Instance emp_sync : Sync ∅.
-  Proof. iIntros (????) "[]". Qed.
-
   Definition is_pad i tyl (vl : list val) : iProp Σ :=
-    ⌜((nth i tyl ∅).(ty_size) + length vl)%nat = (max_list_with ty_size tyl)⌝%I.
+    ⌜((nth i tyl emp0).(ty_size) + length vl)%nat = (max_list_with ty_size tyl)⌝%I.
 
   Lemma split_sum_mt l tid q tyl :
     (l ↦∗{q}: λ vl,
          ∃ (i : nat) vl' vl'', ⌜vl = #i :: vl' ++ vl''⌝ ∗
                                ⌜length vl = S (max_list_with ty_size tyl)⌝ ∗
-                               ty_own (nth i tyl ∅) tid vl')%I
+                               ty_own (nth i tyl emp0) tid vl')%I
     ⊣⊢ ∃ (i : nat), (l ↦{q} #i ∗
-                       shift_loc l (S $ (nth i tyl ∅).(ty_size)) ↦∗{q}: is_pad i tyl) ∗
-                              shift_loc l 1 ↦∗{q}: (nth i tyl ∅).(ty_own) tid.
+                     shift_loc l (S $ (nth i tyl emp0).(ty_size)) ↦∗{q}: is_pad i tyl) ∗
+                              shift_loc l 1 ↦∗{q}: (nth i tyl emp0).(ty_own) tid.
   Proof.
     iSplit; iIntros "H".
     - iDestruct "H" as (vl) "[Hmt Hown]". iDestruct "Hown" as (i vl' vl'') "(% & % & Hown)".
@@ -67,12 +56,12 @@ Section sum.
        ty_own tid vl :=
          (∃ (i : nat) vl' vl'', ⌜vl = #i :: vl' ++ vl''⌝ ∗
                                 ⌜length vl = S (max_list_with ty_size tyl)⌝ ∗
-                                (nth i tyl ∅).(ty_own) tid vl')%I;
+                                (nth i tyl emp0).(ty_own) tid vl')%I;
        ty_shr κ tid l :=
          (∃ (i : nat),
              (&frac{κ} λ q, l ↦{q} #i ∗
-                       shift_loc l (S $ (nth i tyl ∅).(ty_size)) ↦∗{q}: is_pad i tyl) ∗
-               (nth i tyl ∅).(ty_shr) κ tid (shift_loc l 1))%I
+                       shift_loc l (S $ (nth i tyl emp0).(ty_size)) ↦∗{q}: is_pad i tyl) ∗
+               (nth i tyl emp0).(ty_shr) κ tid (shift_loc l 1))%I
     |}.
   Next Obligation.
     iIntros (tyl tid vl) "Hown". iDestruct "Hown" as (i vl' vl'') "(%&%&_)".
@@ -82,7 +71,7 @@ Section sum.
     intros tyl E κ l tid. iIntros (??) "#LFT Hown Htok". rewrite split_sum_mt.
     iMod (bor_exists with "LFT Hown") as (i) "Hown"; first solve_ndisj.
     iMod (bor_sep with "LFT Hown") as "[Hmt Hown]"; first solve_ndisj.
-    iMod ((nth i tyl ∅).(ty_share) with "LFT Hown Htok") as "[#Hshr $]"; try done.
+    iMod ((nth i tyl emp0).(ty_share) with "LFT Hown Htok") as "[#Hshr $]"; try done.
     iMod (bor_fracture with "LFT [Hmt]") as "H'"; first solve_ndisj; last eauto.
     by iFrame.
   Qed.
@@ -91,7 +80,7 @@ Section sum.
     iDestruct "H" as (i) "[Hown0 Hown]". iExists i.
     iSplitL "Hown0".
     - by iApply (frac_bor_shorten with "Hord").
-    - iApply ((nth i tyl ∅).(ty_shr_mono) with "Hord"); done.
+    - iApply ((nth i tyl emp0).(ty_shr_mono) with "Hord"); done.
   Qed.
 
   Global Instance sum_wf tyl `{!TyWfLst tyl} : TyWf (sum tyl) :=
@@ -105,7 +94,7 @@ Section sum.
       rewrite IH. f_equiv. apply EQ. }
     (* TODO: If we had the right lemma relating nth, (Forall2 R) and R, we should
        be able to make this more automatic. *)
-    assert (EQnth :∀ i, type_dist2 n (nth i x ∅) (nth i y ∅)).
+    assert (EQnth :∀ i, type_dist2 n (nth i x emp0) (nth i y emp0)).
     { clear EQmax. induction EQ as [|???? EQ _ IH]=>-[|i] //=. }
     constructor; simpl.
     - by rewrite EQmax.
@@ -123,7 +112,7 @@ Section sum.
       rewrite IH. f_equiv. apply EQ. }
     (* TODO: If we had the right lemma relating nth, (Forall2 R) and R, we should
        be able to make this more automatic. *)
-    assert (EQnth :∀ i, type_dist n (nth i x ∅) (nth i y ∅)).
+    assert (EQnth :∀ i, type_dist n (nth i x emp0) (nth i y emp0)).
     { clear EQmax. induction EQ as [|???? EQ _ IH]=>-[|i] //=. }
     constructor; simpl.
     - by rewrite EQmax.
@@ -146,7 +135,7 @@ Section sum.
     iDestruct (subtype_Forall2_llctx with "HL") as "#Htyl"; first done.
     iClear "HL". iIntros "!# #HE".
     iDestruct ("Hleq" with "HE") as %Hleq. iSpecialize ("Htyl" with "HE"). iClear "Hleq HE".
-    iAssert (∀ i, type_incl (nth i tyl1 ∅) (nth i tyl2 ∅))%I with "[#]" as "#Hty".
+    iAssert (∀ i, type_incl (nth i tyl1 emp0) (nth i tyl2 emp0))%I with "[#]" as "#Hty".
       { iIntros (i). edestruct (nth_lookup_or_length tyl1 i) as [Hl1|Hl]; last first.
         { rewrite nth_overflow // nth_overflow; first by iApply type_incl_refl.
           by erewrite <-Forall2_length. }
@@ -184,22 +173,14 @@ Section sum.
     nth i [] d = d.
   Proof. by destruct i. Qed.
 
-  Lemma emp_sum E L :
-    eqtype E L emp (sum []).
-  Proof.
-    apply eqtype_unfold. iIntros (?) "_ !# _".
-    iSplit; first done; iSplit; iAlways; iIntros; iSplit; try by iIntros "[]".
-    - iIntros "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)". by rewrite nth_empty.
-    - iIntros "H". iDestruct "H" as (i) "(_ & Hshr)". by rewrite nth_empty.
-  Qed.
-
   Global Instance sum_copy tyl : LstCopy tyl → Copy (sum tyl).
   Proof.
     intros HFA. split.
     - intros tid vl.
-      cut (∀ i vl', PersistentP (ty_own (nth i tyl ∅) tid vl')). by apply _.
-      intros. apply @copy_persistent. edestruct nth_in_or_default as [| ->];
-                                        [by eapply List.Forall_forall| apply _].
+      cut (∀ i vl', PersistentP (ty_own (nth i tyl emp0) tid vl')). by apply _.
+      intros. apply @copy_persistent.
+      edestruct nth_in_or_default as [| ->]; [by eapply List.Forall_forall| ].
+      split; first by apply _. iIntros (????????) "? []".
     - intros κ tid E F l q ? HF.
       iIntros "#LFT #H Htl [Htok1 Htok2]".
       setoid_rewrite split_sum_mt. iDestruct "H" as (i) "[Hshr0 Hshr]".
@@ -207,10 +188,10 @@ Section sum.
       iAssert ((∃ vl, is_pad i tyl vl)%I) with "[#]" as %[vl Hpad].
       { iDestruct "Hown" as "[_ Hpad]". iDestruct "Hpad" as (vl) "[_ %]".
         eauto. }
-      iMod (@copy_shr_acc _ _ (nth i tyl ∅) with "LFT Hshr Htl Htok2")
+      iMod (@copy_shr_acc _ _ (nth i tyl emp0) with "LFT Hshr Htl Htok2")
         as (q'2) "(Htl & HownC & Hclose')"; try done.
-      { edestruct nth_in_or_default as [| ->]; last by apply _.
-          by eapply List.Forall_forall. }
+      { edestruct nth_in_or_default as [| ->]; first by eapply List.Forall_forall.
+        split; first by apply _. iIntros (????????) "? []". }
       { rewrite <-HF. simpl. rewrite <-union_subseteq_r.
         apply shr_locsE_subseteq. omega. }
       iDestruct (na_own_acc with "Htl") as "[$ Htlclose]".
@@ -237,17 +218,21 @@ Section sum.
   Proof.
     iIntros (Hsend tid1 tid2 vl) "H". iDestruct "H" as (i vl' vl'') "(% & % & Hown)".
     iExists _, _, _. iSplit; first done. iSplit; first done. iApply @send_change_tid; last done.
-    edestruct nth_in_or_default as [| ->]; last by apply _.
-          by eapply List.Forall_forall.
+    edestruct nth_in_or_default as [| ->]; first by eapply List.Forall_forall.
+    iIntros (???) "[]".
   Qed.
 
   Global Instance sum_sync tyl : LstSync tyl → Sync (sum tyl).
   Proof.
     iIntros (Hsync κ tid1 tid2 l) "H". iDestruct "H" as (i) "[Hframe Hown]".
     iExists _. iFrame "Hframe". iApply @sync_change_tid; last done.
-    edestruct nth_in_or_default as [| ->]; last by apply _.
-          by eapply List.Forall_forall.
+    edestruct nth_in_or_default as [| ->]; first by eapply List.Forall_forall.
+    iIntros (????) "[]".
   Qed.
+
+  Definition emp := sum [].
+
+  Global Instance emp_empty : Empty type := emp.
 End sum.
 
 (* Σ is commonly used for the current functor. So it cannot be defined

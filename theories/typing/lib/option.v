@@ -71,8 +71,8 @@ Section option.
     funrec: <> ["o"] :=
       case: !"o" of
       [ let: "panic" := panic in
-        letcall: "r" := "panic" [] in
-        return: ["r"];
+        letcall: "emp" := "panic" [] in
+        case: !"emp" of [];
 
         letalloc: "r" <-{τ.(ty_size)} !("o" +ₗ #1) in
         delete [ #(S τ.(ty_size)); "o"];;
@@ -87,7 +87,7 @@ Section option.
     + right. iApply type_let; [iApply panic_type|solve_typing|].
         iIntros (panic). simpl_subst.
       iApply (type_letcall ()); [solve_typing..|]. iIntros (r). simpl_subst.
-      iApply type_jump; solve_typing.
+      iApply type_case_own; solve_typing.
     + left. iApply type_letalloc_n; [solve_typing..|]. iIntros (r). simpl_subst.
       iApply (type_delete (Π[uninit _;uninit _;uninit _])); [solve_typing..|].
       iApply type_jump; solve_typing.
