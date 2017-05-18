@@ -15,6 +15,11 @@ Section fn.
                     ty.(ty_wf_E) ++ ty.(ty_outlives_E) ϝ)
        tys ty.
 
+  (* The other alternative for defining the fn type would be to state
+     that the value applied to its parameters is a typed body whose type
+     is the return type.
+     That would be slightly simpler, but, unfortunately, we are no longer
+     able to prove that this is contractive. *)
   Program Definition fn (fp : A → fn_params) : type :=
     {| st_own tid vl := (∃ fb kb xb e H,
          ⌜vl = [@RecV fb (kb::xb) e H]⌝ ∗ ⌜length xb = n⌝ ∗
