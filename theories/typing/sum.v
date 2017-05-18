@@ -9,7 +9,8 @@ Section sum.
   Context `{typeG Σ}.
 
   (* We define the actual empty type as being the empty sum, so that it is
-     convertible to it (and in particular, we can partern-match on it). *)
+     convertible to it---and in particular, we can pattern-match on it
+     (as in, pattern-match in the language of lambda-rust, not in Coq). *)
   Program Definition emp0 : type :=
     {| ty_size := 1%nat;
        ty_own tid vl := False%I;
