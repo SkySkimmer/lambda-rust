@@ -10,9 +10,9 @@ theories/lifetime/model/borrow.v
 theories/lifetime/model/reborrow.v
 theories/lifetime/lifetime_sig.v
 theories/lifetime/lifetime.v
-theories/lifetime/shr_borrow.v
-theories/lifetime/frac_borrow.v
+theories/lifetime/at_borrow.v
 theories/lifetime/na_borrow.v
+theories/lifetime/frac_borrow.v
 theories/lang/adequacy.v
 theories/lang/heap.v
 theories/lang/lang.v

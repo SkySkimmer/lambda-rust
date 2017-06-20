@@ -76,11 +76,11 @@ Section rwlockreadguard_functions.
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)"; [solve_typing..|].
     iMod (lft_incl_acc with "Hαβ Hα") as (qβ) "[Hβ Hcloseα]". done.
     wp_bind (!ˢᶜ#lx')%E.
-    iMod (shr_bor_acc_tok with "LFT Hinv Hβ") as "[INV Hcloseβ]"; [done..|].
+    iMod (at_bor_acc_tok with "LFT Hinv Hβ") as "[INV Hcloseβ]"; [done..|].
     iDestruct "INV" as (st) "[H↦ INV]". wp_read.
     iMod ("Hcloseβ" with "[H↦ INV]") as "Hβ"; first by iExists _; iFrame.
     iModIntro. wp_let. wp_op. wp_bind (CAS _ _ _).
-    iMod (shr_bor_acc_tok with "LFT Hinv Hβ") as "[INV Hcloseβ]"; [done..|].
+    iMod (at_bor_acc_tok with "LFT Hinv Hβ") as "[INV Hcloseβ]"; [done..|].
     iDestruct "INV" as (st') "(Hlx & >H● & Hst)".
     destruct (decide (Z_of_rwlock_st st = Z_of_rwlock_st st')) as [->|?].
     + iAssert (|={⊤ ∖ ↑rwlockN,⊤ ∖ ↑rwlockN ∖ ↑lftN}▷=>

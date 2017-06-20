@@ -2,13 +2,13 @@ From Coq Require Import Qcanon.
 From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import lib.fractional.
 From iris.algebra Require Import frac.
-From lrust.lifetime Require Export shr_borrow.
+From lrust.lifetime Require Export at_borrow.
 Set Default Proof Using "Type".
 
 Class frac_borG Σ := frac_borG_inG :> inG Σ fracR.
 
 Definition frac_bor `{invG Σ, lftG Σ, frac_borG Σ} κ (φ : Qp → iProp Σ) :=
-  (∃ γ κ', κ ⊑ κ' ∗ &shr{κ',lftN} ∃ q, φ q ∗ own γ q ∗
+  (∃ γ κ', κ ⊑ κ' ∗ &at{κ',lftN} ∃ q, φ q ∗ own γ q ∗
                        (⌜q = 1%Qp⌝ ∨ ∃ q', ⌜(q + q' = 1)%Qp⌝ ∗ q'.[κ']))%I.
 Notation "&frac{ κ } P" := (frac_bor κ P)
   (format "&frac{ κ }  P", at level 20, right associativity) : uPred_scope.
@@ -31,7 +31,7 @@ Section frac_bor.
     ▷ □ (∀ q, φ q ↔ φ' q) -∗ &frac{κ} φ -∗ &frac{κ} φ'.
   Proof.
     iIntros "#Hφφ' H". iDestruct "H" as (γ κ') "[? Hφ]". iExists γ, κ'. iFrame.
-    iApply (shr_bor_iff with "[Hφφ'] Hφ"). iNext. iAlways.
+    iApply (at_bor_iff with "[Hφφ'] Hφ"). iNext. iAlways.
     iSplit; iIntros "H"; iDestruct "H" as (q) "[H ?]"; iExists q; iFrame; by iApply "Hφφ'".
   Qed.
 
@@ -51,7 +51,7 @@ Section frac_bor.
       iDestruct (lft_tok_dead with "Hκ H†") as "[]".
     - iMod "Hclose" as "_"; last first.
       iExists γ, κ. iSplitR. by iApply lft_incl_refl.
-      by iApply shr_bor_fake_lftN.
+      by iApply at_bor_fake_lftN.
   Qed.
 
   Lemma frac_bor_atomic_acc E κ :
@@ -60,7 +60,7 @@ Section frac_bor.
                                       ∨ [†κ] ∗ |={E∖↑lftN,E}=> True.
   Proof.
     iIntros (?) "#LFT #Hφ". iDestruct "Hφ" as (γ κ') "[Hκκ' Hshr]".
-    iMod (shr_bor_acc_lftN with "LFT Hshr") as "[[Hφ Hclose]|[H† Hclose]]"; try done.
+    iMod (at_bor_acc_lftN with "LFT Hshr") as "[[Hφ Hclose]|[H† Hclose]]"; try done.
     - iLeft. iDestruct "Hφ" as (q) "(Hφ & Hγ & H)". iExists q. iFrame.
       iIntros "!>Hφ". iApply "Hclose". iExists q. iFrame.
     - iRight. iMod "Hclose" as "_". iMod (lft_incl_dead with "Hκκ' H†") as "$". done.
@@ -75,7 +75,7 @@ Section frac_bor.
     iIntros (?) "#LFT #Hφ Hfrac Hκ". unfold frac_bor.
     iDestruct "Hfrac" as (γ κ') "#[#Hκκ' Hshr]".
     iMod (lft_incl_acc with "Hκκ' Hκ") as (qκ') "[[Hκ1 Hκ2] Hclose]". done.
-    iMod (shr_bor_acc_tok with "LFT Hshr Hκ1") as "[H Hclose']"; try done.
+    iMod (at_bor_acc_tok with "LFT Hshr Hκ1") as "[H Hclose']"; try done.
     iDestruct "H" as (qφ) "(Hφqφ & >Hown & Hq)".
     destruct (Qp_lower_bound (qκ'/2) (qφ/2)) as (qq & qκ'0 & qφ0 & Hqκ' & Hqφ).
     iExists qq.
@@ -90,7 +90,7 @@ Section frac_bor.
       - iDestruct "Hq" as (q') "[% Hq'κ]". iExists (qq + q')%Qp.
         iIntros "{$Hκq $Hq'κ}!%". by rewrite assoc (comm _ _ qq) assoc -Hqφ Qp_div_2. }
     clear Hqφ qφ qφ0. iIntros "!>Hqφ".
-    iMod (shr_bor_acc_tok with "LFT Hshr Hκ1") as "[H Hclose']"; try done.
+    iMod (at_bor_acc_tok with "LFT Hshr Hκ1") as "[H Hclose']"; try done.
     iDestruct "H" as (qφ) "(Hφqφ & >Hown & >[%|Hq])".
     { subst. iCombine "Hown" "Hownq" as "Hown".
       by iDestruct (own_valid with "Hown") as %Hval%Qp_not_plus_q_ge_1. }

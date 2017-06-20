@@ -123,7 +123,7 @@ Section rwlockwriteguard_functions.
       [solve_typing..|].
     iMod (lft_incl_acc with "Hαβ Hα") as (qβ) "[Hβ Hcloseα]". done.
     wp_bind (#lx' <-ˢᶜ #0)%E.
-    iMod (shr_bor_acc_tok with "LFT Hinv Hβ") as "[INV Hcloseβ]"; [done..|].
+    iMod (at_bor_acc_tok with "LFT Hinv Hβ") as "[INV Hcloseβ]"; [done..|].
     iDestruct "INV" as (st) "(H↦ & H● & INV)". wp_write.
     iMod ("Hcloseβ" with "[> H↦ H● H◯ INV Hx']") as "Hβ".
     { iDestruct (own_valid_2 with "H● H◯") as %[[[=]| (? & st0 & [=<-] & -> &

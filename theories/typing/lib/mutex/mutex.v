@@ -35,7 +35,7 @@ Section mutex.
          | _ => False end;
        ty_shr κ tid l :=
          ∃ γ κ',
-           &shr{κ, mutexN} (lock_proto γ l (&{κ'} shift_loc l 1 ↦∗: ty.(ty_own) tid)) ∗ κ ⊑ κ'
+           &at{κ, mutexN} (lock_proto γ l (&{κ'} shift_loc l 1 ↦∗: ty.(ty_own) tid)) ∗ κ ⊑ κ'
     |}%I.
   Next Obligation.
     iIntros (??[|[[]|]]); try iIntros "[]". rewrite ty_size_eq.
@@ -71,7 +71,7 @@ Section mutex.
   Next Obligation.
     iIntros (ty κ κ' tid l) "#Hincl H".
     iDestruct "H" as (γ κ'') "(#Hlck & #Hlft)".
-    iExists _, _. iSplit; first by iApply shr_bor_shorten.
+    iExists _, _. iSplit; first by iApply at_bor_shorten.
     iApply lft_incl_trans; done.
   Qed.
 
@@ -100,7 +100,7 @@ Section mutex.
     - iIntros "!# * Hvl". destruct vl as [|[[| |n]|]vl]; try done.
       simpl. iDestruct "Hvl" as "[$ Hvl]". by iApply "Howni".
     - iIntros "!# * Hshr". iDestruct "Hshr" as (γ κ') "[Hshr Hincl]".
-      iExists _, _. iFrame "Hincl". iApply (shr_bor_iff with "[] Hshr"). iNext.
+      iExists _, _. iFrame "Hincl". iApply (at_bor_iff with "[] Hshr"). iNext.
       iApply lock_proto_iff_proper. iApply bor_iff_proper. iNext.
       iApply heap_mapsto_pred_iff_proper.
       iAlways; iIntros; iSplit; iIntros; by iApply "Howni".
@@ -121,7 +121,7 @@ Section mutex.
     Send ty → Sync (mutex ty).
   Proof.
     iIntros (???? l) "Hshr". iDestruct "Hshr" as (γ κ') "[Hshr Hincl]".
-    iExists _, _. iFrame "Hincl". iApply (shr_bor_iff with "[] Hshr"). iNext.
+    iExists _, _. iFrame "Hincl". iApply (at_bor_iff with "[] Hshr"). iNext.
     iApply lock_proto_iff_proper. iApply bor_iff_proper. iNext.
     iApply heap_mapsto_pred_iff_proper.
     iAlways; iIntros; iSplit; iIntros; by iApply send_change_tid.

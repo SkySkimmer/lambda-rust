@@ -3,7 +3,7 @@ From iris.proofmode Require Import tactics.
 From iris.algebra Require Import auth csum frac agree.
 From iris.base_logic Require Import big_op fractional.
 From lrust.lang.lib Require Import memcpy arc.
-From lrust.lifetime Require Import shr_borrow.
+From lrust.lifetime Require Import at_borrow.
 From lrust.typing Require Export type.
 From lrust.typing Require Import typing option.
 Set Default Proof Using "Type".
@@ -105,7 +105,7 @@ Section arc.
            □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ]
              ={F, F∖↑shrN}▷=∗ q.[κ] ∗ ∃ γ ν q', κ ⊑ ν ∗
                 arc_persist tid ν γ l' ty ∗
-                &shr{κ, arc_shrN}(arc_tok γ q')
+                &at{κ, arc_shrN}(arc_tok γ q')
     |}%I.
   Next Obligation. by iIntros (ty tid [|[[]|][]]) "H". Qed.
   Next Obligation.
@@ -120,7 +120,7 @@ Section arc.
     setoid_rewrite heap_mapsto_vec_singleton.
     iFrame "Htok". iExists _. iFrame "#". rewrite bor_unfold_idx.
     iDestruct "Hb" as (i) "(#Hpb&Hpbown)".
-    set (C := (∃ _ _ _, _ ∗ _ ∗ &shr{_,_} _)%I).
+    set (C := (∃ _ _ _, _ ∗ _ ∗ &at{_,_} _)%I).
     iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ C)%I
           with "[Hpbown]") as "#Hinv"; first by iLeft.
     iIntros "!> !# * % Htok".
@@ -154,7 +154,7 @@ Section arc.
     iMod ("Hclose" with "Htok") as "$". iDestruct "HX" as (? ν ?) "(? & ? & ?)".
     iExists _, _, _. iModIntro. iFrame. iSplit.
     - by iApply lft_incl_trans.
-    - by iApply shr_bor_shorten.
+    - by iApply at_bor_shorten.
   Qed.
 
   Global Instance arc_wf ty `{!TyWf ty} : TyWf (arc ty) :=
@@ -226,7 +226,7 @@ Section arc.
          ∃ (l' : loc), &frac{κ} (λ q, l ↦{q} #l') ∗
            □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[κ]
              ={F, F∖↑shrN}▷=∗ q.[κ] ∗ ∃ γ ν,
-                arc_persist tid ν γ l' ty ∗ &shr{κ, arc_shrN}(weak_tok γ)
+                arc_persist tid ν γ l' ty ∗ &at{κ, arc_shrN}(weak_tok γ)
     |}%I.
   Next Obligation. by iIntros (ty tid [|[[]|][]]) "H". Qed.
   Next Obligation.
@@ -241,7 +241,7 @@ Section arc.
     setoid_rewrite heap_mapsto_vec_singleton.
     iFrame "Htok". iExists _. iFrame "#". rewrite bor_unfold_idx.
     iDestruct "Hb" as (i) "(#Hpb&Hpbown)".
-    set (C := (∃ _ _, _ ∗ &shr{_,_} _)%I).
+    set (C := (∃ _ _, _ ∗ &at{_,_} _)%I).
     iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ C)%I
           with "[Hpbown]") as "#Hinv"; first by iLeft.
     iIntros "!> !# * % Htok".
@@ -267,7 +267,7 @@ Section arc.
     iMod ("Hshr" with "[] Htok") as "Hshr2"; first done.
     iModIntro. iNext. iMod "Hshr2" as "[Htok HX]".
     iMod ("Hclose" with "Htok") as "$". iDestruct "HX" as (? ν) "[??]".
-    iExists _, _. iModIntro. iFrame. by iApply shr_bor_shorten.
+    iExists _, _. iModIntro. iFrame. by iApply at_bor_shorten.
   Qed.
 
   Global Instance weak_wf ty `{!TyWf ty} : TyWf (weak ty) :=
@@ -482,7 +482,7 @@ Section arc.
     wp_apply (strong_count_spec (P1 ν) (P2 l' ty.(ty_size)) _ _ _ (q.[α])%I
        with "[] [] [$Hα1 $Hα2]"); first by iDestruct "Hpersist" as "[$ _]".
     { iIntros "!# Hα".
-      iMod (shr_bor_acc_tok with "LFT Hrctokb Hα") as "[>Htok Hclose1]"; [solve_ndisj..|].
+      iMod (at_bor_acc_tok with "LFT Hrctokb Hα") as "[>Htok Hclose1]"; [solve_ndisj..|].
       iExists _. iFrame. iMod fupd_intro_mask' as "Hclose2"; last iModIntro. set_solver.
       iIntros "Htok". iMod "Hclose2" as "_". by iApply "Hclose1". }
     iIntros (c) "[Hα _]". iMod ("Hclose1" with "Hα HL") as "HL".
@@ -525,7 +525,7 @@ Section arc.
     wp_apply (weak_count_spec (P1 ν) (P2 l' ty.(ty_size)) _ _ _ (q.[α])%I
        with "[] [] [$Hα1 $Hα2]"); first by iDestruct "Hpersist" as "[$ _]".
     { iIntros "!# Hα".
-      iMod (shr_bor_acc_tok with "LFT Hrctokb Hα") as "[>Htok Hclose1]"; [solve_ndisj..|].
+      iMod (at_bor_acc_tok with "LFT Hrctokb Hα") as "[>Htok Hclose1]"; [solve_ndisj..|].
       iExists _. iFrame. iMod fupd_intro_mask' as "Hclose2"; last iModIntro. set_solver.
       iIntros "Htok". iMod "Hclose2" as "_". by iApply "Hclose1". }
     iIntros (c) "[Hα _]". iMod ("Hclose1" with "Hα HL") as "HL".
@@ -570,7 +570,7 @@ Section arc.
     wp_apply (clone_arc_spec (P1 ν) (P2 l' ty.(ty_size)) _ _ _ (q.[α])%I
        with "[] [] [$Hα1 $Hα2]"); first by iDestruct "Hpersist" as "[$ _]".
     { iIntros "!# Hα".
-      iMod (shr_bor_acc_tok with "LFT Hrctokb Hα") as "[>Htok Hclose1]"; [solve_ndisj..|].
+      iMod (at_bor_acc_tok with "LFT Hrctokb Hα") as "[>Htok Hclose1]"; [solve_ndisj..|].
       iExists _. iFrame. iMod fupd_intro_mask' as "Hclose2"; last iModIntro. set_solver.
       iIntros "Htok". iMod "Hclose2" as "_". by iApply "Hclose1". }
     iIntros (q'') "[Hα Hown]". wp_seq. iMod ("Hclose1" with "Hα HL") as "HL".
@@ -614,7 +614,7 @@ Section arc.
     wp_apply (clone_weak_spec (P1 ν) (P2 l' ty.(ty_size)) _ _ _ (q.[α])%I
        with "[] [] [$Hα1 $Hα2]"); first by iDestruct "Hpersist" as "[$ _]".
     { iIntros "!# Hα".
-      iMod (shr_bor_acc_tok with "LFT Hrctokb Hα") as "[>$ Hclose1]"; [solve_ndisj..|].
+      iMod (at_bor_acc_tok with "LFT Hrctokb Hα") as "[>$ Hclose1]"; [solve_ndisj..|].
       iMod fupd_intro_mask' as "Hclose2"; last iModIntro. set_solver.
       iIntros "Htok". iMod "Hclose2" as "_". by iApply "Hclose1". }
     iIntros "[Hα Hown]". wp_seq. iMod ("Hclose1" with "Hα HL") as "HL".
@@ -658,7 +658,7 @@ Section arc.
     wp_apply (downgrade_spec (P1 ν) (P2 l' ty.(ty_size)) _ _ _ (q.[α])%I
               with "[] [] [$Hα1 $Hα2]"); first by iDestruct "Hpersist" as "[$ _]".
     { iIntros "!# Hα".
-      iMod (shr_bor_acc_tok with "LFT Hrctokb Hα") as "[>Htok Hclose1]"; [solve_ndisj..|].
+      iMod (at_bor_acc_tok with "LFT Hrctokb Hα") as "[>Htok Hclose1]"; [solve_ndisj..|].
       iExists _. iFrame. iMod fupd_intro_mask' as "Hclose2"; last iModIntro. set_solver.
       iIntros "Htok". iMod "Hclose2" as "_". by iApply "Hclose1". }
     iIntros "[Hα Hown]". wp_seq. iMod ("Hclose1" with "Hα HL") as "HL".
@@ -705,7 +705,7 @@ Section arc.
     wp_apply (upgrade_spec (P1 ν) (P2 l' ty.(ty_size)) _ _ _ (q.[α])%I
               with "[] [] [$Hα1 $Hα2]"); first by iDestruct "Hpersist" as "[$ _]".
     { iIntros "!# Hα".
-      iMod (shr_bor_acc_tok with "LFT Hrctokb Hα") as "[>$ Hclose1]"; [solve_ndisj..|].
+      iMod (at_bor_acc_tok with "LFT Hrctokb Hα") as "[>$ Hclose1]"; [solve_ndisj..|].
       iMod fupd_intro_mask' as "Hclose2"; last iModIntro. set_solver.
       iIntros "Htok". iMod "Hclose2" as "_". by iApply "Hclose1". }
     iIntros ([] q') "[Hα Hown]"; wp_if; iMod ("Hclose1" with "Hα HL") as "HL".

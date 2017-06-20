@@ -22,7 +22,7 @@ Section rwlockwriteguard.
          match vl return _ with
          | [ #(LitLoc l) ] =>
            ∃ γ β, &{β}(shift_loc l 1 ↦∗: ty.(ty_own) tid) ∗
-             α ⊑ β ∗ &shr{β,rwlockN}(rwlock_inv tid l γ β ty) ∗
+             α ⊑ β ∗ &at{β,rwlockN}(rwlock_inv tid l γ β ty) ∗
              own γ (◯ writing_st)
          | _ => False
          end;
@@ -90,7 +90,7 @@ Section rwlockwriteguard.
         iSplit; iIntros "!>!# H"; iDestruct "H" as (vl) "[??]";
         iExists vl; iFrame; by iApply "Ho".
       + by iApply lft_incl_trans.
-      + iApply shr_bor_iff; try done.
+      + iApply at_bor_iff; try done.
         iIntros "!>!#"; iSplit; iIntros "H". by iApply "Hty1ty2". by iApply "Hty2ty1".
     - iIntros (κ tid l) "H". iDestruct "H" as (l') "H". iExists l'.
       iDestruct "H" as "[$ #H]". iIntros "!# * % Htok".

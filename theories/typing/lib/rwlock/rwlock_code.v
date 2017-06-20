@@ -163,7 +163,7 @@ Section rwlock_functions.
       [solve_typing..|].
     iMod (lft_incl_acc with "Hαβ Hα") as (qβ) "[[Hβtok1 Hβtok2] Hclose']". done.
     wp_bind (!ˢᶜ(LitV lx))%E.
-    iMod (shr_bor_acc_tok with "LFT Hinv Hβtok1") as "[INV Hclose'']"; try done.
+    iMod (at_bor_acc_tok with "LFT Hinv Hβtok1") as "[INV Hclose'']"; try done.
     iDestruct "INV" as (st) "(Hlx & INV)". wp_read.
     iMod ("Hclose''" with "[Hlx INV]") as "Hβtok1"; first by iExists _; iFrame.
     iModIntro. wp_let. wp_op=>Hm1; wp_if.
@@ -176,7 +176,7 @@ Section rwlock_functions.
         [solve_typing..|]; first last.
       simpl. iApply type_jump; solve_typing.
     - wp_op. wp_bind (CAS _ _ _).
-      iMod (shr_bor_acc_tok with "LFT Hinv Hβtok1") as "[INV Hclose'']"; try done.
+      iMod (at_bor_acc_tok with "LFT Hinv Hβtok1") as "[INV Hclose'']"; try done.
       iDestruct "INV" as (st') "(Hlx & Hownst & Hst)". revert Hm1.
       destruct (decide (Z_of_rwlock_st st = Z_of_rwlock_st st')) as [->|?]=>?.
       + iApply (wp_cas_int_suc with "Hlx"); first done. iNext. iIntros "Hlx".
@@ -271,7 +271,7 @@ Section rwlock_functions.
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)"; [solve_typing..|].
     iMod (lft_incl_acc with "Hαβ Hα") as (qβ) "[Hβtok Hclose']". done.
     wp_bind (CAS _ _ _).
-    iMod (shr_bor_acc_tok with "LFT Hinv Hβtok") as "[INV Hclose'']"; try done.
+    iMod (at_bor_acc_tok with "LFT Hinv Hβtok") as "[INV Hclose'']"; try done.
     iDestruct "INV" as (st) "(Hlx & >Hownst & Hst)". destruct st.
     - iApply (wp_cas_int_fail with "Hlx"). done. by destruct c as [|[[]]|].
       iNext. iIntros "Hlx".

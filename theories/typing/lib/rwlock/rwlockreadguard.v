@@ -21,7 +21,7 @@ Section rwlockreadguard.
          match vl return _ with
          | [ #(LitLoc l) ] =>
            ∃ ν q γ β, ty.(ty_shr) (α ⊓ ν) tid (shift_loc l 1) ∗
-             α ⊑ β ∗ &shr{β,rwlockN}(rwlock_inv tid l γ β ty) ∗
+             α ⊑ β ∗ &at{β,rwlockN}(rwlock_inv tid l γ β ty) ∗
              q.[ν] ∗ own γ (◯ reading_st q ν) ∗
              (1.[ν] ={↑lftN,∅}▷=∗ [†ν])
          | _ => False
@@ -91,7 +91,7 @@ Section rwlockreadguard.
       + iApply ty_shr_mono; last by iApply "Hs".
         iApply lft_intersect_mono. done. iApply lft_incl_refl.
       + by iApply lft_incl_trans.
-      + iApply (shr_bor_iff with "[] Hinv").
+      + iApply (at_bor_iff with "[] Hinv").
         iIntros "!> !#"; iSplit; iIntros "H". by iApply "Hty1ty2". by iApply "Hty2ty1".
     - iIntros (κ tid l) "H". iDestruct "H" as (l') "[Hf Hshr]". iExists l'.
       iFrame. iApply ty_shr_mono; last by iApply "Hs".

@@ -35,7 +35,7 @@ Section mguard.
          match vl return _ with
          | [ #(LitLoc l) ] =>
            ∃ γ β, locked γ ∗ α ⊑ β ∗
-             &shr{α, mutexN} (lock_proto γ l (&{β} shift_loc l 1 ↦∗: ty.(ty_own) tid)) ∗
+             &at{α, mutexN} (lock_proto γ l (&{β} shift_loc l 1 ↦∗: ty.(ty_own) tid)) ∗
              &{β} (shift_loc l 1 ↦∗: ty.(ty_own) tid)
          | _ => False end;
        ty_shr κ tid l :=
@@ -99,8 +99,8 @@ Section mguard.
       iDestruct "H" as (γ β) "(Hcl & #H⊑ & #Hinv & Hown)".
       iExists γ, β. iFrame. iSplit; last iSplit.
       + by iApply lft_incl_trans.
-      + iApply (shr_bor_shorten with "Hα").
-        iApply (shr_bor_iff with "[] Hinv"). iNext.
+      + iApply (at_bor_shorten with "Hα").
+        iApply (at_bor_iff with "[] Hinv"). iNext.
         iApply lock_proto_iff_proper. iApply bor_iff_proper. iNext.
         iApply heap_mapsto_pred_iff_proper.
         iAlways; iIntros; iSplit; iIntros; by iApply "Ho".
@@ -139,12 +139,12 @@ Section code.
   Lemma mutex_acc E γ l ty tid q α κ :
     ↑lftN ⊆ E → ↑mutexN ⊆ E →
     let R := (&{κ} shift_loc l 1 ↦∗: ty_own ty tid)%I in
-    lft_ctx -∗ &shr{α,mutexN} lock_proto γ l R -∗ α ⊑ κ -∗
+    lft_ctx -∗ &at{α,mutexN} lock_proto γ l R -∗ α ⊑ κ -∗
     □ ((q).[α] ={E,∅}=∗ ▷ lock_proto γ l R ∗ (▷ lock_proto γ l R ={∅,E}=∗ (q).[α])).
   Proof.
     (* FIXME: This should work: iIntros (?? R). *) intros ?? R.
     iIntros "#LFT #Hshr #Hlincl !# Htok".
-    iMod (shr_bor_acc_tok with "LFT Hshr Htok") as "[Hproto Hclose1]"; [done..|].
+    iMod (at_bor_acc_tok with "LFT Hshr Htok") as "[Hproto Hclose1]"; [done..|].
     iMod (fupd_intro_mask') as "Hclose2"; last iModIntro; first solve_ndisj.
     iFrame. iIntros "Hproto". iMod "Hclose2" as "_".
     iMod ("Hclose1" with "Hproto") as "$". done.

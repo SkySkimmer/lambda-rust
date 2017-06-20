@@ -1,7 +1,7 @@
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import auth csum frac agree.
 From iris.base_logic Require Import big_op fractional.
-From lrust.lifetime Require Import shr_borrow.
+From lrust.lifetime Require Import at_borrow.
 From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
@@ -100,7 +100,7 @@ Section rwlock.
          | #(LitInt z) :: vl' => ⌜-1 ≤ z⌝ ∗ ty.(ty_own) tid vl'
          | _ => False
          end%I;
-       ty_shr κ tid l := (∃ α γ, κ ⊑ α ∗ &shr{α,rwlockN}(rwlock_inv tid l γ α ty))%I |}.
+       ty_shr κ tid l := (∃ α γ, κ ⊑ α ∗ &at{α,rwlockN}(rwlock_inv tid l γ α ty))%I |}.
   Next Obligation.
     iIntros (??[|[[]|]]); try iIntros "[]". rewrite ty_size_eq.
     iIntros "[_ %] !% /=". congruence.
@@ -177,7 +177,7 @@ Section rwlock.
     - iPureIntro. simpl. congruence.
     - destruct vl as [|[[]|]]; try done. iDestruct "H" as "[$ H]". by iApply "Hown".
     - iDestruct "H" as (a γ) "[Ha H]". iExists a, γ. iFrame.
-      iApply shr_bor_iff; last done. iSplit; iIntros "!>!# H".
+      iApply at_bor_iff; last done. iSplit; iIntros "!>!# H".
       by iApply "Hty1ty2". by iApply "Hty2ty1".
   Qed.
   Lemma rwlock_mono' E L ty1 ty2 :
@@ -199,7 +199,7 @@ Section rwlock.
     Send ty → Sync ty → Sync (rwlock ty).
   Proof.
     move=>???????/=. do 2 apply uPred.exist_mono=>?. apply uPred.sep_mono_r.
-    iApply shr_bor_iff. iIntros "!> !#". iApply uPred.equiv_iff.
+    iApply at_bor_iff. iIntros "!> !#". iApply uPred.equiv_iff.
     apply uPred.exist_proper=>?; do 7 f_equiv; first do 7 f_equiv.
     - do 5 f_equiv. apply uPred.equiv_spec; split; iApply send_change_tid.
     - apply uPred.equiv_spec; split; iApply sync_change_tid.
