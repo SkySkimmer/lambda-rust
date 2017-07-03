@@ -41,7 +41,7 @@ Section mguard.
        ty_shr κ tid l :=
          ∃ (l':loc), &frac{κ}(λ q', l ↦{q'} #l') ∗
             □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[α⊓κ]
-                ={F, F∖↑shrN∖↑lftN}▷=∗ ty.(ty_shr) (α⊓κ) tid (shift_loc l' 1) ∗ q.[α⊓κ]
+                ={F, F∖↑shrN}▷=∗ ty.(ty_shr) (α⊓κ) tid (shift_loc l' 1) ∗ q.[α⊓κ]
     |}%I.
   Next Obligation. by iIntros (? ty tid [|[[]|][]]) "H". Qed.
   (* This is to a large extend copy-pasted from RWLock's write guard. *)
@@ -219,9 +219,8 @@ Section code.
     iMod (bor_sep with "LFT Hprot") as "[_ Hlm]"; first done.
     iMod (bor_persistent_tok with "LFT Hβκ Hα") as "[#Hβκ Hα]"; first done.
     iMod (bor_acc with "LFT H↦ Hα") as "[H↦ Hclose2]"; first done.
-    wp_bind (!_)%E. iApply (wp_step_fupd with "[Hlm]");
-      [done| |by iApply (bor_unnest with "LFT Hlm")|]; first done.
-    wp_read. iIntros "Hlm !>". wp_let.
+    wp_bind (!_)%E. iMod (bor_unnest with "LFT Hlm") as "Hlm"; first done.
+    wp_read. wp_let. iMod "Hlm".
     iDestruct (lctx_lft_incl_incl α β with "HL HE") as "#Hαβ"; [solve_typing..|].
     iMod ("Hclose2" with "H↦") as "[_ Hα]".
     iMod ("Hclose1" with "Hα HL") as "HL".

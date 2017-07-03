@@ -113,9 +113,8 @@ Section borrow.
       try by iMod (bor_persistent_tok with "LFT Hbor Htok") as "[>[] _]".
     iMod (bor_acc with "LFT H↦ Htok") as "[>H↦ Hclose']". done.
     rewrite heap_mapsto_vec_singleton.
-    iApply (wp_step_fupd  _ (⊤∖↑lftN) with "[Hbor]"); try done.
-      by iApply (bor_unnest with "LFT Hbor").
-    iApply wp_fupd. wp_read. iIntros "!> Hbor".
+    iMod (bor_unnest with "LFT Hbor") as "Hbor"; [done|].
+    iApply wp_fupd. wp_read.
     iMod ("Hclose'" with "[H↦]") as "[H↦ Htok]"; first by auto.
     iMod ("Hclose" with "Htok") as "($ & $)".
     rewrite tctx_interp_singleton tctx_hasty_val' //.

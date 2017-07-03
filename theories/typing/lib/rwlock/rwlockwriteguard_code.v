@@ -84,9 +84,8 @@ Section rwlockwriteguard_functions.
     iMod (bor_sep with "LFT H") as "[Hβδ _]". done.
     iMod (bor_persistent_tok with "LFT Hβδ Hα") as "[#Hβδ Hα]". done.
     iMod (bor_acc with "LFT H↦ Hα") as "[H↦ Hcloseα]". done.
-    wp_bind (!(LitV lx'))%E. iApply (wp_step_fupd with "[Hb]");
-      [done| |by iApply (bor_unnest with "LFT Hb")|]; first done.
-    wp_read. iIntros "Hb !>". wp_op. wp_let.
+    wp_bind (!(LitV lx'))%E. iMod (bor_unnest with "LFT Hb") as "Hb"; first done.
+    wp_read. wp_op. wp_let. iMod "Hb".
     iMod ("Hcloseα" with "[$H↦]") as "[_ Hα]". iMod ("Hclose" with "Hα HL") as "HL".
     iDestruct (lctx_lft_incl_incl α β with "HL HE") as "#Hαβ"; [solve_typing..|].
     iApply (type_type _ _ _ [ x ◁ box (uninit 1); #(shift_loc l 1) ◁ &uniq{α}ty]

@@ -54,6 +54,9 @@ Module Type lifetime_sig.
   Context `{invG, lftG Σ}.
 
   (** Instances *)
+  Global Declare Instance lft_inhabited : Inhabited lft.
+  Global Declare Instance bor_idx_inhabited : Inhabited bor_idx.
+
   Global Declare Instance lft_intersect_comm : Comm eq lft_intersect.
   Global Declare Instance lft_intersect_assoc : Assoc eq lft_intersect.
   Global Declare Instance lft_intersect_inj_1 κ : Inj eq eq (lft_intersect κ).
@@ -109,15 +112,13 @@ Module Type lifetime_sig.
   Parameter bor_combine : ∀ E κ P Q,
     ↑lftN ⊆ E → lft_ctx -∗ &{κ} P -∗ &{κ} Q ={E}=∗ &{κ} (P ∗ Q).
 
-  Parameter rebor : ∀ E κ κ' P,
-    ↑lftN ⊆ E → lft_ctx -∗ κ' ⊑ κ -∗ &{κ}P ={E}=∗ &{κ'}P ∗ ([†κ'] ={E}=∗ &{κ}P).
-  Parameter bor_unnest : ∀ E κ κ' P,
-    ↑lftN ⊆ E → lft_ctx -∗ &{κ'} &{κ} P ={E, E∖↑lftN}▷=∗ &{κ ⊓ κ'} P.
-
   Parameter bor_unfold_idx : ∀ κ P, &{κ}P ⊣⊢ ∃ i, &{κ,i}P ∗ idx_bor_own 1 i.
 
   Parameter idx_bor_shorten : ∀ κ κ' i P, κ ⊑ κ' -∗ &{κ',i} P -∗ &{κ,i} P.
   Parameter idx_bor_iff : ∀ κ i P P', ▷ □ (P ↔ P') -∗ &{κ,i}P -∗ &{κ,i}P'.
+
+  Parameter idx_bor_unnest : ∀ E κ κ' i P,
+    ↑lftN ⊆ E → lft_ctx -∗ &{κ,i} P -∗ &{κ'} idx_bor_own 1 i ={E}=∗ &{κ ⊓ κ'} P.
 
   Parameter idx_bor_acc : ∀ E q κ i P, ↑lftN ⊆ E →
     lft_ctx -∗ &{κ,i}P -∗ idx_bor_own 1 i -∗ q.[κ] ={E}=∗
@@ -154,15 +155,10 @@ Module Type lifetime_sig.
                  lft_tok q' κ' ∗ (lft_tok q' κ' ={↑lftN}=∗ lft_tok q κ)) ∗
         (lft_dead κ' ={↑lftN}=∗ lft_dead κ)) -∗ κ ⊑ κ'.
   (* Same for some of the derived lemmas. *)
-  Parameter bor_exists : ∀ {A} (Φ : A → iProp Σ) `{!Inhabited A} E κ,
-    ↑lftN ⊆ E → lft_ctx -∗ &{κ}(∃ x, Φ x) ={E}=∗ ∃ x, &{κ}Φ x.
   Parameter bor_acc_atomic_cons : ∀ E κ P,
     ↑lftN ⊆ E → lft_ctx -∗ &{κ} P ={E,E∖↑lftN}=∗
       (▷ P ∗ ∀ Q, ▷ (▷ Q ={∅}=∗ ▷ P) -∗ ▷ Q ={E∖↑lftN,E}=∗ &{κ} Q) ∨
       ([†κ] ∗ |={E∖↑lftN,E}=> True).
-  Parameter bor_acc_atomic : ∀ E κ P,
-    ↑lftN ⊆ E → lft_ctx -∗ &{κ}P ={E,E∖↑lftN}=∗
-       (▷ P ∗ (▷ P ={E∖↑lftN,E}=∗ &{κ}P)) ∨ ([†κ] ∗ |={E∖↑lftN,E}=> True).
 
   End properties.
 

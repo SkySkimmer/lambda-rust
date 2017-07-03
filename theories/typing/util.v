@@ -12,9 +12,12 @@ Section util.
      TODO: Figure out a nice way to generalize that; the two proofs below are too
      similar. *)
 
-  (* This is somewhat the general pattern here... but it doesn't seem easy to make
-     this usable in Coq, with the arbitrary quantifiers and things.  Also, it actually works
-     not just for borrows but for anything that you can split into a timeless and a persistent part.
+  (* This is somewhat the general pattern here... but it doesn't seem
+     easy to make this usable in Coq, with the arbitrary quantifiers
+     and things.  Also, it actually works not just for borrows but for
+     anything that you can split into a timeless and a persistent
+     part.
+
   Lemma delay_borrow_step :
     lfeE ⊆ N → (∀ x, PersistentP (Post x)) →
     lft_ctx -∗ &{κ} P -∗
@@ -32,7 +35,8 @@ Section util.
     iDestruct "Hbor" as (i) "(#Hpb&Hpbown)".
     iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty κ tid l)%I
           with "[Hpbown]") as "#Hinv"; first by eauto.
-    iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]"; first solve_ndisj.
+    iIntros "!> !# * % Htok".
+    iMod (inv_open with "Hinv") as "[INV Hclose]"; first solve_ndisj.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
     - iMod (bor_later_tok with "LFT [Hbtok] Htok") as "Hdelay"; first solve_ndisj.
       { rewrite bor_unfold_idx. eauto. }
@@ -47,13 +51,14 @@ Section util.
     lftE ⊆ N →
     lft_ctx -∗ ▷ (κ'' ⊑ κ ⊓ κ') -∗ &{κ'} &{κ} l ↦∗: ty_own ty tid ={N}=∗
        □ ∀ (F : coPset) (q : Qp),
-       ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ (q).[κ''] ={F,F ∖ ↑shrN ∖ ↑lftN}▷=∗ ty.(ty_shr) κ'' tid l ∗ (q).[κ''].
+       ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ (q).[κ''] ={F,F ∖ ↑shrN}▷=∗ ty.(ty_shr) κ'' tid l ∗ (q).[κ''].
   Proof.
     iIntros (?) "#LFT #Hincl Hbor". rewrite bor_unfold_idx.
     iDestruct "Hbor" as (i) "(#Hpb&Hpbown)".
     iMod (inv_alloc shrN _ (idx_bor_own 1 i ∨ ty_shr ty κ'' tid l)%I
           with "[Hpbown]") as "#Hinv"; first by eauto.
-    iIntros "!> !# * % Htok". iMod (inv_open with "Hinv") as "[INV Hclose]"; first solve_ndisj.
+    iIntros "!> !# * % Htok".
+    iMod (inv_open with "Hinv") as "[INV Hclose]"; first solve_ndisj.
     iDestruct "INV" as "[>Hbtok|#Hshr]".
     - iMod (bor_unnest with "LFT [Hbtok]") as "Hb"; first solve_ndisj.
       { iApply bor_unfold_idx. eauto. }

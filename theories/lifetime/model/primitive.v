@@ -262,6 +262,8 @@ Proof.
 Qed.
 
 (** Basic rules about lifetimes  *)
+Instance lft_inhabited : Inhabited lft := _.
+Instance bor_idx_inhabited : Inhabited bor_idx := _.
 Instance lft_intersect_comm : Comm eq lft_intersect := _.
 Instance lft_intersect_assoc : Assoc eq lft_intersect := _.
 Instance lft_intersect_inj_1 κ : Inj eq eq (lft_intersect κ) := _.

@@ -281,15 +281,4 @@ Proof.
     + iApply (bor_shorten with "Hκκ' Hb").
   - iRight. by iFrame.
 Qed.
-
-Lemma bor_acc_atomic E κ P :
-  ↑lftN ⊆ E →
-  lft_ctx -∗ &{κ}P ={E,E∖↑lftN}=∗
-       (▷ P ∗ (▷ P ={E∖↑lftN,E}=∗ &{κ}P)) ∨ ([†κ] ∗ |={E∖↑lftN,E}=> True).
-Proof.
-  iIntros (?) "#LFT HP".
-  iMod (bor_acc_atomic_cons with "LFT HP") as "[[HP Hclose]|[? ?]]"; first done.
-  - iLeft. iIntros "!> {$HP} HP". iMod ("Hclose" with "[] HP"); auto.
-  - iRight. by iFrame.
-Qed.
 End accessors.

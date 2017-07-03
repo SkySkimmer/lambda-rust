@@ -5,8 +5,8 @@ theories/lifetime/model/faking.v
 theories/lifetime/model/creation.v
 theories/lifetime/model/primitive.v
 theories/lifetime/model/accessors.v
-theories/lifetime/model/raw_reborrow.v
 theories/lifetime/model/borrow.v
+theories/lifetime/model/borrow_sep.v
 theories/lifetime/model/reborrow.v
 theories/lifetime/lifetime_sig.v
 theories/lifetime/lifetime.v

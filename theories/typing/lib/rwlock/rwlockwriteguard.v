@@ -29,7 +29,7 @@ Section rwlockwriteguard.
        ty_shr κ tid l :=
          ∃ (l' : loc),
            &frac{κ} (λ q, l↦∗{q} [ #l']) ∗
-           □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[α ⊓ κ] ={F, F∖↑shrN∖↑lftN}▷=∗
+           □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[α ⊓ κ] ={F, F∖↑shrN}▷=∗
                ty.(ty_shr) (α ⊓ κ) tid (shift_loc l' 1) ∗ q.[α ⊓ κ] |}%I.
   Next Obligation. by iIntros (???[|[[]|][]]) "?". Qed.
   Next Obligation.
