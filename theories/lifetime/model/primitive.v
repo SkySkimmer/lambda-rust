@@ -70,9 +70,9 @@ Proof.
   iExists γs. iSplit. done. rewrite own_op; iFrame.
 Qed.
 Global Instance own_bor_into_op κ x x1 x2 :
-  IntoOp x x1 x2 → IntoAnd false (own_bor κ x) (own_bor κ x1) (own_bor κ x2).
+  IsOp x x1 x2 → IntoAnd false (own_bor κ x) (own_bor κ x1) (own_bor κ x2).
 Proof.
-  rewrite /IntoOp /IntoAnd=>->. by rewrite -own_bor_op.
+  rewrite /IsOp /IntoAnd=>->. by rewrite -own_bor_op.
 Qed.
 Lemma own_bor_valid κ x : own_bor κ x -∗ ✓ x.
 Proof. iDestruct 1 as (γs) "[#? Hx]". by iApply own_valid. Qed.
@@ -104,9 +104,9 @@ Proof.
   iExists γs. iSplit; first done. rewrite own_op; iFrame.
 Qed.
 Global Instance own_cnt_into_op κ x x1 x2 :
-  IntoOp x x1 x2 → IntoAnd false (own_cnt κ x) (own_cnt κ x1) (own_cnt κ x2).
+  IsOp x x1 x2 → IntoAnd false (own_cnt κ x) (own_cnt κ x1) (own_cnt κ x2).
 Proof.
-  rewrite /IntoOp /IntoAnd=> /leibniz_equiv_iff->. by rewrite -own_cnt_op.
+  rewrite /IsOp /IntoAnd=> /leibniz_equiv_iff->. by rewrite -own_cnt_op.
 Qed.
 Lemma own_cnt_valid κ x : own_cnt κ x -∗ ✓ x.
 Proof. iDestruct 1 as (γs) "[#? Hx]". by iApply own_valid. Qed.
@@ -138,9 +138,9 @@ Proof.
   iExists γs. iSplit. done. rewrite own_op; iFrame.
 Qed.
 Global Instance own_inh_into_op κ x x1 x2 :
-  IntoOp x x1 x2 → IntoAnd false (own_inh κ x) (own_inh κ x1) (own_inh κ x2).
+  IsOp x x1 x2 → IntoAnd false (own_inh κ x) (own_inh κ x1) (own_inh κ x2).
 Proof.
-  rewrite /IntoOp /IntoAnd=> /leibniz_equiv_iff->. by rewrite -own_inh_op.
+  rewrite /IsOp /IntoAnd=> /leibniz_equiv_iff->. by rewrite -own_inh_op.
 Qed.
 Lemma own_inh_valid κ x : own_inh κ x -∗ ✓ x.
 Proof. iDestruct 1 as (γs) "[#? Hx]". by iApply own_valid. Qed.
