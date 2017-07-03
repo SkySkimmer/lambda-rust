@@ -56,16 +56,13 @@ Proof.
 Qed.
 
 Lemma add_vs Pb Pb' P Q Pi κ :
-  ▷ ▷ (Pb ≡ (P ∗ Pb')) -∗ ▷ lft_vs κ Pb Pi -∗ ▷ (▷ Q -∗ [†κ] ={∅}=∗ ▷ P) -∗
-  ▷ lft_vs κ (Q ∗ Pb') Pi.
+  ▷ (Pb ≡ (P ∗ Pb')) -∗ lft_vs κ Pb Pi -∗ (▷ Q -∗ [†κ] ={∅}=∗ ▷ P) -∗
+  lft_vs κ (Q ∗ Pb') Pi.
 Proof.
-  iIntros "#HEQ Hvs HvsQ". iNext. rewrite !lft_vs_unfold.
-  iDestruct "Hvs" as (n) "[Hcnt Hvs]". iExists n.
-  iIntros "{$Hcnt}*Hinv[HQ HPb] #H†". iApply fupd_trans.
-  iApply fupd_mask_mono; last iMod ("HvsQ" with "HQ H†") as "HP"; first solve_ndisj.
-  iModIntro. iAssert (▷ Pb)%I with "[HPb HP]" as "HPb".
-  { iNext. iRewrite "HEQ". iFrame. }
-  iApply ("Hvs" with "Hinv HPb H†").
+  iIntros "#HEQ Hvs HvsQ". iApply (lft_vs_cons with "[-Hvs] Hvs").
+  iIntros "$ [HQ HPb'] #H†".
+  iApply fupd_mask_mono; last iMod ("HvsQ" with "HQ H†") as "HP". set_solver.
+  iModIntro. iNext. iRewrite "HEQ". iFrame.
 Qed.
 
 (** Indexed borrow *)

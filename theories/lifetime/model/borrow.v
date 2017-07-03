@@ -61,7 +61,7 @@ Proof.
       rewrite /lft_inv_dead. iExists Pinh'. iFrame.
   - iFrame "HP". iApply fupd_frame_r. iSplitR ""; last by auto.
     rewrite /lft_inv_dead. iDestruct "Hinv" as (Pinh) "(Hdead & Hcnt & Hinh)" .
-    iMod (raw_bor_fake _ true with "Hdead") as "[Hdead Hbor]"; first solve_ndisj.
+    iMod (raw_bor_fake with "Hdead") as "[Hdead Hbor]"; first solve_ndisj.
     unfold bor. iFrame. iApply "Hclose". iExists _, _. iFrame. rewrite big_sepS_later.
     iApply "Hclose'". iNext. rewrite /lft_inv. iRight.
     rewrite /lft_inv_dead. iFrame. eauto.

@@ -78,12 +78,11 @@ Proof.
     + iRight. by iDestruct "Hdeadandalive" as "[$ _]".
 Qed.
 
-Lemma raw_bor_fake E q κ P :
-  ↑borN ⊆ E →
-  ▷?q lft_bor_dead κ ={E}=∗ ▷?q lft_bor_dead κ ∗ raw_bor κ P.
+Lemma raw_bor_fake E κ P :
+  ↑borN ⊆ E → ▷ lft_bor_dead κ ={E}=∗ ▷ lft_bor_dead κ ∗ raw_bor κ P.
 Proof.
   iIntros (?). rewrite /lft_bor_dead. iDestruct 1 as (B Pinh) "[>HB● Hbox]".
-  iMod (slice_insert_empty _ _ _ _ P with "Hbox") as (γ) "(% & #Hslice & Hbox)".
+  iMod (slice_insert_empty _ _ true _ P with "Hbox") as (γ) "(% & #Hslice & Hbox)".
   iMod (own_bor_update with "HB●") as "[HB● H◯]".
   { eapply auth_update_alloc,
       (alloc_singleton_local_update _ _ (1%Qp, to_agree Bor_in)); last done.
@@ -106,7 +105,7 @@ Proof.
   rewrite {1}/lft_inv; iDestruct "Hinv" as "[[_ >%]|[Hinv >%]]".
   { unfold lft_alive_in in *; naive_solver. }
   rewrite /lft_inv_dead; iDestruct "Hinv" as (Pinh) "(Hdead & Hcnt & Hinh)".
-  iMod (raw_bor_fake _ true _ P with "Hdead") as "[Hdead Hbor]"; first solve_ndisj.
+  iMod (raw_bor_fake _ _ P with "Hdead") as "[Hdead Hbor]"; first solve_ndisj.
   iFrame. iApply "Hclose". iExists A', I'. iFrame. iNext. iApply "Hclose'".
   rewrite /lft_inv /lft_inv_dead. iRight. iFrame. eauto.
 Qed.

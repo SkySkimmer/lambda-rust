@@ -13,14 +13,14 @@ Implicit Types κ : lft.
    κ ≠ κ'.  Still, it is probably more instructing to require
    κ ⊂ κ' in this lemma (as opposed to just κ ⊆ κ'), and it
    should not increase the burden on the user. *)
-Lemma raw_bor_unnest E q A I Pb Pi P κ i κ' :
+Lemma raw_bor_unnest E A I Pb Pi P κ i κ' :
   ↑borN ⊆ E →
-  let Iinv := (own_ilft_auth I ∗ ▷?q lft_inv A κ)%I in
+  let Iinv := (own_ilft_auth I ∗ ▷ lft_inv A κ)%I in
   κ ⊂ κ' →
   lft_alive_in A κ' →
-  Iinv -∗ idx_bor_own 1 (κ, i) -∗ slice borN i P -∗ ▷?q lft_bor_alive κ' Pb -∗
-  ▷?q lft_vs κ' (idx_bor_own 1 (κ, i) ∗ Pb) Pi ={E}=∗ ∃ Pb',
-    Iinv ∗ raw_bor κ' P ∗ ▷?q lft_bor_alive κ' Pb' ∗ ▷?q lft_vs κ' Pb' Pi.
+  Iinv -∗ idx_bor_own 1 (κ, i) -∗ slice borN i P -∗ ▷ lft_bor_alive κ' Pb -∗
+  ▷ lft_vs κ' (idx_bor_own 1 (κ, i) ∗ Pb) Pi ={E}=∗ ∃ Pb',
+    Iinv ∗ raw_bor κ' P ∗ ▷ lft_bor_alive κ' Pb' ∗ ▷ lft_vs κ' Pb' Pi.
 Proof.
   iIntros (? Iinv Hκκ' Haliveκ') "(HI & Hκ) Hi #Hislice Hκalive' Hvs".
   rewrite lft_vs_unfold. iDestruct "Hvs" as (n) "[>Hn● Hvs]".
@@ -36,13 +36,13 @@ Proof.
   rewrite {2}/lft_bor_alive; iDestruct "Hκalive" as (B) "(Hbox & >HB● & HB)".
   iDestruct (own_bor_valid_2 with "HB● Hi")
     as %[HB%to_borUR_included _]%auth_valid_discrete_2.
-  iMod (slice_empty with "Hislice Hbox") as "[HP Hbox]"; first done.
+  iMod (slice_empty _ _ true with "Hislice Hbox") as "[HP Hbox]"; first done.
   { by rewrite lookup_fmap HB. }
   iMod (own_bor_update_2 with "HB● Hi") as "[HB● Hi]".
   { eapply auth_update, singleton_local_update; last eapply
      (exclusive_local_update _ (1%Qp, to_agree (Bor_rebor κ'))); last done.
     rewrite /to_borUR lookup_fmap. by rewrite HB. }
-  iAssert (▷?q lft_inv A κ)%I with "[H◯ HB● HB Hvs' Hinh' Hbox]" as "Hκ".
+  iAssert (▷ lft_inv A κ)%I with "[H◯ HB● HB Hvs' Hinh' Hbox]" as "Hκ".
   { iNext. rewrite /lft_inv. iLeft.
     iSplit; last by eauto using lft_alive_in_subseteq.
     rewrite lft_inv_alive_unfold. iExists Pb', Pi'. iFrame "Hvs' Hinh'".
@@ -53,7 +53,7 @@ Proof.
     rewrite -insert_delete delete_insert ?lookup_delete //=. iFrame; auto. }
   clear B HB Pb' Pi'.
   rewrite {1}/lft_bor_alive. iDestruct "Hκalive'" as (B) "(Hbox & >HB● & HB)".
-  iMod (slice_insert_full with "HP Hbox")
+  iMod (slice_insert_full _ _ true with "HP Hbox")
     as (j) "(HBj & #Hjslice & Hbox)"; first done.
   iDestruct "HBj" as %HBj; move: HBj; rewrite lookup_fmap fmap_None=> HBj.
   iMod (own_bor_update with "HB●") as "[HB● Hj]".
@@ -112,8 +112,7 @@ Proof.
   rewrite (big_sepS_delete _ _ κ') ?elem_of_dom // [_ A κ']/lft_inv.
   iDestruct "Hinv" as "[[[Hinvκ >%]|[Hinvκ >%]] Hinv]"; last first.
   { rewrite /lft_inv_dead. iDestruct "Hinvκ" as (Pi) "[Hbordead H]".
-    iMod (raw_bor_fake _ true with "Hbordead") as "[Hbordead $]";
-      first solve_ndisj.
+    iMod (raw_bor_fake with "Hbordead") as "[Hbordead $]"; first solve_ndisj.
     iApply "Hclose". iExists _, _. iFrame.
     rewrite (big_opS_delete _ (dom _ _) κ') ?elem_of_dom // /lft_inv /lft_inv_dead.
     auto 10 with iFrame. }
@@ -136,12 +135,12 @@ Proof.
     [solve_ndisj|by apply lookup_insert|].
   iMod (own_bor_update_2 with "H● Hbor") as "H●".
   { apply auth_update_dealloc, delete_singleton_local_update. apply _. }
-  iMod (raw_bor_unnest _ true with "[$HI $Hinvκ] Hidx Hs [Hbox H● HB] [Hvs]")
+  iMod (raw_bor_unnest with "[$HI $Hinvκ] Hidx Hs [Hbox H● HB] [Hvs]")
     as (Pb'') "HH"; [solve_ndisj|done|done| | |].
   { rewrite /lft_bor_alive (big_sepM_delete _ B i') //. iDestruct "HB" as "[_ HB]".
     iExists (delete i' B). rewrite -fmap_delete. iFrame.
     rewrite fmap_delete -insert_delete delete_insert ?lookup_delete //=. }
-  { iNext. iApply (lft_vs_cons false with "[] Hvs"). iIntros "[$ [??]] !>". iNext.
+  { iNext. iApply (lft_vs_cons with "[] Hvs"). iIntros "$ [??] _ !>". iNext.
     iRewrite "HeqPb'". iFrame. by iApply "HP'". }
   iDestruct "HH" as "([HI Hinvκ] & $ & Halive & Hvs)".
   iApply "Hclose". iExists _, _. iFrame.

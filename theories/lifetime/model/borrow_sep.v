@@ -31,7 +31,7 @@ Proof.
       as (s' Pb') "(% & #HPbPb' & Hslice & Hbox)"; first solve_ndisj.
     { by rewrite lookup_fmap EQB. }
     iAssert (▷ lft_vs κ' Pb' Pi)%I with "[Hvs]" as "Hvs".
-    { iNext. iApply (lft_vs_cons false with "[] Hvs"). iIntros "[$ ?]!>".
+    { iNext. iApply (lft_vs_cons with "[] Hvs"). iIntros "$ ? _ !>".
       by iApply "HPbPb'". }
     iMod (slice_split _ _ true with "Hslice Hbox")
       as (γ1 γ2) "(Hγ1 & Hγ2 & % & Hs1 & Hs2 & Hbox)"; first solve_ndisj.
@@ -64,8 +64,8 @@ Proof.
     + by rewrite -fmap_None -lookup_fmap fmap_delete.
     + by rewrite lookup_insert_ne // -fmap_None -lookup_fmap fmap_delete.
   - iDestruct "Hinv" as (Pinh) "(Hdead & Hcnt & Hinh)".
-    iMod (raw_bor_fake _ true with "Hdead") as "[Hdead Hbor1]"; first solve_ndisj.
-    iMod (raw_bor_fake _ true with "Hdead") as "[Hdead Hbor2]"; first solve_ndisj.
+    iMod (raw_bor_fake with "Hdead") as "[Hdead Hbor1]"; first solve_ndisj.
+    iMod (raw_bor_fake with "Hdead") as "[Hdead Hbor2]"; first solve_ndisj.
     iMod ("Hclose" with "[-Hbor1 Hbor2]") as "_".
     { iExists A, I. iFrame. rewrite big_sepS_later. iApply "Hclose'".
       iRight. iSplit; last by auto. iExists _. iFrame. }
@@ -132,7 +132,7 @@ Proof.
       by iDestruct "HB" as "[_ $]". rewrite lookup_delete_ne //.
     + rewrite -fmap_None -lookup_fmap !fmap_delete //.
   - iDestruct "Hinv" as (Pinh) "(Hdead & Hcnt & Hinh)".
-    iMod (raw_bor_fake _ true with "Hdead") as "[Hdead Hbor]"; first solve_ndisj.
+    iMod (raw_bor_fake with "Hdead") as "[Hdead Hbor]"; first solve_ndisj.
     iMod ("Hclose" with "[-Hbor]") as "_".
     { iExists A, I. iFrame. rewrite big_sepS_later. iApply "Hclose'".
       iRight. iSplit; last by auto. iExists _. iFrame. }
