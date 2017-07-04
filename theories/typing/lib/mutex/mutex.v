@@ -11,7 +11,7 @@ Set Default Proof Using "Type".
 Definition mutexN := lrustN .@ "mutex".
 
 Section mutex.
-  Context `{!typeG Σ, !lockG Σ}.
+  Context `{!typeG Σ}.
 
   (*
     pub struct Mutex<T: ?Sized> {
@@ -33,9 +33,8 @@ Section mutex.
          | #(LitInt z) :: vl' =>
            ⌜∃ b, z = Z_of_bool b⌝ ∗ ty.(ty_own) tid vl'
          | _ => False end;
-       ty_shr κ tid l :=
-         ∃ γ κ',
-           &at{κ, mutexN} (lock_proto γ l (&{κ'} shift_loc l 1 ↦∗: ty.(ty_own) tid)) ∗ κ ⊑ κ'
+       ty_shr κ tid l := ∃ κ', κ ⊑ κ' ∗
+           &at{κ, mutexN} (lock_proto l (&{κ'} shift_loc l 1 ↦∗: ty.(ty_own) tid))
     |}%I.
   Next Obligation.
     iIntros (??[|[[]|]]); try iIntros "[]". rewrite ty_size_eq.
@@ -59,20 +58,20 @@ Section mutex.
     clear b vl. iMod (bor_sep with "LFT Hbor") as "[Hl Hbor]"; first done.
     iMod (bor_acc_cons with "LFT Hl Htok") as "[>Hl Hclose]"; first done.
     iDestruct "Hl" as (b) "Hl".
-    iMod (lock_proto_create with "Hl [Hbor]") as (γ) "Hproto".
+    iMod (lock_proto_create with "Hl [Hbor]") as "Hproto".
     { destruct b; last by iExact "Hbor". done. }
     iMod ("Hclose" with "[] Hproto") as "[Hl Htok]".
-    { clear b. iIntros "!> Hproto !>". iDestruct (lock_proto_destroy with "Hproto") as (b) "[Hl _]".
-      iNext. eauto with iFrame. }
-    iFrame "Htok". iExists γ, κ.
+    { clear b. iIntros "!> Hproto !>".
+      iDestruct (lock_proto_destroy with "Hproto") as (b) "[Hl _]".
+      eauto 10 with iFrame. }
+    iFrame "Htok". iExists κ.
     iMod (bor_share with "Hl") as "$"; [solve_ndisj..|].
     iApply lft_incl_refl.
   Qed.
   Next Obligation.
     iIntros (ty κ κ' tid l) "#Hincl H".
-    iDestruct "H" as (γ κ'') "(#Hlck & #Hlft)".
-    iExists _, _. iSplit; first by iApply at_bor_shorten.
-    iApply lft_incl_trans; done.
+    iDestruct "H" as (κ'') "(#Hlft & #Hlck)".
+    iExists _. by iSplit; [iApply lft_incl_trans|iApply at_bor_shorten].
   Qed.
 
   Global Instance mutex_wf ty `{!TyWf ty} : TyWf (mutex ty) :=
@@ -99,8 +98,8 @@ Section mutex.
     - simpl. iPureIntro. f_equiv. done.
     - iIntros "!# * Hvl". destruct vl as [|[[| |n]|]vl]; try done.
       simpl. iDestruct "Hvl" as "[$ Hvl]". by iApply "Howni".
-    - iIntros "!# * Hshr". iDestruct "Hshr" as (γ κ') "[Hshr Hincl]".
-      iExists _, _. iFrame "Hincl". iApply (at_bor_iff with "[] Hshr"). iNext.
+    - iIntros "!# * Hshr". iDestruct "Hshr" as (κ') "[Hincl Hshr]".
+      iExists _. iFrame "Hincl". iApply (at_bor_iff with "[] Hshr"). iNext.
       iApply lock_proto_iff_proper. iApply bor_iff_proper. iNext.
       iApply heap_mapsto_pred_iff_proper.
       iAlways; iIntros; iSplit; iIntros; by iApply "Howni".
@@ -120,8 +119,8 @@ Section mutex.
   Global Instance mutex_sync ty :
     Send ty → Sync (mutex ty).
   Proof.
-    iIntros (???? l) "Hshr". iDestruct "Hshr" as (γ κ') "[Hshr Hincl]".
-    iExists _, _. iFrame "Hincl". iApply (at_bor_iff with "[] Hshr"). iNext.
+    iIntros (???? l) "Hshr". iDestruct "Hshr" as (κ') "[Hincl Hshr]".
+    iExists _. iFrame "Hincl". iApply (at_bor_iff with "[] Hshr"). iNext.
     iApply lock_proto_iff_proper. iApply bor_iff_proper. iNext.
     iApply heap_mapsto_pred_iff_proper.
     iAlways; iIntros; iSplit; iIntros; by iApply send_change_tid.
@@ -130,7 +129,7 @@ Section mutex.
 End mutex.
 
 Section code.
-  Context `{!typeG Σ, !lockG Σ}.
+  Context `{!typeG Σ}.
 
   Definition mutex_new ty : val :=
     funrec: <> ["x"] :=
@@ -247,5 +246,4 @@ Section code.
     iApply type_assign; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.
-
 End code.
