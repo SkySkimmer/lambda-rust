@@ -2,13 +2,13 @@ From iris.proofmode Require Import tactics.
 From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
 
-(* Minimal support for panic. Lambdarust does not support unwinding
-   the stack. Instead, we just end the current thread by not calling
-   any continuation.
+(* Minimal support for panic. Lambdarust does not support unwinding the
+   stack. Instead, we just end the current thread by not calling any
+   continuation.
 
-   Note that this is not very faithfull, because e.g., [spawn] will
-   not be notified that the thread has finished. This is why we do not
-   get into trouble with [take_mut]. *)
+   This properly models "panic=abort", but fails to take into account the
+   trouble caused by unwinding. This is why we do not get into trouble with
+   [take_mut]. *)
 
 Section panic.
   Context `{typeG Σ}.
