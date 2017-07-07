@@ -498,8 +498,6 @@ Proof.
   iApply ("Hvs" $! I'' with "Hinv HPb H†").
 Qed.
 
-(* TODO RJ: Are there still places where this lemma
-   is re-proven inline? *)
 Lemma lft_vs_cons κ Pb Pb' Pi :
   (lft_bor_dead κ -∗ ▷ Pb'-∗ [†κ] ={↑borN}=∗ lft_bor_dead κ ∗ ▷ Pb) -∗
   lft_vs κ Pb Pi -∗ lft_vs κ Pb' Pi.

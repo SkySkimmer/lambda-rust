@@ -93,7 +93,7 @@ Notation "'letcall:' x := f args 'in' e" :=
   (letcont: "_k" [ x ] := e in call: f args → "_k")%E
   (at level 102, x, f, args at level 1, e at level 150) : expr_scope.
 
-(* RJ: These notations unfortunately do not print.  Also, I don't think
+(* These notations unfortunately do not print.  Also, I don't think
    we would even want them to print in general.
    TODO: Introduce a Definition. *)
 Notation "e1 '<-{Σ' i } '()'" := (e1 <- #i)%E

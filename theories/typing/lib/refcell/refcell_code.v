@@ -49,7 +49,7 @@ Section refcell_functions.
     funrec: <> ["x"] :=
       let: "r" := new [ #ty.(ty_size)] in
       "r" <-{ty.(ty_size)} !("x" +ₗ #1);;
-          (* TODO RJ: Can we make it so that the parenthesis above are mandatory?
+          (* TODO: Can we make it so that the parenthesis above are mandatory?
              Leaving them away is inconsistent with `let ... := !"x" +ₗ #1`. *)
        delete [ #(S ty.(ty_size)) ; "x"];; return: ["r"].
 
