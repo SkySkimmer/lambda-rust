@@ -100,6 +100,8 @@ Section spawn.
         iIntros "?". by iFrame. }
       iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let. unlock.
       iApply (type_call_iris _ [] () [_] with "LFT HE Htl [] Hf' [Henv]");
+      (* The `solve_typing` here shows that, because we assume that `fty` and `retty`
+         outlive `static`, the implicit requirmeents made by `call_once` are satisifed. *)
         [solve_typing|solve_to_val|iApply (lft_tok_static 1%Qp)| |].
       - by rewrite big_sepL_singleton tctx_hasty_val send_change_tid.
       - iIntros (r) "Htl _ Hret".
