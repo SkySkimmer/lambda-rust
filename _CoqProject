@@ -55,6 +55,7 @@ theories/typing/lib/option.v
 theories/typing/lib/fake_shared_box.v
 theories/typing/lib/cell.v
 theories/typing/lib/spawn.v
+theories/typing/lib/join.v
 theories/typing/lib/take_mut.v
 theories/typing/lib/rc/rc.v
 theories/typing/lib/rc/weak.v
