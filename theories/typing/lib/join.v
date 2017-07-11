@@ -39,10 +39,7 @@ Section join.
       iIntros (_ ϝ ret arg). inv_vec arg=>envA envB. simpl_subst.
     iApply type_let; [apply HfA|solve_typing|]. iIntros (fA); simpl_subst.
     iApply type_let; [apply HfB|solve_typing|]. iIntros (fB); simpl_subst.
-    (* Drop to Iris.  We handle both function calls in Iris; in principle,
-       the call to B could be handled entirely in the type system,
-       but we don't seem to have a nice way to frame an Iris assertion
-       (here: the join handle) around. *)
+    (* Drop to Iris. *)
     iIntros (tid) "#LFT #HE Hna HL Hk (HfB & HfA & HenvA & HenvB & _)".
     iMod (lctx_lft_alive_tok ϝ with "HE HL") as (qϝ1) "(Hϝ1 & HL & Hclose1)"; [solve_typing..|].
     (* FIXME: using wp_apply here breaks calling solve_to_val. *)
