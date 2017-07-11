@@ -7,6 +7,10 @@ Set Default Proof Using "Type".
 Section product.
   Context `{typeG Σ}.
 
+  (* TODO: Find a better spot for this. *)
+  Lemma Z_nat_add (n1 n2 : nat) : Z.to_nat (n1 + n2) = (n1 + n2)%nat.
+  Proof. rewrite Z2Nat.inj_add; [|omega..]. rewrite !Nat2Z.id //. Qed.
+
   (* "Pre"-unit.  We later define the full unit as the empty product.  That's
      convertible, but products are opaque in some hint DBs, so this does make a
      difference. *)
@@ -154,6 +158,10 @@ Section product.
 
   Global Instance product_wf tyl `{!TyWfLst tyl} : TyWf (product tyl) :=
     { ty_lfts := tyl.(tyl_lfts); ty_wf_E := tyl.(tyl_wf_E) }.
+
+  Lemma outlives_product ty1 ty2 ϝ `{!TyWf ty1, !TyWf ty2} :
+    ty_outlives_E (product [ty1; ty2]) ϝ = ty_outlives_E ty1 ϝ ++ ty_outlives_E ty2 ϝ.
+  Proof. rewrite /product /ty_outlives_E /= fmap_app //. Qed.
 
   Global Instance product_type_ne n: Proper (Forall2 (type_dist2 n) ==> type_dist2 n) product.
   Proof. intros ??. induction 1=>//=. by f_equiv. Qed.
