@@ -81,12 +81,8 @@ Section join.
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
     iApply (type_new_subtype (Π[uninit R_A.(ty_size); uninit R_B.(ty_size)]));
-      first solve_typing.
-    { (* FIXME: solve_typing should handle this. *)
-      eapply uninit_product_subtype_cons_r; [|solve_typing|].
-      { rewrite Z_nat_add. apply Nat2Z.inj_le. simpl. omega. }
-      rewrite Z_nat_add /= minus_plus. solve_typing. }
-    iIntros (r); simpl_subst. rewrite Z_nat_add.
+      rewrite ?Z_nat_add; [solve_typing..|].
+    iIntros (r); simpl_subst.
     iApply (type_memcpy R_A); [solve_typing..|].
     iApply (type_memcpy R_B); [solve_typing..|].
     iApply type_delete; [solve_typing..|].
