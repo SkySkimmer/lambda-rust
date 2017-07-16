@@ -10,9 +10,10 @@ Definition joinN := lrustN .@ "join".
 Section join.
   Context `{!typeG Σ, !spawnG Σ}.
 
-  (* This model is very far from rayon::join, which uses a persistent work-stealing thread-pool.
-     Still, the important bits are right:  One of the closures is executed in another thread,
-     and the closures can refer to on-stack data (no 'static' bound). *)
+  (* This model is very far from rayon::join, which uses a persistent
+     work-stealing thread-pool.  Still, the important bits are right:
+     One of the closures is executed in another thread, and the
+     closures can refer to on-stack data (no 'static' bound). *)
   Definition join (call_once_A call_once_B : val) (R_A R_B : type) : val :=
     funrec: <> ["fA"; "fB"] :=
       let: "call_once_A" := call_once_A in
@@ -24,15 +25,18 @@ Section join.
       let: "retA" := join ["join"] in
       (* Put the results in a pair. *)
       let: "ret" := new [ #(R_A.(ty_size) + R_B.(ty_size)) ] in
-      "ret" +ₗ #0 <-{R_A.(ty_size)} !"retA";; "ret" +ₗ #R_A.(ty_size) <-{R_B.(ty_size)} !"retB";;
+      "ret" +ₗ #0 <-{R_A.(ty_size)} !"retA";;
+      "ret" +ₗ #R_A.(ty_size) <-{R_B.(ty_size)} !"retB";;
       delete [ #R_A.(ty_size); "retA"] ;; delete [ #R_B.(ty_size); "retB"] ;;
       return: ["ret"].
 
   Lemma join_type A B R_A R_B call_once_A call_once_B
         `{!TyWf A, !TyWf B, !TyWf R_A, !TyWf R_B}
         `(!Send A, !Send B, !Send R_A, !Send R_B) :
-    typed_val call_once_A (fn(∅; A) → R_A) → (* A : FnOnce() -> R_A, as witnessed by the impl call_once_A *)
-    typed_val call_once_B (fn(∅; B) → R_B) → (* B : FnOnce() -> R_B, as witnessed by the impl call_once_B *)
+    (* A : FnOnce() -> R_A, as witnessed by the impl call_once_A *)
+    typed_val call_once_A (fn(∅; A) → R_A) →
+    (* B : FnOnce() -> R_B, as witnessed by the impl call_once_B *)
+    typed_val call_once_B (fn(∅; B) → R_B) →
     typed_val (join call_once_A call_once_B R_A R_B) (fn(∅; A, B) → Π[R_A; R_B]).
   Proof using Type*.
     intros HfA HfB E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
@@ -41,7 +45,8 @@ Section join.
     iApply type_let; [apply HfB|solve_typing|]. iIntros (fB); simpl_subst.
     (* Drop to Iris. *)
     iIntros (tid) "#LFT #HE Hna HL Hk (HfB & HfA & HenvA & HenvB & _)".
-    iMod (lctx_lft_alive_tok ϝ with "HE HL") as (qϝ1) "(Hϝ1 & HL & Hclose1)"; [solve_typing..|].
+    iMod (lctx_lft_alive_tok ϝ with "HE HL") as (qϝ1) "(Hϝ1 & HL & Hclose1)";
+      [solve_typing..|].
     (* FIXME: using wp_apply here breaks calling solve_to_val. *)
     wp_bind (spawn _).
     iApply ((spawn_spec joinN (λ v, (box R_A).(ty_own) tid [v] ∗ (qϝ1).[ϝ])%I) with "[HfA HenvA Hϝ1]");
@@ -58,7 +63,8 @@ Section join.
         wp_rec. iApply (finish_spec with "[$Hfin Hret Hϝ1]"); last auto.
         rewrite right_id. iFrame. by iApply @send_change_tid. }
     iNext. iIntros (c) "Hjoin". wp_let. wp_let.
-    iMod (lctx_lft_alive_tok ϝ with "HE HL") as (qϝ2) "(Hϝ2 & HL & Hclose2)"; [solve_typing..|].
+    iMod (lctx_lft_alive_tok ϝ with "HE HL") as (qϝ2) "(Hϝ2 & HL & Hclose2)";
+      [solve_typing..|].
     rewrite !tctx_hasty_val.
     iApply (type_call_iris _ [ϝ] () [_] with "LFT HE Hna [Hϝ2] HfB [HenvB]").
     { rewrite outlives_product. solve_typing. }
@@ -74,7 +80,8 @@ Section join.
     iApply (type_type _ _ _ [ retA ◁ box R_A; retB ◁ box R_B ]
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
-    iApply (type_new_subtype (Π[uninit R_A.(ty_size); uninit R_B.(ty_size)])); first solve_typing.
+    iApply (type_new_subtype (Π[uninit R_A.(ty_size); uninit R_B.(ty_size)]));
+      first solve_typing.
     { (* FIXME: solve_typing should handle this. *)
       eapply uninit_product_subtype_cons_r; [|solve_typing|].
       { rewrite Z_nat_add. apply Nat2Z.inj_le. simpl. omega. }
