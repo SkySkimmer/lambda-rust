@@ -81,6 +81,7 @@ Section join.
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
     iApply (type_new_subtype (Π[uninit R_A.(ty_size); uninit R_B.(ty_size)]));
+      (* FIXME: solve_typing should handle this without any aid. *)
       rewrite ?Z_nat_add; [solve_typing..|].
     iIntros (r); simpl_subst.
     iApply (type_memcpy R_A); [solve_typing..|].
