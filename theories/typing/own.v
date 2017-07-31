@@ -32,7 +32,7 @@ Section own.
   Proof. rewrite freeable_sz_full. iSplit; auto. iIntros "[$|%]"; done. Qed.
 
   Lemma freeable_sz_split n sz1 sz2 l :
-    freeable_sz n sz1 l ∗ freeable_sz n sz2 (shift_loc l sz1) ⊣⊢
+    freeable_sz n sz1 l ∗ freeable_sz n sz2 (l +ₗ sz1) ⊣⊢
                 freeable_sz n (sz1 + sz2) l.
   Proof.
     destruct sz1; [|destruct sz2;[|rewrite /freeable_sz plus_Sn_m; destruct n]].

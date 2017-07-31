@@ -41,10 +41,10 @@ Context `{!lrustG Σ, !spawnG Σ} (N : namespace).
 Definition spawn_inv (γf γj : gname) (c : loc) (Ψ : val → iProp Σ) : iProp Σ :=
   (own γf (Excl ()) ∗ own γj (Excl ()) ∨
    ∃ b, c ↦ #(lit_of_bool b) ∗
-        if b then ∃ v, shift_loc c 1 ↦ v ∗ Ψ v ∗ own γf (Excl ()) else True)%I.
+        if b then ∃ v, (c +ₗ 1) ↦ v ∗ Ψ v ∗ own γf (Excl ()) else True)%I.
 
 Definition finish_handle (c : loc) (Ψ : val → iProp Σ) : iProp Σ :=
-  (∃ γf γj v, own γf (Excl ()) ∗ shift_loc c 1 ↦ v ∗ inv N (spawn_inv γf γj c Ψ))%I.
+  (∃ γf γj v, own γf (Excl ()) ∗ (c +ₗ 1) ↦ v ∗ inv N (spawn_inv γf γj c Ψ))%I.
 
 Definition join_handle (c : loc) (Ψ : val → iProp Σ) : iProp Σ :=
   (∃ γf γj Ψ', own γj (Excl ()) ∗ † c … 2 ∗ inv N (spawn_inv γf γj c Ψ') ∗

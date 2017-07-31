@@ -25,7 +25,7 @@ Inductive next_access_head : expr → state → access_kind * order → loc → 
 | Access_free n l σ i :
     0 ≤ i < n →
     next_access_head (Free (Lit $ LitInt n) (Lit $ LitLoc l))
-                     σ (FreeAcc, Na2Ord) (shift_loc l i).
+                     σ (FreeAcc, Na2Ord) (l +ₗ i).
 
 (* Some sanity checks to make sure the definition above is not entirely insensible. *)
 Goal ∀ e1 e2 e3 σ, head_reducible (CAS e1 e2 e3) σ →
@@ -139,7 +139,7 @@ Lemma next_access_head_Free_concurent_step e1 e1' e2 e'f σ σ' o1 a2 l :
   False.
 Proof.
   intros Ha1 Hstep Ha2 Hred2.
-  assert (FREE : ∀ l n i, 0 ≤ i ∧ i < n → free_mem l (Z.to_nat n) σ !! shift_loc l i = None).
+  assert (FREE : ∀ l n i, 0 ≤ i ∧ i < n → free_mem l (Z.to_nat n) σ !! (l +ₗ i) = None).
   { clear. intros l n i Hi.
     replace n with (Z.of_nat (Z.to_nat n)) in Hi by (apply Z2Nat.id; lia).
     revert l i Hi. induction (Z.to_nat n) as [|? IH]=>/=l i Hi. lia.

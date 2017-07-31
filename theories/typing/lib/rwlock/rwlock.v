@@ -35,13 +35,13 @@ Section rwlock_inv.
       match st return _ with
       | None =>
         (* Not locked. *)
-        &{α}(shift_loc l 1 ↦∗: ty.(ty_own) tid)
+        &{α}((l +ₗ 1) ↦∗: ty.(ty_own) tid)
       | Some (Cinr (agν, q, n)) =>
         (* Locked for read. *)
         ∃ (ν : lft) q', agν ≡ to_agree ν ∗
                 □ (1.[ν] ={↑lftN,∅}▷=∗ [†ν]) ∗
-                ([†ν] ={↑lftN}=∗ &{α}(shift_loc l 1 ↦∗: ty.(ty_own) tid)) ∗
-                ty.(ty_shr) (α ⊓ ν) tid (shift_loc l 1) ∗
+                ([†ν] ={↑lftN}=∗ &{α}((l +ₗ 1) ↦∗: ty.(ty_own) tid)) ∗
+                ty.(ty_shr) (α ⊓ ν) tid (l +ₗ 1) ∗
                 ⌜(q + q')%Qp = 1%Qp⌝ ∗ q'.[ν]
       | _ => (* Locked for write. *) True
       end)%I.
@@ -68,8 +68,8 @@ Section rwlock_inv.
     rewrite eqtype_unfold. iIntros (Hty) "HL".
     iDestruct (Hty with "HL") as "#Hty". iIntros "* !# #HE H".
     iDestruct ("Hty" with "HE") as "(% & #Hown & #Hshr)".
-    iAssert (□ (&{α} shift_loc l 1 ↦∗: ty_own ty1 tid -∗
-                &{α} shift_loc l 1 ↦∗: ty_own ty2 tid))%I as "#Hb".
+    iAssert (□ (&{α} (l +ₗ 1) ↦∗: ty_own ty1 tid -∗
+                &{α} (l +ₗ 1) ↦∗: ty_own ty2 tid))%I as "#Hb".
     { iIntros "!# H". iApply bor_iff; last done.
       iSplit; iIntros "!>!#H"; iDestruct "H" as (vl) "[Hf H]"; iExists vl;
       iFrame; by iApply "Hown". }
@@ -111,7 +111,7 @@ Section rwlock.
     iDestruct "H" as ([|[[| |n]|]vl]) "[H↦ H]"; try iDestruct "H" as ">[]".
     iDestruct "H" as "[>% Hown]".
     iMod ("Hclose" $! ((∃ n:Z, l ↦ #n ∗ ⌜-1 ≤ n⌝) ∗
-            shift_loc l 1 ↦∗: ty.(ty_own) tid) with "[] [-]")%I as "[H [Htok Htok']]".
+            (l +ₗ 1) ↦∗: ty.(ty_own) tid) with "[] [-]")%I as "[H [Htok Htok']]".
     { iIntros "!> [Hn Hvl] !>". iDestruct "Hn" as (n') "[Hn >%]".
       iDestruct "Hvl" as (vl') "[H↦ Hvl]".
       iExists (#n'::vl'). rewrite heap_mapsto_vec_cons. iFrame "∗%". }

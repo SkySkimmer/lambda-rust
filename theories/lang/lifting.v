@@ -296,7 +296,7 @@ Qed.
 (* TODO: wp_eq for locations, if needed. *)
 
 Lemma wp_offset E l z Φ :
-  ▷ Φ (LitV $ LitLoc $ shift_loc l z) -∗
+  ▷ Φ (LitV $ LitLoc $ l +ₗ z) -∗
     WP BinOp OffsetOp (Lit $ LitLoc l) (Lit $ LitInt z) @ E {{ Φ }}.
 Proof.
   iIntros "HP". iApply wp_bin_op_pure; first by econstructor.

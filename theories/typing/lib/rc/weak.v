@@ -320,7 +320,7 @@ Section code.
     iModIntro. wp_let. wp_op.
     (* Finally, finally... opening the thread-local Rc protocol. *)
     iPoseProof "Hpersist" as (ty') "(_ & Hinv & _ & _)".
-    iAssert (∃ wv : Z, shift_loc l' 1 ↦ #wv ∗ (shift_loc l' 1 ↦ #(wv + 1) ={⊤}=∗
+    iAssert (∃ wv : Z, (l' +ₗ 1) ↦ #wv ∗ ((l' +ₗ 1) ↦ #(wv + 1) ={⊤}=∗
                na_own tid ⊤ ∗ (q / 2).[α] ∗ own γ weak_tok))%I
       with "[> Hna Hα1]" as (wv) "[Hwv Hclose2]".
     { iMod (na_inv_open with "Hinv Hna") as "(Hrcproto & Hna & Hclose2)"; [solve_ndisj..|].
@@ -389,11 +389,11 @@ Section code.
     iIntros (tid) "#LFT #HE Hna HL Hk [Hw [Hw' _]]".
     rewrite !tctx_hasty_val [[w]]lock. destruct w' as [[|lw|]|]; try done. wp_op.
     iDestruct "Hw'" as (γ ν) "[#Hpersist Hwtok]".
-    iAssert (∃ wv : Z, shift_loc lw 1 ↦ #wv ∗
+    iAssert (∃ wv : Z, (lw +ₗ 1) ↦ #wv ∗
         ((⌜wv = 1⌝ ∗ na_own tid ⊤ ∗
-          ∃ s, lw ↦ s ∗ (shift_loc lw 2 ↦∗: λ vl, ⌜length vl = ty.(ty_size)⌝) ∗
+          ∃ s, lw ↦ s ∗ ((lw +ₗ 2) ↦∗: λ vl, ⌜length vl = ty.(ty_size)⌝) ∗
                † lw … (2 + ty_size ty)) ∨
-         (⌜wv > 1⌝ ∗ (shift_loc lw 1 ↦ #(wv - 1) ={⊤}=∗ na_own tid ⊤))))%I
+         (⌜wv > 1⌝ ∗ ((lw +ₗ 1) ↦ #(wv - 1) ={⊤}=∗ na_own tid ⊤))))%I
       with "[>Hna Hwtok]" as (wv) "[Hlw [(% & Hna & H)|[% Hclose]]]".
     { iPoseProof "Hpersist" as (ty') "([>Hszeq _] & Hinv & _ & _)".
       iDestruct "Hszeq" as %Hszeq.

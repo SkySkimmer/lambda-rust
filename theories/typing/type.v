@@ -389,7 +389,7 @@ Ltac solve_type_proper :=
 Fixpoint shr_locsE (l : loc) (n : nat) : coPset :=
   match n with
   | 0%nat => ∅
-  | S n => ↑shrN.@l ∪ shr_locsE (shift_loc l 1%nat) n
+  | S n => ↑shrN.@l ∪ shr_locsE (l +ₗ 1%nat) n
   end.
 
 Class Copy `{typeG Σ} (t : type) := {
@@ -436,7 +436,7 @@ Section type.
 
   (** Copy types *)
   Lemma shr_locsE_shift l n m :
-    shr_locsE l (n + m) = shr_locsE l n ∪ shr_locsE (shift_loc l n) m.
+    shr_locsE l (n + m) = shr_locsE l n ∪ shr_locsE (l +ₗ n) m.
   Proof.
     revert l; induction n; intros l.
     - rewrite shift_loc_0. set_solver+.
@@ -445,7 +445,7 @@ Section type.
   Qed.
 
   Lemma shr_locsE_disj l n m :
-    shr_locsE l n ⊥ shr_locsE (shift_loc l n) m.
+    shr_locsE l n ⊥ shr_locsE (l +ₗ n) m.
   Proof.
     revert l; induction n; intros l.
     - simpl. set_solver+.
@@ -473,7 +473,7 @@ Section type.
 
   Lemma shr_locsE_split_tok l n m tid :
     na_own tid (shr_locsE l (n + m)) ⊣⊢
-      na_own tid (shr_locsE l n) ∗ na_own tid (shr_locsE (shift_loc l n) m).
+      na_own tid (shr_locsE l n) ∗ na_own tid (shr_locsE (l +ₗ n) m).
   Proof.
     rewrite shr_locsE_shift na_own_union //. apply shr_locsE_disj.
   Qed.

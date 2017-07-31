@@ -76,7 +76,7 @@ Section case.
     wp_read. iApply wp_case; [lia|by rewrite Nat2Z.id|]. iNext.
     iDestruct (ty.(ty_size_eq) with "Hown") as %EQlenvl'.
     destruct Hety as [Hety|Hety].
-    - iMod ("Hclose'" $! (shift_loc l 1 ↦∗: ty.(ty_own) tid)%I
+    - iMod ("Hclose'" $! ((l +ₗ 1) ↦∗: ty.(ty_own) tid)%I
             with "[H↦i H↦vl''] [H↦vl' Hown]") as "[Hb Htok]".
       { iIntros "!>Hown". iDestruct "Hown" as (vl'2) "[H↦ Hown]".
         iExists (#i::vl'2++vl''). iIntros "!>". iNext.

@@ -15,8 +15,8 @@ Section ref_functions.
     own γ (◯ reading_st q ν) -∗
     ∃ (q' : Qp) n, l ↦ #(Zpos n) ∗ ⌜(q ≤ q')%Qc⌝ ∗
             own γ (● Some (to_agree ν, Cinr (q', n)) ⋅ ◯ reading_st q ν) ∗
-            ty.(ty_shr) (α ⊓ ν) tid (shift_loc l 1) ∗
-            ((1).[ν] ={↑lftN,∅}▷=∗ &{α} shift_loc l 1 ↦∗: ty_own ty tid) ∗
+            ty.(ty_shr) (α ⊓ ν) tid (l +ₗ 1) ∗
+            ((1).[ν] ={↑lftN,∅}▷=∗ &{α} (l +ₗ 1) ↦∗: ty_own ty tid) ∗
             ∃ q'', ⌜(q' + q'' = 1)%Qp⌝ ∗ q''.[ν].
   Proof.
     iIntros "INV H◯".

@@ -35,7 +35,7 @@ Section rwlockreadguard_functions.
     iMod ("Hcloseα" with "[$H↦]") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
     iDestruct (lctx_lft_incl_incl α β with "HL HE") as "#Hαβ"; [solve_typing..|].
     iApply (type_type _ _ _ [ x ◁ box (&shr{α} rwlockreadguard β ty);
-                              #(shift_loc l' 1) ◁ &shr{α}ty]
+                              #(l' +ₗ 1) ◁ &shr{α}ty]
       with "[] LFT HE Hna HL Hk"); first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (ty_shr_mono with "[] Hshr"). iApply lft_incl_glb; first done.

@@ -20,8 +20,8 @@ Notation "[ x1 ; x2 ; .. ; xn ]" :=
 
 (* No scope for the values, does not conflict and scope is often not inferred
 properly. *)
-Notation "# l" := (LitV l%Z%V) (at level 8, format "# l").
-Notation "# l" := (Lit l%Z%V) (at level 8, format "# l") : expr_scope.
+Notation "# l" := (LitV l%Z%V%L) (at level 8, format "# l").
+Notation "# l" := (Lit l%Z%V%L) (at level 8, format "# l") : expr_scope.
 
 (** Syntax inspired by Coq/Ocaml. Constructions with higher precedence come
     first. *)

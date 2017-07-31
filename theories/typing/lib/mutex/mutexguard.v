@@ -35,13 +35,13 @@ Section mguard.
          match vl return _ with
          | [ #(LitLoc l) ] =>
            ∃ β, α ⊑ β ∗
-             &at{α, mutexN} (lock_proto l (&{β} shift_loc l 1 ↦∗: ty.(ty_own) tid)) ∗
-             &{β} (shift_loc l 1 ↦∗: ty.(ty_own) tid)
+             &at{α, mutexN} (lock_proto l (&{β} (l +ₗ 1) ↦∗: ty.(ty_own) tid)) ∗
+             &{β} ((l +ₗ 1) ↦∗: ty.(ty_own) tid)
          | _ => False end;
        ty_shr κ tid l :=
          ∃ (l':loc), &frac{κ}(λ q', l ↦{q'} #l') ∗
             □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[α⊓κ]
-                ={F, F∖↑shrN}▷=∗ ty.(ty_shr) (α⊓κ) tid (shift_loc l' 1) ∗ q.[α⊓κ]
+                ={F, F∖↑shrN}▷=∗ ty.(ty_shr) (α⊓κ) tid (l' +ₗ 1) ∗ q.[α⊓κ]
     |}%I.
   Next Obligation. by iIntros (? ty tid [|[[]|][]]) "H". Qed.
   (* This is to a large extend copy-pasted from RWLock's write guard. *)
@@ -136,7 +136,7 @@ Section code.
 
   Lemma mutex_acc E l ty tid q α κ :
     ↑lftN ⊆ E → ↑mutexN ⊆ E →
-    let R := (&{κ} shift_loc l 1 ↦∗: ty_own ty tid)%I in
+    let R := (&{κ} (l +ₗ 1) ↦∗: ty_own ty tid)%I in
     lft_ctx -∗ &at{α,mutexN} lock_proto l R -∗ α ⊑ κ -∗
     □ ((q).[α] ={E,∅}=∗ ▷ lock_proto l R ∗ (▷ lock_proto l R ={∅,E}=∗ (q).[α])).
   Proof.

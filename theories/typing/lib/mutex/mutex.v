@@ -34,7 +34,7 @@ Section mutex.
            ⌜∃ b, z = Z_of_bool b⌝ ∗ ty.(ty_own) tid vl'
          | _ => False end;
        ty_shr κ tid l := ∃ κ', κ ⊑ κ' ∗
-           &at{κ, mutexN} (lock_proto l (&{κ'} shift_loc l 1 ↦∗: ty.(ty_own) tid))
+           &at{κ, mutexN} (lock_proto l (&{κ'} (l +ₗ 1) ↦∗: ty.(ty_own) tid))
     |}%I.
   Next Obligation.
     iIntros (??[|[[]|]]); try iIntros "[]". rewrite ty_size_eq.
@@ -48,7 +48,7 @@ Section mutex.
     iDestruct "H" as "[>EQ Hown]". iDestruct "EQ" as %[b ->].
     (* We need to turn the ohne borrow into two, so we close it -- and then
        we open one of them again. *)
-    iMod ("Hclose" $! ((∃ b, l ↦ #(Z_of_bool b)) ∗ (shift_loc l 1 ↦∗: ty_own ty tid))%I
+    iMod ("Hclose" $! ((∃ b, l ↦ #(Z_of_bool b)) ∗ ((l +ₗ 1) ↦∗: ty_own ty tid))%I
           with "[] [Hl H↦ Hown]") as "[Hbor Htok]".
     { clear. iNext. iIntros "[Hl Hown] !>". iNext. iDestruct "Hl" as (b) "Hl".
       iDestruct "Hown" as (vl) "[H↦ Hown]". iExists (#(Z_of_bool b) :: vl).
@@ -233,13 +233,13 @@ Section code.
     destruct vl as [|[[|m'|]|] vl]; try done. simpl.
     iDestruct (heap_mapsto_vec_cons with "H↦") as "[H↦1 H↦2]".
     iDestruct "Hm'" as "[% Hvl]".
-    iMod ("Hclose2" $! (shift_loc lm' 1 ↦∗: ty_own ty tid)%I with "[H↦1] [H↦2 Hvl]") as "[Hbor Hα]".
+    iMod ("Hclose2" $! ((lm' +ₗ 1) ↦∗: ty_own ty tid)%I with "[H↦1] [H↦2 Hvl]") as "[Hbor Hα]".
     { iIntros "!> Hlm' !>". iNext. clear vl. iDestruct "Hlm'" as (vl) "[H↦ Hlm']".
       iExists (_ :: _). rewrite heap_mapsto_vec_cons. do 2 iFrame. done. }
     { iExists vl. iFrame. }
     iMod ("Hclose1" with "Hα HL") as "HL".
     (* Switch back to typing mode. *)
-    iApply (type_type _ _ _ [ m ◁ own_ptr _ _; #(shift_loc lm' 1) ◁ &uniq{α} ty]
+    iApply (type_type _ _ _ [ m ◁ own_ptr _ _; #(lm' +ₗ 1) ◁ &uniq{α} ty]
         with "[] LFT HE Hna HL Hk"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       unlock. iFrame. }
