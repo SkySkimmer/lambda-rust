@@ -220,7 +220,11 @@ Inductive lit_neq (σ : state) : base_lit → base_lit → Prop :=
 | IntNeq z1 z2 :
     z1 ≠ z2 → lit_neq σ (LitInt z1) (LitInt z2)
 | LocNeq l1 l2 :
-    l1 ≠ l2 → lit_neq σ (LitLoc l1) (LitLoc l2).
+    l1 ≠ l2 → lit_neq σ (LitLoc l1) (LitLoc l2)
+| LocNeqNullR l :
+    lit_neq σ (LitLoc l) (LitInt 0)
+| LocNeqNullL l :
+    lit_neq σ (LitInt 0) (LitLoc l).
 
 Inductive bin_op_eval (σ : state) : bin_op → base_lit → base_lit → base_lit → Prop :=
 | BinOpPlus z1 z2 :
