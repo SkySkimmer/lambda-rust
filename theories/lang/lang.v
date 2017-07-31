@@ -198,7 +198,8 @@ Definition lit_of_bool (b : bool) : base_lit :=
 
 Definition shift_loc (l : loc) (z : Z) : loc := (l.1, l.2 + z).
 
-Notation "l +ₗ z" := (shift_loc l%L z%Z) (at level 50, left associativity).
+Notation "l +ₗ z" := (shift_loc l%L z%Z)
+  (at level 50, left associativity) : loc_scope.
 
 Fixpoint init_mem (l:loc) (init:list val) (σ:state) : state :=
   match init with
