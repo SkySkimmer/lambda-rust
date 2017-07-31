@@ -7,6 +7,28 @@ From iris.algebra Require Import excl csum frac auth.
 From lrust.lang Require Import lang proofmode notation new_delete.
 Set Default Proof Using "Type".
 
+(* JH: while working on Arc, I think figured that the "weak count
+locking" mechanism that Rust is using and that is verified below may
+not be necessary.
+
+Instead, what can be done in get_mut is the following:
+  - First, do a CAS on the strong count to put it to 0 from the expected
+value 1. This has the effect, at the same time, of ensuring that no one
+else has a strong reference, and of forbidding other weak references to
+be upgraded (since the strong count is now at 0). If the CAS fail,
+simply return None.
+  - Second, check the weak count. If it is at 1, then we are sure that
+we are the only owner.
+  - Third, in any case write 1 in the strong count to cancel the CAS.
+
+What's wrong with this protocol? The "only" problem I can see is that if
+someone tries to upgrade a weak after we did the CAS, then this will
+fail even though this could be possible.
+
+RJ: Upgrade failing spuriously sounds like a problem severe enough to
+justify the locking protocol.
+*)
+
 Definition strong_count : val :=
   λ: ["l"], !ˢᶜ"l".
 
