@@ -6,6 +6,10 @@ From lrust.lifetime Require Export lifetime_sig.
 Set Default Proof Using "Type".
 Import uPred.
 
+Definition borN : namespace := lftN .@ "bor".
+Definition inhN : namespace := lftN .@ "inh".
+Definition mgmtN : namespace := lftN .@ "mgmt".
+
 Definition atomic_lft := positive.
 (* HACK : We need to make sure this is not in the top-level context,
    so that it does not conflict with the *definition* of [lft] that we

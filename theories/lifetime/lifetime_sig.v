@@ -5,9 +5,6 @@ From iris.base_logic.lib Require Import boxes fractional.
 Set Default Proof Using "Type".
 
 Definition lftN : namespace := nroot .@ "lft".
-Definition borN : namespace := lftN .@ "bor".
-Definition inhN : namespace := lftN .@ "inh".
-Definition mgmtN : namespace := lftN .@ "mgmt".
 
 Module Type lifetime_sig.
   (** CMRAs needed by the lifetime logic  *)
