@@ -262,20 +262,4 @@ Proof.
     + iMod (lft_incl_dead with "Hle H†") as "$". done.
       iApply fupd_intro_mask'. solve_ndisj.
 Qed.
-
-(* These derived lemmas are needed inside the model. *)
-Lemma bor_acc_atomic_cons E κ P :
-  ↑lftN ⊆ E →
-  lft_ctx -∗ &{κ} P ={E,E∖↑lftN}=∗
-    (▷ P ∗ ∀ Q, ▷ (▷ Q ={∅}=∗ ▷ P) -∗ ▷ Q ={E∖↑lftN,E}=∗ &{κ} Q) ∨
-    ([†κ] ∗ |={E∖↑lftN,E}=> True).
-Proof.
-  iIntros (?) "#LFT HP".
-  iMod (bor_acc_atomic_strong with "LFT HP") as "[H|[??]]"; first done.
-  - iLeft. iDestruct "H" as (κ') "(#Hκκ' & $ & Hclose)". iIntros "!>* HPQ HQ".
-    iMod ("Hclose" with "[HPQ] HQ") as "Hb".
-    + iNext. iIntros "? _". by iApply "HPQ".
-    + iApply (bor_shorten with "Hκκ' Hb").
-  - iRight. by iFrame.
-Qed.
 End accessors.

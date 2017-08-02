@@ -26,6 +26,21 @@ Section derived.
 Context `{invG Σ, lftG Σ}.
 Implicit Types κ : lft.
 
+Lemma bor_acc_atomic_cons E κ P :
+  ↑lftN ⊆ E →
+  lft_ctx -∗ &{κ} P ={E,E∖↑lftN}=∗
+    (▷ P ∗ ∀ Q, ▷ (▷ Q ={∅}=∗ ▷ P) -∗ ▷ Q ={E∖↑lftN,E}=∗ &{κ} Q) ∨
+    ([†κ] ∗ |={E∖↑lftN,E}=> True).
+Proof.
+  iIntros (?) "#LFT HP".
+  iMod (bor_acc_atomic_strong with "LFT HP") as "[H|[??]]"; first done.
+  - iLeft. iDestruct "H" as (κ') "(#Hκκ' & $ & Hclose)". iIntros "!>* HPQ HQ".
+    iMod ("Hclose" with "[HPQ] HQ") as "Hb".
+    + iNext. iIntros "? _". by iApply "HPQ".
+    + iApply (bor_shorten with "Hκκ' Hb").
+  - iRight. by iFrame.
+Qed.
+
 Lemma bor_acc_atomic E κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ}P ={E,E∖↑lftN}=∗

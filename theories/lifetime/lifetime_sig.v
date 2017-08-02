@@ -62,12 +62,12 @@ Module Type lifetime_sig.
   Global Declare Instance lft_intersect_right_id : RightId eq static lft_intersect.
 
   Global Declare Instance lft_ctx_persistent : PersistentP lft_ctx.
-  Global Declare Instance lft_dead_persistent κ : PersistentP (lft_dead κ).
+  Global Declare Instance lft_dead_persistent κ : PersistentP ([†κ]).
   Global Declare Instance lft_incl_persistent κ κ' : PersistentP (κ ⊑ κ').
-  Global Declare Instance idx_bor_persistent κ i P : PersistentP (idx_bor κ i P).
+  Global Declare Instance idx_bor_persistent κ i P : PersistentP (&{κ,i} P).
 
-  Global Declare Instance lft_tok_timeless q κ : TimelessP (lft_tok q κ).
-  Global Declare Instance lft_dead_timeless κ : TimelessP (lft_dead κ).
+  Global Declare Instance lft_tok_timeless q κ : TimelessP (q.[κ]).
+  Global Declare Instance lft_dead_timeless κ : TimelessP ([†κ]).
   Global Declare Instance idx_bor_own_timeless q i : TimelessP (idx_bor_own q i).
 
   Global Instance idx_bor_params : Params (@idx_bor) 5.
@@ -151,11 +151,6 @@ Module Type lifetime_sig.
     □ ((∀ q, lft_tok q κ ={↑lftN}=∗ ∃ q',
                  lft_tok q' κ' ∗ (lft_tok q' κ' ={↑lftN}=∗ lft_tok q κ)) ∗
         (lft_dead κ' ={↑lftN}=∗ lft_dead κ)) -∗ κ ⊑ κ'.
-  (* Same for some of the derived lemmas. *)
-  Parameter bor_acc_atomic_cons : ∀ E κ P,
-    ↑lftN ⊆ E → lft_ctx -∗ &{κ} P ={E,E∖↑lftN}=∗
-      (▷ P ∗ ∀ Q, ▷ (▷ Q ={∅}=∗ ▷ P) -∗ ▷ Q ={E∖↑lftN,E}=∗ &{κ} Q) ∨
-      ([†κ] ∗ |={E∖↑lftN,E}=> True).
 
   End properties.
 
