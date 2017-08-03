@@ -73,7 +73,7 @@ Section proof.
   Lemma try_acquire_spec E l R P :
     □ (P ={E,∅}=∗ ▷ lock_proto l R ∗ (▷ lock_proto l R ={∅,E}=∗ P)) -∗
     {{{ P }}} try_acquire [ #l ] @ E
-    {{{ b, RET #b; (if b is true then ▷ R else True) ∗ P }}}.
+    {{{ b, RET #b; (if b is true then R else True) ∗ P }}}.
   Proof.
     iIntros "#Hproto !# * HP HΦ".
     wp_rec. iMod ("Hproto" with "HP") as "(Hinv & Hclose)".
@@ -88,7 +88,7 @@ Section proof.
 
   Lemma acquire_spec E l R P :
     □ (P ={E,∅}=∗ ▷ lock_proto l R ∗ (▷ lock_proto l R ={∅,E}=∗ P)) -∗
-    {{{ P }}} acquire [ #l ] @ E {{{ RET #(); ▷ R ∗ P }}}.
+    {{{ P }}} acquire [ #l ] @ E {{{ RET #(); R ∗ P }}}.
   Proof.
     iIntros "#Hproto !# * HP HΦ". iLöb as "IH". wp_rec.
     wp_apply (try_acquire_spec with "Hproto HP"). iIntros ([]).
