@@ -27,8 +27,6 @@ Inductive bor_state :=
   | Bor_in
   | Bor_open (q : frac)
   | Bor_rebor (κ : lft).
-Instance bor_state_eq_dec : EqDecision bor_state.
-Proof. solve_decision. Defined.
 Canonical bor_stateC := leibnizC bor_state.
 
 Record lft_names := LftNames {
@@ -36,8 +34,6 @@ Record lft_names := LftNames {
   cnt_name : gname;
   inh_name : gname
 }.
-Instance lft_names_eq_dec : EqDecision lft_names.
-Proof. solve_decision. Defined.
 Canonical lft_namesC := leibnizC lft_names.
 
 Definition lft_stateR := csumR fracR unitR.
