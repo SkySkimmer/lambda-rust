@@ -1,5 +1,4 @@
 From iris.algebra Require Import csum auth frac gmap agree gset.
-From iris.algebra Require Import csum auth frac agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 From lrust.lifetime Require Export lifetime_sig.
