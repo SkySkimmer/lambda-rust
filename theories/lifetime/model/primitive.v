@@ -330,9 +330,8 @@ Proof.
 Qed.
 
 Lemma lft_incl_intro κ κ' :
-  □ ((∀ q, lft_tok q κ ={↑lftN}=∗ ∃ q',
-               lft_tok q' κ' ∗ (lft_tok q' κ' ={↑lftN}=∗ lft_tok q κ)) ∗
-      (lft_dead κ' ={↑lftN}=∗ lft_dead κ)) -∗ κ ⊑ κ'.
+  □ ((∀ q, q.[κ] ={↑lftN}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={↑lftN}=∗ q.[κ])) ∗
+      ([†κ'] ={↑lftN}=∗ [†κ])) -∗ κ ⊑ κ'.
 Proof. reflexivity. Qed.
 
 Lemma lft_intersect_incl_l κ κ': (κ ⊓ κ' ⊑ κ)%I.

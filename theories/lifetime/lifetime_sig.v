@@ -148,9 +148,8 @@ Module Type lifetime_sig.
     ↑lftN ⊆ E → κ ⊑ κ' -∗ q.[κ] ={E}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={E}=∗ q.[κ]).
   Parameter lft_incl_dead : ∀ E κ κ', ↑lftN ⊆ E → κ ⊑ κ' -∗ [†κ'] ={E}=∗ [†κ].
   Parameter lft_incl_intro : ∀ κ κ',
-    □ ((∀ q, lft_tok q κ ={↑lftN}=∗ ∃ q',
-                 lft_tok q' κ' ∗ (lft_tok q' κ' ={↑lftN}=∗ lft_tok q κ)) ∗
-        (lft_dead κ' ={↑lftN}=∗ lft_dead κ)) -∗ κ ⊑ κ'.
+    □ ((∀ q, q.[κ] ={↑lftN}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={↑lftN}=∗ q.[κ])) ∗
+        ([†κ'] ={↑lftN}=∗ [†κ])) -∗ κ ⊑ κ'.
 
   End properties.
 
