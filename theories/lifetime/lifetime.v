@@ -110,6 +110,35 @@ Proof.
   - iIntros "!> !>". iMod "Hclose" as "_". by iApply (bor_fake with "LFT").
 Qed.
 
+
+Lemma bor_later_tok E q κ P :
+  ↑lftN ⊆ E →
+  lft_ctx -∗ &{κ}(▷ P) -∗ q.[κ] ={E}▷=∗ &{κ}P ∗ q.[κ].
+Proof.
+  iIntros (?) "#LFT Hb Htok".
+  iMod (bor_acc_cons with "LFT Hb Htok") as "[HP Hclose]"; first done.
+  iModIntro. iNext. iApply ("Hclose" with "[] HP"). by iIntros "!> $".
+Qed.
+
+Lemma bor_persistent P `{!PersistentP P} E κ :
+  ↑lftN ⊆ E →
+  lft_ctx -∗ &{κ}P ={E}=∗ ▷ P ∨ [†κ].
+Proof.
+  iIntros (?) "#LFT Hb".
+  iMod (bor_acc_atomic with "LFT Hb") as "[[#HP Hob]|[#H† Hclose]]"; first done.
+  - iMod ("Hob" with "HP") as "_". auto.
+  - iMod "Hclose" as "_". auto.
+Qed.
+
+Lemma bor_persistent_tok P `{!PersistentP P} E κ q :
+  ↑lftN ⊆ E →
+  lft_ctx -∗ &{κ}P -∗ q.[κ] ={E}=∗ ▷ P ∗ q.[κ].
+Proof.
+  iIntros (?) "#LFT Hb Htok".
+  iMod (bor_acc with "LFT Hb Htok") as "[#HP Hob]"; first done.
+  by iMod ("Hob" with "HP") as "[_ $]".
+Qed.
+
 Lemma later_bor_static E P :
   ↑lftN ⊆ E →
   lft_ctx -∗ ▷ P ={E}=∗ &{static} P.
@@ -123,15 +152,6 @@ Lemma bor_static_later E P :
 Proof.
   iIntros (?) "LFT HP". iMod (bor_acc _ 1%Qp with "LFT HP []") as "[$ _]"; try done.
   iApply lft_tok_static.
-Qed.
-
-Lemma bor_later_tok E q κ P :
-  ↑lftN ⊆ E →
-  lft_ctx -∗ &{κ}(▷ P) -∗ q.[κ] ={E}▷=∗ &{κ}P ∗ q.[κ].
-Proof.
-  iIntros (?) "#LFT Hb Htok".
-  iMod (bor_acc_cons with "LFT Hb Htok") as "[HP Hclose]"; first done.
-  iModIntro. iNext. iApply ("Hclose" with "[] HP"). by iIntros "!> $".
 Qed.
 
 Lemma rebor E κ κ' P :
@@ -152,33 +172,12 @@ Lemma bor_unnest E κ κ' P :
   lft_ctx -∗ &{κ'} &{κ} P ={E}▷=∗ &{κ ⊓ κ'} P.
 Proof.
   iIntros (?) "#LFT Hbor".
-  iMod (bor_acc_atomic_cons with "LFT Hbor") as
-      "[[Hbor Hclose]|[H† Hclose]]"; first done.
-  - rewrite ->bor_unfold_idx. iDestruct "Hbor" as (i) "[#Hidx Hbor]".
-    iMod ("Hclose" with "[] Hbor") as "Hbor".
-    { iIntros "!> H". rewrite bor_unfold_idx. auto with iFrame. }
-    iIntros "!>"; iNext. by iApply (idx_bor_unnest with "LFT Hidx Hbor").
-  - iMod "Hclose" as "_". iApply (bor_fake with "LFT"); first done.
-    rewrite -lft_dead_or. auto.
-Qed.
-
-Lemma bor_persistent P `{!PersistentP P} E κ :
-  ↑lftN ⊆ E →
-  lft_ctx -∗ &{κ}P ={E}=∗ ▷ P ∨ [†κ].
-Proof.
-  iIntros (?) "#LFT Hb".
-  iMod (bor_acc_atomic with "LFT Hb") as "[[#HP Hob]|[#H† Hclose]]"; first done.
-  - iMod ("Hob" with "HP") as "_". auto.
-  - iMod "Hclose" as "_". auto.
-Qed.
-
-Lemma bor_persistent_tok P `{!PersistentP P} E κ q :
-  ↑lftN ⊆ E →
-  lft_ctx -∗ &{κ}P -∗ q.[κ] ={E}=∗ ▷ P ∗ q.[κ].
-Proof.
-  iIntros (?) "#LFT Hb Htok".
-  iMod (bor_acc with "LFT Hb Htok") as "[#HP Hob]"; first done.
-  by iMod ("Hob" with "HP") as "[_ $]".
+  rewrite ->(bor_unfold_idx _ P).
+  iMod (bor_exists with "LFT Hbor") as (i) "Hbor"; [done|].
+  iMod (bor_sep with "LFT Hbor") as "[Hidx Hbor]"; [done|].
+  iMod (bor_persistent with "LFT Hidx") as "#[Hidx|H†]"; [done| |].
+  - iIntros "!>". iNext. by iApply (idx_bor_unnest with "LFT Hidx Hbor").
+  - iApply (bor_fake with "LFT"); [done|]. rewrite -lft_dead_or. auto.
 Qed.
 
 Lemma lft_incl_static κ : (κ ⊑ static)%I.
