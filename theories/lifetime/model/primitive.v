@@ -242,14 +242,6 @@ Proof.
   by rewrite HAinsert.
 Qed.
 
-Lemma lft_inv_alive_twice κ : lft_inv_alive κ -∗ lft_inv_alive κ -∗ False.
-Proof.
-  rewrite lft_inv_alive_unfold /lft_inh.
-  iDestruct 1 as (P Q) "(_&_&Hinh)"; iDestruct 1 as (P' Q') "(_&_&Hinh')".
-  iDestruct "Hinh" as (E) "[HE _]"; iDestruct "Hinh'" as (E') "[HE' _]".
-  by iDestruct (own_inh_valid_2 with "HE HE'") as %?.
-Qed.
-
 Lemma lft_inv_alive_in A κ : lft_alive_in A κ → lft_inv A κ -∗ lft_inv_alive κ.
 Proof.
   rewrite /lft_inv. iIntros (?) "[[$ _]|[_ %]]".

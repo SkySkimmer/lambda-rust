@@ -57,6 +57,7 @@ Qed.
 
 Lemma lfts_kill A (I : gmap lft lft_names) (K K' : gset lft) :
   let Iinv K' := (own_ilft_auth I ∗ [∗ set] κ' ∈ K', lft_inv_alive κ')%I in
+  K ⊥ K' →
   (∀ κ κ', κ ∈ K → is_Some (I !! κ') → κ ⊆ κ' → κ' ∈ K) →
   (∀ κ κ', κ ∈ K → lft_alive_in A κ → is_Some (I !! κ') →
     κ' ∉ K → κ' ⊂ κ → κ' ∈ K') →
@@ -64,7 +65,7 @@ Lemma lfts_kill A (I : gmap lft lft_names) (K K' : gset lft) :
     ={↑borN ∪ ↑inhN}=∗ Iinv K' ∗ [∗ set] κ ∈ K, lft_inv_dead κ.
 Proof.
   intros Iinv. revert K'.
-  induction (collection_wf K) as [K _ IH]=> K' HK HK'.
+  induction (collection_wf K) as [K _ IH]=> K' HKK' HK HK'.
   iIntros "[HI Halive] HK".
   pose (Kalive := filter (lft_alive_in A) K).
   destruct (decide (Kalive = ∅)) as [HKalive|].
@@ -75,11 +76,10 @@ Proof.
     as (κ & [Hκalive HκK]%elem_of_filter & Hκmin); first done.
   iDestruct (@big_sepS_delete with "HK") as "[[Hκinv Hκ] HK]"; first done.
   iDestruct (lft_inv_alive_in with "Hκinv") as "Hκalive"; first done.
-  iAssert ⌜κ ∉ K'⌝%I with "[#]" as %HκK'.
-  { iIntros (Hκ). iApply (lft_inv_alive_twice κ with "Hκalive").
-    by iApply (@big_sepS_elem_of with "Halive"). }
+  assert (κ ∉ K') as HκK' by set_solver +HκK HKK'.
   specialize (IH (K ∖ {[ κ ]})). feed specialize IH; [set_solver +HκK|].
   iMod (IH ({[ κ ]} ∪ K') with "[HI Halive Hκalive] HK") as "[[HI Halive] Hdead]".
+  { set_solver +HKK'. }
   { intros κ' κ''.
     rewrite !elem_of_difference !elem_of_singleton=> -[? Hneq] ??.
     split; [by eauto|]; intros ->.
@@ -176,6 +176,7 @@ Proof.
   iApply fupd_trans. iApply (fupd_mask_mono (↑borN ∪ ↑inhN));
                        first by apply union_least; solve_ndisj.
   iMod (lfts_kill A I K K' with "[$HI $HinvD] HinvK") as "[[HI HinvD] HinvK]".
+  { done. }
   { intros κ κ' [??]%elem_of_kill_set ??. apply elem_of_kill_set.
     split; last done. by eapply gmultiset_elem_of_subseteq. }
   { intros κ κ' ?????. apply elem_of_down_close; eauto 10. }

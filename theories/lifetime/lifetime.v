@@ -110,7 +110,6 @@ Proof.
   - iIntros "!> !>". iMod "Hclose" as "_". by iApply (bor_fake with "LFT").
 Qed.
 
-
 Lemma bor_later_tok E q κ P :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ}(▷ P) -∗ q.[κ] ={E}▷=∗ &{κ}P ∗ q.[κ].
