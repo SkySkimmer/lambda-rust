@@ -13,13 +13,13 @@ Implicit Types κ : lft.
 Lemma lft_kill (I : gmap lft lft_names) (K K' : gset lft) (κ : lft) :
   let Iinv := (
     own_ilft_auth I ∗
-    ([∗ set] κ' ∈ K, lft_inv_alive κ') ∗
-    ([∗ set] κ' ∈ K', lft_inv_dead κ'))%I in
-  (∀ κ', is_Some (I !! κ') → κ' ⊂ κ → κ' ∈ K) →
-  (∀ κ', is_Some (I !! κ') → κ ⊂ κ' → κ' ∈ K') →
+    ([∗ set] κ' ∈ K, lft_inv_dead κ') ∗
+    ([∗ set] κ' ∈ K', lft_inv_alive κ'))%I in
+  (∀ κ', is_Some (I !! κ') → κ ⊂ κ' → κ' ∈ K) →
+  (∀ κ', is_Some (I !! κ') → κ' ⊂ κ → κ' ∈ K') →
   Iinv -∗ lft_inv_alive κ -∗ [†κ] ={↑borN ∪ ↑inhN}=∗ Iinv ∗ lft_inv_dead κ.
 Proof.
-  iIntros (Iinv HK HK') "(HI & Halive & Hdead) Hlalive Hκ".
+  iIntros (Iinv HK HK') "(HI & Hdead & Halive) Hlalive Hκ".
   rewrite lft_inv_alive_unfold;
     iDestruct "Hlalive" as (P Q) "(Hbor & Hvs & Hinh)".
   rewrite /lft_bor_alive; iDestruct "Hbor" as (B) "(Hbox & Hbor & HB)".
@@ -94,12 +94,12 @@ Proof.
   iDestruct (@big_sepS_insert with "Halive") as "[Hκalive Halive]"; first done.
   iMod (lft_kill with "[$HI $Halive $Hdead] Hκalive Hκ")
     as "[(HI&Halive&Hdead) Hκdead]".
+  { intros κ' ? [??]%strict_spec_alt.
+    rewrite elem_of_difference elem_of_singleton; eauto. }
   { intros κ' ??. eapply (HK' κ); eauto.
     intros ?. eapply (minimal_strict_1 _ _ _ Hκmin); eauto.
     apply elem_of_filter; split; last done.
     eapply lft_alive_in_subseteq, gmultiset_subset_subseteq; eauto. }
-  { intros κ' ? [??]%strict_spec_alt.
-    rewrite elem_of_difference elem_of_singleton; eauto. }
   iModIntro. rewrite /Iinv (big_sepS_delete _ K) //. iFrame.
 Qed.
 
