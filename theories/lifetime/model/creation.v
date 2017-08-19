@@ -138,7 +138,7 @@ Proof.
   pose (K := kill_set I Λ).
   pose (K' := filter (lft_alive_in A) (dom (gset lft) I) ∖ K).
   destruct (proj1 (subseteq_disjoint_union_L (K ∪ K') (dom (gset lft) I))) as (K''&HI&HK'').
-  { set_solver. }
+  { set_solver+. }
   assert (K ⊥ K') by set_solver+.
   rewrite HI !big_sepS_union //. iDestruct "Hinv" as "[[HinvK HinvD] Hinv]".
   iAssert ([∗ set] κ ∈ K', lft_inv_alive κ)%I with "[HinvD]" as "HinvD".
