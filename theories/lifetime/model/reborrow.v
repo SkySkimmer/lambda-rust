@@ -60,7 +60,7 @@ Proof.
   { apply auth_update_alloc,
      (alloc_singleton_local_update _ j (1%Qp, to_agree Bor_in)); last done.
     rewrite /to_borUR lookup_fmap. by rewrite HBj. }
-  iModIntro. iExists (P ∗ Pb)%  I. rewrite /Iinv. iFrame "HI Hκ". iSplitL "Hj".
+  iModIntro. iExists (P ∗ Pb)%I. rewrite /Iinv. iFrame "HI Hκ". iSplitL "Hj".
   { iExists j. iFrame. iExists P. rewrite -uPred.iff_refl. auto. }
   iSplitL "Hbox HB● HB".
   { rewrite /lft_bor_alive. iNext. iExists (<[j:=Bor_in]> B).
@@ -123,8 +123,7 @@ Proof.
   iMod (slice_empty _ _ true with "Hs' Hbox") as "[Hidx Hbox]".
     solve_ndisj. by rewrite lookup_fmap EQB.
   iAssert (▷ idx_bor_own 1 (κ, i))%I with "[Hidx]" as ">Hidx"; [by iApply "HP'"|].
-  iDestruct (raw_bor_inI _ _ P with "HI [Hidx]") as %HI;
-    first by rewrite /raw_bor; auto 10 with I.
+  iDestruct (own_bor_auth with "HI [Hidx]") as %HI; [by rewrite /idx_bor_own|].
   iDestruct (big_sepS_elem_of_acc _ _ κ with "Hinv") as "[Hinvκ Hclose']";
     first by rewrite elem_of_difference elem_of_dom not_elem_of_singleton;
     eauto using strict_ne.
