@@ -376,7 +376,7 @@ End type_contractive.
 (* Tactic automation. *)
 Ltac f_type_equiv :=
   first [ ((eapply ty_size_type_dist || eapply ty_shr_type_dist || eapply ty_own_type_dist); try reflexivity) |
-          match goal with | |- @dist_later ?A ?n ?x ?y =>
+          match goal with | |- @dist_later ?A _ ?n ?x ?y =>
                             destruct n as [|n]; [exact I|change (@dist A _ n x y)]
           end ].
 Ltac solve_type_proper :=
