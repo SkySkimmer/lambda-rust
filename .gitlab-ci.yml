@@ -13,7 +13,7 @@ variables:
   # build
   - 'time make -k -j$CPU_CORES TIMED=y 2>&1 | tee build-log.txt'
   - 'if fgrep Axiom build-log.txt >/dev/null; then exit 1; fi'
-  - 'cat build-log.txt | egrep "[a-zA-Z0-9_/-]+ \(user: [0-9]" | tee build-time.txt'
+  - 'cat build-log.txt | egrep "[a-zA-Z0-9_/-]+ \((real|user): [0-9]" | tee build-time.txt'
   - 'if test -n "$VALIDATE" && (( RANDOM % 10 == 0 )); then make validate; fi'
   cache:
     key: "coq$COQ_VERSION-ssr$SSR_VERSION"
@@ -22,6 +22,12 @@ variables:
   only:
   - master
   - /^ci/
+
+lrust-coq8.7:
+  <<: *template
+  variables:
+    COQ_VERSION: "8.7.dev"
+    SSR_VERSION: "dev"
 
 lrust-coq8.6.1:
   <<: *template
@@ -33,9 +39,3 @@ lrust-coq8.6.1:
     paths:
     - build-time.txt
     - build-env.txt
-
-lrust-coq8.6:
-  <<: *template
-  variables:
-    COQ_VERSION: "8.6"
-    SSR_VERSION: "1.6.1"
