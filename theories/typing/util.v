@@ -27,7 +27,7 @@ Section util.
 
   Lemma delay_sharing_later N κ l ty tid :
     lftE ⊆ N →
-    lft_ctx -∗ &{κ} ▷ l ↦∗: ty_own ty tid ={N}=∗
+    lft_ctx -∗ &{κ}(▷ l ↦∗: ty_own ty tid) ={N}=∗
        □ ∀ (F : coPset) (q : Qp),
        ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ (q).[κ] ={F,F ∖ ↑shrN}▷=∗ ty.(ty_shr) κ tid l ∗ (q).[κ].
   Proof.
@@ -49,7 +49,7 @@ Section util.
 
   Lemma delay_sharing_nested N κ κ' κ'' l ty tid :
     lftE ⊆ N →
-    lft_ctx -∗ ▷ (κ'' ⊑ κ ⊓ κ') -∗ &{κ'} &{κ} l ↦∗: ty_own ty tid ={N}=∗
+    lft_ctx -∗ ▷ (κ'' ⊑ κ ⊓ κ') -∗ &{κ'}(&{κ}(l ↦∗: ty_own ty tid)) ={N}=∗
        □ ∀ (F : coPset) (q : Qp),
        ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ (q).[κ''] ={F,F ∖ ↑shrN}▷=∗ ty.(ty_shr) κ'' tid l ∗ (q).[κ''].
   Proof.

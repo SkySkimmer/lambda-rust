@@ -8,10 +8,10 @@ Set Default Proof Using "Type".
 Class frac_borG Σ := frac_borG_inG :> inG Σ fracR.
 
 Definition frac_bor `{invG Σ, lftG Σ, frac_borG Σ} κ (φ : Qp → iProp Σ) :=
-  (∃ γ κ', κ ⊑ κ' ∗ &at{κ',lftN} ∃ q, φ q ∗ own γ q ∗
-                       (⌜q = 1%Qp⌝ ∨ ∃ q', ⌜(q + q' = 1)%Qp⌝ ∗ q'.[κ']))%I.
-Notation "&frac{ κ } P" := (frac_bor κ P)
-  (format "&frac{ κ }  P", at level 20, right associativity) : uPred_scope.
+  (∃ γ κ', κ ⊑ κ' ∗ &at{κ',lftN} (∃ q, φ q ∗ own γ q ∗
+                       (⌜q = 1%Qp⌝ ∨ ∃ q', ⌜(q + q' = 1)%Qp⌝ ∗ q'.[κ'])))%I.
+Notation "&frac{ κ }" := (frac_bor κ)
+  (format "&frac{ κ }", at level 20, right associativity) : uPred_scope.
 
 Section frac_bor.
   Context `{invG Σ, lftG Σ, frac_borG Σ} (φ : Qp → iProp Σ).

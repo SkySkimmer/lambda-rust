@@ -43,7 +43,7 @@ Section refmut_functions.
     iMod ("Hcloseα1" with "[$H↦1 $H↦2]") as "Hα1".
     iMod ("Hclose''" with "Hβ HL") as "HL". iMod ("Hclose'" with "[$] HL") as "HL".
     iDestruct (lctx_lft_incl_incl α β with "HL HE") as "#Hαβ"; [solve_typing..|].
-    iApply (type_type _ _ _ [ x ◁ box (&shr{α} refmut β ty); #lv ◁ &shr{α}ty]
+    iApply (type_type _ _ _ [ x ◁ box (&shr{α}(refmut β ty)); #lv ◁ &shr{α}ty]
             with "[] LFT HE Hna HL Hk"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (ty_shr_mono with "[] Hshr'").

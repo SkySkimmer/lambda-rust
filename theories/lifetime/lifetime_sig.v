@@ -39,10 +39,10 @@ Module Type lifetime_sig.
       (format "q .[ κ ]", at level 0) : uPred_scope.
   Notation "[† κ ]" := (lft_dead κ) (format "[† κ ]"): uPred_scope.
 
-  Notation "&{ κ } P" := (bor κ P)
-    (format "&{ κ }  P", at level 20, right associativity) : uPred_scope.
-  Notation "&{ κ , i } P" := (idx_bor κ i P)
-    (format "&{ κ , i }  P", at level 20, right associativity) : uPred_scope.
+  Notation "&{ κ }" := (bor κ)
+    (format "&{ κ }", at level 20, right associativity) : uPred_scope.
+  Notation "&{ κ , i }" := (idx_bor κ i)
+    (format "&{ κ , i }", at level 20, right associativity) : uPred_scope.
 
   Infix "⊑" := lft_incl (at level 70) : uPred_scope.
   Infix "⊓" := lft_intersect (at level 40) : C_scope.
@@ -115,7 +115,7 @@ Module Type lifetime_sig.
   Parameter idx_bor_iff : ∀ κ i P P', ▷ □ (P ↔ P') -∗ &{κ,i}P -∗ &{κ,i}P'.
 
   Parameter idx_bor_unnest : ∀ E κ κ' i P,
-    ↑lftN ⊆ E → lft_ctx -∗ &{κ,i} P -∗ &{κ'} idx_bor_own 1 i ={E}=∗ &{κ ⊓ κ'} P.
+    ↑lftN ⊆ E → lft_ctx -∗ &{κ,i} P -∗ &{κ'}(idx_bor_own 1 i) ={E}=∗ &{κ ⊓ κ'} P.
 
   Parameter idx_bor_acc : ∀ E q κ i P, ↑lftN ⊆ E →
     lft_ctx -∗ &{κ,i}P -∗ idx_bor_own 1 i -∗ q.[κ] ={E}=∗

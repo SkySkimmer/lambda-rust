@@ -12,7 +12,7 @@ Section uniq_bor.
     {| ty_size := 1;
        ty_own tid vl :=
          match vl return _ with
-         | [ #(LitLoc l) ] => &{κ} l ↦∗: ty.(ty_own) tid
+         | [ #(LitLoc l) ] => &{κ} (l ↦∗: ty.(ty_own) tid)
          | _ => False
          end;
        ty_shr κ' tid l :=

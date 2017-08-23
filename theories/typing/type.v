@@ -126,8 +126,7 @@ Program Definition ty_of_st `{typeG Σ} (st : simple_type) : type :=
          borrow, otherwise I do not know how to prove the shr part of
          [subtype_shr_mono]. *)
      ty_shr := λ κ tid l,
-               (∃ vl, (&frac{κ} λ q, l ↦∗{q} vl) ∗
-                                                 ▷ st.(st_own) tid vl)%I
+               (∃ vl, &frac{κ} (λ q, l ↦∗{q} vl) ∗ ▷ st.(st_own) tid vl)%I
   |}.
 Next Obligation. intros. apply st_size_eq. Qed.
 Next Obligation.

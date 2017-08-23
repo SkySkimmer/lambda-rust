@@ -35,7 +35,7 @@ Section mguard.
          match vl return _ with
          | [ #(LitLoc l) ] =>
            ∃ β, α ⊑ β ∗
-             &at{α, mutexN} (lock_proto l (&{β} (l +ₗ 1) ↦∗: ty.(ty_own) tid)) ∗
+             &at{α, mutexN} (lock_proto l (&{β} ((l +ₗ 1) ↦∗: ty.(ty_own) tid))) ∗
              &{β} ((l +ₗ 1) ↦∗: ty.(ty_own) tid)
          | _ => False end;
        ty_shr κ tid l :=
@@ -136,8 +136,8 @@ Section code.
 
   Lemma mutex_acc E l ty tid q α κ :
     ↑lftN ⊆ E → ↑mutexN ⊆ E →
-    let R := (&{κ} (l +ₗ 1) ↦∗: ty_own ty tid)%I in
-    lft_ctx -∗ &at{α,mutexN} lock_proto l R -∗ α ⊑ κ -∗
+    let R := (&{κ}((l +ₗ 1) ↦∗: ty_own ty tid))%I in
+    lft_ctx -∗ &at{α,mutexN}(lock_proto l R) -∗ α ⊑ κ -∗
     □ ((q).[α] ={E,∅}=∗ ▷ lock_proto l R ∗ (▷ lock_proto l R ={∅,E}=∗ (q).[α])).
   Proof.
     (* FIXME: This should work: iIntros (?? R). *) intros ?? R.
@@ -157,7 +157,7 @@ Section code.
       delete [ #1; "mutex" ];; return: ["guard"].
 
   Lemma mutex_lock_type ty `{!TyWf ty} :
-    typed_val mutex_lock (fn(∀ α, ∅; &shr{α} mutex ty) → mutexguard α ty).
+    typed_val mutex_lock (fn(∀ α, ∅; &shr{α}(mutex ty)) → mutexguard α ty).
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.

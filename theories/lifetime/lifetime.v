@@ -75,7 +75,7 @@ Qed.
 
 Lemma bor_exists {A} (Φ : A → iProp Σ) `{!Inhabited A} E κ :
   ↑lftN ⊆ E →
-  lft_ctx -∗ &{κ}(∃ x, Φ x) ={E}=∗ ∃ x, &{κ}Φ x.
+  lft_ctx -∗ &{κ}(∃ x, Φ x) ={E}=∗ ∃ x, &{κ}(Φ x).
 Proof.
   iIntros (?) "#LFT Hb".
   iMod (bor_acc_atomic_cons with "LFT Hb") as "[H|[H† >_]]"; first done.
@@ -168,7 +168,7 @@ Qed.
 
 Lemma bor_unnest E κ κ' P :
   ↑lftN ⊆ E →
-  lft_ctx -∗ &{κ'} &{κ} P ={E}▷=∗ &{κ ⊓ κ'} P.
+  lft_ctx -∗ &{κ'} (&{κ} P) ={E}▷=∗ &{κ ⊓ κ'} P.
 Proof.
   iIntros (?) "#LFT Hbor".
   rewrite ->(bor_unfold_idx _ P).

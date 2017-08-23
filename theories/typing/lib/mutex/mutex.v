@@ -34,7 +34,7 @@ Section mutex.
            ⌜∃ b, z = Z_of_bool b⌝ ∗ ty.(ty_own) tid vl'
          | _ => False end;
        ty_shr κ tid l := ∃ κ', κ ⊑ κ' ∗
-           &at{κ, mutexN} (lock_proto l (&{κ'} (l +ₗ 1) ↦∗: ty.(ty_own) tid))
+           &at{κ, mutexN} (lock_proto l (&{κ'}((l +ₗ 1) ↦∗: ty.(ty_own) tid)))
     |}%I.
   Next Obligation.
     iIntros (??[|[[]|]]); try iIntros "[]". rewrite ty_size_eq.
@@ -125,7 +125,6 @@ Section mutex.
     iApply heap_mapsto_pred_iff_proper.
     iAlways; iIntros; iSplit; iIntros; by iApply send_change_tid.
   Qed.
-
 End mutex.
 
 Section code.
@@ -217,7 +216,7 @@ Section code.
       return: ["m"].
 
   Lemma mutex_get_mut_type ty `{!TyWf ty} :
-    typed_val mutex_get_mut (fn(∀ α, ∅; &uniq{α} mutex ty) → &uniq{α} ty).
+    typed_val mutex_get_mut (fn(∀ α, ∅; &uniq{α}(mutex ty)) → &uniq{α} ty).
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg); inv_vec arg=>m; simpl_subst.

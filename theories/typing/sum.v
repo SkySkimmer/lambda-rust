@@ -60,8 +60,8 @@ Section sum.
                                 (nth i tyl emp0).(ty_own) tid vl')%I;
        ty_shr κ tid l :=
          (∃ (i : nat),
-             (&frac{κ} λ q, l ↦{q} #i ∗
-                       (l +ₗ (S $ (nth i tyl emp0).(ty_size))) ↦∗{q}: is_pad i tyl) ∗
+           &frac{κ} (λ q, l ↦{q} #i ∗
+                     (l +ₗ (S $ (nth i tyl emp0).(ty_size))) ↦∗{q}: is_pad i tyl) ∗
                (nth i tyl emp0).(ty_shr) κ tid (l +ₗ 1))%I
     |}.
   Next Obligation.

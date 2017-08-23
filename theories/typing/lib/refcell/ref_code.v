@@ -16,7 +16,7 @@ Section ref_functions.
     ∃ (q' : Qp) n, l ↦ #(Zpos n) ∗ ⌜(q ≤ q')%Qc⌝ ∗
             own γ (● Some (to_agree ν, Cinr (q', n)) ⋅ ◯ reading_st q ν) ∗
             ty.(ty_shr) (α ⊓ ν) tid (l +ₗ 1) ∗
-            ((1).[ν] ={↑lftN,∅}▷=∗ &{α} (l +ₗ 1) ↦∗: ty_own ty tid) ∗
+            ((1).[ν] ={↑lftN,∅}▷=∗ &{α}((l +ₗ 1) ↦∗: ty_own ty tid)) ∗
             ∃ q'', ⌜(q' + q'' = 1)%Qp⌝ ∗ q''.[ν].
   Proof.
     iIntros "INV H◯".
@@ -134,7 +134,7 @@ Section ref_functions.
     iMod ("Hcloseα" with "[$H↦1 $H↦2]") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
     iDestruct (lctx_lft_incl_incl α β with "HL HE") as "#Hαβ"; [solve_typing..|].
     iApply (type_type _ _ _
-        [ x ◁ box (&shr{α} ref β ty); #lv ◁ &shr{α}ty]
+        [ x ◁ box (&shr{α}(ref β ty)); #lv ◁ &shr{α}ty]
         with "[] LFT HE Hna HL Hk"); first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       iFrame. iApply (ty_shr_mono with "[] Hshr"). by iApply lft_incl_glb. }

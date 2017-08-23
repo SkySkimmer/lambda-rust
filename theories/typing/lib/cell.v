@@ -12,7 +12,7 @@ Section cell.
   Program Definition cell (ty : type) :=
     {| ty_size := ty.(ty_size);
        ty_own := ty.(ty_own);
-       ty_shr κ tid l := (&na{κ, tid, shrN.@l}l ↦∗: ty.(ty_own) tid)%I |}.
+       ty_shr κ tid l := (&na{κ, tid, shrN.@l}(l ↦∗: ty.(ty_own) tid))%I |}.
   Next Obligation. apply ty_size_eq. Qed.
   Next Obligation.
     iIntros (ty E κ l tid q ?) "#LFT Hown $". by iApply (bor_na with "Hown").
@@ -146,7 +146,7 @@ Section typing.
       delete [ #1; "c"] ;; delete [ #ty.(ty_size); "x"] ;; return: ["r"].
 
   Lemma cell_replace_type ty `{!TyWf ty} :
-    typed_val (cell_replace ty) (fn(∀ α, ∅; &shr{α} cell ty, ty) → ty).
+    typed_val (cell_replace ty) (fn(∀ α, ∅; &shr{α}(cell ty), ty) → ty).
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>c x. simpl_subst.
@@ -178,7 +178,7 @@ Section typing.
     iMod ("Hclose1" with "Htok HL") as "HL".
     (* Now go back to typing level. *)
     iApply (type_type _ _ _
-           [c ◁ box (&shr{α} cell ty); #x ◁ box (uninit ty.(ty_size)); #r ◁ box ty]
+           [c ◁ box (&shr{α}(cell ty)); #x ◁ box (uninit ty.(ty_size)); #r ◁ box ty]
     with "[] LFT HE Htl HL HC"); last first.
     { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
       iFrame "Hc". rewrite !tctx_hasty_val' //. iSplitL "Hx↦ Hx†".
@@ -198,17 +198,17 @@ Section typing.
       delete [ #1; "x"];; return: ["r"].
 
   Lemma fake_shared_cell_type ty `{!TyWf ty} :
-    typed_val fake_shared_cell (fn(∀ α, ∅; &uniq{α} ty) → &shr{α} cell ty).
+    typed_val fake_shared_cell (fn(∀ α, ∅; &uniq{α} ty) → &shr{α}(cell ty)).
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iIntros (tid) "#LFT #HE Hna HL Hk HT".
     rewrite tctx_interp_singleton tctx_hasty_val.
-    iApply (type_type _ _ _ [ x ◁ box (&uniq{α}cell ty) ]
+    iApply (type_type _ _ _ [ x ◁ box (&uniq{α}(cell ty)) ]
             with "[] LFT HE Hna HL Hk [HT]"); last first.
     { by rewrite tctx_interp_singleton tctx_hasty_val. }
     iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
-    iApply (type_letalloc_1 (&shr{α}cell ty)); [solve_typing..|]. iIntros (r). simpl_subst.
+    iApply (type_letalloc_1 (&shr{α}(cell ty))); [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.

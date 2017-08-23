@@ -160,7 +160,7 @@ Qed.
 
 Lemma idx_bor_unnest E κ κ' i P :
   ↑lftN ⊆ E →
-  lft_ctx -∗ &{κ,i} P -∗ &{κ'} idx_bor_own 1 i ={E}=∗ &{κ ⊓ κ'} P.
+  lft_ctx -∗ &{κ,i} P -∗ &{κ'}(idx_bor_own 1 i) ={E}=∗ &{κ ⊓ κ'} P.
 Proof.
   iIntros (?) "#LFT #HP Hbor".
   rewrite [(&{κ'}_)%I]/bor. iDestruct "Hbor" as (κ'0) "[#Hκ'κ'0 Hbor]".

@@ -72,8 +72,8 @@ Section refcell_inv.
     rewrite eqtype_unfold. iIntros (Hty) "HL".
     iDestruct (Hty with "HL") as "#Hty". iIntros "* !# #HE H".
     iDestruct ("Hty" with "HE") as "(% & #Hown & #Hshr)".
-    iAssert (□ (&{α} (l +ₗ 1) ↦∗: ty_own ty1 tid -∗
-                &{α} (l +ₗ 1) ↦∗: ty_own ty2 tid))%I as "#Hb".
+    iAssert (□ (&{α}((l +ₗ 1) ↦∗: ty_own ty1 tid) -∗
+                &{α}((l +ₗ 1) ↦∗: ty_own ty2 tid)))%I as "#Hb".
     { iIntros "!# H". iApply bor_iff; last done.
       iSplit; iIntros "!>!#H"; iDestruct "H" as (vl) "[Hf H]"; iExists vl;
       iFrame; by iApply "Hown". }
