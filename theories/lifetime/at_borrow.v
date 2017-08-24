@@ -9,8 +9,7 @@ Definition at_bor `{invG Σ, lftG Σ} κ N (P : iProp Σ) :=
   (∃ i, &{κ,i}P ∗
     (⌜N ⊥ lftN⌝ ∗ inv N (idx_bor_own 1 i) ∨
      ⌜N = lftN⌝ ∗ inv N (∃ q, idx_bor_own q i)))%I.
-Notation "&at{ κ , N }" := (at_bor κ N)
-  (format "&at{ κ , N }", at level 20, right associativity) : uPred_scope.
+Notation "&at{ κ , N }" := (at_bor κ N) (format "&at{ κ , N }") : uPred_scope.
 
 Section atomic_bors.
   Context `{invG Σ, lftG Σ} (P : iProp Σ) (N : namespace).

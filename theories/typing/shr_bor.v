@@ -51,18 +51,17 @@ Section shr_bor.
   Proof. by iIntros (Hsync tid1 tid2 [|[[]|][]]) "H"; try iApply Hsync. Qed.
 End shr_bor.
 
-Notation "&shr{ κ } ty" := (shr_bor κ ty)
-  (format "&shr{ κ }  ty", at level 20, right associativity) : lrust_type_scope.
+Notation "&shr{ κ }" := (shr_bor κ) (format "&shr{ κ }") : lrust_type_scope.
 
 Section typing.
   Context `{typeG Σ}.
 
   Lemma shr_mono' E L κ1 κ2 ty1 ty2 :
     lctx_lft_incl E L κ2 κ1 → subtype E L ty1 ty2 →
-    subtype E L (&shr{κ1} ty1) (&shr{κ2} ty2).
+    subtype E L (&shr{κ1}ty1) (&shr{κ2}ty2).
   Proof. by intros; apply shr_mono. Qed.
   Lemma shr_proper' E L κ ty1 ty2 :
-    eqtype E L ty1 ty2 → eqtype E L (&shr{κ} ty1) (&shr{κ} ty2).
+    eqtype E L ty1 ty2 → eqtype E L (&shr{κ}ty1) (&shr{κ}ty2).
   Proof. by intros; apply shr_proper. Qed.
 
   Lemma tctx_reborrow_shr E L p ty κ κ' :

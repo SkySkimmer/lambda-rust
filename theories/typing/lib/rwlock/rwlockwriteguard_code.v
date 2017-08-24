@@ -20,7 +20,7 @@ Section rwlockwriteguard_functions.
 
   Lemma rwlockwriteguard_deref_type ty `{!TyWf ty} :
     typed_val rwlockwriteguard_deref
-      (fn(∀ '(α, β), ∅; &shr{α} rwlockwriteguard β ty) → &shr{α} ty).
+      (fn(∀ '(α, β), ∅; &shr{α}(rwlockwriteguard β ty)) → &shr{α} ty).
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
@@ -43,7 +43,7 @@ Section rwlockwriteguard_functions.
     iMod ("Hcloseα1" with "[$H↦1 $H↦2]") as "Hα1". iMod ("Hclose'" with "Hβ HL") as "HL".
     iMod ("Hclose" with "[$] HL") as "HL".
     iDestruct (lctx_lft_incl_incl α β with "HL HE") as "#Hαβ"; [solve_typing..|].
-    iApply (type_type _ _ _ [ x ◁ box (&shr{α} rwlockwriteguard β ty);
+    iApply (type_type _ _ _ [ x ◁ box (&shr{α}(rwlockwriteguard β ty));
                               #(l' +ₗ 1) ◁ &shr{α}ty]
             with "[] LFT HE Hna HL Hk"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
@@ -64,7 +64,7 @@ Section rwlockwriteguard_functions.
 
   Lemma rwlockwriteguard_derefmut_type ty `{!TyWf ty} :
     typed_val rwlockwriteguard_derefmut
-      (fn(∀ '(α, β), ∅; &uniq{α} rwlockwriteguard β ty) → &uniq{α} ty).
+      (fn(∀ '(α, β), ∅; &uniq{α}(rwlockwriteguard β ty)) → &uniq{α}ty).
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.

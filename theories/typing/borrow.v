@@ -44,7 +44,7 @@ Section borrow.
 
   Lemma type_deref_uniq_own_instr {E L} κ p n ty :
     lctx_lft_alive E L κ →
-    typed_instruction_ty E L [p ◁ &uniq{κ} own_ptr n ty] (!p) (&uniq{κ} ty).
+    typed_instruction_ty E L [p ◁ &uniq{κ}(own_ptr n ty)] (!p) (&uniq{κ} ty).
   Proof.
     iIntros (Hκ tid) "#LFT HE $ HL Hp".
     rewrite tctx_interp_singleton.
@@ -66,15 +66,15 @@ Section borrow.
 
   Lemma type_deref_uniq_own {E L} κ x p e n ty C T T' :
     Closed (x :b: []) e →
-    tctx_extract_hasty E L p (&uniq{κ} own_ptr n ty) T T' →
+    tctx_extract_hasty E L p (&uniq{κ}(own_ptr n ty)) T T' →
     lctx_lft_alive E L κ →
-    (∀ (v:val), typed_body E L C ((v ◁ &uniq{κ} ty) :: T') (subst' x v e)) -∗
+    (∀ (v:val), typed_body E L C ((v ◁ &uniq{κ}ty) :: T') (subst' x v e)) -∗
     typed_body E L C T (let: x := !p in e).
   Proof. iIntros. iApply type_let; [by apply type_deref_uniq_own_instr|solve_typing|done]. Qed.
 
   Lemma type_deref_shr_own_instr {E L} κ p n ty :
     lctx_lft_alive E L κ →
-    typed_instruction_ty E L [p ◁ &shr{κ} own_ptr n ty] (!p) (&shr{κ} ty).
+    typed_instruction_ty E L [p ◁ &shr{κ}(own_ptr n ty)] (!p) (&shr{κ} ty).
   Proof.
     iIntros (Hκ tid) "#LFT HE $ HL Hp".
     rewrite tctx_interp_singleton.
@@ -92,7 +92,7 @@ Section borrow.
 
   Lemma type_deref_shr_own {E L} κ x p e n ty C T T' :
     Closed (x :b: []) e →
-    tctx_extract_hasty E L p (&shr{κ} own_ptr n ty) T T' →
+    tctx_extract_hasty E L p (&shr{κ}(own_ptr n ty)) T T' →
     lctx_lft_alive E L κ →
     (∀ (v:val), typed_body E L C ((v ◁ &shr{κ} ty) :: T') (subst' x v e)) -∗
     typed_body E L C T (let: x := !p in e).
@@ -100,7 +100,7 @@ Section borrow.
 
   Lemma type_deref_uniq_uniq_instr {E L} κ κ' p ty :
     lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
-    typed_instruction_ty E L [p ◁ &uniq{κ} &uniq{κ'} ty] (!p) (&uniq{κ} ty).
+    typed_instruction_ty E L [p ◁ &uniq{κ}(&uniq{κ'}ty)] (!p) (&uniq{κ} ty).
   Proof.
     iIntros (Hκ Hincl tid) "#LFT #HE $ HL Hp".
     rewrite tctx_interp_singleton.
@@ -124,15 +124,15 @@ Section borrow.
 
   Lemma type_deref_uniq_uniq {E L} κ κ' x p e ty C T T' :
     Closed (x :b: []) e →
-    tctx_extract_hasty E L p (&uniq{κ} &uniq{κ'} ty) T T' →
+    tctx_extract_hasty E L p (&uniq{κ}(&uniq{κ'}ty))%T T T' →
     lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
-    (∀ (v:val), typed_body E L C ((v ◁ &uniq{κ} ty) :: T') (subst' x v e)) -∗
+    (∀ (v:val), typed_body E L C ((v ◁ &uniq{κ}ty) :: T') (subst' x v e)) -∗
     typed_body E L C T (let: x := !p in e).
   Proof. iIntros. iApply type_let; [by apply type_deref_uniq_uniq_instr|solve_typing|done]. Qed.
 
   Lemma type_deref_shr_uniq_instr {E L} κ κ' p ty :
     lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
-    typed_instruction_ty E L [p ◁ &shr{κ} &uniq{κ'} ty] (!p) (&shr{κ} ty).
+    typed_instruction_ty E L [p ◁ &shr{κ}(&uniq{κ'}ty)] (!p) (&shr{κ}ty).
   Proof.
     iIntros (Hκ Hincl tid) "#LFT HE $ HL Hp". rewrite tctx_interp_singleton.
     iDestruct (Hincl with "HL HE") as "#Hincl".
@@ -155,9 +155,9 @@ Section borrow.
 
   Lemma type_deref_shr_uniq {E L} κ κ' x p e ty C T T' :
     Closed (x :b: []) e →
-    tctx_extract_hasty E L p (&shr{κ} &uniq{κ'} ty) T T' →
+    tctx_extract_hasty E L p (&shr{κ}(&uniq{κ'}ty))%T T T' →
     lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' →
-    (∀ (v:val), typed_body E L C ((v ◁ &shr{κ} ty) :: T') (subst' x v e)) -∗
+    (∀ (v:val), typed_body E L C ((v ◁ &shr{κ}ty) :: T') (subst' x v e)) -∗
     typed_body E L C T (let: x := !p in e).
   Proof. iIntros. iApply type_let; [by apply type_deref_shr_uniq_instr|solve_typing|done]. Qed.
 End borrow.

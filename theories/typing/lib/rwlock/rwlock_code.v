@@ -145,7 +145,7 @@ Section rwlock_functions.
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
-    iApply (type_cont [] [ϝ ⊑ₗ []] (λ _, [x ◁ box (&shr{α} rwlock ty);
+    iApply (type_cont [] [ϝ ⊑ₗ []] (λ _, [x ◁ box (&shr{α}(rwlock ty));
                                             r ◁ box (option (rwlockreadguard α ty))]));
       [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg];
       simpl_subst; last first.
@@ -257,7 +257,7 @@ Section rwlock_functions.
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
-    iApply (type_cont [_] [ϝ ⊑ₗ []] (λ r, [x ◁ box (&shr{α} rwlock ty);
+    iApply (type_cont [_] [ϝ ⊑ₗ []] (λ r, [x ◁ box (&shr{α}(rwlock ty));
                                         r!!!0 ◁ box (option (rwlockwriteguard α ty))]));
       [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg=>r];
       simpl_subst; last first.

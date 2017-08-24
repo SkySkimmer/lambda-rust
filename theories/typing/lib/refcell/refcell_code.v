@@ -144,7 +144,7 @@ Section refcell_functions.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
-    iApply (type_cont [] [ϝ ⊑ₗ []] (λ _, [x ◁ box (&shr{α} refcell ty);
+    iApply (type_cont [] [ϝ ⊑ₗ []] (λ _, [x ◁ box (&shr{α}(refcell ty));
                                          r ◁ box (option (ref α ty))]));
       [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg]; simpl_subst; last first.
     { iApply type_delete; [solve_typing..|].
@@ -251,7 +251,7 @@ Section refcell_functions.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
-    iApply (type_cont [] [ϝ ⊑ₗ []] (λ _, [x ◁ box (&shr{α} refcell ty);
+    iApply (type_cont [] [ϝ ⊑ₗ []] (λ _, [x ◁ box (&shr{α}(refcell ty));
                                             r ◁ box (option (refmut α ty))]));
       [iIntros (k)|iIntros "/= !#"; iIntros (k arg); inv_vec arg];
       simpl_subst; last first.

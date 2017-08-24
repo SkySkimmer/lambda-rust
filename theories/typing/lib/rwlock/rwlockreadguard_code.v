@@ -20,7 +20,7 @@ Section rwlockreadguard_functions.
 
   Lemma rwlockreadguard_deref_type ty `{!TyWf ty} :
     typed_val rwlockreadguard_deref
-      (fn(∀ '(α, β), ∅; &shr{α} rwlockreadguard β ty) → &shr{α} ty).
+      (fn(∀ '(α, β), ∅; &shr{α}(rwlockreadguard β ty)) → &shr{α} ty).
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
@@ -34,7 +34,7 @@ Section rwlockreadguard_functions.
     rewrite heap_mapsto_vec_singleton. wp_read. wp_op. wp_let.
     iMod ("Hcloseα" with "[$H↦]") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
     iDestruct (lctx_lft_incl_incl α β with "HL HE") as "#Hαβ"; [solve_typing..|].
-    iApply (type_type _ _ _ [ x ◁ box (&shr{α} rwlockreadguard β ty);
+    iApply (type_type _ _ _ [ x ◁ box (&shr{α}(rwlockreadguard β ty));
                               #(l' +ₗ 1) ◁ &shr{α}ty]
       with "[] LFT HE Hna HL Hk"); first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.

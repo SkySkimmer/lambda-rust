@@ -96,18 +96,17 @@ Section uniq_bor.
   Qed.
 End uniq_bor.
 
-Notation "&uniq{ κ } ty" := (uniq_bor κ ty)
-  (format "&uniq{ κ }  ty", at level 20, right associativity) : lrust_type_scope.
+Notation "&uniq{ κ }" := (uniq_bor κ) (format "&uniq{ κ }") : lrust_type_scope.
 
 Section typing.
   Context `{typeG Σ}.
 
   Lemma uniq_mono' E L κ1 κ2 ty1 ty2 :
     lctx_lft_incl E L κ2 κ1 → eqtype E L ty1 ty2 →
-    subtype E L (&uniq{κ1} ty1) (&uniq{κ2} ty2).
+    subtype E L (&uniq{κ1}ty1) (&uniq{κ2}ty2).
   Proof. by intros; apply uniq_mono. Qed.
   Lemma uniq_proper' E L κ ty1 ty2 :
-    eqtype E L ty1 ty2 → eqtype E L (&uniq{κ} ty1) (&uniq{κ} ty2).
+    eqtype E L ty1 ty2 → eqtype E L (&uniq{κ}ty1) (&uniq{κ}ty2).
   Proof. by intros; apply uniq_proper. Qed.
 
   Lemma tctx_share E L p κ ty :

@@ -99,7 +99,7 @@ Section ref_functions.
     iMod ("Hcloseβ" with "Hδ") as "Hβ". iMod ("Hcloseα1" with "[$H↦]") as "Hα2".
     iMod ("Hclose'" with "[$Hα1 $Hα2] HL") as "HL". iMod ("Hclose" with "Hβ HL") as "HL".
     iApply (type_type _ _ _
-           [ x ◁ box (&shr{α} ref β ty); #lr ◁ box(ref β ty)]
+           [ x ◁ box (&shr{α}(ref β ty)); #lr ◁ box(ref β ty)]
         with "[] LFT HE Hna HL Hk"); first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       rewrite /= freeable_sz_full. iFrame. iExists _. iFrame. iExists _, _, _, _, _.

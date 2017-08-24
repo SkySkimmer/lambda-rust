@@ -58,8 +58,8 @@ Section case.
     lctx_lft_alive E L κ →
     Forall2 (λ ty e,
       typed_body E L C ((p +ₗ #1 ◁ &uniq{κ}ty) :: T) e ∨
-      typed_body E L C ((p ◁ &uniq{κ}sum tyl) :: T) e) tyl el →
-    typed_body E L C ((p ◁ &uniq{κ}sum tyl) :: T) (case: !p of el).
+      typed_body E L C ((p ◁ &uniq{κ}(sum tyl)) :: T) e) tyl el →
+    typed_body E L C ((p ◁ &uniq{κ}(sum tyl)) :: T) (case: !p of el).
   Proof.
     iIntros (Halive Hel tid) "#LFT #HE Hna HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
@@ -99,11 +99,11 @@ Section case.
   Qed.
 
   Lemma type_case_uniq E L C T T' p κ tyl el :
-    tctx_extract_hasty E L p (&uniq{κ}sum tyl) T T' →
+    tctx_extract_hasty E L p (&uniq{κ}(sum tyl)) T T' →
     lctx_lft_alive E L κ →
     Forall2 (λ ty e,
       typed_body E L C ((p +ₗ #1 ◁ &uniq{κ}ty) :: T') e ∨
-      typed_body E L C ((p ◁ &uniq{κ}sum tyl) :: T') e) tyl el →
+      typed_body E L C ((p ◁ &uniq{κ}(sum tyl)) :: T') e) tyl el →
     typed_body E L C T (case: !p of el).
   Proof. unfold tctx_extract_hasty=>->. apply type_case_uniq'. Qed.
 
@@ -111,8 +111,8 @@ Section case.
     lctx_lft_alive E L κ →
     Forall2 (λ ty e,
       typed_body E L C ((p +ₗ #1 ◁ &shr{κ}ty) :: T) e ∨
-      typed_body E L C ((p ◁ &shr{κ}sum tyl) :: T) e) tyl el →
-    typed_body E L C ((p ◁ &shr{κ}sum tyl) :: T) (case: !p of el).
+      typed_body E L C ((p ◁ &shr{κ}(sum tyl)) :: T) e) tyl el →
+    typed_body E L C ((p ◁ &shr{κ}(sum tyl)) :: T) (case: !p of el).
   Proof.
     iIntros (Halive Hel tid) "#LFT #HE Hna HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
@@ -132,7 +132,7 @@ Section case.
   Qed.
 
   Lemma type_case_shr E L C T p κ tyl el :
-    p ◁ &shr{κ}sum tyl ∈ T →
+    p ◁ &shr{κ}(sum tyl) ∈ T →
     lctx_lft_alive E L κ →
     Forall2 (λ ty e, typed_body E L C ((p +ₗ #1 ◁ &shr{κ}ty) :: T) e) tyl el →
     typed_body E L C T (case: !p of el).
