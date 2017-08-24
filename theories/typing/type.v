@@ -639,16 +639,24 @@ Section subtyping.
     - intros ??? H1 H2. split; etrans; (apply H1 || apply H2).
   Qed.
 
+  Lemma type_incl_simple_type (st1 st2 : simple_type) :
+    □ (∀ tid vl, st1.(st_own) tid vl -∗ st2.(st_own) tid vl) -∗
+    type_incl st1 st2.
+  Proof.
+    iIntros "#Hst". iSplit; first done. iSplit; iAlways.
+    - iIntros. iApply "Hst"; done.
+    - iIntros (???). iDestruct 1 as (vl) "[Hf Hown]". iExists vl. iFrame "Hf".
+      by iApply "Hst".
+  Qed.
+
   Lemma subtype_simple_type E L (st1 st2 : simple_type) :
     (∀ qL, llctx_interp L qL -∗ □ (elctx_interp E -∗
        ∀ tid vl, st1.(st_own) tid vl -∗ st2.(st_own) tid vl)) →
     subtype E L st1 st2.
   Proof.
     intros Hst. iIntros (qL) "HL". iDestruct (Hst with "HL") as "#Hst".
-    iClear "∗". iIntros "!# #HE". iSplit; first done. iSplit; iAlways.
-    - iIntros. iApply "Hst"; done.
-    - iIntros (???). iDestruct 1 as (vl) "[Hf Hown]". iExists vl. iFrame "Hf".
-      by iApply "Hst".
+    iClear "∗". iIntros "!# #HE". iApply type_incl_simple_type.
+    iIntros "!#" (??) "?". by iApply "Hst".
   Qed.
 
   Lemma subtype_weaken E1 E2 L1 L2 ty1 ty2 :

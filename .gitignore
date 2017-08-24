@@ -10,5 +10,5 @@
 *.bak
 .coq-native/
 iris-enabled
-Makefile.coq
+Makefile.coq*
 opamroot

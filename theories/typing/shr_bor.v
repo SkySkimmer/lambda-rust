@@ -19,16 +19,23 @@ Section shr_bor.
   Global Instance shr_bor_wf κ ty `{!TyWf ty} : TyWf (shr_bor κ ty) :=
     { ty_lfts := [κ]; ty_wf_E := ty.(ty_wf_E) ++ ty.(ty_outlives_E) κ }.
 
+  Lemma shr_type_incl κ1 κ2 ty1 ty2 :
+    κ2 ⊑ κ1 -∗ type_incl ty1 ty2 -∗ type_incl (shr_bor κ1 ty1) (shr_bor κ2 ty2).
+  Proof.
+    iIntros "#Hκ #[_ [_ Hty]]". iApply type_incl_simple_type. simpl.
+    iIntros "!#" (tid [|[[]|][]]) "H"; try done. iApply "Hty".
+    iApply (ty1.(ty_shr_mono) with "Hκ"). done.
+  Qed.
+
   Global Instance shr_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> subtype E L ==> subtype E L) shr_bor.
   Proof.
-    intros κ1 κ2 Hκ ty1 ty2 Hty. apply subtype_simple_type.
+    intros κ1 κ2 Hκ ty1 ty2 Hty.
     iIntros (?) "/= HL". iDestruct (Hκ with "HL") as "#Hincl".
     iDestruct (Hty with "HL") as "#Hty". iIntros "!# #HE".
-    iIntros (? [|[[]|][]]) "H"; try done. iDestruct ("Hincl" with "HE") as "#Hκ".
-    iApply (ty2.(ty_shr_mono) with "Hκ").
-    iDestruct ("Hty" with "HE") as "(_ & _ & #Hs1)"; [done..|clear Hty].
-    by iApply "Hs1".
+    iApply shr_type_incl.
+    - by iApply "Hincl".
+    - by iApply "Hty".
   Qed.
   Global Instance shr_mono_flip E L :
     Proper (lctx_lft_incl E L ==> flip (subtype E L) ==> flip (subtype E L)) shr_bor.

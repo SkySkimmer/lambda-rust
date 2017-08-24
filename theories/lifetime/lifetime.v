@@ -194,4 +194,18 @@ Proof.
   - iApply lft_incl_trans; last iApply IH. (* FIXME: Why does "done" not do this? Looks like "assumption" to me. *)
     iApply lft_intersect_incl_r.
 Qed.
+
+Lemma lft_eternalize E q κ :
+  q.[κ] ={E}=∗ static ⊑ κ.
+Proof.
+  iIntros "Hκ". iMod (inv_alloc lftN _ (∃ q, q.[κ])%I with "[Hκ]") as "#Hnv".
+  { iExists _. done. }
+  iApply lft_incl_intro. iIntros "!> !#". iSplitL.
+  - iIntros (q') "$". iInv lftN as ">Hκ" "Hclose". iDestruct "Hκ" as (q'') "[Hκ1 Hκ2]".
+    iMod ("Hclose" with "[Hκ2]") as "_". { iExists _. done. }
+    iModIntro. iExists _. iFrame. iIntros "_". done.
+  - iIntros "H†". iInv lftN as ">Hκ" "_". iDestruct "Hκ" as (q'') "Hκ".
+    iDestruct (lft_tok_dead with "Hκ H†") as "[]".
+Qed.
+
 End derived.
