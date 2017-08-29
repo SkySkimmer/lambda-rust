@@ -240,7 +240,7 @@ Proof.
   iApply step_fupd_intro; done.
 Qed.
 
-(* TODO: wp_eq for locations, if needed.
+(*
 Lemma wp_bin_op_heap E σ op l1 l2 l' :
   bin_op_eval σ op l1 l2 l' →
   {{{ ▷ ownP σ }}} BinOp op (Lit l1) (Lit l2) @ E
@@ -288,6 +288,36 @@ Proof.
   - iNext; iIntros (?? Heval). by inversion_clear Heval; inv_lit.
   - intros. apply BinOpEqFalse. by constructor.
   - iNext; iIntros (?? Heval). by inversion_clear Heval; inv_lit.
+Qed.
+
+Lemma wp_eq_loc E (l1 : loc) (l2: loc) P Φ :
+  (l1 = l2 → P -∗ ▷ Φ (LitV true)) →
+  (l1 ≠ l2 → P -∗ ▷ Φ (LitV false)) →
+  (∃ q1 vl1 q2 vl2, l1 ↦{q1} vl1 ∧ l2 ↦{q2} vl2)%I -∗
+  P -∗ WP BinOp EqOp (Lit (LitLoc l1)) (Lit (LitLoc l2)) @ E {{ Φ }}.
+Proof.
+  iIntros (Hl Hg) "Hp HP".
+  iDestruct "Hp" as (q1 vl1 q2 vl2) "Hp".
+  destruct (bool_decide_reflect (l1 = l2)); [rewrite Hl //|rewrite Hg //];
+    clear Hl Hg.
+  - iApply wp_bin_op_pure; subst.
+    + intros. apply BinOpEqTrue. constructor.
+    + iNext. iIntros (?? Heval). by inversion_clear Heval; inv_lit.
+  - iApply wp_lift_atomic_head_step_no_fork; subst=>//.
+    iIntros. iModIntro. inv_head_step.
+    iSplitR.
+    { iPureIntro. eexists _, _, _. constructor. apply BinOpEqFalse. by auto. }
+    iNext.
+    iIntros (e2 σ2 efs Hs) "!>".
+    inv_head_step. iSplitR=>//.
+    inversion H7; inv_lit=>//.
+    * iDestruct "Hp" as "[Hp _]".
+      iDestruct (heap_read σ2 with "~ Hp") as (n') "%".
+      by rewrite H0 in H6.
+    * iDestruct "Hp" as "[_ Hp]".
+      iDestruct (heap_read σ2 with "~ Hp") as (n') "%".
+      by rewrite H0 in H6.
+    * by iFrame.
 Qed.
 
 Lemma wp_offset E l z Φ :
