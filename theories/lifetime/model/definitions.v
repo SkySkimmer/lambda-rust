@@ -1,10 +1,13 @@
 From iris.algebra Require Import csum auth frac gmap agree gset.
-From iris.algebra Require Import csum auth frac agree gset.
 From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 From lrust.lifetime Require Export lifetime_sig.
 Set Default Proof Using "Type".
 Import uPred.
+
+Definition borN : namespace := lftN .@ "bor".
+Definition inhN : namespace := lftN .@ "inh".
+Definition mgmtN : namespace := lftN .@ "mgmt".
 
 Definition atomic_lft := positive.
 (* HACK : We need to make sure this is not in the top-level context,
@@ -23,8 +26,6 @@ Inductive bor_state :=
   | Bor_in
   | Bor_open (q : frac)
   | Bor_rebor (κ : lft).
-Instance bor_state_eq_dec : EqDecision bor_state.
-Proof. solve_decision. Defined.
 Canonical bor_stateC := leibnizC bor_state.
 
 Record lft_names := LftNames {
@@ -32,8 +33,6 @@ Record lft_names := LftNames {
   cnt_name : gname;
   inh_name : gname
 }.
-Instance lft_names_eq_dec : EqDecision lft_names.
-Proof. solve_decision. Defined.
 Canonical lft_namesC := leibnizC lft_names.
 
 Definition lft_stateR := csumR fracR unitR.
@@ -213,10 +212,8 @@ Notation "q .[ κ ]" := (lft_tok q κ)
     (format "q .[ κ ]", at level 0) : uPred_scope.
 Notation "[† κ ]" := (lft_dead κ) (format "[† κ ]"): uPred_scope.
 
-Notation "&{ κ } P" := (bor κ P)
-  (format "&{ κ }  P", at level 20, right associativity) : uPred_scope.
-Notation "&{ κ , i } P" := (idx_bor κ i P)
-  (format "&{ κ , i }  P", at level 20, right associativity) : uPred_scope.
+Notation "&{ κ }" := (bor κ) (format "&{ κ }") : uPred_scope.
+Notation "&{ κ , i }" := (idx_bor κ i) (format "&{ κ , i }") : uPred_scope.
 
 Infix "⊑" := lft_incl (at level 70) : uPred_scope.
 

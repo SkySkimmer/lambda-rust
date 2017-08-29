@@ -26,7 +26,7 @@ Section type_context.
     match p with
     | BinOp OffsetOp e (Lit (LitInt n)) =>
       match eval_path e with
-      | Some (#(LitLoc l)) => Some (#(shift_loc l n))
+      | Some (#(LitLoc l)) => Some (#(l +ₗ n))
       | _ => None
       end
     | e => to_val e

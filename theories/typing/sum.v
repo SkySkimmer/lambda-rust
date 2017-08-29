@@ -32,8 +32,8 @@ Section sum.
                                ⌜length vl = S (max_list_with ty_size tyl)⌝ ∗
                                ty_own (nth i tyl emp0) tid vl')%I
     ⊣⊢ ∃ (i : nat), (l ↦{q} #i ∗
-                     shift_loc l (S $ (nth i tyl emp0).(ty_size)) ↦∗{q}: is_pad i tyl) ∗
-                              shift_loc l 1 ↦∗{q}: (nth i tyl emp0).(ty_own) tid.
+                     (l +ₗ (S $ (nth i tyl emp0).(ty_size))) ↦∗{q}: is_pad i tyl) ∗
+                              (l +ₗ 1) ↦∗{q}: (nth i tyl emp0).(ty_own) tid.
   Proof.
     iSplit; iIntros "H".
     - iDestruct "H" as (vl) "[Hmt Hown]". iDestruct "Hown" as (i vl' vl'') "(% & % & Hown)".
@@ -60,9 +60,9 @@ Section sum.
                                 (nth i tyl emp0).(ty_own) tid vl')%I;
        ty_shr κ tid l :=
          (∃ (i : nat),
-             (&frac{κ} λ q, l ↦{q} #i ∗
-                       shift_loc l (S $ (nth i tyl emp0).(ty_size)) ↦∗{q}: is_pad i tyl) ∗
-               (nth i tyl emp0).(ty_shr) κ tid (shift_loc l 1))%I
+           &frac{κ} (λ q, l ↦{q} #i ∗
+                     (l +ₗ (S $ (nth i tyl emp0).(ty_size))) ↦∗{q}: is_pad i tyl) ∗
+               (nth i tyl emp0).(ty_shr) κ tid (l +ₗ 1))%I
     |}.
   Next Obligation.
     iIntros (tyl tid vl) "Hown". iDestruct "Hown" as (i vl' vl'') "(%&%&_)".
@@ -197,7 +197,7 @@ Section sum.
         apply shr_locsE_subseteq. omega. }
       iDestruct (na_own_acc with "Htl") as "[$ Htlclose]".
       { apply difference_mono_l.
-        trans (shr_locsE (shift_loc l 1) (max_list_with ty_size tyl)).
+        trans (shr_locsE (l +ₗ 1) (max_list_with ty_size tyl)).
         - apply shr_locsE_subseteq. omega.
         - set_solver+. }
       destruct (Qp_lower_bound q'1 q'2) as (q' & q'01 & q'02 & -> & ->).

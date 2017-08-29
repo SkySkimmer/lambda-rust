@@ -125,13 +125,13 @@ Section code.
       delete [ #1; "w" ];; return: ["r"].
 
   Lemma rc_upgrade_type ty `{!TyWf ty} :
-    typed_val rc_upgrade (fn(∀ α, ∅; &shr{α} weak ty) → option (rc ty)).
+    typed_val rc_upgrade (fn(∀ α, ∅; &shr{α}(weak ty)) → option (rc ty)).
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>w. simpl_subst.
     iApply (type_new 2); [solve_typing..|]; iIntros (r); simpl_subst.
     iApply (type_cont [] [ϝ ⊑ₗ []]
-                      (λ _, [w ◁ box (&shr{α} weak ty); r ◁ box (option (rc ty))])) ;
+                      (λ _, [w ◁ box (&shr{α}(weak ty)); r ◁ box (option (rc ty))])) ;
       [solve_typing..| |]; last first.
     { simpl. iAlways. iIntros (k arg). inv_vec arg. simpl_subst.
       iApply type_delete; [solve_typing..|].
@@ -180,7 +180,7 @@ Section code.
         rewrite [_ ⋅ _]comm frac_op' -[(_ + _)%Qp]assoc Qp_div_2. auto. }
       iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
       (* Finish up the proof. *)
-      iApply (type_type _ _ _ [ w ◁ box (&shr{α} weak ty); #lr ◁ box (uninit 2);
+      iApply (type_type _ _ _ [ w ◁ box (&shr{α}(weak ty)); #lr ◁ box (uninit 2);
                                 #l' ◁ rc ty ]
           with "[] LFT HE Hna HL Hk [-]"); last first.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton tctx_hasty_val !tctx_hasty_val' //.
@@ -199,7 +199,7 @@ Section code.
       { iExists _. auto with iFrame. }
       iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
       (* Finish up the proof. *)
-      iApply (type_type _ _ _ [ w ◁ box (&shr{α} weak ty); #lr ◁ box (uninit 2) ]
+      iApply (type_type _ _ _ [ w ◁ box (&shr{α}(weak ty)); #lr ◁ box (uninit 2) ]
           with "[] LFT HE Hna HL Hk [-]"); last first.
       { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
         unlock. iFrame. iExists [_;_].
@@ -215,7 +215,7 @@ Section code.
       { iExists _. auto with iFrame. }
       iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
       (* Finish up the proof. *)
-      iApply (type_type _ _ _ [ w ◁ box (&shr{α} weak ty); #lr ◁ box (uninit 2) ]
+      iApply (type_type _ _ _ [ w ◁ box (&shr{α}(weak ty)); #lr ◁ box (uninit 2) ]
           with "[] LFT HE Hna HL Hk [-]"); last first.
       { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
         unlock. iFrame. iExists [_;_].
@@ -235,7 +235,7 @@ Section code.
       delete [ #1; "rc" ];; return: ["r"].
 
   Lemma rc_downgrade_type ty `{!TyWf ty} :
-    typed_val rc_downgrade (fn(∀ α, ∅; &shr{α} rc ty) → weak ty).
+    typed_val rc_downgrade (fn(∀ α, ∅; &shr{α}(rc ty)) → weak ty).
   Proof.
     (* TODO : this is almost identical to rc_clone *)
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
@@ -276,7 +276,7 @@ Section code.
     { iExists _. iFrame "Hrc●". iExists _. rewrite /Z.add Pos.add_1_r. iFrame. }
     iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
     (* Finish up the proof. *)
-    iApply (type_type _ _ _ [ x ◁ box (&shr{α} rc ty); #lr ◁ box (weak ty)]
+    iApply (type_type _ _ _ [ x ◁ box (&shr{α}(rc ty)); #lr ◁ box (weak ty)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       unlock. iFrame "Hx". iFrame "Hr†". iExists [# #l'].
@@ -297,7 +297,7 @@ Section code.
       delete [ #1; "w" ];; return: ["r"].
 
   Lemma weak_clone_type ty `{!TyWf ty} :
-    typed_val weak_clone (fn(∀ α, ∅; &shr{α} weak ty) → weak ty).
+    typed_val weak_clone (fn(∀ α, ∅; &shr{α}(weak ty)) → weak ty).
   Proof.
     (* TODO : this is almost identical to rc_clone *)
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
@@ -320,7 +320,7 @@ Section code.
     iModIntro. wp_let. wp_op.
     (* Finally, finally... opening the thread-local Rc protocol. *)
     iPoseProof "Hpersist" as (ty') "(_ & Hinv & _ & _)".
-    iAssert (∃ wv : Z, shift_loc l' 1 ↦ #wv ∗ (shift_loc l' 1 ↦ #(wv + 1) ={⊤}=∗
+    iAssert (∃ wv : Z, (l' +ₗ 1) ↦ #wv ∗ ((l' +ₗ 1) ↦ #(wv + 1) ={⊤}=∗
                na_own tid ⊤ ∗ (q / 2).[α] ∗ own γ weak_tok))%I
       with "[> Hna Hα1]" as (wv) "[Hwv Hclose2]".
     { iMod (na_inv_open with "Hinv Hna") as "(Hrcproto & Hna & Hclose2)"; [solve_ndisj..|].
@@ -349,7 +349,7 @@ Section code.
     iMod ("Hclose2" with "Hwv") as "(Hna & Hα1 & Hwtok)".
     iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL". wp_write.
     (* Finish up the proof. *)
-    iApply (type_type _ _ _ [ x ◁ box (&shr{α} weak ty); #lr ◁ box (weak ty)]
+    iApply (type_type _ _ _ [ x ◁ box (&shr{α}(weak ty)); #lr ◁ box (weak ty)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
       unlock. iFrame. iExists [# #l']. rewrite heap_mapsto_vec_singleton /=.
@@ -389,11 +389,11 @@ Section code.
     iIntros (tid) "#LFT #HE Hna HL Hk [Hw [Hw' _]]".
     rewrite !tctx_hasty_val [[w]]lock. destruct w' as [[|lw|]|]; try done. wp_op.
     iDestruct "Hw'" as (γ ν) "[#Hpersist Hwtok]".
-    iAssert (∃ wv : Z, shift_loc lw 1 ↦ #wv ∗
+    iAssert (∃ wv : Z, (lw +ₗ 1) ↦ #wv ∗
         ((⌜wv = 1⌝ ∗ na_own tid ⊤ ∗
-          ∃ s, lw ↦ s ∗ (shift_loc lw 2 ↦∗: λ vl, ⌜length vl = ty.(ty_size)⌝) ∗
+          ∃ s, lw ↦ s ∗ ((lw +ₗ 2) ↦∗: λ vl, ⌜length vl = ty.(ty_size)⌝) ∗
                † lw … (2 + ty_size ty)) ∨
-         (⌜wv > 1⌝ ∗ (shift_loc lw 1 ↦ #(wv - 1) ={⊤}=∗ na_own tid ⊤))))%I
+         (⌜wv > 1⌝ ∗ ((lw +ₗ 1) ↦ #(wv - 1) ={⊤}=∗ na_own tid ⊤))))%I
       with "[>Hna Hwtok]" as (wv) "[Hlw [(% & Hna & H)|[% Hclose]]]".
     { iPoseProof "Hpersist" as (ty') "([>Hszeq _] & Hinv & _ & _)".
       iDestruct "Hszeq" as %Hszeq.

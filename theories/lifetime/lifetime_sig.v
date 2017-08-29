@@ -5,9 +5,6 @@ From iris.base_logic.lib Require Import boxes fractional.
 Set Default Proof Using "Type".
 
 Definition lftN : namespace := nroot .@ "lft".
-Definition borN : namespace := lftN .@ "bor".
-Definition inhN : namespace := lftN .@ "inh".
-Definition mgmtN : namespace := lftN .@ "mgmt".
 
 Module Type lifetime_sig.
   (** CMRAs needed by the lifetime logic  *)
@@ -42,10 +39,8 @@ Module Type lifetime_sig.
       (format "q .[ κ ]", at level 0) : uPred_scope.
   Notation "[† κ ]" := (lft_dead κ) (format "[† κ ]"): uPred_scope.
 
-  Notation "&{ κ } P" := (bor κ P)
-    (format "&{ κ }  P", at level 20, right associativity) : uPred_scope.
-  Notation "&{ κ , i } P" := (idx_bor κ i P)
-    (format "&{ κ , i }  P", at level 20, right associativity) : uPred_scope.
+  Notation "&{ κ }" := (bor κ) (format "&{ κ }") : uPred_scope.
+  Notation "&{ κ , i }" := (idx_bor κ i) (format "&{ κ , i }") : uPred_scope.
 
   Infix "⊑" := lft_incl (at level 70) : uPred_scope.
   Infix "⊓" := lft_intersect (at level 40) : C_scope.
@@ -65,12 +60,12 @@ Module Type lifetime_sig.
   Global Declare Instance lft_intersect_right_id : RightId eq static lft_intersect.
 
   Global Declare Instance lft_ctx_persistent : PersistentP lft_ctx.
-  Global Declare Instance lft_dead_persistent κ : PersistentP (lft_dead κ).
+  Global Declare Instance lft_dead_persistent κ : PersistentP ([†κ]).
   Global Declare Instance lft_incl_persistent κ κ' : PersistentP (κ ⊑ κ').
-  Global Declare Instance idx_bor_persistent κ i P : PersistentP (idx_bor κ i P).
+  Global Declare Instance idx_bor_persistent κ i P : PersistentP (&{κ,i} P).
 
-  Global Declare Instance lft_tok_timeless q κ : TimelessP (lft_tok q κ).
-  Global Declare Instance lft_dead_timeless κ : TimelessP (lft_dead κ).
+  Global Declare Instance lft_tok_timeless q κ : TimelessP (q.[κ]).
+  Global Declare Instance lft_dead_timeless κ : TimelessP ([†κ]).
   Global Declare Instance idx_bor_own_timeless q i : TimelessP (idx_bor_own q i).
 
   Global Instance idx_bor_params : Params (@idx_bor) 5.
@@ -118,7 +113,7 @@ Module Type lifetime_sig.
   Parameter idx_bor_iff : ∀ κ i P P', ▷ □ (P ↔ P') -∗ &{κ,i}P -∗ &{κ,i}P'.
 
   Parameter idx_bor_unnest : ∀ E κ κ' i P,
-    ↑lftN ⊆ E → lft_ctx -∗ &{κ,i} P -∗ &{κ'} idx_bor_own 1 i ={E}=∗ &{κ ⊓ κ'} P.
+    ↑lftN ⊆ E → lft_ctx -∗ &{κ,i} P -∗ &{κ'}(idx_bor_own 1 i) ={E}=∗ &{κ ⊓ κ'} P.
 
   Parameter idx_bor_acc : ∀ E q κ i P, ↑lftN ⊆ E →
     lft_ctx -∗ &{κ,i}P -∗ idx_bor_own 1 i -∗ q.[κ] ={E}=∗
@@ -151,14 +146,8 @@ Module Type lifetime_sig.
     ↑lftN ⊆ E → κ ⊑ κ' -∗ q.[κ] ={E}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={E}=∗ q.[κ]).
   Parameter lft_incl_dead : ∀ E κ κ', ↑lftN ⊆ E → κ ⊑ κ' -∗ [†κ'] ={E}=∗ [†κ].
   Parameter lft_incl_intro : ∀ κ κ',
-    □ ((∀ q, lft_tok q κ ={↑lftN}=∗ ∃ q',
-                 lft_tok q' κ' ∗ (lft_tok q' κ' ={↑lftN}=∗ lft_tok q κ)) ∗
-        (lft_dead κ' ={↑lftN}=∗ lft_dead κ)) -∗ κ ⊑ κ'.
-  (* Same for some of the derived lemmas. *)
-  Parameter bor_acc_atomic_cons : ∀ E κ P,
-    ↑lftN ⊆ E → lft_ctx -∗ &{κ} P ={E,E∖↑lftN}=∗
-      (▷ P ∗ ∀ Q, ▷ (▷ Q ={∅}=∗ ▷ P) -∗ ▷ Q ={E∖↑lftN,E}=∗ &{κ} Q) ∨
-      ([†κ] ∗ |={E∖↑lftN,E}=> True).
+    □ ((∀ q, q.[κ] ={↑lftN}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={↑lftN}=∗ q.[κ])) ∗
+        ([†κ'] ={↑lftN}=∗ [†κ])) -∗ κ ⊑ κ'.
 
   End properties.
 

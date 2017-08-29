@@ -139,7 +139,7 @@ Section product_split.
 
   (** Unique borrows *)
   Lemma tctx_split_uniq_prod2 E L p κ ty1 ty2 :
-    tctx_incl E L [p ◁ &uniq{κ} product2 ty1 ty2]
+    tctx_incl E L [p ◁ &uniq{κ}(product2 ty1 ty2)]
                   [p ◁ &uniq{κ} ty1; p +ₗ #ty1.(ty_size) ◁ &uniq{κ} ty2].
   Proof.
     iIntros (tid q) "#LFT _ $ H".
@@ -152,7 +152,7 @@ Section product_split.
 
   Lemma tctx_merge_uniq_prod2 E L p κ ty1 ty2 :
     tctx_incl E L [p ◁ &uniq{κ} ty1; p +ₗ #ty1.(ty_size) ◁ &uniq{κ} ty2]
-                  [p ◁ &uniq{κ} product2 ty1 ty2].
+                  [p ◁ &uniq{κ}(product2 ty1 ty2)].
   Proof.
     iIntros (tid q) "#LFT _ $ H".
     rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
@@ -163,11 +163,11 @@ Section product_split.
   Qed.
 
   Lemma uniq_is_ptr κ ty tid (vl : list val) :
-    ty_own (&uniq{κ} ty) tid vl -∗ ⌜∃ l : loc, vl = [(#l) : val]⌝.
+    ty_own (&uniq{κ}ty) tid vl -∗ ⌜∃ l : loc, vl = [(#l) : val]⌝.
   Proof. iIntros "H". destruct vl as [|[[]|][]]; eauto. Qed.
 
   Lemma tctx_split_uniq_prod E L κ tyl p :
-    tctx_incl E L [p ◁ &uniq{κ} product tyl]
+    tctx_incl E L [p ◁ &uniq{κ}(product tyl)]
                   (hasty_ptr_offsets p (uniq_bor κ) tyl 0).
   Proof.
     apply tctx_split_ptr_prod.
@@ -178,7 +178,7 @@ Section product_split.
   Lemma tctx_merge_uniq_prod E L κ tyl :
     tyl ≠ [] →
     ∀ p, tctx_incl E L (hasty_ptr_offsets p (uniq_bor κ) tyl 0)
-                   [p ◁ &uniq{κ} product tyl].
+                   [p ◁ &uniq{κ}(product tyl)].
   Proof.
     intros. apply tctx_merge_ptr_prod; try done.
     - apply _.
@@ -188,7 +188,7 @@ Section product_split.
 
   (** Shared borrows *)
   Lemma tctx_split_shr_prod2 E L p κ ty1 ty2 :
-    tctx_incl E L [p ◁ &shr{κ} product2 ty1 ty2]
+    tctx_incl E L [p ◁ &shr{κ}(product2 ty1 ty2)]
                   [p ◁ &shr{κ} ty1; p +ₗ #ty1.(ty_size) ◁ &shr{κ} ty2].
   Proof.
     iIntros (tid q) "#LFT _ $ H".
@@ -200,7 +200,7 @@ Section product_split.
 
   Lemma tctx_merge_shr_prod2 E L p κ ty1 ty2 :
     tctx_incl E L [p ◁ &shr{κ} ty1; p +ₗ #ty1.(ty_size) ◁ &shr{κ} ty2]
-                  [p ◁ &shr{κ} product2 ty1 ty2].
+                  [p ◁ &shr{κ}(product2 ty1 ty2)].
   Proof.
     iIntros (tid q) "#LFT _ $ H".
     rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
@@ -214,7 +214,7 @@ Section product_split.
   Proof. iIntros "H". destruct vl as [|[[]|][]]; eauto. Qed.
 
   Lemma tctx_split_shr_prod E L κ tyl p :
-    tctx_incl E L [p ◁ &shr{κ} product tyl]
+    tctx_incl E L [p ◁ &shr{κ}(product tyl)]
                   (hasty_ptr_offsets p (shr_bor κ) tyl 0).
   Proof.
     apply tctx_split_ptr_prod.
@@ -225,7 +225,7 @@ Section product_split.
   Lemma tctx_merge_shr_prod E L κ tyl :
     tyl ≠ [] →
     ∀ p, tctx_incl E L (hasty_ptr_offsets p (shr_bor κ) tyl 0)
-                   [p ◁ &shr{κ} product tyl].
+                   [p ◁ &shr{κ}(product tyl)].
   Proof.
     intros. apply tctx_merge_ptr_prod; try done.
     - apply _.
@@ -247,14 +247,14 @@ Section product_split.
 
   Lemma tctx_extract_split_uniq_prod E L p p' κ ty tyl T T' :
     tctx_extract_hasty E L p' ty (hasty_ptr_offsets p (uniq_bor κ) tyl 0) T' →
-    tctx_extract_hasty E L p' ty ((p ◁ &uniq{κ} Π tyl) :: T) (T' ++ T).
+    tctx_extract_hasty E L p' ty ((p ◁ &uniq{κ}(Π tyl)) :: T) (T' ++ T).
   Proof.
     intros. apply (tctx_incl_frame_r T [_] (_::_)). by rewrite tctx_split_uniq_prod.
   Qed.
 
   Lemma tctx_extract_split_shr_prod E L p p' κ ty tyl T T' :
     tctx_extract_hasty E L p' ty (hasty_ptr_offsets p (shr_bor κ) tyl 0) T' →
-    tctx_extract_hasty E L p' ty ((p ◁ &shr{κ} Π tyl) :: T) ((p ◁ &shr{κ} Π tyl) :: T).
+    tctx_extract_hasty E L p' ty ((p ◁ &shr{κ}(Π tyl)) :: T) ((p ◁ &shr{κ}(Π tyl)) :: T).
   Proof.
     intros. apply (tctx_incl_frame_r _ [_] [_;_]).
     rewrite {1}copy_tctx_incl. apply (tctx_incl_frame_r _ [_] [_]).
@@ -291,13 +291,13 @@ Section product_split.
   Lemma tctx_extract_merge_uniq_prod E L p κ tyl T T' :
     tyl ≠ [] →
     extract_tyl E L p (uniq_bor κ) tyl 0 T T' →
-    tctx_extract_hasty E L p (&uniq{κ}Π tyl) T T'.
+    tctx_extract_hasty E L p (&uniq{κ}(Π tyl)) T T'.
   Proof. auto using tctx_extract_merge_ptr_prod, tctx_merge_uniq_prod. Qed.
 
   Lemma tctx_extract_merge_shr_prod E L p κ tyl T T' :
     tyl ≠ [] →
     extract_tyl E L p (shr_bor κ) tyl 0 T T' →
-    tctx_extract_hasty E L p (&shr{κ}Π tyl) T T'.
+    tctx_extract_hasty E L p (&shr{κ}(Π tyl)) T T'.
   Proof. auto using tctx_extract_merge_ptr_prod, tctx_merge_shr_prod. Qed.
 End product_split.
 

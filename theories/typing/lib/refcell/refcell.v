@@ -36,14 +36,14 @@ Section refcell_inv.
       match st return _ with
       | None =>
         (* Not borrowed. *)
-        &{α}(shift_loc l 1 ↦∗: ty.(ty_own) tid)
+        &{α}((l +ₗ 1) ↦∗: ty.(ty_own) tid)
       | Some (agν, st) =>
         ∃ ν, agν ≡ to_agree ν ∗
-             (1.[ν] ={↑lftN,∅}▷=∗ &{α}(shift_loc l 1 ↦∗: ty.(ty_own) tid)) ∗
+             (1.[ν] ={↑lftN,∅}▷=∗ &{α}((l +ₗ 1) ↦∗: ty.(ty_own) tid)) ∗
              match st with
              | Cinr (q, n) =>
                (* Immutably borrowed. *)
-               ty.(ty_shr) (α ⊓ ν) tid (shift_loc l 1) ∗
+               ty.(ty_shr) (α ⊓ ν) tid (l +ₗ 1) ∗
                ∃ q', ⌜(q + q')%Qp = 1%Qp⌝ ∗ q'.[ν]
              | _ => (* Mutably borrowed. *) True
              end
@@ -72,8 +72,8 @@ Section refcell_inv.
     rewrite eqtype_unfold. iIntros (Hty) "HL".
     iDestruct (Hty with "HL") as "#Hty". iIntros "* !# #HE H".
     iDestruct ("Hty" with "HE") as "(% & #Hown & #Hshr)".
-    iAssert (□ (&{α} shift_loc l 1 ↦∗: ty_own ty1 tid -∗
-                &{α} shift_loc l 1 ↦∗: ty_own ty2 tid))%I as "#Hb".
+    iAssert (□ (&{α}((l +ₗ 1) ↦∗: ty_own ty1 tid) -∗
+                &{α}((l +ₗ 1) ↦∗: ty_own ty2 tid)))%I as "#Hb".
     { iIntros "!# H". iApply bor_iff; last done.
       iSplit; iIntros "!>!#H"; iDestruct "H" as (vl) "[Hf H]"; iExists vl;
       iFrame; by iApply "Hown". }
@@ -116,7 +116,7 @@ Section refcell.
     iDestruct "H" as ([|[[| |n]|]vl]) "[H↦ H]"; try iDestruct "H" as ">[]".
     iDestruct "H" as "[>% Hown]".
     iMod ("Hclose" $! ((∃ n:Z, l ↦ #n ∗ ⌜-1 ≤ n⌝) ∗
-            shift_loc l 1 ↦∗: ty.(ty_own) tid) with "[] [-]")%I as "[H [Htok Htok']]".
+            (l +ₗ 1) ↦∗: ty.(ty_own) tid) with "[] [-]")%I as "[H [Htok Htok']]".
     { iIntros "!> [Hn Hvl] !>". iDestruct "Hn" as (n') "[Hn >%]".
       iDestruct "Hvl" as (vl') "[H↦ Hvl]".
       iExists (#n'::vl'). rewrite heap_mapsto_vec_cons. iFrame "∗%". }

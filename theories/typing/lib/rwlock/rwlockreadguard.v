@@ -20,7 +20,7 @@ Section rwlockreadguard.
        ty_own tid vl :=
          match vl return _ with
          | [ #(LitLoc l) ] =>
-           ∃ ν q γ β, ty.(ty_shr) (α ⊓ ν) tid (shift_loc l 1) ∗
+           ∃ ν q γ β, ty.(ty_shr) (α ⊓ ν) tid (l +ₗ 1) ∗
              α ⊑ β ∗ &at{β,rwlockN}(rwlock_inv tid l γ β ty) ∗
              q.[ν] ∗ own γ (◯ reading_st q ν) ∗
              (1.[ν] ={↑lftN,∅}▷=∗ [†ν])
@@ -29,7 +29,7 @@ Section rwlockreadguard.
        ty_shr κ tid l :=
          ∃ (l' : loc),
            &frac{κ} (λ q, l↦∗{q} [ #l']) ∗
-           ▷ ty.(ty_shr) (α ⊓ κ) tid (shift_loc l' 1) |}%I.
+           ▷ ty.(ty_shr) (α ⊓ κ) tid (l' +ₗ 1) |}%I.
   Next Obligation. intros α ty tid [|[[]|] []]; auto. Qed.
   Next Obligation.
     iIntros (α ty E κ l tid q ?) "#LFT Hb Htok".

@@ -3,24 +3,38 @@ image: ralfjung/opam-ci:latest
 variables:
   CPU_CORES: "9"
 
-lrust-coq8.6:
+.template: &template
   tags:
   - fp-timing
   script:
   # prepare
-  - . build/opam-ci.sh coq 8.6 coq-mathcomp-ssreflect 1.6.1
+  - . build/opam-ci.sh coq "$COQ_VERSION" coq-mathcomp-ssreflect "$SSR_VERSION"
   - env | egrep '^(CI_BUILD_REF|CI_RUNNER)' > build-env.txt
   # build
   - 'time make -k -j$CPU_CORES TIMED=y 2>&1 | tee build-log.txt'
   - 'if fgrep Axiom build-log.txt >/dev/null; then exit 1; fi'
-  - 'cat build-log.txt | egrep "[a-zA-Z0-9_/-]+ \(user: [0-9]" | tee build-time.txt'
+  - 'cat build-log.txt | egrep "[a-zA-Z0-9_/-]+ \((real|user): [0-9]" | tee build-time.txt'
+  - 'if test -n "$VALIDATE" && (( RANDOM % 10 == 0 )); then make validate; fi'
   cache:
-    key: "coq8.6"
+    key: "coq$COQ_VERSION-ssr$SSR_VERSION"
     paths:
     - opamroot/
   only:
   - master
   - /^ci/
+
+lrust-coq8.7:
+  <<: *template
+  variables:
+    COQ_VERSION: "8.7.dev"
+    SSR_VERSION: "dev"
+
+lrust-coq8.6.1:
+  <<: *template
+  variables:
+    COQ_VERSION: "8.6.1"
+    SSR_VERSION: "1.6.1"
+    VALIDATE: 1
   artifacts:
     paths:
     - build-time.txt

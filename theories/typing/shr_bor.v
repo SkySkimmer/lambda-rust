@@ -19,16 +19,23 @@ Section shr_bor.
   Global Instance shr_bor_wf κ ty `{!TyWf ty} : TyWf (shr_bor κ ty) :=
     { ty_lfts := [κ]; ty_wf_E := ty.(ty_wf_E) ++ ty.(ty_outlives_E) κ }.
 
+  Lemma shr_type_incl κ1 κ2 ty1 ty2 :
+    κ2 ⊑ κ1 -∗ type_incl ty1 ty2 -∗ type_incl (shr_bor κ1 ty1) (shr_bor κ2 ty2).
+  Proof.
+    iIntros "#Hκ #[_ [_ Hty]]". iApply type_incl_simple_type. simpl.
+    iIntros "!#" (tid [|[[]|][]]) "H"; try done. iApply "Hty".
+    iApply (ty1.(ty_shr_mono) with "Hκ"). done.
+  Qed.
+
   Global Instance shr_mono E L :
     Proper (flip (lctx_lft_incl E L) ==> subtype E L ==> subtype E L) shr_bor.
   Proof.
-    intros κ1 κ2 Hκ ty1 ty2 Hty. apply subtype_simple_type.
+    intros κ1 κ2 Hκ ty1 ty2 Hty.
     iIntros (?) "/= HL". iDestruct (Hκ with "HL") as "#Hincl".
     iDestruct (Hty with "HL") as "#Hty". iIntros "!# #HE".
-    iIntros (? [|[[]|][]]) "H"; try done. iDestruct ("Hincl" with "HE") as "#Hκ".
-    iApply (ty2.(ty_shr_mono) with "Hκ").
-    iDestruct ("Hty" with "HE") as "(_ & _ & #Hs1)"; [done..|clear Hty].
-    by iApply "Hs1".
+    iApply shr_type_incl.
+    - by iApply "Hincl".
+    - by iApply "Hty".
   Qed.
   Global Instance shr_mono_flip E L :
     Proper (lctx_lft_incl E L ==> flip (subtype E L) ==> flip (subtype E L)) shr_bor.
@@ -51,18 +58,17 @@ Section shr_bor.
   Proof. by iIntros (Hsync tid1 tid2 [|[[]|][]]) "H"; try iApply Hsync. Qed.
 End shr_bor.
 
-Notation "&shr{ κ } ty" := (shr_bor κ ty)
-  (format "&shr{ κ }  ty", at level 20, right associativity) : lrust_type_scope.
+Notation "&shr{ κ }" := (shr_bor κ) (format "&shr{ κ }") : lrust_type_scope.
 
 Section typing.
   Context `{typeG Σ}.
 
   Lemma shr_mono' E L κ1 κ2 ty1 ty2 :
     lctx_lft_incl E L κ2 κ1 → subtype E L ty1 ty2 →
-    subtype E L (&shr{κ1} ty1) (&shr{κ2} ty2).
+    subtype E L (&shr{κ1}ty1) (&shr{κ2}ty2).
   Proof. by intros; apply shr_mono. Qed.
   Lemma shr_proper' E L κ ty1 ty2 :
-    eqtype E L ty1 ty2 → eqtype E L (&shr{κ} ty1) (&shr{κ} ty2).
+    eqtype E L ty1 ty2 → eqtype E L (&shr{κ}ty1) (&shr{κ}ty2).
   Proof. by intros; apply shr_proper. Qed.
 
   Lemma tctx_reborrow_shr E L p ty κ κ' :

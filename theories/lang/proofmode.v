@@ -96,6 +96,10 @@ Tactic Notation "wp_op" :=
       wp_bind_core K; apply wp_eq_int; wp_finish
     | BinOp EqOp (Lit (LitLoc _)) (Lit (LitLoc _)) =>
       wp_bind_core K; apply wp_eq_loc; wp_finish
+    | BinOp EqOp (Lit (LitLoc _)) (Lit (LitInt 0)) =>
+      wp_bind_core K; apply wp_eq_loc_0_r; wp_finish
+    | BinOp EqOp (Lit (LitInt 0)) (Lit (LitLoc _)) =>
+      wp_bind_core K; apply wp_eq_loc_0_l; wp_finish
     | BinOp OffsetOp _ _ =>
        wp_bind_core K; etrans; [|eapply wp_offset; try fast_done]; wp_finish
     | BinOp PlusOp _ _ =>

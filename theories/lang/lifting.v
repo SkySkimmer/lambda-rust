@@ -240,19 +240,6 @@ Proof.
   iApply step_fupd_intro; done.
 Qed.
 
-(*
-Lemma wp_bin_op_heap E σ op l1 l2 l' :
-  bin_op_eval σ op l1 l2 l' →
-  {{{ ▷ ownP σ }}} BinOp op (Lit l1) (Lit l2) @ E
-  {{{ l'', RET LitV l''; ⌜bin_op_eval σ op l1 l2 l''⌝ ∗ ownP σ }}}.
-Proof.
-  iIntros (? Φ) "HP HΦ". iApply ownP_lift_atomic_head_step; eauto.
-  iFrame "HP". iNext. iIntros (e2 σ2 efs Hs) "Ho".
-  inv_head_step; rewrite big_sepL_nil right_id.
-  iApply "HΦ". eauto.
-Qed.
-*)
-
 Lemma wp_bin_op_pure E op l1 l2 l' :
   (∀ σ, bin_op_eval σ op l1 l2 l') →
   {{{ True }}} BinOp op (Lit l1) (Lit l2) @ E
@@ -320,8 +307,24 @@ Proof.
     * by iFrame.
 Qed.
 
+Lemma wp_eq_loc_0_r E (l : loc) P Φ :
+  (P -∗ ▷ Φ (LitV false)) →
+  P -∗ WP BinOp EqOp (Lit (LitLoc l)) (Lit (LitInt 0)) @ E {{ Φ }}.
+Proof.
+  iIntros (HΦ) "HP". iApply wp_bin_op_pure. by intros; do 2 constructor.
+  rewrite HΦ. iNext. iIntros (?? Heval). by inversion_clear Heval; inv_lit.
+Qed.
+
+Lemma wp_eq_loc_0_l E (l : loc) P Φ :
+  (P -∗ ▷ Φ (LitV false)) →
+  P -∗ WP BinOp EqOp (Lit (LitInt 0)) (Lit (LitLoc l)) @ E {{ Φ }}.
+Proof.
+  iIntros (HΦ) "HP". iApply wp_bin_op_pure. by intros; do 2 constructor.
+  rewrite HΦ. iNext. iIntros (?? Heval). by inversion_clear Heval; inv_lit.
+Qed.
+
 Lemma wp_offset E l z Φ :
-  ▷ Φ (LitV $ LitLoc $ shift_loc l z) -∗
+  ▷ Φ (LitV $ LitLoc $ l +ₗ z) -∗
     WP BinOp OffsetOp (Lit $ LitLoc l) (Lit $ LitInt z) @ E {{ Φ }}.
 Proof.
   iIntros "HP". iApply wp_bin_op_pure; first by econstructor.

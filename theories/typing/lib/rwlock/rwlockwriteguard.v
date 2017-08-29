@@ -21,7 +21,7 @@ Section rwlockwriteguard.
        ty_own tid vl :=
          match vl return _ with
          | [ #(LitLoc l) ] =>
-           ∃ γ β, &{β}(shift_loc l 1 ↦∗: ty.(ty_own) tid) ∗
+           ∃ γ β, &{β}((l +ₗ 1) ↦∗: ty.(ty_own) tid) ∗
              α ⊑ β ∗ &at{β,rwlockN}(rwlock_inv tid l γ β ty) ∗
              own γ (◯ writing_st)
          | _ => False
@@ -30,7 +30,7 @@ Section rwlockwriteguard.
          ∃ (l' : loc),
            &frac{κ} (λ q, l↦∗{q} [ #l']) ∗
            □ ∀ F q, ⌜↑shrN ∪ lftE ⊆ F⌝ -∗ q.[α ⊓ κ] ={F, F∖↑shrN}▷=∗
-               ty.(ty_shr) (α ⊓ κ) tid (shift_loc l' 1) ∗ q.[α ⊓ κ] |}%I.
+               ty.(ty_shr) (α ⊓ κ) tid (l' +ₗ 1) ∗ q.[α ⊓ κ] |}%I.
   Next Obligation. by iIntros (???[|[[]|][]]) "?". Qed.
   Next Obligation.
     iIntros (α ty E κ l tid q HE) "#LFT Hb Htok".

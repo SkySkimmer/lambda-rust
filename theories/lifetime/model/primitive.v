@@ -242,14 +242,6 @@ Proof.
   by rewrite HAinsert.
 Qed.
 
-Lemma lft_inv_alive_twice κ : lft_inv_alive κ -∗ lft_inv_alive κ -∗ False.
-Proof.
-  rewrite lft_inv_alive_unfold /lft_inh.
-  iDestruct 1 as (P Q) "(_&_&Hinh)"; iDestruct 1 as (P' Q') "(_&_&Hinh')".
-  iDestruct "Hinh" as (E) "[HE _]"; iDestruct "Hinh'" as (E') "[HE' _]".
-  by iDestruct (own_inh_valid_2 with "HE HE'") as %?.
-Qed.
-
 Lemma lft_inv_alive_in A κ : lft_alive_in A κ → lft_inv A κ -∗ lft_inv_alive κ.
 Proof.
   rewrite /lft_inv. iIntros (?) "[[$ _]|[_ %]]".
@@ -330,9 +322,8 @@ Proof.
 Qed.
 
 Lemma lft_incl_intro κ κ' :
-  □ ((∀ q, lft_tok q κ ={↑lftN}=∗ ∃ q',
-               lft_tok q' κ' ∗ (lft_tok q' κ' ={↑lftN}=∗ lft_tok q κ)) ∗
-      (lft_dead κ' ={↑lftN}=∗ lft_dead κ)) -∗ κ ⊑ κ'.
+  □ ((∀ q, q.[κ] ={↑lftN}=∗ ∃ q', q'.[κ'] ∗ (q'.[κ'] ={↑lftN}=∗ q.[κ])) ∗
+      ([†κ'] ={↑lftN}=∗ [†κ])) -∗ κ ⊑ κ'.
 Proof. reflexivity. Qed.
 
 Lemma lft_intersect_incl_l κ κ': (κ ⊓ κ' ⊑ κ)%I.

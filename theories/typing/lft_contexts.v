@@ -74,16 +74,13 @@ Section lft_contexts.
       elctx_elt_interp (κ1 ⊑ₑ κ2) ∗ elctx_elt_interp (κ2 ⊑ₑ κ1).
   Proof.
     iIntros "#LFT". iDestruct 1 as (κ) "(% & Hκ & _)"; simplify_eq/=.
-    iMod (bor_create _ κ2 (qL).[κ] with "LFT [Hκ]") as "[Hκ _]";
-      first done; first by iFrame.
-    iMod (bor_fracture (λ q, (qL * q).[_])%I with "LFT [Hκ]") as "#Hκ"; first done.
-    { rewrite Qp_mult_1_r. done. }
+    iMod (lft_eternalize with "Hκ") as "#Hincl".
     iModIntro. iSplit.
     - iApply lft_incl_trans; iApply lft_intersect_incl_l.
     - iApply (lft_incl_glb with "[]"); first iApply (lft_incl_glb with "[]").
       + iApply lft_incl_refl.
       + iApply lft_incl_static.
-      + iApply (frac_bor_lft_incl with "LFT"). done.
+      + iApply lft_incl_trans; last done. iApply lft_incl_static.
   Qed.
 
   Context (E : elctx) (L : llctx).

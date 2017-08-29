@@ -126,18 +126,15 @@ Program Definition ty_of_st `{typeG Σ} (st : simple_type) : type :=
          borrow, otherwise I do not know how to prove the shr part of
          [subtype_shr_mono]. *)
      ty_shr := λ κ tid l,
-               (∃ vl, (&frac{κ} λ q, l ↦∗{q} vl) ∗
-                                                 ▷ st.(st_own) tid vl)%I
+               (∃ vl, &frac{κ} (λ q, l ↦∗{q} vl) ∗ ▷ st.(st_own) tid vl)%I
   |}.
 Next Obligation. intros. apply st_size_eq. Qed.
 Next Obligation.
   iIntros (?? st E κ l tid ??) "#LFT Hmt Hκ".
   iMod (bor_exists with "LFT Hmt") as (vl) "Hmt"; first solve_ndisj.
   iMod (bor_sep with "LFT Hmt") as "[Hmt Hown]"; first solve_ndisj.
-  iMod (bor_persistent with "LFT Hown") as "[Hown|#H†]"; first solve_ndisj.
-  - iFrame "Hκ".
-    iMod (bor_fracture with "LFT [Hmt]") as "Hfrac"; by eauto with iFrame.
-  - iExFalso. by iApply (lft_tok_dead with "Hκ").
+  iMod (bor_persistent_tok with "LFT Hown Hκ") as "[Hown $]"; first solve_ndisj.
+  iMod (bor_fracture with "LFT [Hmt]") as "Hfrac"; by eauto with iFrame.
 Qed.
 Next Obligation.
   iIntros (?? st κ κ' tid l) "#Hord H".
@@ -378,7 +375,7 @@ End type_contractive.
 (* Tactic automation. *)
 Ltac f_type_equiv :=
   first [ ((eapply ty_size_type_dist || eapply ty_shr_type_dist || eapply ty_own_type_dist); try reflexivity) |
-          match goal with | |- @dist_later ?A ?n ?x ?y =>
+          match goal with | |- @dist_later ?A _ ?n ?x ?y =>
                             destruct n as [|n]; [exact I|change (@dist A _ n x y)]
           end ].
 Ltac solve_type_proper :=
@@ -389,7 +386,7 @@ Ltac solve_type_proper :=
 Fixpoint shr_locsE (l : loc) (n : nat) : coPset :=
   match n with
   | 0%nat => ∅
-  | S n => ↑shrN.@l ∪ shr_locsE (shift_loc l 1%nat) n
+  | S n => ↑shrN.@l ∪ shr_locsE (l +ₗ 1%nat) n
   end.
 
 Class Copy `{typeG Σ} (t : type) := {
@@ -436,7 +433,7 @@ Section type.
 
   (** Copy types *)
   Lemma shr_locsE_shift l n m :
-    shr_locsE l (n + m) = shr_locsE l n ∪ shr_locsE (shift_loc l n) m.
+    shr_locsE l (n + m) = shr_locsE l n ∪ shr_locsE (l +ₗ n) m.
   Proof.
     revert l; induction n; intros l.
     - rewrite shift_loc_0. set_solver+.
@@ -445,7 +442,7 @@ Section type.
   Qed.
 
   Lemma shr_locsE_disj l n m :
-    shr_locsE l n ⊥ shr_locsE (shift_loc l n) m.
+    shr_locsE l n ⊥ shr_locsE (l +ₗ n) m.
   Proof.
     revert l; induction n; intros l.
     - simpl. set_solver+.
@@ -473,7 +470,7 @@ Section type.
 
   Lemma shr_locsE_split_tok l n m tid :
     na_own tid (shr_locsE l (n + m)) ⊣⊢
-      na_own tid (shr_locsE l n) ∗ na_own tid (shr_locsE (shift_loc l n) m).
+      na_own tid (shr_locsE l n) ∗ na_own tid (shr_locsE (l +ₗ n) m).
   Proof.
     rewrite shr_locsE_shift na_own_union //. apply shr_locsE_disj.
   Qed.
@@ -642,16 +639,24 @@ Section subtyping.
     - intros ??? H1 H2. split; etrans; (apply H1 || apply H2).
   Qed.
 
+  Lemma type_incl_simple_type (st1 st2 : simple_type) :
+    □ (∀ tid vl, st1.(st_own) tid vl -∗ st2.(st_own) tid vl) -∗
+    type_incl st1 st2.
+  Proof.
+    iIntros "#Hst". iSplit; first done. iSplit; iAlways.
+    - iIntros. iApply "Hst"; done.
+    - iIntros (???). iDestruct 1 as (vl) "[Hf Hown]". iExists vl. iFrame "Hf".
+      by iApply "Hst".
+  Qed.
+
   Lemma subtype_simple_type E L (st1 st2 : simple_type) :
     (∀ qL, llctx_interp L qL -∗ □ (elctx_interp E -∗
        ∀ tid vl, st1.(st_own) tid vl -∗ st2.(st_own) tid vl)) →
     subtype E L st1 st2.
   Proof.
     intros Hst. iIntros (qL) "HL". iDestruct (Hst with "HL") as "#Hst".
-    iClear "∗". iIntros "!# #HE". iSplit; first done. iSplit; iAlways.
-    - iIntros. iApply "Hst"; done.
-    - iIntros (???). iDestruct 1 as (vl) "[Hf Hown]". iExists vl. iFrame "Hf".
-      by iApply "Hst".
+    iClear "∗". iIntros "!# #HE". iApply type_incl_simple_type.
+    iIntros "!#" (??) "?". by iApply "Hst".
   Qed.
 
   Lemma subtype_weaken E1 E2 L1 L2 ty1 ty2 :

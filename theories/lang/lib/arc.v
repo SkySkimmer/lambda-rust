@@ -130,12 +130,12 @@ Section def.
       match st with
       | (Some (Cinl (q, strong, wlock)), weak) =>
          ∃ q', ⌜(q + q')%Qp = 1%Qp⌝ ∗ P1 q' ∗ l ↦ #(Zpos strong) ∗
-           if wlock then shift_loc l 1 ↦ #(-1) ∗ ⌜weak = 0%nat⌝
-           else shift_loc l 1 ↦ #(S weak)
+           if wlock then (l +ₗ 1) ↦ #(-1) ∗ ⌜weak = 0%nat⌝
+           else (l +ₗ 1) ↦ #(S weak)
       | (Some (Cinr _), weak) =>
-        l ↦ #0 ∗ shift_loc l 1 ↦ #(S weak)
+        l ↦ #0 ∗ (l +ₗ 1) ↦ #(S weak)
       | (None, (S _) as weak) =>
-        l ↦ #0 ∗ shift_loc l 1 ↦ #weak ∗ P2
+        l ↦ #0 ∗ (l +ₗ 1) ↦ #weak ∗ P2
       | _ => True
       end)%I.
 
@@ -183,7 +183,7 @@ Section arc.
   Proof. solve_proper. Qed.
 
   Lemma create_arc E l :
-    l ↦ #1 -∗ shift_loc l 1 ↦ #1 -∗ P1 1%Qp ={E}=∗
+    l ↦ #1 -∗ (l +ₗ 1) ↦ #1 -∗ P1 1%Qp ={E}=∗
       ∃ γ q, is_arc P1 P2 N γ l ∗ P1 q ∗ arc_tok γ q.
   Proof using HP1.
     iIntros "Hl1 Hl2 [HP1 HP1']".
@@ -195,7 +195,7 @@ Section arc.
   Qed.
 
   Lemma create_weak E l :
-    l ↦ #0 -∗ shift_loc l 1 ↦ #1 -∗ P2 ={E}=∗ ∃ γ, is_arc P1 P2 N γ l ∗ weak_tok γ.
+    l ↦ #0 -∗ (l +ₗ 1) ↦ #1 -∗ P2 ={E}=∗ ∃ γ, is_arc P1 P2 N γ l ∗ weak_tok γ.
   Proof.
     iIntros "Hl1 Hl2 HP2".
     iMod (own_alloc ((● (None, 1%nat) ⋅ ◯ (None, 1%nat)))) as (γ) "[H● H◯]"; first done.
@@ -345,9 +345,9 @@ Section arc.
     {{{ P }}} clone_weak [ #l] {{{ RET #(); P ∗ weak_tok γ }}}.
   Proof.
     iIntros "#INV #Hacc !# * HP HΦ". iLöb as "IH". wp_rec. wp_op. wp_bind (!ˢᶜ_)%E.
-    iAssert (□ (P ={⊤,⊤∖↑N}=∗ ∃ w : Z, shift_loc l 1 ↦ #w ∗
-              (shift_loc l 1 ↦ #(w + 1) ={⊤∖↑N,⊤}=∗ P ∗ weak_tok γ) ∧
-              (shift_loc l 1 ↦ #w ={⊤∖↑N,⊤}=∗ P)))%I as "#Hproto".
+    iAssert (□ (P ={⊤,⊤∖↑N}=∗ ∃ w : Z, (l +ₗ 1) ↦ #w ∗
+              ((l +ₗ 1) ↦ #(w + 1) ={⊤∖↑N,⊤}=∗ P ∗ weak_tok γ) ∧
+              ((l +ₗ 1) ↦ #w ={⊤∖↑N,⊤}=∗ P)))%I as "#Hproto".
     { iIntros "!# HP". iInv N as (st) "[>H● H]" "Hclose1".
       iMod ("Hacc" with "HP") as "[Hown Hclose2]".
       iDestruct (weak_tok_auth_val with "H● Hown") as %(st' & weak & -> & Hval).
@@ -437,13 +437,13 @@ Section arc.
   Lemma drop_weak_spec (γ : gname) (l : loc) :
     is_arc P1 P2 N γ l -∗
     {{{ weak_tok γ }}} drop_weak [ #l]
-    {{{ (b : bool), RET #b ; if b then P2 ∗ l ↦ #0 ∗ shift_loc l 1 ↦ #0 else True }}}.
+    {{{ (b : bool), RET #b ; if b then P2 ∗ l ↦ #0 ∗ (l +ₗ 1) ↦ #0 else True }}}.
   Proof.
     iIntros "#INV !# * Hown HΦ". iLöb as "IH". wp_rec. wp_op. wp_bind (!ˢᶜ_)%E.
-    iAssert (□ (weak_tok γ ={⊤,⊤ ∖ ↑N}=∗ ∃ w : Z, shift_loc l 1 ↦ #w ∗
-              (shift_loc l 1 ↦ #(w - 1) ={⊤ ∖ ↑N,⊤}=∗ ⌜w ≠ 1⌝ ∨
-               ▷ P2 ∗ l ↦ #0 ∗ shift_loc l 1 ↦ #0) ∧
-              (shift_loc l 1 ↦ #w ={⊤ ∖ ↑N,⊤}=∗ weak_tok γ)))%I as "#Hproto".
+    iAssert (□ (weak_tok γ ={⊤,⊤ ∖ ↑N}=∗ ∃ w : Z, (l +ₗ 1) ↦ #w ∗
+              ((l +ₗ 1) ↦ #(w - 1) ={⊤ ∖ ↑N,⊤}=∗ ⌜w ≠ 1⌝ ∨
+               ▷ P2 ∗ l ↦ #0 ∗ (l +ₗ 1) ↦ #0) ∧
+              ((l +ₗ 1) ↦ #w ={⊤ ∖ ↑N,⊤}=∗ weak_tok γ)))%I as "#Hproto".
     { iIntros "!# Hown". iInv N as (st) "[>H● H]" "Hclose1".
       iDestruct (weak_tok_auth_val with "H● Hown") as %(st' & weak & -> & Hval).
       destruct st' as [[[[??][?|]]| |]|]; try done; [|iExists _..].
@@ -565,7 +565,7 @@ Section arc.
     is_arc P1 P2 N γ l -∗
     {{{ arc_tok γ q ∗ P1 q }}} is_unique [ #l]
     {{{ (b : bool), RET #b ;
-        if b then l ↦ #1 ∗ shift_loc l 1 ↦ #1 ∗ P1 1
+        if b then l ↦ #1 ∗ (l +ₗ 1) ↦ #1 ∗ P1 1
         else arc_tok γ q ∗ P1 q }}}.
   Proof using HP1.
     iIntros "#INV !# * [Hown HP1] HΦ". wp_rec. wp_bind (CAS _ _ _). wp_op.
@@ -627,7 +627,7 @@ Section arc.
     {{{ (x : fin 3), RET #x ;
         match x : nat with
         (* No other reference : we get everything. *)
-        | 0%nat => l ↦ #1 ∗ shift_loc l 1 ↦ #1 ∗ P1 1
+        | 0%nat => l ↦ #1 ∗ (l +ₗ 1) ↦ #1 ∗ P1 1
         (* No other strong, but there are weaks : we get P1,
            plus the option to get a weak if we pay P2. *)
         | 1%nat => P1 1 ∗ (P2 ={⊤}=∗ weak_tok γ)

@@ -9,8 +9,7 @@ Definition at_bor `{invG Σ, lftG Σ} κ N (P : iProp Σ) :=
   (∃ i, &{κ,i}P ∗
     (⌜N ⊥ lftN⌝ ∗ inv N (idx_bor_own 1 i) ∨
      ⌜N = lftN⌝ ∗ inv N (∃ q, idx_bor_own q i)))%I.
-Notation "&at{ κ , N } P" := (at_bor κ N P)
-  (format "&at{ κ , N }  P", at level 20, right associativity) : uPred_scope.
+Notation "&at{ κ , N }" := (at_bor κ N) (format "&at{ κ , N }") : uPred_scope.
 
 Section atomic_bors.
   Context `{invG Σ, lftG Σ} (P : iProp Σ) (N : namespace).
@@ -31,9 +30,9 @@ Section atomic_bors.
   Global Instance at_bor_persistent : PersistentP (&at{κ, N} P) := _.
 
   Lemma bor_share E κ :
-    ↑lftN ⊆ E → N ⊥ lftN → &{κ}P ={E}=∗ &at{κ, N}P.
+    N ⊥ lftN → &{κ}P ={E}=∗ &at{κ, N}P.
   Proof.
-    iIntros (? HN) "HP". rewrite bor_unfold_idx. iDestruct "HP" as (i) "(#?&Hown)".
+    iIntros (HN) "HP". rewrite bor_unfold_idx. iDestruct "HP" as (i) "(#?&Hown)".
     iExists i. iFrame "#".
     iLeft. iSplitR. done. by iMod (inv_alloc with "[Hown]") as "$"; auto.
   Qed.

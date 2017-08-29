@@ -48,7 +48,7 @@ Section definitions.
     seal_eq heap_mapsto_aux.
 
   Definition heap_mapsto_vec (l : loc) (q : Qp) (vl : list val) : iProp Σ :=
-    ([∗ list] i ↦ v ∈ vl, heap_mapsto (shift_loc l i) q v)%I.
+    ([∗ list] i ↦ v ∈ vl, heap_mapsto (l +ₗ i) q v)%I.
 
   Fixpoint inter (i0 : Z) (n : nat) : gmapR Z (exclR unitC) :=
     match n with O => ∅ | S n => <[i0 := Excl ()]>(inter (i0+1) n) end.
@@ -150,7 +150,7 @@ Section heap.
   Proof. by rewrite /heap_mapsto_vec. Qed.
 
   Lemma heap_mapsto_vec_app l q vl1 vl2 :
-    l ↦∗{q} (vl1 ++ vl2) ⊣⊢ l ↦∗{q} vl1 ∗ shift_loc l (length vl1) ↦∗{q} vl2.
+    l ↦∗{q} (vl1 ++ vl2) ⊣⊢ l ↦∗{q} vl1 ∗ (l +ₗ length vl1) ↦∗{q} vl2.
   Proof.
     rewrite /heap_mapsto_vec big_sepL_app.
     do 2 f_equiv. intros k v. by rewrite shift_loc_assoc_nat.
@@ -160,7 +160,7 @@ Section heap.
   Proof. by rewrite /heap_mapsto_vec /= shift_loc_0 right_id. Qed.
 
   Lemma heap_mapsto_vec_cons l q v vl:
-    l ↦∗{q} (v :: vl) ⊣⊢ l ↦{q} v ∗ shift_loc l 1 ↦∗{q} vl.
+    l ↦∗{q} (v :: vl) ⊣⊢ l ↦{q} v ∗ (l +ₗ 1) ↦∗{q} vl.
   Proof.
     by rewrite (heap_mapsto_vec_app l q [v] vl) heap_mapsto_vec_singleton.
   Qed.
@@ -173,7 +173,7 @@ Section heap.
     - revert l. induction Hlen as [|v1 v2 vl1 vl2 _ _ IH]=> l.
       { rewrite !heap_mapsto_vec_nil. iIntros "_"; auto. }
       rewrite !heap_mapsto_vec_cons. iIntros "[[Hv1 Hvl1] [Hv2 Hvl2]]".
-      iDestruct (IH (shift_loc l 1) with "[$Hvl1 $Hvl2]") as "[% $]"; subst.
+      iDestruct (IH (l +ₗ 1) with "[$Hvl1 $Hvl2]") as "[% $]"; subst.
       rewrite (inj_iff (:: vl2)).
       iDestruct (heap_mapsto_agree with "[$Hv1 $Hv2]") as %<-.
       iSplit; first done. iFrame.
@@ -212,7 +212,7 @@ Section heap.
   Lemma heap_mapsto_vec_combine l q vl :
     vl ≠ [] →
     l ↦∗{q} vl ⊣⊢ own heap_name (◯ [^op list] i ↦ v ∈ vl,
-      {[shift_loc l i := (q, Cinr 0%nat, to_agree v)]}).
+      {[l +ₗ i := (q, Cinr 0%nat, to_agree v)]}).
   Proof.
     rewrite /heap_mapsto_vec heap_mapsto_eq /heap_mapsto_def /heap_mapsto_st=>?.
     by rewrite (big_opL_commute (Auth None)) big_opL_commute1 //.
@@ -269,7 +269,7 @@ Section heap.
   Proof. revert i. induction n as [|n IH]=>i. done. by apply insert_valid. Qed.
 
   Lemma heap_freeable_op_eq l q1 q2 n n' :
-    †{q1}l…n ∗ †{q2}shift_loc l n…n' ⊣⊢ †{q1+q2}l…(n+n').
+    †{q1}l…n ∗ †{q2}l+ₗn … n' ⊣⊢ †{q1+q2}l…(n+n').
   Proof.
     by rewrite heap_freeable_eq /heap_freeable_def -own_op -auth_frag_op
       op_singleton pair_op inter_op.
@@ -277,7 +277,7 @@ Section heap.
 
   (** Properties about heap_freeable_rel and heap_freeable *)
   Lemma heap_freeable_rel_None σ l hF :
-    (∀ m : Z, σ !! shift_loc l m = None) → heap_freeable_rel σ hF →
+    (∀ m : Z, σ !! (l +ₗ m) = None) → heap_freeable_rel σ hF →
     hF !! l.1 = None.
   Proof.
     intros FRESH REL. apply eq_None_not_Some. intros [[q s] [Hsne REL']%REL].
@@ -288,7 +288,7 @@ Section heap.
   Lemma heap_freeable_is_Some σ hF l n i :
     heap_freeable_rel σ hF →
     hF !! l.1 = Some (1%Qp, inter (l.2) n) →
-    is_Some (σ !! shift_loc l i) ↔ 0 ≤ i ∧ i < n.
+    is_Some (σ !! (l +ₗ i)) ↔ 0 ≤ i ∧ i < n.
   Proof.
     destruct l as [b j]; rewrite /shift_loc /=. intros REL Hl.
     destruct (REL b (1%Qp, inter j n)) as [_ ->]; simpl in *; auto.
@@ -299,7 +299,7 @@ Section heap.
 
   Lemma heap_freeable_rel_init_mem l h vl σ:
     vl ≠ [] →
-    (∀ m : Z, σ !! shift_loc l m = None) →
+    (∀ m : Z, σ !! (l +ₗ m) = None) →
     heap_freeable_rel σ h →
     heap_freeable_rel (init_mem l vl σ)
                       (<[l.1 := (1%Qp, inter (l.2) (length vl))]> h).
@@ -311,8 +311,7 @@ Section heap.
       + rewrite inter_lookup_Some //.
         destruct (lookup_init_mem_Some σ l (l.1, i) vl); naive_solver.
       + rewrite inter_lookup_None; last lia. rewrite lookup_init_mem_ne /=; last lia.
-        replace (l.1,i) with (shift_loc l (i - l.2))
-          by (rewrite /shift_loc; f_equal; lia).
+        replace (l.1,i) with (l +ₗ (i - l.2)) by (rewrite /shift_loc; f_equal; lia).
         by rewrite FRESH !is_Some_alt.
     - destruct (REL blk qs) as [? Hs]; auto.
       split; [done|]=> i. by rewrite -Hs lookup_init_mem_ne; last auto.
@@ -339,16 +338,16 @@ Section heap.
 
   (** Weakest precondition *)
   Lemma heap_alloc_vs σ l vl :
-    (∀ m : Z, σ !! shift_loc l m = None) →
+    (∀ m : Z, σ !! (l +ₗ m) = None) →
     own heap_name (● to_heap σ)
     ==∗ own heap_name (● to_heap (init_mem l vl σ))
        ∗ own heap_name (◯ [^op list] i ↦ v ∈ vl,
-           {[shift_loc l i := (1%Qp, Cinr 0%nat, to_agree v)]}).
+           {[l +ₗ i := (1%Qp, Cinr 0%nat, to_agree v)]}).
   Proof.
     intros FREE. rewrite -own_op. apply own_update, auth_update_alloc.
     revert l FREE. induction vl as [|v vl IH]=> l FRESH; [done|].
     rewrite (big_opL_consZ_l (λ k _, _ (_ k) _ )) /=.
-    etrans; first apply (IH (shift_loc l 1)).
+    etrans; first apply (IH (l +ₗ 1)).
     { intros. by rewrite shift_loc_assoc. }
     rewrite shift_loc_0 -insert_singleton_op; last first.
     { rewrite -equiv_None big_opL_commute equiv_None big_opL_None=> l' v' ?.
@@ -360,7 +359,7 @@ Section heap.
 
   Lemma heap_alloc σ l n vl :
     0 < n →
-    (∀ m, σ !! shift_loc l m = None) →
+    (∀ m, σ !! (l +ₗ m) = None) →
     Z.of_nat (length vl) = n →
     heap_ctx σ ==∗
       heap_ctx (init_mem l vl σ) ∗ †l…(Z.to_nat n) ∗ l ↦∗ vl.
@@ -382,7 +381,7 @@ Section heap.
 
   Lemma heap_free_vs σ l vl :
     own heap_name (● to_heap σ) ∗ own heap_name (◯ [^op list] i ↦ v ∈ vl,
-      {[shift_loc l i := (1%Qp, Cinr 0%nat, to_agree v)]})
+      {[l +ₗ i := (1%Qp, Cinr 0%nat, to_agree v)]})
     ==∗ own heap_name (● to_heap (free_mem l (length vl) σ)).
   Proof.
     rewrite -own_op. apply own_update, auth_update_dealloc.
@@ -390,7 +389,7 @@ Section heap.
     rewrite (big_opL_consZ_l (λ k _, _ (_ k) _ )) /= shift_loc_0.
     apply local_update_total_valid=> _ Hvalid _.
     assert (([^op list] k↦y ∈ vl,
-      {[shift_loc l (1 + k) := (1%Qp, Cinr 0%nat, to_agree y)]} : heapUR) !! l = None).
+      {[l +ₗ (1 + k) := (1%Qp, Cinr 0%nat, to_agree y)]} : heapUR) !! l = None).
     { move: (Hvalid l). rewrite lookup_op lookup_singleton.
       by move=> /(cmra_discrete_valid_iff 0) /exclusiveN_Some_l. }
     rewrite -insert_singleton_op //. etrans.
@@ -403,7 +402,7 @@ Section heap.
   Lemma heap_free σ l vl (n : Z) :
     n = length vl →
     heap_ctx σ -∗ l ↦∗ vl -∗ †l…(length vl)
-    ==∗ ⌜0 < n⌝ ∗ ⌜∀ m, is_Some (σ !! (shift_loc l m)) ↔ (0 ≤ m < n)⌝ ∗
+    ==∗ ⌜0 < n⌝ ∗ ⌜∀ m, is_Some (σ !! (l +ₗ m)) ↔ (0 ≤ m < n)⌝ ∗
         heap_ctx (free_mem l (Z.to_nat n) σ).
   Proof.
     iDestruct 1 as (hF) "(Hvalσ & HhF & REL)"; iDestruct "REL" as %REL.

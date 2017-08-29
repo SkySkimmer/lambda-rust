@@ -9,6 +9,10 @@ Open Scope Z_scope.
 Definition block : Set := positive.
 Definition loc : Set := block * Z.
 
+Bind Scope loc_scope with loc.
+Delimit Scope loc_scope with L.
+Open Scope loc_scope.
+
 Inductive base_lit : Set :=
 | LitUnit | LitLoc (l : loc) | LitInt (n : Z).
 Inductive bin_op : Set :=
@@ -194,16 +198,19 @@ Definition lit_of_bool (b : bool) : base_lit :=
 
 Definition shift_loc (l : loc) (z : Z) : loc := (l.1, l.2 + z).
 
+Notation "l +ₗ z" := (shift_loc l%L z%Z)
+  (at level 50, left associativity) : loc_scope.
+
 Fixpoint init_mem (l:loc) (init:list val) (σ:state) : state :=
   match init with
   | [] => σ
-  | inith :: initq => <[l:=(RSt 0, inith)]>(init_mem (shift_loc l 1) initq σ)
+  | inith :: initq => <[l:=(RSt 0, inith)]>(init_mem (l +ₗ 1) initq σ)
   end.
 
 Fixpoint free_mem (l:loc) (n:nat) (σ:state) : state :=
   match n with
   | O => σ
-  | S n => delete l (free_mem (shift_loc l 1) n σ)
+  | S n => delete l (free_mem (l +ₗ 1) n σ)
   end.
 
 Inductive lit_eq (σ : state) : base_lit → base_lit → Prop :=
@@ -220,7 +227,11 @@ Inductive lit_neq (σ : state) : base_lit → base_lit → Prop :=
 | IntNeq z1 z2 :
     z1 ≠ z2 → lit_neq σ (LitInt z1) (LitInt z2)
 | LocNeq l1 l2 :
-    l1 ≠ l2 → lit_neq σ (LitLoc l1) (LitLoc l2).
+    l1 ≠ l2 → lit_neq σ (LitLoc l1) (LitLoc l2)
+| LocNeqNullR l :
+    lit_neq σ (LitLoc l) (LitInt 0)
+| LocNeqNullL l :
+    lit_neq σ (LitInt 0) (LitLoc l).
 
 Inductive bin_op_eval (σ : state) : bin_op → base_lit → base_lit → base_lit → Prop :=
 | BinOpPlus z1 z2 :
@@ -234,7 +245,7 @@ Inductive bin_op_eval (σ : state) : bin_op → base_lit → base_lit → base_l
 | BinOpEqFalse l1 l2 :
     lit_neq σ l1 l2 → bin_op_eval σ EqOp l1 l2 (lit_of_bool false)
 | BinOpOffset l z :
-    bin_op_eval σ OffsetOp (LitLoc l) (LitInt z) (LitLoc $ shift_loc l z).
+    bin_op_eval σ OffsetOp (LitLoc l) (LitInt z) (LitLoc $ l +ₗ z).
 
 Definition stuck_term := App (Lit $ LitInt 0) [].
 
@@ -299,13 +310,13 @@ Inductive head_step : expr → state → expr → state → list expr → Prop :
               []
 | AllocS n l init σ :
     0 < n →
-    (∀ m, σ !! shift_loc l m = None) →
+    (∀ m, σ !! (l +ₗ m) = None) →
     Z.of_nat (length init) = n →
     head_step (Alloc $ Lit $ LitInt n) σ
               (Lit $ LitLoc l) (init_mem l init σ) []
 | FreeS n l σ :
     0 < n →
-    (∀ m, is_Some (σ !! shift_loc l m) ↔ 0 ≤ m < n) →
+    (∀ m, is_Some (σ !! (l +ₗ m)) ↔ 0 ≤ m < n) →
     head_step (Free (Lit $ LitInt n) (Lit $ LitLoc l)) σ
               (Lit LitUnit) (free_mem l (Z.to_nat n) σ)
               []
@@ -373,22 +384,20 @@ Proof.
   destruct (list_expr_val_eq_inv vl1 vl2 e1 e2 el1 el2); auto. congruence.
 Qed.
 
-Lemma shift_loc_assoc l n n' :
-  shift_loc (shift_loc l n) n' = shift_loc l (n+n').
+Lemma shift_loc_assoc l n n' : l +ₗ n +ₗ n' = l +ₗ (n + n').
 Proof. rewrite /shift_loc /=. f_equal. lia. Qed.
-Lemma shift_loc_0 l : shift_loc l 0 = l.
+Lemma shift_loc_0 l : l +ₗ 0 = l.
 Proof. destruct l as [b o]. rewrite /shift_loc /=. f_equal. lia. Qed.
 
-Lemma shift_loc_assoc_nat l (n n' : nat) :
-  shift_loc (shift_loc l n) n' = shift_loc l (n+n')%nat.
+Lemma shift_loc_assoc_nat l (n n' : nat) : l +ₗ n +ₗ n' = l +ₗ (n + n')%nat.
 Proof. rewrite /shift_loc /=. f_equal. lia. Qed.
-Lemma shift_loc_0_nat l : shift_loc l 0%nat = l.
+Lemma shift_loc_0_nat l : l +ₗ 0%nat = l.
 Proof. destruct l as [b o]. rewrite /shift_loc /=. f_equal. lia. Qed.
 
 Instance shift_loc_inj l : Inj (=) (=) (shift_loc l).
 Proof. destruct l as [b o]; intros n n' [=?]; lia. Qed.
 
-Lemma shift_loc_block l n : (shift_loc l n).1 = l.1.
+Lemma shift_loc_block l n : (l +ₗ n).1 = l.1.
 Proof. done. Qed.
 
 Lemma lookup_init_mem σ (l l' : loc) vl :
@@ -420,7 +429,7 @@ Lemma lookup_init_mem_ne σ (l l' : loc) vl :
   init_mem l vl σ !! l' = σ !! l'.
 Proof.
   revert l. induction vl as [|v vl IH]=> /= l Hl; auto.
-  rewrite -(IH (shift_loc l 1)); last (simpl; intuition lia).
+  rewrite -(IH (l +ₗ 1)); last (simpl; intuition lia).
   apply lookup_insert_ne. intros ->; intuition lia.
 Qed.
 
@@ -629,6 +638,6 @@ Notation LetCtx x e2 := (AppRCtx (LamV [x] e2) [] []).
 Notation SeqCtx e2 := (LetCtx BAnon e2).
 Notation Skip := (Seq (Lit LitUnit) (Lit LitUnit)).
 Coercion lit_of_bool : bool >-> base_lit.
-Notation If e0 e1 e2 := (Case e0 [e2;e1]).
+Notation If e0 e1 e2 := (Case e0 (@cons expr e2 (@cons expr e1 (@nil expr)))).
 Notation Newlft := (Lit LitUnit) (only parsing).
 Notation Endlft := Skip (only parsing).
