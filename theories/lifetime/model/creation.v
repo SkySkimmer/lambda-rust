@@ -55,11 +55,7 @@ Proof.
   iModIntro. rewrite /lft_inv_dead. iExists Q. by iFrame.
 Qed.
 
-(* FIXME: Get rid of this hack.  If we just remove this line, the next lemma
-   statement breaks. *)
-Remove Hints finite.finite_countable : typeclass_instances.
-
-Lemma lfts_kill A (I : gmap lft lft_names) (K K' : gset lft) :
+Lemma lfts_kill (A : gmap atomic_lft _) (I : gmap lft lft_names) (K K' : gset lft) :
   let Iinv K' := (own_ilft_auth I ∗ [∗ set] κ' ∈ K', lft_inv_alive κ')%I in
   K ⊥ K' →
   (∀ κ κ', κ ∈ K → is_Some (I !! κ') → κ ⊆ κ' → κ' ∈ K) →
