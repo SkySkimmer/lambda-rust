@@ -1,8 +1,3 @@
-# Process flags
-ifeq ($(Y), 1)
-	YFLAG=-y
-endif
-
 # Forward most targets to Coq makefile (with some trick to make this phony)
 %: Makefile.coq phony
 	+@make -f Makefile.coq $@
@@ -15,18 +10,27 @@ clean: Makefile.coq
 	find theories \( -name "*.v.d" -o -name "*.vo" -o -name "*.aux" -o -name "*.cache" -o -name "*.glob" -o -name "*.vio" \) -print -delete
 	rm -f Makefile.coq
 
-# Create Coq Makefile. POSIX awk can't do in-place editing, but coq_makefile wants the real filename, so we do some file gymnastics.
+# Create Coq Makefile. POSIX awk can't do in-place editing, but coq_makefile wants the real
+# filename, so we do some file gymnastics.
 Makefile.coq: _CoqProject Makefile awk.Makefile
 	coq_makefile -f _CoqProject -o Makefile.coq
 	mv Makefile.coq Makefile.coq.tmp && awk -f awk.Makefile Makefile.coq.tmp > Makefile.coq && rm Makefile.coq.tmp
 
 # Install build-dependencies
-build-dep:
-	build/opam-pins.sh < opam.pins
-	opam upgrade $(YFLAG) # it is not nice that we upgrade *all* packages here, but I found no nice way to upgrade only those that we pinned
-	opam pin add opam-builddep-temp "$$(pwd)#HEAD" -k git -n -y
-	opam install opam-builddep-temp --deps-only $(YFLAG)
-	opam pin remove opam-builddep-temp
+build-dep: phony
+	@# We want opam to not just instal the build-deps now, but to also keep satisfying these
+	@# constraints.  Otherwise, `opam upgrade` may well update some packages to versions
+	@# that are incompatible with our build requirements.
+	@# To achieve this, we create a fake opam package that has our build-dependencies as
+	@# dependencies, but does not actually install anything.
+	mkdir -p build-dep
+	# Create the build-dep package, add the pin and (re)install it.
+	@sed <opam 's/^\(build\|install\|remove\):.*/\1: []/; s/^name: *"\(.*\)" */name: "\1-builddep"/' > build-dep/opam
+	@fgrep builddep build-dep/opam >/dev/null || (echo "sed failed to fix the package name" && exit 1) # sanity check
+	@# Reinstallation is needed in case the pin already exists, but the builddep package changed.
+	@BUILD_DEP_PACKAGE="$$(egrep "^name:" build-dep/opam | sed 's/^name: *"\(.*\)" */\1/')"; \
+	  opam pin add "$$BUILD_DEP_PACKAGE" "$$(pwd)/build-dep" -k path $(OPAMFLAGS) && \
+	  opam reinstall "$$BUILD_DEP_PACKAGE"
 
 # Some files that do *not* need to be forwarded to Makefile.coq
 Makefile: ;

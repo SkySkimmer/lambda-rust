@@ -443,7 +443,7 @@ Proof.
   assert (∀ (l : loc) ls (X : gset block),
     l ∈ ls → l.1 ∈ foldr (λ l, ({[l.1]} ∪)) X ls) as help.
   { induction 1; set_solver. }
-  rewrite /fresh_block /shift_loc /= -not_elem_of_dom -elem_of_elements.
+  rewrite /fresh_block /shift_loc /= -(not_elem_of_dom (D := gset loc)) -elem_of_elements.
   move=> /(help _ _ ∅) /=. apply is_fresh.
 Qed.
 

@@ -55,6 +55,10 @@ Proof.
   iModIntro. rewrite /lft_inv_dead. iExists Q. by iFrame.
 Qed.
 
+(* FIXME: Get rid of this hack.  If we just remove this line, the next lemma
+   statement breaks. *)
+Remove Hints finite.finite_countable : typeclass_instances.
+
 Lemma lfts_kill A (I : gmap lft lft_names) (K K' : gset lft) :
   let Iinv K' := (own_ilft_auth I ∗ [∗ set] κ' ∈ K', lft_inv_alive κ')%I in
   K ⊥ K' →
@@ -168,12 +172,12 @@ Proof.
     iIntros (κ [[Hκ HκI]%elem_of_filter HκK]%elem_of_difference) "Halive".
     rewrite /lft_inv. iLeft. iFrame "Halive". iPureIntro.
     apply lft_alive_in_insert_false; last done.
-    move: HκK. rewrite elem_of_kill_set -elem_of_dom. set_solver +HκI.
+    move: HκK. rewrite elem_of_kill_set -(elem_of_dom (D:=gset lft)). set_solver +HκI.
   - iApply (@big_sepS_impl with "[$Hinv]"); iIntros "!#".
     rewrite /lft_inv. iIntros (κ Hκ) "[[? %]|[? %]]".
     + iLeft. iFrame. iPureIntro.
       apply lft_alive_in_insert_false; last done. intros ?.
-      assert (κ ∈ K) by (rewrite elem_of_kill_set -elem_of_dom HI elem_of_union; auto).
+      assert (κ ∈ K) by (rewrite elem_of_kill_set -(elem_of_dom (D:=gset lft)) HI elem_of_union; auto).
       eapply HK'', Hκ. rewrite elem_of_union. auto.
     + iRight. iFrame. iPureIntro. by apply lft_dead_in_insert_false.
 Qed.

@@ -120,17 +120,17 @@ Proof.
   destruct Ha2; simplify_eq; econstructor; eauto; try apply lookup_insert.
   (* Oh my. FIXME. *)
   - eapply lit_neq_state; last done.
-    setoid_rewrite <-not_elem_of_dom. rewrite dom_insert_L.
-    cut (is_Some (σ !! l)); last by eexists. rewrite -elem_of_dom. set_solver+.
+    setoid_rewrite <-(not_elem_of_dom (D:=gset loc)). rewrite dom_insert_L.
+    cut (is_Some (σ !! l)); last by eexists. rewrite -(elem_of_dom (D:=gset loc)). set_solver+.
   - eapply lit_eq_state; last done.
-    setoid_rewrite <-not_elem_of_dom. rewrite dom_insert_L.
-    cut (is_Some (σ !! l)); last by eexists. rewrite -elem_of_dom. set_solver+.
+    setoid_rewrite <-(not_elem_of_dom (D:=gset loc)). rewrite dom_insert_L.
+    cut (is_Some (σ !! l)); last by eexists. rewrite -(elem_of_dom (D:=gset loc)). set_solver+.
   - eapply lit_neq_state; last done.
-    setoid_rewrite <-not_elem_of_dom. rewrite dom_insert_L.
-    cut (is_Some (σ !! l)); last by eexists. rewrite -elem_of_dom. set_solver+.
+    setoid_rewrite <-(not_elem_of_dom (D:=gset loc)). rewrite dom_insert_L.
+    cut (is_Some (σ !! l)); last by eexists. rewrite -(elem_of_dom (D:=gset loc)). set_solver+.
   - eapply lit_eq_state; last done.
-    setoid_rewrite <-not_elem_of_dom. rewrite dom_insert_L.
-    cut (is_Some (σ !! l)); last by eexists. rewrite -elem_of_dom. set_solver+.
+    setoid_rewrite <-(not_elem_of_dom (D:=gset loc)). rewrite dom_insert_L.
+    cut (is_Some (σ !! l)); last by eexists. rewrite -(elem_of_dom (D:=gset loc)). set_solver+.
 Qed.
 
 Lemma next_access_head_Free_concurent_step e1 e1' e2 e'f σ σ' o1 a2 l :

@@ -13,7 +13,7 @@ Class typeG Σ := TypeG {
   type_frac_borrowG :> frac_borG Σ
 }.
 
-Definition lftE := ↑lftN.
+Definition lftE : coPset := ↑lftN.
 Definition lrustN := nroot .@ "lrust".
 Definition shrN  := lrustN .@ "shr".
 

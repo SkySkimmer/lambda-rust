@@ -6,11 +6,9 @@ authors: "The RustBelt Team"
 homepage: "http://plv.mpi-sws.org/rustbelt/"
 bug-reports: "https://gitlab.mpi-sws.org/FP/lambdaRust-coq/issues"
 dev-repo: "https://gitlab.mpi-sws.org/FP/lambdaRust-coq.git"
-build: [
-  [make "-j%{jobs}%"]
-]
+build: [make "-j%{jobs}%"]
 install: [make "install"]
 remove: [ "sh" "-c" "rm -rf '%{lib}%/coq/user-contrib/lrust'" ]
 depends: [
-  "coq-iris"
+  "coq-iris" { (= "dev.2017-09-19.0") | (= "dev") }
 ]
