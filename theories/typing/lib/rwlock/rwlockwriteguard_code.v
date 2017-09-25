@@ -131,7 +131,7 @@ Section rwlockwriteguard_functions.
       destruct st0 as [[[]|]| |]; try by inversion Heq.
       iExists None. iFrame. iMod (own_update_2 with "H● H◯") as "$"; last done.
       apply auth_update_dealloc. rewrite -(right_id None op (Some _)).
-      apply cancel_local_update_empty, _. }
+      apply cancel_local_update_unit, _. }
     iModIntro. wp_seq. iMod ("Hcloseα" with "Hβ") as "Hα".
     iMod ("Hclose" with "Hα HL") as "HL".
     iApply (type_type _ _ _ [ x ◁ box (uninit 1)]

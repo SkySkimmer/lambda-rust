@@ -452,7 +452,7 @@ Proof.
   iModIntro. iSplitL "Hbox HE".
   { iNext. rewrite /lft_inh. iExists ({[γE]} ∪ PE).
     rewrite to_gmap_union_singleton. iFrame. }
-  clear dependent PE. rewrite -(left_id_L ∅ op (◯ GSet {[γE]})).
+  clear dependent PE. rewrite -(left_id_L ε op (◯ GSet {[γE]})).
   iDestruct "HE◯" as "[HE◯' HE◯]". iSplitL "HE◯'".
   { iIntros (I) "HI". iApply (own_inh_auth with "HI HE◯'"). }
   iIntros (Q'). rewrite {1}/lft_inh. iDestruct 1 as (PE) "[>HE Hbox]".

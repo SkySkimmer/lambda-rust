@@ -404,7 +404,7 @@ Section code.
       destruct weakc; first by simpl in *; lia.
       iMod (own_update_2 with "Hrc● Hwtok") as "Hrc●".
       { apply auth_update_dealloc, prod_local_update_2,
-              (cancel_local_update_empty 1%nat), _. }
+              (cancel_local_update_unit 1%nat), _. }
       destruct st as [[[q'' strong]| |]|]; try done.
       - iExists _. iDestruct "Hrcst" as (q0) "(Hlw & >$ & Hrcst)". iRight.
         iSplitR; first by auto with lia. iIntros "!>?". iApply "Hclose". iFrame.

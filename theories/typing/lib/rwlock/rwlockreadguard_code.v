@@ -100,7 +100,7 @@ Section rwlockreadguard_functions.
           iMod ("H†" with "Hν") as "H†". iModIntro. iNext. iMod "H†".
           iMod ("Hh" with "H†") as "Hb". iIntros "!> Hlx". iExists None. iFrame.
           iApply (own_update_2 with "H● H◯"). apply auth_update_dealloc.
-          rewrite -(right_id None op (Some _)). apply cancel_local_update_empty, _.
+          rewrite -(right_id None op (Some _)). apply cancel_local_update_unit, _.
         - iApply step_fupd_intro. set_solver. iNext. iIntros "Hlx".
           apply csum_included in Hle.
           destruct Hle as [|[(?&?&[=]&?)|(?&[[agν q']n]&[=<-]&->&Hle%prod_included)]];
@@ -118,7 +118,7 @@ Section rwlockreadguard_functions.
           assert (n = 1%positive ⋅ Pos.pred n) as EQn.
           { rewrite pos_op_plus -Pplus_one_succ_l Pos.succ_pred // =>?. by subst. }
           rewrite {1}EQn -{1}(agree_idemp (to_agree _)) -2!pair_op -Cinr_op Some_op.
-          apply (cancel_local_update_empty (reading_st q ν)) , _. }
+          apply (cancel_local_update_unit (reading_st q ν)) , _. }
       iApply (wp_step_fupd with "INV"). done. set_solver.
       iApply (wp_cas_int_suc with "Hlx"); try done. iNext. iIntros "Hlx INV !>".
       iMod ("INV" with "Hlx") as "INV". iMod ("Hcloseβ" with "[$INV]") as "Hβ".
