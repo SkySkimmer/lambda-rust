@@ -138,7 +138,7 @@ Section refmut_functions.
     iMod ("Hcloseβ" with "[> H↦lrc H● H◯ Hb] Hna") as "[Hβ Hna]".
     { iExists None. iFrame. iMod (own_update_2 with "H● H◯") as "$"; last done.
       apply auth_update_dealloc. rewrite -(right_id None _ (Some _)).
-      apply cancel_local_update_empty, _. }
+      apply cancel_local_update_unit, _. }
     iMod ("Hcloseα" with "Hβ") as "Hα". iMod ("Hclose" with "Hα HL") as "HL". wp_seq.
     iApply (type_type _ _ _ [ #lx ◁ box (uninit 2)]
             with "[] LFT HE Hna HL Hk"); last first.

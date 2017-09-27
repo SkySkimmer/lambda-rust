@@ -70,7 +70,7 @@ Proof.
   iNext. rewrite lft_vs_unfold. iExists (S n). iFrame "Hn●".
   iIntros (I) "Hinv [HP HPb] #Hκ†".
   rewrite {1}lft_vs_inv_unfold; iDestruct "Hinv" as "(Hκdead' & HI & Hinv)".
-  iDestruct (own_bor_auth with "HI Hi") as %?%elem_of_dom.
+  iDestruct (own_bor_auth with "HI Hi") as %?%(elem_of_dom (D:=gset lft)).
   iDestruct (@big_sepS_delete with "Hinv") as "[Hκalive Hinv]"; first done.
   rewrite lft_inv_alive_unfold.
   iDestruct ("Hκalive" with "[//]") as (Pb' Pi') "(Hκalive&Hvs'&Hinh)".

@@ -16,7 +16,7 @@ variables:
   - 'cat build-log.txt | egrep "[a-zA-Z0-9_/-]+ \((real|user): [0-9]" | tee build-time.txt'
   - 'if test -n "$VALIDATE" && (( RANDOM % 10 == 0 )); then make validate; fi'
   cache:
-    key: "coq$COQ_VERSION-ssr$SSR_VERSION"
+    key: "coq.$COQ_VERSION-ssr.$SSR_VERSION"
     paths:
     - opamroot/
   only:
@@ -34,7 +34,7 @@ lrust-coq8.6.1:
   variables:
     COQ_VERSION: "8.6.1"
     SSR_VERSION: "1.6.1"
-    VALIDATE: 1
+  #  VALIDATE: "1" # coqchk on lambdaRust is currently broken
   artifacts:
     paths:
     - build-time.txt

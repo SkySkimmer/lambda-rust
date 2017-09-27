@@ -290,7 +290,7 @@ Section code.
           -- iLeft. iSplit; first done. rewrite Hincls. iFrame "Hl†".
              iMod (own_update_2 with "Hst Htok") as "Hst".
              { apply auth_update_dealloc. rewrite -{1}(right_id (None, 0%nat) _ (_, _)).
-               apply cancel_local_update_empty, _. }
+               apply cancel_local_update_unit, _. }
              rewrite -[in (1).[ν]%I]Hqq' -[(|={∅,⊤}=>_)%I]fupd_trans.
              iApply step_fupd_mask_mono;
                last iMod ("Hνend" with "[$Hν $Hν1]") as "H†"; try done.
@@ -309,7 +309,7 @@ Section code.
                 iModIntro. iNext. iMod "H†". iMod ("Hν†" with "H†") as "Hty". iModIntro.
                 iMod (own_update_2 with "Hst Htok") as "Hst".
                 { apply auth_update_dealloc, prod_local_update_1,
-                        (cancel_local_update_empty (Some _) None). }
+                        (cancel_local_update_unit (Some _) None). }
                 iSplitL "Hty".
                 { iDestruct "Hty" as (vy) "[H Hty]". iExists vy. iFrame.
                   by iApply "Hinclo". }
@@ -319,7 +319,7 @@ Section code.
         * iIntros "Hl1".
           iMod (own_update_2 with "Hst Htok") as "[Hst Htok]".
           { apply auth_update. etrans.
-            - rewrite [(Some _, weak)]pair_split. apply cancel_local_update_empty, _.
+            - rewrite [(Some _, weak)]pair_split. apply cancel_local_update_unit, _.
             - apply (op_local_update _ _ (Some (Cinr (Excl tt)), 0%nat)). auto. }
           rewrite -[(|={∅,⊤}=>_)%I]fupd_trans -[in (1).[ν]%I]Hqq'.
           iApply step_fupd_mask_mono;
@@ -343,14 +343,14 @@ Section code.
              iApply ("Hclose" with "[>- $Hna]"). iExists (None, 0%nat).
              iMod (own_update_2 with "Hst Htok") as "$"; last done.
              apply auth_update_dealloc. rewrite -{1}(right_id (None, 0%nat) _ (_, _)).
-             apply cancel_local_update_empty, _.
+             apply cancel_local_update_unit, _.
           -- iRight. iSplitR; first by auto with lia. iIntros "!> Hl† Hl2 Hvl".
              iApply ("Hclose" with "[>- $Hna]"). iExists (None, S weak).
              rewrite Hincls. iFrame. iSplitR "Hl2"; last first.
              { simpl. destruct Pos.of_succ_nat; rewrite /= ?Pos.pred_double_succ //. }
              iMod (own_update_2 with "Hst Htok") as "$"; last done.
              apply auth_update_dealloc, prod_local_update', reflexivity.
-             rewrite -{1}(right_id None _ (Some _)). apply cancel_local_update_empty, _.
+             rewrite -{1}(right_id None _ (Some _)). apply cancel_local_update_unit, _.
       + apply csum_included in Hincl.
         destruct Hincl as [->|[(?&(?,?)&[=<-]&->&(q',strong)&[]%(inj2 pair))|
                                (?&?&[=]&?)]]; first done. setoid_subst.
@@ -362,7 +362,7 @@ Section code.
         * iMod (own_update_2 with "Hst Htok") as "Hst".
           { apply auth_update_dealloc.
             rewrite -pair_op -Cinl_op Some_op -{1}(left_id 0%nat _ weak) -pair_op.
-            apply (cancel_local_update_empty _ (_, _)). }
+            apply (cancel_local_update_unit _ (_, _)). }
           iApply "Hclose". iFrame. iExists _. iFrame. iExists (q+q'')%Qp. iFrame.
           iSplitL; first last.
           { rewrite [(_+_)%Qp]assoc [(q'+_)%Qp]comm. auto. }

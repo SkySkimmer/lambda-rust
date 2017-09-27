@@ -216,6 +216,13 @@ Fixpoint free_mem (l:loc) (n:nat) (σ:state) : state :=
 Inductive lit_eq (σ : state) : base_lit → base_lit → Prop :=
 | IntRefl z : lit_eq σ (LitInt z) (LitInt z)
 | LocRefl l : lit_eq σ (LitLoc l) (LitLoc l)
+(* Comparing unallocated pointers can non-deterministically say they are equal
+   even if they are not.  Given that our `free` actually makes addresses
+   re-usable, this may not be strictly necessary, but it is the most
+   conservative choice that avoids UB (and we cannot use UB as this operation is
+   possible in safe Rust).  See
+   <https://internals.rust-lang.org/t/comparing-dangling-pointers/3019> for some
+   more background. *)
 | LocUnallocL l1 l2 :
     σ !! l1 = None →
     lit_eq σ (LitLoc l1) (LitLoc l2)
@@ -443,7 +450,7 @@ Proof.
   assert (∀ (l : loc) ls (X : gset block),
     l ∈ ls → l.1 ∈ foldr (λ l, ({[l.1]} ∪)) X ls) as help.
   { induction 1; set_solver. }
-  rewrite /fresh_block /shift_loc /= -not_elem_of_dom -elem_of_elements.
+  rewrite /fresh_block /shift_loc /= -(not_elem_of_dom (D := gset loc)) -elem_of_elements.
   move=> /(help _ _ ∅) /=. apply is_fresh.
 Qed.
 

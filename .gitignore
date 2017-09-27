@@ -9,6 +9,6 @@
 *~
 *.bak
 .coq-native/
-iris-enabled
-Makefile.coq*
-opamroot
+build-dep/
+Makefile.coq
+Makefile.coq.conf

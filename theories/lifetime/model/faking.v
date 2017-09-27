@@ -21,7 +21,7 @@ Proof.
   iMod (own_alloc ((● ∅ ⋅ ◯ ∅) :auth (gmap slice_name
       (frac * agree bor_stateC)))) as (γbor) "[Hbor Hbor']";
     first by apply auth_valid_discrete_2.
-  iMod (own_alloc ((● ∅) :auth (gset_disj slice_name)))
+  iMod (own_alloc ((● ε) :auth (gset_disj slice_name)))
      as (γinh) "Hinh"; first by done.
   set (γs := LftNames γbor γcnt γinh).
   iMod (own_update with "HI") as "[HI Hγs]".

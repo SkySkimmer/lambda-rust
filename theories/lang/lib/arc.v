@@ -452,20 +452,20 @@ Section arc.
         + iMod ("Hclose1" with "[>-]") as "_"; last iLeft; auto with lia.
           iExists _. iMod (own_update_2 with "H● Hown") as "$".
           { apply auth_update_dealloc, prod_local_update_2,
-                  (cancel_local_update_empty 1%nat), _. }
+                  (cancel_local_update_unit 1%nat), _. }
           iExists _. iFrame. by replace (S (S weak) - 1) with (S weak:Z) by lia.
         + iFrame. iApply "Hclose1". iExists _. auto with iFrame.
       - iDestruct "H" as "[? >$]". iIntros "!>"; iSplit; iIntros "Hl1".
         + iMod ("Hclose1" with "[>-]") as "_"; last iLeft; auto with lia.
           iExists _. iMod (own_update_2 with "H● Hown") as "$".
           { apply auth_update_dealloc, prod_local_update_2,
-                  (cancel_local_update_empty 1%nat), _. }
+                  (cancel_local_update_unit 1%nat), _. }
           iFrame. by replace (S (S weak) - 1) with (S weak:Z) by lia.
         + iFrame. iApply "Hclose1". iExists _. auto with iFrame.
       - iDestruct "H" as "(>? & >$ & HP2)". iIntros "!>"; iSplit; iIntros "Hl1".
         + iMod (own_update_2 with "H● Hown") as "H●".
           { apply auth_update_dealloc, prod_local_update_2,
-                  (cancel_local_update_empty 1%nat), _. }
+                  (cancel_local_update_unit 1%nat), _. }
           destruct weak as [|weak].
           * iMod ("Hclose1" with "[H●]") as "_"; last by auto with iFrame.
             iExists _. iFrame.
@@ -519,7 +519,7 @@ Section arc.
       + destruct Hqq' as [<- ->].
         iMod (own_update_2 with "H● Hown") as "[H● H◯]".
         { apply auth_update, prod_local_update_1. rewrite -[x in (x, _)]right_id.
-          etrans; first apply cancel_local_update_empty, _.
+          etrans; first apply cancel_local_update_unit, _.
           by apply (op_local_update _ _ (Some (Cinr (Excl ())))). }
         iMod ("Hclose" with "[H● Hs Hw]") as "_"; first by iExists _; do 2 iFrame.
         iModIntro. wp_case. iApply wp_fupd. wp_op=>[_|//].
@@ -528,7 +528,7 @@ Section arc.
         rewrite -[in (_, _)](Pos.succ_pred s) // -[wl in Cinl (_, wl)]left_id
                 -Pos.add_1_l -2!pair_op -Cinl_op Some_op.
         iMod (own_update_2 _ _ _ _ with "H● Hown") as "H●".
-        { apply auth_update_dealloc, prod_local_update_1, @cancel_local_update_empty, _. }
+        { apply auth_update_dealloc, prod_local_update_1, @cancel_local_update_unit, _. }
         iMod ("Hclose" with "[- HΦ]") as "_".
         { iExists _. iFrame. iExists (q + q'')%Qp. iFrame. iSplit; last by destruct s.
           iIntros "!> !%". rewrite assoc -Hq''. f_equal. apply comm, _. }
@@ -552,7 +552,7 @@ Section arc.
     - wp_apply (wp_cas_int_suc with "Hs"); first done. iIntros "Hs".
       destruct Hqq' as [<- ->]. iMod (own_update_2 with "H● Hown") as "[H● H◯]".
       { apply auth_update, prod_local_update_1. rewrite -[x in (x, _)]right_id.
-        etrans; first apply cancel_local_update_empty, _.
+        etrans; first apply cancel_local_update_unit, _.
         by apply (op_local_update _ _ (Some (Cinr (Excl ())))). }
       iMod ("Hclose" with "[H● Hs Hw]") as "_"; first by iExists _; do 2 iFrame.
       iApply ("HΦ" $! true). rewrite -{1}Hq''. iFrame. by iApply close_last_strong.
@@ -615,7 +615,7 @@ Section arc.
       + setoid_subst. iDestruct "H" as (?) "(Hq & ? & ? & >? & >%)". subst. wp_read.
         iMod (own_update_2 with "H● H◯") as "H●".
         { apply auth_update_dealloc. rewrite -{1}[(_, 0%nat)]right_id.
-          apply cancel_local_update_empty, _. }
+          apply cancel_local_update_unit, _. }
         iMod ("Hclose" with "[H●]") as "_"; first by iExists _; iFrame.
         iModIntro. wp_seq. wp_op=>[_|//]. wp_let. wp_op. wp_write. iApply "HΦ".
         iDestruct "Hq" as %<-. iFrame.
@@ -643,7 +643,7 @@ Section arc.
     - wp_apply (wp_cas_int_suc with "Hs")=>//. iIntros "Hs".
       destruct Hqq' as [<- ->]. iMod (own_update_2 with "H● Hown") as "[H● H◯]".
       { apply auth_update, prod_local_update_1. rewrite -[x in (x, _)]right_id.
-        etrans; first apply cancel_local_update_empty, _.
+        etrans; first apply cancel_local_update_unit, _.
         by apply (op_local_update _ _ (Some (Cinr (Excl ())))). }
       iCombine "HP1" "HP1'" as "HP1". rewrite Hq''. clear Hq'' q''.
       iMod ("Hclose" with "[H● Hs Hw]") as "_"; first by iExists _; do 2 iFrame.
