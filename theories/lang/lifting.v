@@ -278,13 +278,13 @@ Proof.
 Qed.
 
 Lemma wp_eq_loc E (l1 : loc) (l2: loc) P Φ :
+  (P -∗ ∃ q v, ▷ l1 ↦{q} v) →
+  (P -∗ ∃ q v, ▷ l2 ↦{q} v) →
   (l1 = l2 → P -∗ ▷ Φ (LitV true)) →
   (l1 ≠ l2 → P -∗ ▷ Φ (LitV false)) →
-  (P -∗ ∃ q v, l1 ↦{q} v) →
-  (P -∗ ∃ q v, l2 ↦{q} v) →
   P -∗ WP BinOp EqOp (Lit (LitLoc l1)) (Lit (LitLoc l2)) @ E {{ Φ }}.
 Proof.
-  iIntros (Heq Hne Hl1 Hl2) "HP".
+  iIntros (Hl1 Hl2 Heq Hne) "HP".
   destruct (bool_decide_reflect (l1 = l2)).
   - rewrite Heq // {Heq Hne}. iApply wp_bin_op_pure; subst.
     + intros. apply BinOpEqTrue. constructor.
@@ -294,23 +294,26 @@ Proof.
     iSplitR.
     { iPureIntro. eexists _, _, _. constructor. apply BinOpEqFalse. by auto. }
     (* We need to do a little gymnastics here to apply Hne now and strip away a
-       ▷ but also keep the P. *)
-    iAssert (P ∧ ▷ Φ (LitV false))%I with "[HP]" as "HP".
-    { iSplit; first done. by iApply Hne. }
-    iNext.
+       ▷ but also have the ↦s. *)
+    iAssert ((▷ ∃ q v, l1 ↦{q} v) ∧ (▷ ∃ q v, l2 ↦{q} v) ∧ ▷ Φ (LitV false))%I with "[HP]" as "HP".
+    { iSplit; last iSplit.
+      - iDestruct (Hl1 with "HP") as (??) "?". iNext. eauto.
+      - iDestruct (Hl2 with "HP") as (??) "?". iNext. eauto.
+      - by iApply Hne. }
+    clear Hne Hl1 Hl2. iNext.
     iIntros (e2 σ2 efs Hs) "!>".
     inv_head_step. iSplitR=>//.
     match goal with [ H : bin_op_eval _ _ _ _ _ |- _ ] => inversion H end;
       inv_lit=>//.
-    * iExFalso. iDestruct "HP" as "[HP _]".
-      iDestruct (Hl1 with "HP") as (??) "Hl1".
+    * iExFalso. iDestruct "HP" as "[Hl1 _]".
+      iDestruct "Hl1" as (??) "Hl1".
       iDestruct (heap_read σ2 with "Hσ1 Hl1") as (n') "%".
       simplify_eq.
-    * iExFalso. iDestruct "HP" as "[HP _]".
-      iDestruct (Hl2 with "HP") as (??) "Hl2".
+    * iExFalso. iDestruct "HP" as "[_ [Hl2 _]]".
+      iDestruct "Hl2" as (??) "Hl2".
       iDestruct (heap_read σ2 with "Hσ1 Hl2") as (n') "%".
       simplify_eq.
-    * iDestruct "HP" as "[_ $]". done.
+    * iDestruct "HP" as "[_ [_ $]]". done.
 Qed.
 
 Lemma wp_eq_loc_0_r E (l : loc) P Φ :
