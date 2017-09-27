@@ -23,13 +23,13 @@ variables:
   - master
   - /^ci/
 
-lrust-coq8.7:
+build-coq8.7:
   <<: *template
   variables:
     COQ_VERSION: "8.7.dev"
     SSR_VERSION: "dev"
 
-lrust-coq8.6.1:
+build-coq8.6.1:
   <<: *template
   variables:
     COQ_VERSION: "8.6.1"
