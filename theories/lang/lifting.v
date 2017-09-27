@@ -268,9 +268,9 @@ Lemma wp_eq_int E (n1 n2 : Z) P Φ :
   (n1 ≠ n2 → P -∗ ▷ Φ (LitV false)) →
   P -∗ WP BinOp EqOp (Lit (LitInt n1)) (Lit (LitInt n2)) @ E {{ Φ }}.
 Proof.
-  iIntros (Hl Hg) "HP".
-  destruct (bool_decide_reflect (n1 = n2)); [rewrite Hl //|rewrite Hg //];
-    clear Hl Hg; iApply wp_bin_op_pure; subst.
+  iIntros (Heq Hne) "HP".
+  destruct (bool_decide_reflect (n1 = n2)); [rewrite Heq //|rewrite Hne //];
+    clear Hne Heq; iApply wp_bin_op_pure; subst.
   - intros. apply BinOpEqTrue. constructor.
   - iNext; iIntros (?? Heval). by inversion_clear Heval; inv_lit.
   - intros. apply BinOpEqFalse. by constructor.
@@ -280,31 +280,37 @@ Qed.
 Lemma wp_eq_loc E (l1 : loc) (l2: loc) P Φ :
   (l1 = l2 → P -∗ ▷ Φ (LitV true)) →
   (l1 ≠ l2 → P -∗ ▷ Φ (LitV false)) →
-  (∃ q1 vl1 q2 vl2, l1 ↦{q1} vl1 ∧ l2 ↦{q2} vl2)%I -∗
+  (P -∗ ∃ q v, l1 ↦{q} v) →
+  (P -∗ ∃ q v, l2 ↦{q} v) →
   P -∗ WP BinOp EqOp (Lit (LitLoc l1)) (Lit (LitLoc l2)) @ E {{ Φ }}.
 Proof.
-  iIntros (Hl Hg) "Hp HP".
-  iDestruct "Hp" as (q1 vl1 q2 vl2) "Hp".
-  destruct (bool_decide_reflect (l1 = l2)); [rewrite Hl //|rewrite Hg //];
-    clear Hl Hg.
-  - iApply wp_bin_op_pure; subst.
+  iIntros (Heq Hne Hl1 Hl2) "HP".
+  destruct (bool_decide_reflect (l1 = l2)).
+  - rewrite Heq // {Heq Hne}. iApply wp_bin_op_pure; subst.
     + intros. apply BinOpEqTrue. constructor.
     + iNext. iIntros (?? Heval). by inversion_clear Heval; inv_lit.
-  - iApply wp_lift_atomic_head_step_no_fork; subst=>//.
-    iIntros. iModIntro. inv_head_step.
+  - clear Heq. iApply wp_lift_atomic_head_step_no_fork; subst=>//.
+    iIntros (σ1) "Hσ1". iModIntro. inv_head_step.
     iSplitR.
     { iPureIntro. eexists _, _, _. constructor. apply BinOpEqFalse. by auto. }
+    (* We need to do a little gymnastics here to apply Hne now and strip away a
+       ▷ but also keep the P. *)
+    iAssert (P ∧ ▷ Φ (LitV false))%I with "[HP]" as "HP".
+    { iSplit; first done. by iApply Hne. }
     iNext.
     iIntros (e2 σ2 efs Hs) "!>".
     inv_head_step. iSplitR=>//.
-    inversion H7; inv_lit=>//.
-    * iDestruct "Hp" as "[Hp _]".
-      iDestruct (heap_read σ2 with "~ Hp") as (n') "%".
-      by rewrite H0 in H6.
-    * iDestruct "Hp" as "[_ Hp]".
-      iDestruct (heap_read σ2 with "~ Hp") as (n') "%".
-      by rewrite H0 in H6.
-    * by iFrame.
+    match goal with [ H : bin_op_eval _ _ _ _ _ |- _ ] => inversion H end;
+      inv_lit=>//.
+    * iExFalso. iDestruct "HP" as "[HP _]".
+      iDestruct (Hl1 with "HP") as (??) "Hl1".
+      iDestruct (heap_read σ2 with "Hσ1 Hl1") as (n') "%".
+      simplify_eq.
+    * iExFalso. iDestruct "HP" as "[HP _]".
+      iDestruct (Hl2 with "HP") as (??) "Hl2".
+      iDestruct (heap_read σ2 with "Hσ1 Hl2") as (n') "%".
+      simplify_eq.
+    * iDestruct "HP" as "[_ $]". done.
 Qed.
 
 Lemma wp_eq_loc_0_r E (l : loc) P Φ :
