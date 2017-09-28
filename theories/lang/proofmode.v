@@ -94,6 +94,8 @@ Tactic Notation "wp_op" :=
     | BinOp LeOp _ _ => wp_bind_core K; apply wp_le; wp_finish
     | BinOp EqOp (Lit (LitInt _)) (Lit (LitInt _)) =>
       wp_bind_core K; apply wp_eq_int; wp_finish
+    | BinOp EqOp (Lit (LitLoc _)) (Lit (LitLoc _)) =>
+      wp_bind_core K; apply wp_eq_loc; wp_finish
     | BinOp EqOp (Lit (LitLoc _)) (Lit (LitInt 0)) =>
       wp_bind_core K; apply wp_eq_loc_0_r; wp_finish
     | BinOp EqOp (Lit (LitInt 0)) (Lit (LitLoc _)) =>
