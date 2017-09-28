@@ -11,7 +11,7 @@ This version is known to compile with:
  - A development version of [Iris](https://gitlab.mpi-sws.org/FP/iris-coq/)
 
 The easiest way to install the correct versions of the dependencies is through
-opam.  You will need the Coq and Iris opam repositories:
+opam (1.2.2 or newer).  You will need the Coq and Iris opam repositories:
 
     opam repo add coq-released https://coq.inria.fr/opam/released
     opam repo add iris-dev https://gitlab.mpi-sws.org/FP/opam-dev.git
