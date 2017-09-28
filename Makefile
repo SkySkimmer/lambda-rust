@@ -22,7 +22,7 @@ Makefile.coq: _CoqProject Makefile awk.Makefile
 build-dep/opam: opam
 	# Create the build-dep package.
 	@mkdir -p build-dep
-	@sed <opam 's/^\(build\|install\|remove\):.*/\1: []/; s/^name: *"\(.*\)" */name: "\1-builddep"/' > build-dep/opam
+	@sed <opam -E 's/^(build|install|remove):.*/\1: []/; s/^name: *"(.*)" */name: "\1-builddep"/' >build-dep/opam
 	@fgrep builddep build-dep/opam >/dev/null || (echo "sed failed to fix the package name" && exit 1) # sanity check
 
 build-dep: build-dep/opam phony
