@@ -19,7 +19,7 @@ Makefile.coq: _CoqProject Makefile awk.Makefile
 	mv Makefile.coq Makefile.coq.tmp && awk -f awk.Makefile Makefile.coq.tmp > Makefile.coq && rm Makefile.coq.tmp
 
 # Install build-dependencies
-build-dep/opam: opam
+build-dep/opam: opam Makefile
 	# Create the build-dep package.
 	@mkdir -p build-dep
 	@sed <opam -E 's/^(build|install|remove):.*/\1: []/; s/^name: *"(.*)" */name: "\1-builddep"/' >build-dep/opam
