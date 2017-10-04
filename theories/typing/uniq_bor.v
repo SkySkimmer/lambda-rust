@@ -2,7 +2,7 @@ From iris.proofmode Require Import tactics.
 From iris.base_logic Require Import big_op.
 From lrust.lang Require Import heap.
 From lrust.typing Require Export type.
-From lrust.typing Require Import util lft_contexts type_context shr_bor programs.
+From lrust.typing Require Import util lft_contexts type_context programs.
 Set Default Proof Using "Type".
 
 Section uniq_bor.
@@ -109,17 +109,6 @@ Section typing.
     eqtype E L ty1 ty2 → eqtype E L (&uniq{κ}ty1) (&uniq{κ}ty2).
   Proof. by intros; apply uniq_proper. Qed.
 
-  Lemma tctx_share E L p κ ty :
-    lctx_lft_alive E L κ → tctx_incl E L [p ◁ &uniq{κ}ty] [p ◁ &shr{κ}ty].
-  Proof.
-    iIntros (Hκ ??) "#LFT #HE HL Huniq".
-    iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; [try done..|].
-    rewrite !tctx_interp_singleton /=.
-    iDestruct "Huniq" as ([[]|]) "[% Huniq]"; try done.
-    iMod (ty.(ty_share) with "LFT Huniq Htok") as "[Hown Htok]"; [solve_ndisj|].
-    iMod ("Hclose" with "Htok") as "[$ $]". iExists _. by iFrame "%∗".
-  Qed.
-
   Lemma tctx_reborrow_uniq E L p ty κ κ' :
     lctx_lft_incl E L κ' κ →
     tctx_incl E L [p ◁ &uniq{κ}ty] [p ◁ &uniq{κ'}ty; p ◁{κ'} &uniq{κ}ty].
@@ -129,36 +118,6 @@ Section typing.
     iDestruct "H" as ([[]|]) "[% Hb]"; try done.
     iMod (rebor with "LFT Hκκ' Hb") as "[Hb Hext]". done. iModIntro.
     iSplitL "Hb"; iExists _; auto.
-  Qed.
-
-  (* When sharing during extraction, we do the (arbitrary) choice of
-     sharing at the lifetime requested (κ). In some cases, we could
-     actually desire a longer lifetime and then use subtyping, because
-     then we get, in the environment, a shared borrow at this longer
-     lifetime.
-
-     In the case the user wants to do the sharing at a longer
-     lifetime, she has to manually perform the extraction herself at
-     the desired lifetime. *)
-  Lemma tctx_extract_hasty_share E L p ty ty' κ κ' T :
-    lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' → subtype E L ty' ty →
-    tctx_extract_hasty E L p (&shr{κ}ty) ((p ◁ &uniq{κ'}ty')::T)
-                       ((p ◁ &shr{κ}ty')::(p ◁{κ} &uniq{κ'}ty')::T).
-  Proof.
-    intros. apply (tctx_incl_frame_r _ [_] [_;_;_]).
-    rewrite tctx_reborrow_uniq //. apply (tctx_incl_frame_r _ [_] [_;_]).
-    rewrite tctx_share // {1}copy_tctx_incl.
-    by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl, shr_mono'.
-  Qed.
-
-  Lemma tctx_extract_hasty_share_samelft E L p ty ty' κ T :
-    lctx_lft_alive E L κ → subtype E L ty' ty →
-    tctx_extract_hasty E L p (&shr{κ}ty) ((p ◁ &uniq{κ}ty')::T)
-                                         ((p ◁ &shr{κ}ty')::T).
-  Proof.
-    intros. apply (tctx_incl_frame_r _ [_] [_;_]).
-    rewrite tctx_share // {1}copy_tctx_incl.
-    by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl, shr_mono'.
   Qed.
 
   Lemma tctx_extract_hasty_reborrow E L p ty ty' κ κ' T :
@@ -201,5 +160,3 @@ End typing.
 
 Hint Resolve uniq_mono' uniq_proper' write_uniq read_uniq : lrust_typing.
 Hint Resolve tctx_extract_hasty_reborrow | 10 : lrust_typing.
-Hint Resolve tctx_extract_hasty_share | 10 : lrust_typing.
-Hint Resolve tctx_extract_hasty_share_samelft | 9 : lrust_typing.

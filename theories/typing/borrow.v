@@ -23,6 +23,47 @@ Section borrow.
     - iExists _. iSplit. done. by iFrame.
   Qed.
 
+  Lemma tctx_share E L p κ ty :
+    lctx_lft_alive E L κ → tctx_incl E L [p ◁ &uniq{κ}ty] [p ◁ &shr{κ}ty].
+  Proof.
+    iIntros (Hκ ??) "#LFT #HE HL Huniq".
+    iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; [try done..|].
+    rewrite !tctx_interp_singleton /=.
+    iDestruct "Huniq" as ([[]|]) "[% Huniq]"; try done.
+    iMod (ty.(ty_share) with "LFT Huniq Htok") as "[Hown Htok]"; [solve_ndisj|].
+    iMod ("Hclose" with "Htok") as "[$ $]". iExists _. by iFrame "%∗".
+  Qed.
+
+  (* When sharing during extraction, we do the (arbitrary) choice of
+     sharing at the lifetime requested (κ). In some cases, we could
+     actually desire a longer lifetime and then use subtyping, because
+     then we get, in the environment, a shared borrow at this longer
+     lifetime.
+
+     In the case the user wants to do the sharing at a longer
+     lifetime, she has to manually perform the extraction herself at
+     the desired lifetime. *)
+  Lemma tctx_extract_hasty_share E L p ty ty' κ κ' T :
+    lctx_lft_alive E L κ → lctx_lft_incl E L κ κ' → subtype E L ty' ty →
+    tctx_extract_hasty E L p (&shr{κ}ty) ((p ◁ &uniq{κ'}ty')::T)
+                       ((p ◁ &shr{κ}ty')::(p ◁{κ} &uniq{κ'}ty')::T).
+  Proof.
+    intros. apply (tctx_incl_frame_r _ [_] [_;_;_]).
+    rewrite tctx_reborrow_uniq //. apply (tctx_incl_frame_r _ [_] [_;_]).
+    rewrite tctx_share // {1}copy_tctx_incl.
+    by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl, shr_mono'.
+  Qed.
+
+  Lemma tctx_extract_hasty_share_samelft E L p ty ty' κ T :
+    lctx_lft_alive E L κ → subtype E L ty' ty →
+    tctx_extract_hasty E L p (&shr{κ}ty) ((p ◁ &uniq{κ}ty')::T)
+                                         ((p ◁ &shr{κ}ty')::T).
+  Proof.
+    intros. apply (tctx_incl_frame_r _ [_] [_;_]).
+    rewrite tctx_share // {1}copy_tctx_incl.
+    by apply (tctx_incl_frame_r _ [_] [_]), subtype_tctx_incl, shr_mono'.
+  Qed.
+
   Lemma tctx_extract_hasty_borrow E L p n ty ty' κ T :
     subtype E L ty' ty →
     tctx_extract_hasty E L p (&uniq{κ}ty) ((p ◁ own_ptr n ty')::T)
@@ -32,7 +73,7 @@ Section borrow.
     by apply tctx_borrow. by f_equiv.
   Qed.
 
-  (* See the comment above [tctx_extract_hasty_share] in [uniq_bor.v]. *)
+  (* See the comment above [tctx_extract_hasty_share]. *)
   Lemma tctx_extract_hasty_borrow_share E L p ty ty' κ n T :
     lctx_lft_alive E L κ → subtype E L ty' ty →
     tctx_extract_hasty E L p (&shr{κ}ty) ((p ◁ own_ptr n ty')::T)
@@ -164,3 +205,5 @@ End borrow.
 
 Hint Resolve tctx_extract_hasty_borrow tctx_extract_hasty_borrow_share
                | 10 : lrust_typing.
+Hint Resolve tctx_extract_hasty_share | 10 : lrust_typing.
+Hint Resolve tctx_extract_hasty_share_samelft | 9 : lrust_typing.
