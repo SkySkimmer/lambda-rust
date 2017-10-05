@@ -22,8 +22,8 @@ of the dependencies.
 ## Updating
 
 After doing `git pull`, the development may fail to compile because of outdated
-dependencies.  To fix that, please run `opam update` followed by `make
-build-dep`.
+dependencies.  To fix that, please run `opam update` followed by
+`make build-dep`.
 
 ## Building Instructions
 
