@@ -17,8 +17,13 @@ opam (1.2.2 or newer).  You will need the Coq and Iris opam repositories:
     opam repo add iris-dev https://gitlab.mpi-sws.org/FP/opam-dev.git
 
 Once you got opam set up, run `make build-dep` to install the right versions
-of the dependencies.  When the dependencies change, just run `make build-dep`
-again.
+of the dependencies.
+
+## Updating
+
+After doing `git pull`, the development may fail to compile because of outdated
+dependencies.  To fix that, please run `opam update` followed by `make
+build-dep`.
 
 ## Building Instructions
 
