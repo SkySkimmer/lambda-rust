@@ -20,7 +20,7 @@ Makefile.coq: _CoqProject Makefile awk.Makefile
 
 # Install build-dependencies
 build-dep/opam: opam Makefile
-	# Create the build-dep package.
+	# Creating the build-dep package.
 	@mkdir -p build-dep
 	@sed <opam -E 's/^(build|install|remove):.*/\1: []/; s/^name: *"(.*)" */name: "\1-builddep"/' >build-dep/opam
 	@fgrep builddep build-dep/opam >/dev/null || (echo "sed failed to fix the package name" && exit 1) # sanity check
@@ -34,7 +34,7 @@ build-dep: build-dep/opam phony
 	@# Upgrading is needed in case the pin already exists, but the builddep package changed.
 	@BUILD_DEP_PACKAGE="$$(egrep "^name:" build-dep/opam | sed 's/^name: *"\(.*\)" */\1/')"; \
 	  echo "# Pinning build-dep package." && \
-	  opam pin add "$$BUILD_DEP_PACKAGE".dev "$$(pwd)/build-dep" -k path $(OPAMFLAGS) && \
+	  opam pin add -k path $(OPAMFLAGS) "$$BUILD_DEP_PACKAGE".dev build-dep && \
 	  echo "# Updating build-dep package." && \
 	  opam upgrade "$$BUILD_DEP_PACKAGE"
 
