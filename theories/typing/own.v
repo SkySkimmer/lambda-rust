@@ -251,7 +251,7 @@ Section typing.
     typed_instruction_ty E L [] (new [ #n ]%E) (own_ptr n' (uninit n')).
   Proof.
     iIntros (? tid) "#LFT #HE $ $ _".
-    iApply wp_new; first done. iModIntro.
+    iApply wp_new; try done. iModIntro.
     iIntros (l vl) "(% & H† & Hlft)". subst. rewrite tctx_interp_singleton tctx_hasty_val.
     iNext. rewrite freeable_sz_full Z2Nat.id //. iFrame.
     iExists vl. iFrame. by rewrite Nat2Z.id.
@@ -362,7 +362,7 @@ End typing.
 
 Hint Resolve own_mono' own_proper' box_mono' box_proper'
              write_own read_own_copy : lrust_typing.
-(* By setting the priority high, we make sure copying is tryed before
+(* By setting the priority high, we make sure copying is tried before
    moving. *)
 Hint Resolve read_own_move | 100 : lrust_typing.
 

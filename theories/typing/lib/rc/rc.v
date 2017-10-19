@@ -80,13 +80,16 @@ Section rc.
   Qed.
 
   Definition rc_persist tid ν (γ : gname) (l : loc) (ty : type) : iProp Σ :=
-    (∃ ty', ▷ type_incl ty' ty ∗
+    tc_opaque (∃ ty', ▷ type_incl ty' ty ∗
               na_inv tid rc_invN (rc_inv tid ν γ l ty') ∗
               (* We use this disjunction, and not simply [ty_shr] here,
                  because [weak_new] cannot prove ty_shr, even for a dead
                  lifetime. *)
               (ty.(ty_shr) ν tid (l +ₗ 2) ∨ [†ν]) ∗
               □ (1.[ν] ={↑lftN,∅}▷=∗ [†ν]))%I.
+
+  Global Instance rc_persist_persistent : PersistentP (rc_persist tid ν γ l ty).
+  Proof. unfold rc_persist, tc_opaque. apply _. Qed.
 
   Global Instance rc_persist_ne ν γ l n :
     Proper (type_dist2 n ==> dist n) (rc_persist tid ν γ l).
@@ -166,7 +169,9 @@ Section rc.
         iExists _, _, _. iFrame. iExists ty. iFrame "#". iSplitR; last by auto.
           by iApply type_incl_refl. }
       iDestruct "HX" as (γ ν q') "(#Hpersist & Hrctok)".
-      iMod ("Hclose2" with "[] Hrctok") as "[HX $]"; first by (unfold X; auto 10).
+      iMod ("Hclose2" with "[] Hrctok") as "[HX $]".
+      { unfold X. iIntros "!> [??] !>". iNext. iRight. do 3 iExists _.
+        iFrame "#∗". }
       iAssert C with "[>HX]" as "#$".
       { iExists _, _, _. iFrame "Hpersist".
         iMod (bor_sep with "LFT HX") as "[Hrc Hlft]"; first solve_ndisj.
@@ -1027,7 +1032,7 @@ Section code.
         iApply type_jump; solve_typing.
       + wp_op; [lia|move=>_]. wp_if. wp_op. rewrite shift_loc_0. wp_write. wp_op.
         wp_op. wp_write. wp_bind (new _). iSpecialize ("Hrc" with "Hl1 Hl2").
-        iApply (wp_step_fupd with "Hrc"); [done..|]. iApply wp_new; first lia.
+        iApply (wp_step_fupd with "Hrc"); [done..|]. iApply wp_new; first lia. done.
         iNext. iIntros (lr [|? [|??]]) "/= (% & [H†|%] & H↦lr) [Hty Hproto] !>"; try lia.
         rewrite 2!heap_mapsto_vec_cons. iDestruct "H↦lr" as "(Hlr1 & Hlr2 & Hlr3)".
         wp_let. wp_op. rewrite shift_loc_0. wp_write. wp_op. wp_write. wp_op. wp_op.
@@ -1048,7 +1053,7 @@ Section code.
                   tctx_hasty_val' //. unlock. iFrame. }
         iApply type_assign; [solve_typing..|].
         iApply type_jump; solve_typing.
-    - wp_apply wp_new; first lia.
+    - wp_apply wp_new; first lia. done.
       iIntros (lr [|? [|??]]) "/= (% & [H†|%] & H↦lr)"; try lia.
       iDestruct "Hc" as "[[% ?]|[% [Hproto _]]]"; first lia.
       iMod ("Hproto" with "Hl1") as "[Hna Hty]". wp_let. wp_op.
@@ -1058,7 +1063,7 @@ Section code.
       { iDestruct "Hty" as "[(Hl1 & Hl2 & Hl† & Hl3)|Hty]"; last done.
         iMod (own_alloc (● (Some $ Cinl ((1/2)%Qp, 1%positive), 0%nat) ⋅
                          rc_tok (1/2)%Qp)) as (γ) "[Ha Hf]"=>//.
-        iMod (lft_create with "LFT") as (ν) "[[Hν1 Hν2] Hν†]"=>//.
+        iMod (lft_create with "LFT") as (ν) "[[Hν1 Hν2] #Hν†]"=>//.
         iApply (fupd_mask_mono (↑lftN))=>//. iExists γ, ν, (1/2)%Qp. iFrame.
         iMod (bor_create _ ν with "LFT Hl3") as "[Hb Hh]"=>//. iExists _.
         iSplitR; first by iApply type_incl_refl.
@@ -1104,7 +1109,7 @@ Section code.
               with "[] LFT HE Hna HL Hk [-]"); last first.
       { rewrite 3!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val
                 !tctx_hasty_val' //. unlock. iFrame. iRight. iExists γ, ν, _.
-        iFrame "∗#". auto. }
+        unfold rc_persist, tc_opaque. iFrame "∗#". eauto. }
       iApply type_letalloc_1; [solve_typing..|]. iIntros (rcold). simpl_subst.
       iApply type_let. apply rc_drop_type. solve_typing. iIntros (drop). simpl_subst.
       iApply (type_letcall ()); [solve_typing..|]. iIntros (content). simpl_subst.

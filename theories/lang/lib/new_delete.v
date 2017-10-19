@@ -22,7 +22,7 @@ Section specs.
     {{{ l vl, RET LitV $ LitLoc l;
         ⌜n = length vl⌝ ∗ (†l…(Z.to_nat n) ∨ ⌜n = 0⌝) ∗ l ↦∗ vl }}}.
   Proof.
-    iIntros (? Φ) "HΦ". wp_lam. wp_op; intros ?.
+    iIntros (? Φ) "_ HΦ". wp_lam. wp_op; intros ?.
     - wp_if. assert (n = 0) as -> by lia. iApply ("HΦ" $! _ []).
       rewrite heap_mapsto_vec_nil. auto.
     - wp_if. wp_alloc l vl as "H↦" "H†". iApply ("HΦ" $! _ vl).

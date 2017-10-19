@@ -40,7 +40,7 @@ Section type_context.
     eval_path p = Some v → (WP p @ E {{ v', ⌜v' = v⌝ }})%I.
   Proof.
     revert v; induction p; intros v; cbn -[to_val];
-      try (intros ?; by iApply wp_value); [].
+      try (simpl; intros ?; simplify_eq; by iApply wp_value); [].
     destruct op; try discriminate; [].
     destruct p2; try (intros ?; by iApply wp_value); [].
     destruct l; try (intros ?; by iApply wp_value); [].

@@ -28,5 +28,5 @@ Proof.
   set (Hheap := HeapG _ _ _ vγ fγ).
   iModIntro. iExists heap_ctx. iSplitL.
   { iExists ∅. by iFrame. }
-  iApply (Hwp (LRustG _ _ Hheap)).
+  by iApply (Hwp (LRustG _ _ Hheap)).
 Qed.

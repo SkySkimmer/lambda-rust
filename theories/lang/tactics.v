@@ -174,6 +174,7 @@ Ltac solve_closed :=
 Hint Extern 0 (Closed _ _) => solve_closed : typeclass_instances.
 
 Ltac solve_to_val :=
+  rewrite /IntoVal;
   try match goal with
   | |- context E [language.to_val ?e] =>
      let X := context E [to_val e] in change X
@@ -186,6 +187,7 @@ Ltac solve_to_val :=
      let e' := W.of_expr e in change (is_Some (to_val (W.to_expr e')));
      apply W.to_val_is_Some, (bool_decide_unpack _); vm_compute; exact I
   end.
+Hint Extern 10 (IntoVal _ _) => solve_to_val : typeclass_instances.
 
 Ltac solve_atomic :=
   match goal with

@@ -176,7 +176,7 @@ Section refmut_functions.
     rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
     iDestruct "Href" as "[[Href↦1 Href↦2] Href]".
     iDestruct "Href" as (ν γ β ty') "(Hbor & #Hαβ & #Hinv & >Hν & Hγ)".
-    wp_read. wp_let. wp_apply wp_new; first done.
+    wp_read. wp_let. wp_apply wp_new; first done. done.
     iIntros (lx [|? []]) "(% & H† & Hlx)"; try (simpl in *; lia).
     rewrite heap_mapsto_vec_singleton. wp_let. wp_write. wp_let. rewrite tctx_hasty_val.
     iMod (lctx_lft_alive_tok α with "HE HL") as (?) "(Hα & HL & Hclose1)";[solve_typing..|].

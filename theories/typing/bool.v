@@ -28,7 +28,7 @@ Section typing.
   Lemma type_bool_instr (b : Datatypes.bool) : typed_val #b bool.
   Proof.
     iIntros (E L tid) "_ _ $ $ _". wp_value.
-    rewrite tctx_interp_singleton tctx_hasty_val. by destruct b.
+    rewrite tctx_interp_singleton tctx_hasty_val' //. by destruct b.
   Qed.
 
   Lemma type_bool (b : Datatypes.bool) E L C T x e :

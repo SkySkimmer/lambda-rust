@@ -21,7 +21,7 @@ Section fn.
      That would be slightly simpler, but, unfortunately, we are no longer
      able to prove that this is contractive. *)
   Program Definition fn (fp : A → fn_params) : type :=
-    {| st_own tid vl := (∃ fb kb xb e H,
+    {| st_own tid vl := tc_opaque (∃ fb kb xb e H,
          ⌜vl = [@RecV fb (kb::xb) e H]⌝ ∗ ⌜length xb = n⌝ ∗
          ▷ ∀ (x : A) (ϝ : lft) (k : val) (xl : vec val (length xb)),
             □ typed_body ((fp x).(fp_E)  ϝ) [ϝ ⊑ₗ []]
@@ -31,6 +31,9 @@ Section fn.
                          (subst_v (fb::kb::xb) (RecV fb (kb::xb) e:::k:::xl) e))%I |}.
   Next Obligation.
     iIntros (fp tid vl) "H". iDestruct "H" as (fb kb xb e ?) "[% _]". by subst.
+  Qed.
+  Next Obligation.
+    unfold tc_opaque. apply _.
   Qed.
 
   (* FIXME : This definition is less restrictive than the one used in
@@ -259,7 +262,7 @@ Section typing.
                vmap (λ ty (v : val), tctx_elt_interp tid (v ◁ box ty)) (fp x).(fp_tys))%I
             with "[Hargs]"); first wp_done.
     - rewrite /=. iSplitR "Hargs".
-      { simpl. iApply wp_value; last done. solve_to_val. }
+      { simpl. iApply wp_value. by unlock. }
       remember (fp_tys (fp x)) as tys. clear dependent k' p HE fp x.
       iInduction ps as [|p ps] "IH" forall (tys); first by simpl.
       simpl in tys. inv_vec tys=>ty tys. simpl.
@@ -410,7 +413,7 @@ Section typing.
     typed_instruction_ty E L T ef (fn fp).
   Proof.
     iIntros (-> -> Hc) "#Hbody". iIntros (tid) "#LFT _ $ $ #HT". iApply wp_value.
-    { simpl. rewrite ->(decide_left Hc). done. }
+    { unfold IntoVal. simpl. rewrite ->(decide_left Hc). done. }
     rewrite tctx_interp_singleton. iLöb as "IH". iExists _. iSplit.
     { simpl. rewrite decide_left. done. }
     iExists fb, _, argsb, e, _. iSplit. done. iSplit. done. iNext.
