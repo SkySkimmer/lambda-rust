@@ -36,7 +36,7 @@ Section type_soundness.
     { split. by eapply adequate_nonracing.
       intros. by eapply (adequate_safe (main [exit_cont]%E)). }
     apply: lrust_adequacy=>?. iIntros "_".
-    iMod (lft_init with "[//]") as (?) "#LFT". done.
+    iMod lft_init as (?) "#LFT". done.
     iMod na_alloc as (tid) "Htl". set (Htype := TypeG _ _ _ _ _).
     wp_bind (of_val main). iApply (wp_wand with "[Htl]").
     iApply (Hmain _ [] [] $! tid with "LFT [] Htl [] []").
