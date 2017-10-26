@@ -112,7 +112,7 @@ Section heap.
   Implicit Types E : coPset.
 
   (** General properties of mapsto and freeable *)
-  Global Instance heap_mapsto_timeless l q v : TimelessP (l↦{q}v).
+  Global Instance heap_mapsto_timeless l q v : Timeless (l↦{q}v).
   Proof. rewrite heap_mapsto_eq /heap_mapsto_def. apply _. Qed.
 
   Global Instance heap_mapsto_fractional l v: Fractional (λ q, l ↦{q} v)%I.
@@ -124,7 +124,7 @@ Section heap.
     AsFractional (l ↦{q} v) (λ q, l ↦{q} v)%I q.
   Proof. split. done. apply _. Qed.
 
-  Global Instance heap_mapsto_vec_timeless l q vl : TimelessP (l ↦∗{q} vl).
+  Global Instance heap_mapsto_vec_timeless l q vl : Timeless (l ↦∗{q} vl).
   Proof. rewrite /heap_mapsto_vec. apply _. Qed.
 
   Global Instance heap_mapsto_vec_fractional l vl: Fractional (λ q, l ↦∗{q} vl)%I.
@@ -136,7 +136,7 @@ Section heap.
     AsFractional (l ↦∗{q} vl) (λ q, l ↦∗{q} vl)%I q.
   Proof. split. done. apply _. Qed.
 
-  Global Instance heap_freeable_timeless q l n : TimelessP (†{q}l…n).
+  Global Instance heap_freeable_timeless q l n : Timeless (†{q}l…n).
   Proof. rewrite heap_freeable_eq /heap_freeable_def. apply _. Qed.
 
   Lemma heap_mapsto_agree l q1 q2 v1 v2 : l ↦{q1} v1 ∗ l ↦{q2} v2 ⊢ ⌜v1 = v2⌝.
@@ -219,7 +219,7 @@ Section heap.
   Qed.
 
   Global Instance heap_mapsto_pred_fractional l (P : list val → iProp Σ):
-    (∀ vl, PersistentP (P vl)) → Fractional (λ q, l ↦∗{q}: P)%I.
+    (∀ vl, Persistent (P vl)) → Fractional (λ q, l ↦∗{q}: P)%I.
   Proof.
     intros p q q'. iSplit.
     - iIntros "H". iDestruct "H" as (vl) "[[Hown1 Hown2] #HP]".
@@ -242,7 +242,7 @@ Section heap.
         rewrite drop_ge; first by rewrite app_nil_r. by rewrite -Heq.
   Qed.
   Global Instance heap_mapsto_pred_as_fractional l q (P : list val → iProp Σ):
-    (∀ vl, PersistentP (P vl)) → AsFractional (l ↦∗{q}: P) (λ q, l ↦∗{q}: P)%I q.
+    (∀ vl, Persistent (P vl)) → AsFractional (l ↦∗{q}: P) (λ q, l ↦∗{q}: P)%I q.
   Proof. split. done. apply _. Qed.
 
   Lemma inter_lookup_Some i j (n : nat):

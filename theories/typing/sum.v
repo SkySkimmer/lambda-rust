@@ -178,7 +178,7 @@ Section sum.
   Proof.
     intros HFA. split.
     - intros tid vl.
-      cut (∀ i vl', PersistentP (ty_own (nth i tyl emp0) tid vl')). by apply _.
+      cut (∀ i vl', Persistent (ty_own (nth i tyl emp0) tid vl')). by apply _.
       intros. apply @copy_persistent.
       edestruct nth_in_or_default as [| ->]; [by eapply List.Forall_forall| ].
       split; first by apply _. iIntros (????????) "? []".

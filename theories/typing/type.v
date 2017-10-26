@@ -24,7 +24,7 @@ Record type `{typeG Σ} :=
     ty_own : thread_id → list val → iProp Σ;
     ty_shr : lft → thread_id → loc → iProp Σ;
 
-    ty_shr_persistent κ tid l : PersistentP (ty_shr κ tid l);
+    ty_shr_persistent κ tid l : Persistent (ty_shr κ tid l);
 
     ty_size_eq tid vl : ty_own tid vl -∗ ⌜length vl = ty_size⌝;
     (* The mask for starting the sharing does /not/ include the
@@ -116,7 +116,7 @@ Qed.
 Record simple_type `{typeG Σ} :=
   { st_own : thread_id → list val → iProp Σ;
     st_size_eq tid vl : st_own tid vl -∗ ⌜length vl = 1%nat⌝;
-    st_own_persistent tid vl : PersistentP (st_own tid vl) }.
+    st_own_persistent tid vl : Persistent (st_own tid vl) }.
 Existing Instance st_own_persistent.
 Instance: Params (@st_own) 2.
 
@@ -170,7 +170,7 @@ Section ofe.
     (prodC natC (thread_id -c> list val -c> iProp Σ))
     (lft -c> thread_id -c> loc -c> iProp Σ).
   Let P (x : T) : Prop :=
-    (∀ κ tid l, PersistentP (x.2 κ tid l)) ∧
+    (∀ κ tid l, Persistent (x.2 κ tid l)) ∧
     (∀ tid vl, x.1.2 tid vl -∗ ⌜length vl = x.1.1⌝) ∧
     (∀ E κ l tid q, lftE ⊆ E →
       lft_ctx -∗ &{κ} (l ↦∗: λ vs, x.1.2 tid vs) -∗
@@ -215,7 +215,7 @@ Section ofe.
     - by intros [].
     - (* TODO: automate this *)
       repeat apply limit_preserving_and; repeat (apply limit_preserving_forall; intros ?).
-      + apply uPred.limit_preserving_PersistentP=> n ty1 ty2 Hty; apply Hty.
+      + apply uPred.limit_preserving_Persistent=> n ty1 ty2 Hty; apply Hty.
       + apply uPred.limit_preserving_entails=> n ty1 ty2 Hty. apply Hty. by rewrite Hty.
       + apply uPred.limit_preserving_entails=> n ty1 ty2 Hty; repeat f_equiv; apply Hty.
       + apply uPred.limit_preserving_entails=> n ty1 ty2 Hty; repeat f_equiv; apply Hty.
@@ -390,7 +390,7 @@ Fixpoint shr_locsE (l : loc) (n : nat) : coPset :=
   end.
 
 Class Copy `{typeG Σ} (t : type) := {
-  copy_persistent tid vl : PersistentP (t.(ty_own) tid vl);
+  copy_persistent tid vl : Persistent (t.(ty_own) tid vl);
   copy_shr_acc κ tid E F l q :
     lftE ∪ ↑shrN ⊆ E → shr_locsE l (t.(ty_size) + 1) ⊆ F →
     lft_ctx -∗ t.(ty_shr) κ tid l -∗ na_own tid F -∗ q.[κ] ={E}=∗
@@ -545,7 +545,7 @@ Section subtyping.
     rewrite /type_incl. repeat ((by auto) || f_equiv).
   Qed.
 
-  Global Instance type_incl_persistent ty1 ty2 : PersistentP (type_incl ty1 ty2) := _.
+  Global Instance type_incl_persistent ty1 ty2 : Persistent (type_incl ty1 ty2) := _.
 
   Lemma type_incl_refl ty : type_incl ty ty.
   Proof. iSplit; first done. iSplit; iAlways; iIntros; done. Qed.

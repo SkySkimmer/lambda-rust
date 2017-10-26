@@ -19,7 +19,7 @@ Section util.
      part.
 
   Lemma delay_borrow_step :
-    lfeE ⊆ N → (∀ x, PersistentP (Post x)) →
+    lfeE ⊆ N → (∀ x, Persistent (Post x)) →
     lft_ctx -∗ &{κ} P -∗
       □ (∀ x, &{κ} P -∗ Pre x -∗ Frame x ={F1 x,F2 x}▷=∗ Post x ∗ Frame x) ={N}=∗ 
       □ (∀ x, Pre x -∗ Frame x ={F1 x,F2 x}▷=∗ Post x ∗ Frame x).

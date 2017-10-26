@@ -135,7 +135,7 @@ Section type_context.
 
   (** Copy typing contexts *)
   Class CopyC (T : tctx) :=
-    copyc_persistent tid : PersistentP (tctx_interp tid T).
+    copyc_persistent tid : Persistent (tctx_interp tid T).
   Global Existing Instances copyc_persistent.
 
   Global Instance tctx_nil_copy : CopyC [].

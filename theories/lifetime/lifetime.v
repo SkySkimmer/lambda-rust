@@ -119,7 +119,7 @@ Proof.
   iModIntro. iNext. iApply ("Hclose" with "[] HP"). by iIntros "!> $".
 Qed.
 
-Lemma bor_persistent P `{!PersistentP P} E κ :
+Lemma bor_persistent P `{!Persistent P} E κ :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ}P ={E}=∗ ▷ P ∨ [†κ].
 Proof.
@@ -129,7 +129,7 @@ Proof.
   - iMod "Hclose" as "_". auto.
 Qed.
 
-Lemma bor_persistent_tok P `{!PersistentP P} E κ q :
+Lemma bor_persistent_tok P `{!Persistent P} E κ q :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ}P -∗ q.[κ] ={E}=∗ ▷ P ∗ q.[κ].
 Proof.

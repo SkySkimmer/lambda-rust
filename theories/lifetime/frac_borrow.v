@@ -34,7 +34,7 @@ Section frac_bor.
     iSplit; iIntros "H"; iDestruct "H" as (q) "[H ?]"; iExists q; iFrame; by iApply "Hφφ'".
   Qed.
 
-  Global Instance frac_bor_persistent κ : PersistentP (&frac{κ}φ) := _.
+  Global Instance frac_bor_persistent κ : Persistent (&frac{κ}φ) := _.
 
   Lemma bor_fracture E κ :
     ↑lftN ⊆ E → lft_ctx -∗ &{κ}(φ 1%Qp) ={E}=∗ &frac{κ}φ.

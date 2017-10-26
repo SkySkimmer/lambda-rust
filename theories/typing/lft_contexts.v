@@ -36,7 +36,7 @@ Section lft_contexts.
     Proper ((≡ₚ) ==> (⊣⊢)) elctx_interp.
   Proof. intros ???. by apply big_opL_permutation. Qed.
   Global Instance elctx_interp_persistent E :
-    PersistentP (elctx_interp E).
+    Persistent (elctx_interp E).
   Proof. apply _. Qed.
 
   (* Local lifetime contexts. *)

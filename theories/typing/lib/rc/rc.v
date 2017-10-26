@@ -88,7 +88,7 @@ Section rc.
               (ty.(ty_shr) ν tid (l +ₗ 2) ∨ [†ν]) ∗
               □ (1.[ν] ={↑lftN,∅}▷=∗ [†ν]))%I.
 
-  Global Instance rc_persist_persistent : PersistentP (rc_persist tid ν γ l ty).
+  Global Instance rc_persist_persistent : Persistent (rc_persist tid ν γ l ty).
   Proof. unfold rc_persist, tc_opaque. apply _. Qed.
 
   Global Instance rc_persist_ne ν γ l n :

@@ -27,7 +27,7 @@ Section atomic_bors.
     iApply (idx_bor_iff with "HPP' HP").
   Qed.
 
-  Global Instance at_bor_persistent : PersistentP (&at{κ, N} P) := _.
+  Global Instance at_bor_persistent : Persistent (&at{κ, N} P) := _.
 
   Lemma bor_share E κ :
     N ⊥ lftN → &{κ}P ={E}=∗ &at{κ, N}P.

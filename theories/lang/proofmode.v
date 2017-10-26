@@ -161,7 +161,7 @@ Lemma tac_wp_alloc Δ Δ' E j1 j2 n Φ :
   Δ ⊢ WP Alloc (Lit $ LitInt n) @ E {{ Φ }}.
 Proof.
   intros ?? HΔ. rewrite -wp_fupd. eapply wand_apply; first exact:wp_alloc.
-  rewrite -always_and_sep_l. apply and_intro; first done.
+  rewrite -and_sep_l. apply and_intro; first done.
   rewrite into_laterN_env_sound; apply later_mono, forall_intro=> l.
   apply forall_intro=>sz. apply forall_intro=> vl. apply wand_intro_l. rewrite -assoc.
   apply pure_elim_sep_l=> Hn. apply wand_elim_r'.

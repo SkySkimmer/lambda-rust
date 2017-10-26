@@ -122,8 +122,8 @@ Section def.
   Definition weak_tok γ : iProp Σ :=
     own γ (◯ (None, 1%nat)).
 
-  Global Instance arc_tok_timeless γ q : TimelessP (arc_tok γ q) := _.
-  Global Instance weak_tok_timeless γ : TimelessP (weak_tok γ) := _.
+  Global Instance arc_tok_timeless γ q : Timeless (arc_tok γ q) := _.
+  Global Instance weak_tok_timeless γ : Timeless (weak_tok γ) := _.
 
   Definition arc_inv (γ : gname) (l : loc) : iProp Σ :=
     (∃ st : arc_stR, own γ (● st) ∗
@@ -142,7 +142,7 @@ Section def.
   Definition is_arc (γ : gname) (l : loc) : iProp Σ :=
     inv N (arc_inv γ l).
 
-  Global Instance is_arc_persistent γ l : PersistentP (is_arc γ l) := _.
+  Global Instance is_arc_persistent γ l : Persistent (is_arc γ l) := _.
 
   Definition arc_tok_acc (γ : gname) P E : iProp Σ :=
     (□ (P ={E,∅}=∗ ∃ q, arc_tok γ q ∗ (arc_tok γ q ={∅,E}=∗ P)))%I.

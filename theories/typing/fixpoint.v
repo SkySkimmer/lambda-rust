@@ -60,7 +60,7 @@ Section fixpoint.
       eapply (limit_preserving_ext (λ _, _ ∧ _)).
       { split; (intros [H1 H2]; split; [apply H1|apply H2]). }
       apply limit_preserving_and; repeat (apply limit_preserving_forall=> ?).
-      + apply uPred.limit_preserving_PersistentP; solve_proper.
+      + apply uPred.limit_preserving_Persistent; solve_proper.
       + apply limit_preserving_impl, uPred.limit_preserving_entails;
         solve_proper_core ltac:(fun _ => eapply ty_size_ne || f_equiv).
   Qed.

@@ -28,7 +28,7 @@ Section na_bor.
     iApply (idx_bor_iff with "HPP' HP").
   Qed.
 
-  Global Instance na_bor_persistent κ : PersistentP (&na{κ,tid,N} P) := _.
+  Global Instance na_bor_persistent κ : Persistent (&na{κ,tid,N} P) := _.
 
   Lemma bor_na κ E : ↑lftN ⊆ E → &{κ}P ={E}=∗ &na{κ,tid,N}P.
   Proof.

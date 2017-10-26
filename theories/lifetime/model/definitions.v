@@ -320,23 +320,23 @@ Proof. solve_contractive. Qed.
 Global Instance bor_proper κ : Proper ((≡) ==> (≡)) (bor κ).
 Proof. apply (ne_proper _). Qed.
 
-(*** PersistentP and TimelessP and instances  *)
-Global Instance lft_tok_timeless q κ : TimelessP q.[κ].
+(*** Persistent and Timeless and instances  *)
+Global Instance lft_tok_timeless q κ : Timeless q.[κ].
 Proof. rewrite /lft_tok. apply _. Qed.
 
-Global Instance lft_dead_persistent κ : PersistentP [†κ].
+Global Instance lft_dead_persistent κ : Persistent [†κ].
 Proof. rewrite /lft_dead. apply _. Qed.
-Global Instance lft_dead_timeless κ : TimelessP [†κ].
+Global Instance lft_dead_timeless κ : Timeless [†κ].
 Proof. rewrite /lft_dead. apply _. Qed.
 
-Global Instance lft_incl_persistent κ κ' : PersistentP (κ ⊑ κ').
+Global Instance lft_incl_persistent κ κ' : Persistent (κ ⊑ κ').
 Proof. rewrite /lft_incl. apply _. Qed.
 
-Global Instance idx_bor_persistent κ i P : PersistentP (&{κ,i} P).
+Global Instance idx_bor_persistent κ i P : Persistent (&{κ,i} P).
 Proof. rewrite /idx_bor. apply _. Qed.
-Global Instance idx_bor_own_timeless q i : TimelessP (idx_bor_own q i).
+Global Instance idx_bor_own_timeless q i : Timeless (idx_bor_own q i).
 Proof. rewrite /idx_bor_own. apply _. Qed.
 
-Global Instance lft_ctx_persistent : PersistentP lft_ctx.
+Global Instance lft_ctx_persistent : Persistent lft_ctx.
 Proof. rewrite /lft_ctx. apply _. Qed.
 End basic_properties.
