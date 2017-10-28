@@ -308,6 +308,17 @@ Inductive head_step : expr → state → expr → state → list expr → Prop :
     head_step (CAS (Lit $ LitLoc l) e1 e2) σ
               (Lit $ lit_of_bool true) (<[l:=(RSt 0, LitV lit2)]>σ)
               []
+(* A succeeding CAS has to detect concurrent non-atomic read accesses, and
+   trigger UB if there is one.  In lambdaRust, succeeding and failing CAS are
+   not mutually exclusive, so it could happen that a CAS can both fail (and
+   hence not be stuck) but also succeed (and hence be racing with a concurrent
+   non-atomic read).  In that case, we have to explicitly reduce to a stuck
+   state; due to the possibility of failing CAS, we cannot rely on the current
+   state being stuck like we could in a language where failing and succeeding
+   CAS are mutually exclusive.
+
+   If there is a concurrent non-atomic write, the CAS itself is stuck: All it's
+   reductions are blocked.  *)
 | CasStuckS l n e1 lit1 e2 lit2 litl σ :
     to_val e1 = Some $ LitV lit1 → to_val e2 = Some $ LitV lit2 →
     σ !! l = Some (RSt n, LitV litl) → 0 < n →
