@@ -72,13 +72,13 @@ Notation "'let:' x := e1 'in' e2" :=
   ((Lam (@cons binder x%RustB nil) e2%E) (@cons expr e1%E nil))
   (at level 102, x at level 1, e1, e2 at level 150) : expr_scope.
 Notation "e1 ;; e2" := (let: <> := e1 in e2)%E
-  (at level 100, e2 at level 150, format "e1  ;;  e2") : expr_scope.
+  (at level 100, e2 at level 200, format "e1  ;;  e2") : expr_scope.
 (* These are not actually values, but we want them to be pretty-printed. *)
 Notation "'let:' x := e1 'in' e2" :=
   (LamV (@cons binder x%RustB nil) e2%E (@cons expr e1%E nil))
   (at level 102, x at level 1, e1, e2 at level 150) : val_scope.
 Notation "e1 ;; e2" := (let: <> := e1 in e2)%V
-  (at level 100, e2 at level 150, format "e1  ;;  e2") : val_scope.
+  (at level 100, e2 at level 200, format "e1  ;;  e2") : val_scope.
 
 Notation "'letcont:' k xl := e1 'in' e2" :=
   ((Lam (@cons binder k%RustB nil) e2%E) [Rec k%RustB xl%RustB e1%E])
