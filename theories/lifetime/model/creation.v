@@ -57,7 +57,7 @@ Qed.
 
 Lemma lfts_kill (A : gmap atomic_lft _) (I : gmap lft lft_names) (K K' : gset lft) :
   let Iinv K' := (own_ilft_auth I ∗ [∗ set] κ' ∈ K', lft_inv_alive κ')%I in
-  K ⊥ K' →
+  K ## K' →
   (∀ κ κ', κ ∈ K → is_Some (I !! κ') → κ ⊆ κ' → κ' ∈ K) →
   (∀ κ, lft_alive_in A κ → is_Some (I !! κ) → κ ∉ K → κ ∈ K') →
   Iinv K' -∗ ([∗ set] κ ∈ K, lft_inv A κ ∗ [†κ])
@@ -139,7 +139,7 @@ Proof.
   pose (K' := filter (lft_alive_in A) (dom (gset lft) I) ∖ K).
   destruct (proj1 (subseteq_disjoint_union_L (K ∪ K') (dom (gset lft) I))) as (K''&HI&HK'').
   { set_solver+. }
-  assert (K ⊥ K') by set_solver+.
+  assert (K ## K') by set_solver+.
   rewrite HI !big_sepS_union //. iDestruct "Hinv" as "[[HinvK HinvD] Hinv]".
   iAssert ([∗ set] κ ∈ K', lft_inv_alive κ)%I with "[HinvD]" as "HinvD".
   { iApply (@big_sepS_impl with "[$HinvD]"); iIntros "!#".

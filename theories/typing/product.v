@@ -116,7 +116,7 @@ Section product.
     { rewrite <-HF. apply shr_locsE_subseteq. simpl. clear. omega. }
     iMod (@copy_shr_acc with "LFT H2 Htl Htok2") as (q2) "(Htl & H2 & Hclose2)"; first solve_ndisj.
     { move: HF. rewrite /= -plus_assoc shr_locsE_shift.
-      assert (shr_locsE l (ty_size ty1) ⊥ shr_locsE (l +ₗ (ty_size ty1)) (ty_size ty2 + 1))
+      assert (shr_locsE l (ty_size ty1) ## shr_locsE (l +ₗ (ty_size ty1)) (ty_size ty2 + 1))
              by exact: shr_locsE_disj.
       set_solver. }
     iDestruct (na_own_acc with "Htl") as "[$ Htlclose]".

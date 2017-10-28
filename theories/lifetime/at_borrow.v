@@ -7,7 +7,7 @@ Set Default Proof Using "Type".
 (* TODO : update the TEX with the fact that we can choose the namespace. *)
 Definition at_bor `{invG Σ, lftG Σ} κ N (P : iProp Σ) :=
   (∃ i, &{κ,i}P ∗
-    (⌜N ⊥ lftN⌝ ∗ inv N (idx_bor_own 1 i) ∨
+    (⌜N ## lftN⌝ ∗ inv N (idx_bor_own 1 i) ∨
      ⌜N = lftN⌝ ∗ inv N (∃ q, idx_bor_own q i)))%I.
 Notation "&at{ κ , N }" := (at_bor κ N) (format "&at{ κ , N }") : uPred_scope.
 
@@ -30,7 +30,7 @@ Section atomic_bors.
   Global Instance at_bor_persistent : Persistent (&at{κ, N} P) := _.
 
   Lemma bor_share E κ :
-    N ⊥ lftN → &{κ}P ={E}=∗ &at{κ, N}P.
+    N ## lftN → &{κ}P ={E}=∗ &at{κ, N}P.
   Proof.
     iIntros (HN) "HP". rewrite bor_unfold_idx. iDestruct "HP" as (i) "(#?&Hown)".
     iExists i. iFrame "#".
@@ -83,7 +83,7 @@ Section atomic_bors.
   Qed.
 
   Lemma at_bor_fake E κ:
-    ↑lftN ⊆ E → N ⊥ lftN → lft_ctx -∗ [†κ] ={E}=∗ &at{κ,N}P.
+    ↑lftN ⊆ E → N ## lftN → lft_ctx -∗ [†κ] ={E}=∗ &at{κ,N}P.
   Proof.
     iIntros (??) "#LFT#H†". iApply (bor_share with "[>]"); try done.
     by iApply (bor_fake with "LFT H†").

@@ -442,7 +442,7 @@ Section type.
   Qed.
 
   Lemma shr_locsE_disj l n m :
-    shr_locsE l n ⊥ shr_locsE (l +ₗ n) m.
+    shr_locsE l n ## shr_locsE (l +ₗ n) m.
   Proof.
     revert l; induction n; intros l.
     - simpl. set_solver+.
