@@ -320,7 +320,7 @@ Inductive head_step : expr → state → expr → state → list expr → Prop :
    This means that CAS is atomic (it always reducs to an irreducible
    expression), but not strongly atomic (it does not always reduce to a value).
 
-   If there is a concurrent non-atomic write, the CAS itself is stuck: All it's
+   If there is a concurrent non-atomic write, the CAS itself is stuck: All its
    reductions are blocked.  *)
 | CasStuckS l n e1 lit1 e2 lit2 litl σ :
     to_val e1 = Some $ LitV lit1 → to_val e2 = Some $ LitV lit2 →
