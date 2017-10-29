@@ -317,6 +317,9 @@ Inductive head_step : expr → state → expr → state → list expr → Prop :
    state being stuck like we could in a language where failing and succeeding
    CAS are mutually exclusive.
 
+   This means that CAS is atomic (it always reducs to an irreducible
+   expression), but not strongly atomic (it does not always reduce to a value).
+
    If there is a concurrent non-atomic write, the CAS itself is stuck: All it's
    reductions are blocked.  *)
 | CasStuckS l n e1 lit1 e2 lit2 litl σ :
