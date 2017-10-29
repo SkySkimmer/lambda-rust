@@ -1,9 +1,13 @@
 image: ralfjung/opam-ci:latest
 
+stages:
+  - build
+
 variables:
   CPU_CORES: "9"
 
 .template: &template
+  stage: build
   tags:
   - fp-timing
   script:
