@@ -14,7 +14,7 @@ Delimit Scope loc_scope with L.
 Open Scope loc_scope.
 
 Inductive base_lit : Set :=
-| LitUnit | LitLoc (l : loc) | LitInt (n : Z).
+| LitPoison | LitLoc (l : loc) | LitInt (n : Z).
 Inductive bin_op : Set :=
 | PlusOp | MinusOp | LeOp | EqOp | OffsetOp.
 Inductive order : Set :=
@@ -190,6 +190,8 @@ Proof.
 Qed.
 
 (** The stepping relation *)
+(* Be careful to make sure that poison is always stuck when used for anything
+   except for reading from or writing to memory! *)
 Definition Z_of_bool (b : bool) : Z :=
   if b then 1 else 0.
 
@@ -201,10 +203,10 @@ Definition shift_loc (l : loc) (z : Z) : loc := (l.1, l.2 + z).
 Notation "l +ₗ z" := (shift_loc l%L z%Z)
   (at level 50, left associativity) : loc_scope.
 
-Fixpoint init_mem (l:loc) (init:list val) (σ:state) : state :=
-  match init with
-  | [] => σ
-  | inith :: initq => <[l:=(RSt 0, inith)]>(init_mem (l +ₗ 1) initq σ)
+Fixpoint init_mem (l:loc) (n:nat) (σ:state) : state :=
+  match n with
+  | O => σ
+  | S n => <[l:=(RSt 0, LitV LitPoison)]>(init_mem (l +ₗ 1) n σ)
   end.
 
 Fixpoint free_mem (l:loc) (n:nat) (σ:state) : state :=
@@ -214,6 +216,7 @@ Fixpoint free_mem (l:loc) (n:nat) (σ:state) : state :=
   end.
 
 Inductive lit_eq (σ : state) : base_lit → base_lit → Prop :=
+(* No refl case for poison *)
 | IntRefl z : lit_eq σ (LitInt z) (LitInt z)
 | LocRefl l : lit_eq σ (LitLoc l) (LitLoc l)
 (* Comparing unallocated pointers can non-deterministically say they are equal
@@ -282,7 +285,7 @@ Inductive head_step : expr → state → expr → state → list expr → Prop :
     to_val e = Some v →
     σ !! l = Some (RSt 0, v') →
     head_step (Write ScOrd (Lit $ LitLoc l) e) σ
-              (Lit LitUnit) (<[l:=(RSt 0, v)]>σ)
+              (Lit LitPoison) (<[l:=(RSt 0, v)]>σ)
               []
 | WriteNa1S l e v v' σ:
     to_val e = Some v →
@@ -294,7 +297,7 @@ Inductive head_step : expr → state → expr → state → list expr → Prop :
     to_val e = Some v →
     σ !! l = Some (WSt, v') →
     head_step (Write Na2Ord (Lit $ LitLoc l) e) σ
-              (Lit LitUnit) (<[l:=(RSt 0, v)]>σ)
+              (Lit LitPoison) (<[l:=(RSt 0, v)]>σ)
               []
 | CasFailS l n e1 lit1 e2 lit2 litl σ :
     to_val e1 = Some $ LitV lit1 → to_val e2 = Some $ LitV lit2 →
@@ -329,24 +332,23 @@ Inductive head_step : expr → state → expr → state → list expr → Prop :
     head_step (CAS (Lit $ LitLoc l) e1 e2) σ
               stuck_term σ
               []
-| AllocS n l init σ :
+| AllocS n l σ :
     0 < n →
     (∀ m, σ !! (l +ₗ m) = None) →
-    Z.of_nat (length init) = n →
     head_step (Alloc $ Lit $ LitInt n) σ
-              (Lit $ LitLoc l) (init_mem l init σ) []
+              (Lit $ LitLoc l) (init_mem l (Z.to_nat n) σ) []
 | FreeS n l σ :
     0 < n →
     (∀ m, is_Some (σ !! (l +ₗ m)) ↔ 0 ≤ m < n) →
     head_step (Free (Lit $ LitInt n) (Lit $ LitLoc l)) σ
-              (Lit LitUnit) (free_mem l (Z.to_nat n) σ)
+              (Lit LitPoison) (free_mem l (Z.to_nat n) σ)
               []
 | CaseS i el e σ :
     0 ≤ i →
     el !! (Z.to_nat i) = Some e →
     head_step (Case (Lit $ LitInt i) el) σ e σ []
 | ForkS e σ:
-    head_step (Fork e) σ (Lit LitUnit) σ [e].
+    head_step (Fork e) σ (Lit LitPoison) σ [e].
 
 (** Basic properties about the language *)
 Lemma to_of_val v : to_val (of_val v) = Some v.
@@ -421,35 +423,23 @@ Proof. destruct l as [b o]; intros n n' [=?]; lia. Qed.
 Lemma shift_loc_block l n : (l +ₗ n).1 = l.1.
 Proof. done. Qed.
 
-Lemma lookup_init_mem σ (l l' : loc) vl :
-  l.1 = l'.1 → l.2 ≤ l'.2 < l.2 + length vl →
-  init_mem l vl σ !! l' = (RSt 0,) <$> vl !! Z.to_nat (l'.2 - l.2).
+Lemma lookup_init_mem σ (l l' : loc) (n : nat) :
+  l.1 = l'.1 → l.2 ≤ l'.2 < l.2 + n →
+  init_mem l n σ !! l' = Some (RSt 0, LitV LitPoison).
 Proof.
-  intros ?. destruct l' as [? n]; simplify_eq/=.
-  revert n l. induction vl as [|v vl IH]=> /= n l Hl; [lia|].
-  assert (n = l.2 ∨ l.2 + 1 ≤ n) as [->|?] by lia.
-  { by rewrite -surjective_pairing lookup_insert Z.sub_diag. }
+  intros ?. destruct l' as [? l']; simplify_eq/=.
+  revert l. induction n as [|n IH]=> /= l Hl; [lia|].
+  assert (l' = l.2 ∨ l.2 + 1 ≤ l') as [->|?] by lia.
+  { by rewrite -surjective_pairing lookup_insert. }
   rewrite lookup_insert_ne; last by destruct l; intros ?; simplify_eq/=; lia.
-  rewrite -(shift_loc_block l 1) IH /=; last lia.
-  cut (Z.to_nat (n - l.2) = S (Z.to_nat (n - (l.2 + 1)))); [by intros ->|].
-  rewrite -Z2Nat.inj_succ; last lia. f_equal; lia.
+  rewrite -(shift_loc_block l 1) IH /=; last lia. done.
 Qed.
 
-Lemma lookup_init_mem_Some σ (l l' : loc) vl :
-  l.1 = l'.1 → l.2 ≤ l'.2 < l.2 + length vl → ∃ v,
-  vl !! Z.to_nat (l'.2 - l.2) = Some v ∧
-  init_mem l vl σ !! l' = Some (RSt 0,v).
+Lemma lookup_init_mem_ne σ (l l' : loc) (n : nat) :
+  l.1 ≠ l'.1 ∨ l'.2 < l.2 ∨ l.2 + n ≤ l'.2 →
+  init_mem l n σ !! l' = σ !! l'.
 Proof.
-  intros. destruct (lookup_lt_is_Some_2 vl (Z.to_nat (l'.2 - l.2))) as [v Hv].
-  { rewrite -(Nat2Z.id (length vl)). apply Z2Nat.inj_lt; lia. }
-  exists v. by rewrite lookup_init_mem ?Hv.
-Qed.
-
-Lemma lookup_init_mem_ne σ (l l' : loc) vl :
-  l.1 ≠ l'.1 ∨ l'.2 < l.2 ∨ l.2 + length vl ≤ l'.2 →
-  init_mem l vl σ !! l' = σ !! l'.
-Proof.
-  revert l. induction vl as [|v vl IH]=> /= l Hl; auto.
+  revert l. induction n as [|n IH]=> /= l Hl; auto.
   rewrite -(IH (l +ₗ 1)); last (simpl; intuition lia).
   apply lookup_insert_ne. intros ->; intuition lia.
 Qed.
@@ -472,11 +462,10 @@ Lemma alloc_fresh n σ :
   let l := (fresh_block σ, 0) in
   let init := repeat (LitV $ LitInt 0) (Z.to_nat n) in
   0 < n →
-  head_step (Alloc $ Lit $ LitInt n) σ (Lit $ LitLoc l) (init_mem l init σ) [].
+  head_step (Alloc $ Lit $ LitInt n) σ (Lit $ LitLoc l) (init_mem l (Z.to_nat n) σ) [].
 Proof.
   intros l init Hn. apply AllocS. auto.
   - intros i. apply (is_fresh_block _ i).
-  - rewrite repeat_length Z2Nat.id; lia.
 Qed.
 
 Lemma lookup_free_mem_ne σ l l' n : l.1 ≠ l'.1 → free_mem l n σ !! l' = σ !! l'.
@@ -622,8 +611,8 @@ Proof.
  refine (λ v1 v2, cast_if (decide (of_val v1 = of_val v2))); abstract naive_solver.
 Defined.
 
-Instance expr_inhabited : Inhabited expr := populate (Lit LitUnit).
-Instance val_inhabited : Inhabited val := populate (LitV LitUnit).
+Instance expr_inhabited : Inhabited expr := populate (Lit LitPoison).
+Instance val_inhabited : Inhabited val := populate (LitV LitPoison).
 
 Canonical Structure stateC := leibnizC state.
 Canonical Structure valC := leibnizC val.
@@ -657,8 +646,8 @@ Notation Seq e1 e2 := (Let BAnon e1 e2).
 Notation LamV xl e := (RecV BAnon xl e).
 Notation LetCtx x e2 := (AppRCtx (LamV [x] e2) [] []).
 Notation SeqCtx e2 := (LetCtx BAnon e2).
-Notation Skip := (Seq (Lit LitUnit) (Lit LitUnit)).
+Notation Skip := (Seq (Lit LitPoison) (Lit LitPoison)).
 Coercion lit_of_bool : bool >-> base_lit.
 Notation If e0 e1 e2 := (Case e0 (@cons expr e2 (@cons expr e1 (@nil expr)))).
-Notation Newlft := (Lit LitUnit) (only parsing).
+Notation Newlft := (Lit LitPoison) (only parsing).
 Notation Endlft := Skip (only parsing).

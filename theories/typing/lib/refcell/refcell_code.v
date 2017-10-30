@@ -169,8 +169,7 @@ Section refcell_functions.
       iApply (type_sum_unit (option $ ref α ty)); [solve_typing..|]; first last.
       simpl. iApply type_jump; solve_typing.
     - wp_op. wp_write. wp_apply wp_new; [done..|].
-      iIntros (lref vl) "(EQ & H† & Hlref)". iDestruct "EQ" as %?%(inj Z.of_nat 2%nat).
-      destruct vl as [|?[|?[]]]; try done. wp_let.
+      iIntros (lref) "(H† & Hlref)". wp_let.
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
       iDestruct "Hlref" as "[Hlref0 Hlref1]". wp_op. wp_write. wp_op. wp_write.
       iAssert (∃ qν ν, (qβ / 2).[β] ∗ (qν).[ν] ∗
@@ -267,8 +266,7 @@ Section refcell_functions.
     iMod (na_bor_acc with "LFT Hinv Hβtok Hna") as "(INV & Hna & Hclose'')"; try done.
     iDestruct "INV" as (st) "(Hlx & Hownst & Hb)". wp_read. wp_let. wp_op=>?; wp_if.
     - wp_write. wp_apply wp_new; [done..|].
-      iIntros (lref vl) "(EQ & H† & Hlref)". iDestruct "EQ" as %?%(inj Z.of_nat 2%nat).
-      destruct vl as [|?[|?[]]]; try done. wp_let.
+      iIntros (lref) "(H† & Hlref)". wp_let.
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
       iDestruct "Hlref" as "[Hlref0 Hlref1]". wp_op. wp_write. wp_op. wp_write.
       destruct st as [[?[|[]|]]|]; try done.

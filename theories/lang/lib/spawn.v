@@ -16,7 +16,7 @@ Definition finish : val :=
   λ: ["c"; "v"],
     "c" +ₗ #1 <- "v";; (* Store data (non-atomically). *)
     "c" <-ˢᶜ #1;; (* Signal that we finished (atomically!) *)
-    #().
+    #☠.
 Definition join : val :=
   rec: "join" ["c"] :=
     if: !ˢᶜ"c" then
@@ -67,11 +67,11 @@ Lemma spawn_spec (Ψ : val → iProp Σ) e (f : val) :
     spawn [e] {{{ c, RET #c; join_handle c Ψ }}}.
 Proof.
   iIntros (<-%of_to_val Φ) "Hf HΦ". rewrite /spawn /=.
-  wp_let. wp_alloc l vl as "Hl" "H†". wp_let. inv_vec vl=>v0 v1.
+  wp_let. wp_alloc l as "Hl" "H†". wp_let.
   iMod (own_alloc (Excl ())) as (γf) "Hγf"; first done.
   iMod (own_alloc (Excl ())) as (γj) "Hγj"; first done.
   rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
-  iDestruct "Hl" as "[Hc Hd]". wp_write. clear v0.
+  iDestruct "Hl" as "[Hc Hd]". wp_write.
   iMod (inv_alloc N _ (spawn_inv γf γj l Ψ) with "[Hc]") as "#?".
   { iNext. iRight. iExists false. auto. }
   wp_apply (wp_fork with "[Hγf Hf Hd]").
@@ -81,7 +81,7 @@ Proof.
 Qed.
 
 Lemma finish_spec (Ψ : val → iProp Σ) c v :
-  {{{ finish_handle c Ψ ∗ Ψ v }}} finish [ #c; v] {{{ RET #(); True }}}.
+  {{{ finish_handle c Ψ ∗ Ψ v }}} finish [ #c; v] {{{ RET #☠; True }}}.
 Proof.
   iIntros (Φ) "[Hfin HΨ] HΦ". iDestruct "Hfin" as (γf γj v0) "(Hf & Hd & #?)".
   wp_lam. wp_op. wp_write.

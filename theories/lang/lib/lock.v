@@ -8,7 +8,7 @@ Definition mklock_unlocked : val := λ: ["l"], "l" <- #false.
 Definition mklock_locked : val := λ: ["l"], "l" <- #true.
 Definition try_acquire : val := λ: ["l"], CAS "l" #false #true.
 Definition acquire : val :=
-  rec: "acquire" ["l"] := if: try_acquire ["l"] then #() else "acquire" ["l"].
+  rec: "acquire" ["l"] := if: try_acquire ["l"] then #☠ else "acquire" ["l"].
 Definition release : val := λ: ["l"], "l" <-ˢᶜ #false.
 
 (* It turns out that we need an accessor-based spec so that we can put the
@@ -53,7 +53,7 @@ Section proof.
   Qed.
 
   Lemma mklock_unlocked_spec (R : iProp Σ) (l : loc) v :
-    {{{ l ↦ v ∗ ▷ R }}} mklock_unlocked [ #l ] {{{ RET #(); ▷ lock_proto l R }}}.
+    {{{ l ↦ v ∗ ▷ R }}} mklock_unlocked [ #l ] {{{ RET #☠; ▷ lock_proto l R }}}.
   Proof.
     iIntros (Φ) "[Hl HR] HΦ". wp_lam. rewrite -wp_fupd. wp_write.
     iMod (lock_proto_create with "Hl HR") as "Hproto".
@@ -61,7 +61,7 @@ Section proof.
   Qed.
 
   Lemma mklock_locked_spec (R : iProp Σ) (l : loc) v :
-    {{{ l ↦ v }}} mklock_locked [ #l ] {{{ RET #(); ▷ lock_proto l R }}}.
+    {{{ l ↦ v }}} mklock_locked [ #l ] {{{ RET #☠; ▷ lock_proto l R }}}.
   Proof.
     iIntros (Φ) "Hl HΦ". wp_lam. rewrite -wp_fupd. wp_write.
     iMod (lock_proto_create with "Hl [//]") as "Hproto".
@@ -88,7 +88,7 @@ Section proof.
 
   Lemma acquire_spec E l R P :
     □ (P ={E,∅}=∗ ▷ lock_proto l R ∗ (▷ lock_proto l R ={∅,E}=∗ P)) -∗
-    {{{ P }}} acquire [ #l ] @ E {{{ RET #(); R ∗ P }}}.
+    {{{ P }}} acquire [ #l ] @ E {{{ RET #☠; R ∗ P }}}.
   Proof.
     iIntros "#Hproto !# * HP HΦ". iLöb as "IH". wp_rec.
     wp_apply (try_acquire_spec with "Hproto HP"). iIntros ([]).
@@ -98,7 +98,7 @@ Section proof.
 
   Lemma release_spec E l R P :
     □ (P ={E,∅}=∗ ▷ lock_proto l R ∗ (▷ lock_proto l R ={∅,E}=∗ P)) -∗
-    {{{ R ∗ P }}} release [ #l ] @ E {{{ RET #(); P }}}.
+    {{{ R ∗ P }}} release [ #l ] @ E {{{ RET #☠; P }}}.
   Proof.
     iIntros "#Hproto !# * (HR & HP) HΦ". wp_let.
     iMod ("Hproto" with "HP") as "(Hinv & Hclose)".

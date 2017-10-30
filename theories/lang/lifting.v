@@ -44,22 +44,21 @@ Proof. exact: weakestpre.wp_bind. Qed.
 Lemma wp_alloc E (n : Z) :
   0 < n →
   {{{ True }}} Alloc (Lit $ LitInt n) @ E
-  {{{ l sz (vl : vec val sz), RET LitV $ LitLoc l; ⌜n = sz⌝ ∗ †l…(Z.to_nat n) ∗ l ↦∗ vl }}}.
+  {{{ l (sz: nat), RET LitV $ LitLoc l; ⌜n = sz⌝ ∗ †l…sz ∗ l ↦∗ repeat (LitV LitPoison) sz }}}.
 Proof.
   iIntros (? Φ) "_ HΦ". iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1) "Hσ !>"; iSplit; first by auto.
   iNext; iIntros (v2 σ2 efs Hstep); inv_head_step.
   iMod (heap_alloc with "Hσ") as "[Hσ Hl]"; [done..|].
   iModIntro; iSplit=> //. iFrame.
-  iApply ("HΦ" $! _ _ (list_to_vec init)).
-  rewrite vec_to_list_of_list. auto.
+  iApply ("HΦ" $! _ (Z.to_nat n)). iFrame. iPureIntro. rewrite Z2Nat.id; lia.
 Qed.
 
 Lemma wp_free E (n:Z) l vl :
   n = length vl →
   {{{ ▷ l ↦∗ vl ∗ ▷ †l…(length vl) }}}
     Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E
-  {{{ RET LitV LitUnit; True }}}.
+  {{{ RET LitV LitPoison; True }}}.
 Proof.
   iIntros (? Φ) "[>Hmt >Hf] HΦ". iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1) "Hσ".
@@ -101,7 +100,7 @@ Qed.
 Lemma wp_write_sc E l e v v' :
   to_val e = Some v →
   {{{ ▷ l ↦ v' }}} Write ScOrd (Lit $ LitLoc l) e @ E
-  {{{ RET LitV LitUnit; l ↦ v }}}.
+  {{{ RET LitV LitPoison; l ↦ v }}}.
 Proof.
   iIntros (<-%of_to_val Φ) ">Hv HΦ". iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1) "Hσ". iDestruct (heap_read_1 with "Hσ Hv") as %?.
@@ -114,7 +113,7 @@ Qed.
 Lemma wp_write_na E l e v v' :
   to_val e = Some v →
   {{{ ▷ l ↦ v' }}} Write Na1Ord (Lit $ LitLoc l) e @ E
-  {{{ RET LitV LitUnit; l ↦ v }}}.
+  {{{ RET LitV LitPoison; l ↦ v }}}.
 Proof.
   iIntros (<-%of_to_val Φ) ">Hv HΦ".
   iApply wp_lift_head_step; auto. iIntros (σ1) "Hσ".
@@ -145,7 +144,7 @@ Proof.
 Qed.
 
 Lemma wp_cas_suc E l lit1 e2 lit2 :
-  to_val e2 = Some (LitV lit2) → lit1 ≠ LitUnit →
+  to_val e2 = Some (LitV lit2) → lit1 ≠ LitPoison →
   {{{ ▷ l ↦ LitV lit1 }}}
     CAS (Lit $ LitLoc l) (Lit lit1) e2 @ E
   {{{ RET LitV (LitInt 1); l ↦ LitV lit2 }}}.
@@ -211,7 +210,7 @@ Qed.
 
 (** Base axioms for core primitives of the language: Stateless reductions *)
 Lemma wp_fork E e :
-  {{{ ▷ WP e {{ _, True }} }}} Fork e @ E {{{ RET LitV LitUnit; True }}}.
+  {{{ ▷ WP e {{ _, True }} }}} Fork e @ E {{{ RET LitV LitPoison; True }}}.
 Proof.
   iIntros (?) "?HΦ". iApply wp_lift_pure_det_head_step; eauto.
   by intros; inv_head_step; eauto. iApply step_fupd_intro; first done. iNext.
@@ -446,7 +445,7 @@ Lemma wp_seq E e1 e2 v Φ :
   ▷ WP e2 @ E {{ Φ }} -∗ WP Seq e1 e2 @ E {{ Φ }}.
 Proof. iIntros (??) "?". by iApply (wp_let _ BAnon). Qed.
 
-Lemma wp_skip E Φ : ▷ Φ (LitV LitUnit) -∗ WP Skip @ E {{ Φ }}.
+Lemma wp_skip E Φ : ▷ Φ (LitV LitPoison) -∗ WP Skip @ E {{ Φ }}.
 Proof. iIntros. iApply wp_seq. done. iNext. by iApply wp_value. Qed.
 
 End lifting.

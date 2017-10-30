@@ -258,7 +258,7 @@ Section typing.
   Proof.
     iIntros (HE [k' Hk']) "#LFT #HE Htl HL Hκs Hf Hargs Hk". rewrite -(of_to_val k k') //.
     clear dependent k. wp_apply (wp_hasty with "Hf"). iIntros (v) "% Hf".
-    iApply (wp_app_vec _ _ (_::_) ((λ v, ⌜v = (λ: ["_r"], (#() ;; #()) ;; k' ["_r"])%V⌝):::
+    iApply (wp_app_vec _ _ (_::_) ((λ v, ⌜v = (λ: ["_r"], (#☠ ;; #☠) ;; k' ["_r"])%V⌝):::
                vmap (λ ty (v : val), tctx_elt_interp tid (v ◁ box ty)) (fp x).(fp_tys))%I
             with "[Hargs]"); first wp_done.
     - rewrite /=. iSplitR "Hargs".
@@ -385,8 +385,8 @@ Section typing.
         intros. eapply Is_true_eq_true, is_closed_weaken=>//. set_solver+.
     - iIntros (k).
       (* TODO : make [simpl_subst] work here. *)
-      change (subst' "_k" k (p ((λ: ["_r"], (#() ;; #()) ;; "_k" ["_r"])%E :: ps))) with
-             ((subst "_k" k p) ((λ: ["_r"], (#() ;; #()) ;; k ["_r"])%E :: map (subst "_k" k) ps)).
+      change (subst' "_k" k (p ((λ: ["_r"], (#☠ ;; #☠) ;; "_k" ["_r"])%E :: ps))) with
+             ((subst "_k" k p) ((λ: ["_r"], (#☠ ;; #☠) ;; k ["_r"])%E :: map (subst "_k" k) ps)).
       rewrite is_closed_nil_subst //.
       assert (map (subst "_k" k) ps = ps) as ->.
       { clear -Hpsc. induction Hpsc=>//=. rewrite is_closed_nil_subst //. congruence. }

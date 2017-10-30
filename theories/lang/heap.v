@@ -297,19 +297,18 @@ Section heap.
     - rewrite is_Some_alt inter_lookup_None; lia.
   Qed.
 
-  Lemma heap_freeable_rel_init_mem l h vl σ:
-    vl ≠ [] →
+  Lemma heap_freeable_rel_init_mem l h n σ:
+    n ≠ O →
     (∀ m : Z, σ !! (l +ₗ m) = None) →
     heap_freeable_rel σ h →
-    heap_freeable_rel (init_mem l vl σ)
-                      (<[l.1 := (1%Qp, inter (l.2) (length vl))]> h).
+    heap_freeable_rel (init_mem l n σ)
+                      (<[l.1 := (1%Qp, inter (l.2) n)]> h).
   Proof.
     move=> Hvlnil FRESH REL blk qs /lookup_insert_Some [[<- <-]|[??]].
     - split.
-      { destruct vl as [|v vl]; simpl in *; [done|]. apply: insert_non_empty. }
-      intros i. destruct (decide (l.2 ≤ i ∧ i < l.2 + length vl)).
-      + rewrite inter_lookup_Some //.
-        destruct (lookup_init_mem_Some σ l (l.1, i) vl); naive_solver.
+      { destruct n as [|n]; simpl in *; [done|]. apply: insert_non_empty. }
+      intros i. destruct (decide (l.2 ≤ i ∧ i < l.2 + n)).
+      + rewrite inter_lookup_Some // lookup_init_mem; naive_solver.
       + rewrite inter_lookup_None; last lia. rewrite lookup_init_mem_ne /=; last lia.
         replace (l.1,i) with (l +ₗ (i - l.2)) by (rewrite /shift_loc; f_equal; lia).
         by rewrite FRESH !is_Some_alt.
@@ -337,15 +336,15 @@ Section heap.
   Qed.
 
   (** Weakest precondition *)
-  Lemma heap_alloc_vs σ l vl :
+  Lemma heap_alloc_vs σ l n :
     (∀ m : Z, σ !! (l +ₗ m) = None) →
     own heap_name (● to_heap σ)
-    ==∗ own heap_name (● to_heap (init_mem l vl σ))
-       ∗ own heap_name (◯ [^op list] i ↦ v ∈ vl,
+    ==∗ own heap_name (● to_heap (init_mem l n σ))
+       ∗ own heap_name (◯ [^op list] i ↦ v ∈ (repeat (LitV LitPoison) n),
            {[l +ₗ i := (1%Qp, Cinr 0%nat, to_agree v)]}).
   Proof.
     intros FREE. rewrite -own_op. apply own_update, auth_update_alloc.
-    revert l FREE. induction vl as [|v vl IH]=> l FRESH; [done|].
+    revert l FREE. induction n as [|n IH]=> l FRESH; [done|].
     rewrite (big_opL_consZ_l (λ k _, _ (_ k) _ )) /=.
     etrans; first apply (IH (l +ₗ 1)).
     { intros. by rewrite shift_loc_assoc. }
@@ -357,16 +356,16 @@ Section heap.
     rewrite lookup_init_mem_ne /=; last lia. by rewrite -(shift_loc_0 l) FRESH.
   Qed.
 
-  Lemma heap_alloc σ l n vl :
+  Lemma heap_alloc σ l n :
     0 < n →
     (∀ m, σ !! (l +ₗ m) = None) →
-    Z.of_nat (length vl) = n →
     heap_ctx σ ==∗
-      heap_ctx (init_mem l vl σ) ∗ †l…(Z.to_nat n) ∗ l ↦∗ vl.
+      heap_ctx (init_mem l (Z.to_nat n) σ) ∗ †l…(Z.to_nat n) ∗
+      l ↦∗ repeat (LitV LitPoison) (Z.to_nat n).
   Proof.
-    intros ?? HvlLen; iDestruct 1 as (hF) "(Hvalσ & HhF & %)".
-    assert (vl ≠ []) by (intros ->; simpl in *; lia).
-    iMod (heap_alloc_vs _ _ vl with "[$Hvalσ]") as "[Hvalσ Hmapsto]"; first done.
+    intros ??; iDestruct 1 as (hF) "(Hvalσ & HhF & %)".
+    assert (Z.to_nat n ≠ O). { rewrite -(Nat2Z.id 0)=>/Z2Nat.inj. lia. }
+    iMod (heap_alloc_vs _ _ (Z.to_nat n) with "[$Hvalσ]") as "[Hvalσ Hmapsto]"; first done.
     iMod (own_update _ (● hF) with "HhF") as "[HhF Hfreeable]".
     { apply auth_update_alloc,
         (alloc_singleton_local_update _ (l.1) (1%Qp, inter (l.2) (Z.to_nat n))).
@@ -374,9 +373,9 @@ Section heap.
       - split. done. apply inter_valid. }
     iModIntro. iSplitL "Hvalσ HhF".
     { iExists _. iFrame. iPureIntro.
-      rewrite -HvlLen Nat2Z.id. auto using heap_freeable_rel_init_mem. }
+      auto using heap_freeable_rel_init_mem. }
     rewrite heap_freeable_eq /heap_freeable_def heap_mapsto_vec_combine //.
-    iFrame.
+    iFrame. destruct (Z.to_nat n); done.
   Qed.
 
   Lemma heap_free_vs σ l vl :

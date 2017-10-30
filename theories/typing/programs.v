@@ -247,7 +247,7 @@ Section typing_rules.
     {{{ lft_ctx ∗ elctx_interp E ∗ na_own tid ⊤ ∗ llctx_interp L qL ∗
         tctx_elt_interp tid (p1 ◁ ty1) ∗ tctx_elt_interp tid (p2 ◁ ty2) }}}
       (p1 <-{n} !p2)
-    {{{ RET #(); na_own tid ⊤ ∗ llctx_interp L qL ∗
+    {{{ RET #☠; na_own tid ⊤ ∗ llctx_interp L qL ∗
                  tctx_elt_interp tid (p1 ◁ ty1') ∗ tctx_elt_interp tid (p2 ◁ ty2') }}}.
   Proof.
     iIntros (<-) "#Hwrt #Hread !#".

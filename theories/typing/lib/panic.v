@@ -14,7 +14,7 @@ Section panic.
   Context `{typeG Σ}.
 
   Definition panic : val :=
-    funrec: <> [] := #().
+    funrec: <> [] := #☠.
 
   Lemma panic_type : typed_val panic (fn(∅) → emp).
   Proof.

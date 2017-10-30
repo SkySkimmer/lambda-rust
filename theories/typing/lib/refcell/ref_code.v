@@ -86,7 +86,7 @@ Section ref_functions.
       - apply frac_valid'. rewrite -Hq'q'' comm -{2}(Qp_div_2 q'').
         apply Qcplus_le_mono_l. rewrite -{1}(Qcplus_0_l (q''/2)%Qp).
         apply Qcplus_le_mono_r, Qp_ge_0. }
-    wp_apply wp_new; [done..|]. iIntros (lr ?) "(%&?&Hlr)".
+    wp_apply wp_new; [done..|]. iIntros (lr) "(?&Hlr)".
     iAssert (lx' ↦∗{qlx'} [ #lv; #lrc])%I  with "[H↦1 H↦2]" as "H↦".
     { rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton. iFrame. }
     wp_let. wp_apply (wp_memcpy with "[$Hlr $H↦]"); [done..|].
@@ -231,8 +231,8 @@ Section ref_functions.
     iDestruct "Href" as "[[Href↦1 Href↦2] Href]".
     iDestruct "Href" as (ν qν γ β ty') "(#Hshr & #Hαβ & #Hinv & >Hν & Hγ)".
     wp_read. wp_let. wp_apply wp_new; try done.
-    iIntros (lx [|? []]) "(% & H† & Hlx)"; try (simpl in *; lia).
-    rewrite heap_mapsto_vec_singleton. wp_let. wp_write. wp_let. rewrite tctx_hasty_val.
+    iIntros (lx) "(H† & Hlx)". rewrite heap_mapsto_vec_singleton.
+    wp_let. wp_write. wp_let. rewrite tctx_hasty_val.
     iMod (lctx_lft_alive_tok α with "HE HL") as (?) "(Hα & HL & Hclose1)";[solve_typing..|].
     iMod (lctx_lft_alive_tok ϝ with "HE HL") as (?) "(Hϝ & HL & Hclose2)";[solve_typing..|].
     iDestruct (lft_intersect_acc with "Hα Hν") as (?) "[Hαν Hclose3]".
