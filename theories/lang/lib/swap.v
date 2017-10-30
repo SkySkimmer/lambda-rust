@@ -5,7 +5,7 @@ Set Default Proof Using "Type".
 
 Definition swap : val :=
   rec: "swap" ["p1";"p2";"len"] :=
-    if: "len" ≤ #0 then #()
+    if: "len" ≤ #0 then #☠
     else let: "x" := !"p1" in
          "p1" <- !"p2";;
          "p2" <- "x";;
@@ -15,7 +15,7 @@ Lemma wp_swap `{lrustG Σ} E l1 l2 vl1 vl2 (n : Z):
   Z.of_nat (length vl1) = n → Z.of_nat (length vl2) = n →
   {{{ l1 ↦∗ vl1 ∗ l2 ↦∗ vl2 }}}
     swap [ #l1; #l2; #n] @ E
-  {{{ RET #(); l1 ↦∗ vl2 ∗ l2 ↦∗ vl1 }}}.
+  {{{ RET #☠; l1 ↦∗ vl2 ∗ l2 ↦∗ vl1 }}}.
 Proof.
   iIntros (Hvl1 Hvl2 Φ) "(Hl1 & Hl2) HΦ".
   iLöb as "IH" forall (n l1 l2 vl1 vl2 Hvl1 Hvl2). wp_rec. wp_op=> ?; wp_if.

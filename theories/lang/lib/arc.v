@@ -38,12 +38,12 @@ Definition weak_count : val :=
 Definition clone_arc : val :=
   rec: "clone" ["l"] :=
     let: "strong" := !ˢᶜ"l" in
-    if: CAS "l" "strong" ("strong" + #1) then #() else "clone" ["l"].
+    if: CAS "l" "strong" ("strong" + #1) then #☠ else "clone" ["l"].
 
 Definition clone_weak : val :=
   rec: "clone" ["l"] :=
     let: "weak" := !ˢᶜ("l" +ₗ #1) in
-    if: CAS ("l" +ₗ #1) "weak" ("weak" + #1) then #() else "clone" ["l"].
+    if: CAS ("l" +ₗ #1) "weak" ("weak" + #1) then #☠ else "clone" ["l"].
 
 Definition downgrade : val :=
   rec: "downgrade" ["l"] :=
@@ -52,7 +52,7 @@ Definition downgrade : val :=
       (* -1 in weak indicates that somebody locked the counts; let's spin. *)
       "downgrade" ["l"]
     else
-      if: CAS ("l" +ₗ #1) "weak" ("weak" + #1) then #()
+      if: CAS ("l" +ₗ #1) "weak" ("weak" + #1) then #☠
       else "downgrade" ["l"].
 
 Definition upgrade : val :=
@@ -151,7 +151,7 @@ Section def.
     (□ (P ={E,∅}=∗ weak_tok γ ∗ (weak_tok γ ={∅,E}=∗ P)))%I.
 
   Definition drop_spec (drop : val) P : iProp Σ :=
-    ({{{ P ∗ P1 1 }}} drop [] {{{ RET #(); P ∗ P2 }}})%I.
+    ({{{ P ∗ P1 1 }}} drop [] {{{ RET #☠; P ∗ P2 }}})%I.
 End def.
 
 Section arc.
@@ -255,7 +255,7 @@ Section arc.
   Lemma clone_arc_spec (γ : gname) (l : loc) (P : iProp Σ) :
     is_arc P1 P2 N γ l -∗ arc_tok_acc γ P (⊤ ∖ ↑N) -∗
     {{{ P }}} clone_arc [ #l]
-    {{{ q', RET #(); P ∗ arc_tok γ q' ∗ P1 q' }}}.
+    {{{ q', RET #☠; P ∗ arc_tok γ q' ∗ P1 q' }}}.
   Proof using HP1.
     iIntros "#INV #Hacc !# * HP HΦ". iLöb as "IH". wp_rec. wp_bind (!ˢᶜ_)%E.
     iInv N as (st) "[>H● H]" "Hclose1".
@@ -291,7 +291,7 @@ Section arc.
 
   Lemma downgrade_spec (γ : gname) (l : loc) (P : iProp Σ) :
     is_arc P1 P2 N γ l -∗ arc_tok_acc γ P (⊤ ∖ ↑N) -∗
-    {{{ P }}} downgrade [ #l] {{{ RET #(); P ∗ weak_tok γ }}}.
+    {{{ P }}} downgrade [ #l] {{{ RET #☠; P ∗ weak_tok γ }}}.
   Proof.
     iIntros "#INV #Hacc !# * HP HΦ". iLöb as "IH". wp_rec. wp_op. wp_bind (!ˢᶜ_)%E.
     iInv N as (st) "[>H● H]" "Hclose1".
@@ -342,7 +342,7 @@ Section arc.
 
   Lemma clone_weak_spec (γ : gname) (l : loc) (P : iProp Σ) :
     is_arc P1 P2 N γ l -∗ weak_tok_acc γ P (⊤ ∖ ↑N) -∗
-    {{{ P }}} clone_weak [ #l] {{{ RET #(); P ∗ weak_tok γ }}}.
+    {{{ P }}} clone_weak [ #l] {{{ RET #☠; P ∗ weak_tok γ }}}.
   Proof.
     iIntros "#INV #Hacc !# * HP HΦ". iLöb as "IH". wp_rec. wp_op. wp_bind (!ˢᶜ_)%E.
     iAssert (□ (P ={⊤,⊤∖↑N}=∗ ∃ w : Z, (l +ₗ 1) ↦ #w ∗

@@ -5,7 +5,7 @@ Set Default Proof Using "Type".
 
 Definition memcpy : val :=
   rec: "memcpy" ["dst";"len";"src"] :=
-    if: "len" ≤ #0 then #()
+    if: "len" ≤ #0 then #☠
     else "dst" <- !"src";;
          "memcpy" ["dst" +ₗ #1 ; "len" - #1 ; "src" +ₗ #1].
 
@@ -24,7 +24,7 @@ Lemma wp_memcpy `{lrustG Σ} E l1 l2 vl1 vl2 q (n : Z):
   Z.of_nat (length vl1) = n → Z.of_nat (length vl2) = n →
   {{{ l1 ↦∗ vl1 ∗ l2 ↦∗{q} vl2 }}}
     #l1 <-{n} !#l2 @ E
-  {{{ RET #(); l1 ↦∗ vl2 ∗ l2 ↦∗{q} vl2 }}}.
+  {{{ RET #☠; l1 ↦∗ vl2 ∗ l2 ↦∗{q} vl2 }}}.
 Proof.
   iIntros (Hvl1 Hvl2 Φ) "(Hl1 & Hl2) HΦ".
   iLöb as "IH" forall (n l1 l2 vl1 vl2 Hvl1 Hvl2). wp_rec. wp_op=> ?; wp_if.

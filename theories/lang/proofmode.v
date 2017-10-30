@@ -154,8 +154,8 @@ Implicit Types Δ : envs (iResUR Σ).
 Lemma tac_wp_alloc Δ Δ' E j1 j2 n Φ :
   0 < n →
   IntoLaterNEnvs 1 Δ Δ' →
-  (∀ l sz (vl : vec val sz), n = sz → ∃ Δ'',
-    envs_app false (Esnoc (Esnoc Enil j1 (l ↦∗ vl)) j2 (†l…(Z.to_nat n))) Δ'
+  (∀ l (sz: nat), n = sz → ∃ Δ'',
+    envs_app false (Esnoc (Esnoc Enil j1 (l ↦∗ repeat (LitV LitPoison) sz)) j2 (†l…sz)) Δ'
       = Some Δ'' ∧
     (Δ'' ⊢ Φ (LitV $ LitLoc l))) →
   Δ ⊢ WP Alloc (Lit $ LitInt n) @ E {{ Φ }}.
@@ -163,9 +163,9 @@ Proof.
   intros ?? HΔ. rewrite -wp_fupd. eapply wand_apply; first exact:wp_alloc.
   rewrite -and_sep_l. apply and_intro; first done.
   rewrite into_laterN_env_sound; apply later_mono, forall_intro=> l.
-  apply forall_intro=>sz. apply forall_intro=> vl. apply wand_intro_l. rewrite -assoc.
+  apply forall_intro=>sz. apply wand_intro_l. rewrite -assoc.
   apply pure_elim_sep_l=> Hn. apply wand_elim_r'.
-  destruct (HΔ l _ vl) as (Δ''&?&HΔ'); first done.
+  destruct (HΔ l sz) as (Δ''&?&HΔ'); first done.
   rewrite envs_app_sound //; simpl. by rewrite right_id HΔ' -fupd_intro.
 Qed.
 
@@ -177,7 +177,7 @@ Lemma tac_wp_free Δ Δ' Δ'' Δ''' E i1 i2 vl (n : Z) (n' : nat) l Φ :
   envs_lookup i2 Δ'' = Some (false, †l…n')%I →
   envs_delete i2 false Δ'' = Δ''' →
   n' = length vl →
-  (Δ''' ⊢ Φ (LitV LitUnit)) →
+  (Δ''' ⊢ Φ (LitV LitPoison)) →
   Δ ⊢ WP Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E {{ Φ }}.
 Proof.
   intros -> ?? <- ? <- -> HΔ. rewrite -wp_fupd.
@@ -209,7 +209,7 @@ Lemma tac_wp_write Δ Δ' Δ'' E i l v e v' o Φ :
   IntoLaterNEnvs 1 Δ Δ' →
   envs_lookup i Δ' = Some (false, l ↦ v)%I →
   envs_simple_replace i false (Esnoc Enil i (l ↦ v')) Δ' = Some Δ'' →
-  (Δ'' ⊢ Φ (LitV LitUnit)) →
+  (Δ'' ⊢ Φ (LitV LitPoison)) →
   Δ ⊢ WP Write o (Lit $ LitLoc l) e @ E {{ Φ }}.
 Proof.
   intros ? [->| ->] ????.
@@ -230,7 +230,7 @@ Tactic Notation "wp_apply" open_constr(lem) :=
   | _ => fail "wp_apply: not a 'wp'"
   end.
 
-Tactic Notation "wp_alloc" ident(l) ident(vl) "as" constr(H) constr(Hf) :=
+Tactic Notation "wp_alloc" ident(l) "as" constr(H) constr(Hf) :=
   iStartProof;
   lazymatch goal with
   | |- _ ⊢ wp ?E ?e ?Q =>
@@ -242,7 +242,7 @@ Tactic Notation "wp_alloc" ident(l) ident(vl) "as" constr(H) constr(Hf) :=
       [try fast_done
       |apply _
       |let sz := fresh "sz" in let Hsz := fresh "Hsz" in
-       first [intros l sz vl Hsz | fail 1 "wp_alloc:" l "or" vl "not fresh"];
+       first [intros l sz Hsz | fail 1 "wp_alloc:" l "not fresh"];
        (* If Hsz is "constant Z = nat", change that to an equation on nat and
           potentially substitute away the sz. *)
        try (match goal with Hsz : ?x = _ |- _ => rewrite <-(Z2Nat.id x) in Hsz; last done end;
@@ -257,8 +257,8 @@ Tactic Notation "wp_alloc" ident(l) ident(vl) "as" constr(H) constr(Hf) :=
   | _ => fail "wp_alloc: not a 'wp'"
   end.
 
-Tactic Notation "wp_alloc" ident(l) ident(vl) :=
-  let H := iFresh in let Hf := iFresh in wp_alloc l vl as H Hf.
+Tactic Notation "wp_alloc" ident(l) :=
+  let H := iFresh in let Hf := iFresh in wp_alloc l as H Hf.
 
 Tactic Notation "wp_free" :=
   iStartProof;

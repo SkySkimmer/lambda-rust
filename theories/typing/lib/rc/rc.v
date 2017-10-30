@@ -693,7 +693,7 @@ Section code.
     iIntros (strong) "[Hrc Hc]". wp_let.
     iDestruct "Hc" as "[[% [_ Hproto]]|[% [Hproto _]]]".
     - subst strong. wp_op=>[_|?]; last done. wp_if. wp_op.
-      rewrite shift_loc_0. wp_write. wp_bind (#();;#())%E.
+      rewrite shift_loc_0. wp_write. wp_bind (#☠;;#☠)%E.
       iApply (wp_step_fupd with "[Hproto Hrc]");
         [| |by iApply ("Hproto" with "Hrc")|];
         [done..|wp_seq; iIntros "(Hty&H†&Hna&Hproto) !>"].
@@ -990,8 +990,9 @@ Section code.
     typed_val clone (fn(∀ α, ∅; &shr{α}ty) → ty) →
     typed_val (rc_make_mut ty clone) (fn(∀ α, ∅; &uniq{α}(rc ty)) → &uniq{α}ty).
   Proof.
-    intros Hclone E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
-      iIntros (α ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
+    intros Hclone E L. iApply type_fn; [solve_typing..|].
+    rewrite [(2 + ty_size ty)%nat]lock.
+    iIntros "/= !#".  iIntros (α ϝ ret arg). inv_vec arg=>rcx. simpl_subst.
     iApply (type_new 1); [solve_typing..|]; iIntros (r); simpl_subst.
     iApply (type_cont [] [ϝ ⊑ₗ []]
                       (λ _, [rcx ◁ box (uninit 1); r ◁ box (&uniq{α}ty)]));
@@ -1033,17 +1034,20 @@ Section code.
       + wp_op; [lia|move=>_]. wp_if. wp_op. rewrite shift_loc_0. wp_write. wp_op.
         wp_op. wp_write. wp_bind (new _). iSpecialize ("Hrc" with "Hl1 Hl2").
         iApply (wp_step_fupd with "Hrc"); [done..|]. iApply wp_new; first lia. done.
-        iNext. iIntros (lr [|? [|??]]) "/= (% & [H†|%] & H↦lr) [Hty Hproto] !>"; try lia.
+        rewrite -!lock Nat2Z.id.
+        iNext. iIntros (lr) "/= ([H†|%] & H↦lr) [Hty Hproto] !>"; last lia.
         rewrite 2!heap_mapsto_vec_cons. iDestruct "H↦lr" as "(Hlr1 & Hlr2 & Hlr3)".
         wp_let. wp_op. rewrite shift_loc_0. wp_write. wp_op. wp_write. wp_op. wp_op.
         iDestruct "Hty" as (vlr) "[H↦vlr Hty]". rewrite shift_loc_assoc.
-        iDestruct (ty_size_eq with "Hty") as %?.
-        wp_apply (wp_memcpy with "[$Hlr3 $H↦vlr]"); [lia..|]. iIntros "[Hlr3 Hvlr]".
-        wp_seq. wp_write. wp_op. iMod ("Hproto" with "[Hvlr]") as "Hna"; first by eauto.
+        iDestruct (ty_size_eq with "Hty") as %Hsz.
+        wp_apply (wp_memcpy with "[$Hlr3 $H↦vlr]").
+        { by rewrite repeat_length. } { by rewrite Hsz. }
+        iIntros "[Hlr3 Hvlr]". wp_seq. wp_write. wp_op.
+        iMod ("Hproto" with "[Hvlr]") as "Hna"; first by eauto.
         iMod ("Hclose2" $! ((lr +ₗ 2) ↦∗: ty_own ty tid)%I
               with "[Hrc' Hlr1 Hlr2 H†] [Hlr3 Hty]") as "[Hb Hα1]".
         { iIntros "!> H !>". iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame.
-          iLeft. iFrame. rewrite Z2Nat.inj_pos Pos2Nat.inj_succ SuccNat2Pos.id_succ //. }
+          iLeft. iFrame. }
         { iExists _. iFrame. }
         iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
         iApply (type_type _ _ _ [ r ◁ box (uninit 1); #(lr +ₗ 2) ◁ &uniq{α}ty;
@@ -1054,7 +1058,7 @@ Section code.
         iApply type_assign; [solve_typing..|].
         iApply type_jump; solve_typing.
     - wp_apply wp_new; first lia. done.
-      iIntros (lr [|? [|??]]) "/= (% & [H†|%] & H↦lr)"; try lia.
+      iIntros (lr) "/= ([H†|%] & H↦lr)"; last lia.
       iDestruct "Hc" as "[[% ?]|[% [Hproto _]]]"; first lia.
       iMod ("Hproto" with "Hl1") as "[Hna Hty]". wp_let. wp_op.
       rewrite heap_mapsto_vec_singleton. wp_write.
@@ -1086,22 +1090,22 @@ Section code.
         iApply ty_shr_mono; last done. iApply lft_intersect_incl_r. }
       iIntros ([[|cl|]|]) "Hna Hαν Hcl //". wp_rec.
       iDestruct "Hcl" as "[Hcl Hcl†]". iDestruct "Hcl" as (vl) "[Hcl↦ Hown]".
-      iDestruct (ty_size_eq with "Hown") as "#%".
+      iDestruct (ty_size_eq with "Hown") as %Hsz.
       iDestruct ("Hclose3" with "Hαν") as "[Hα2 Hν]".
-      wp_apply wp_new=>//. iIntros (l' vl') "(% & Hl'† & Hl')". wp_let. wp_op.
-      rewrite shift_loc_0. destruct vl' as [|?[|??]]; simpl in *; try lia.
+      wp_apply wp_new=>//. lia. iIntros (l') "(Hl'† & Hl')". wp_let. wp_op.
+      rewrite shift_loc_0. rewrite -!lock Nat2Z.id.
       rewrite !heap_mapsto_vec_cons shift_loc_assoc.
       iDestruct "Hl'" as "(Hl' & Hl'1 & Hl'2)". wp_write. wp_op. wp_write. wp_op.
-      wp_apply (wp_memcpy with "[$Hl'2 $Hcl↦]"); [lia..|]. iIntros "[Hl'2 Hcl↦]".
-      wp_seq. rewrite freeable_sz_full.
+      wp_apply (wp_memcpy with "[$Hl'2 $Hcl↦]").
+      { by rewrite repeat_length. } { by rewrite Hsz. }
+      iIntros "[Hl'2 Hcl↦]". wp_seq. rewrite freeable_sz_full.
       wp_apply (wp_delete with "[$Hcl↦ Hcl†]");
         [lia|by replace (length vl) with (ty.(ty_size))|].
       iIntros "_". wp_seq. wp_write.
       iMod ("Hclose2" $! ((l' +ₗ 2) ↦∗: ty_own ty tid)%I with
           "[Hrc' Hl' Hl'1  Hl'†] [Hl'2 Hown]") as "[Hl' Hα1]".
       { iIntros "!> H". iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame.
-        iLeft. iFrame. iDestruct "Hl'†" as "[?|%]"=>//.
-        by rewrite /Z.to_nat Pos2Nat.inj_succ SuccNat2Pos.id_succ. }
+        iLeft. iFrame. iDestruct "Hl'†" as "[?|%]"=>//. }
       { iExists _.  iFrame. }
       iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
       iApply (type_type _ _ _ [ #l ◁ rc ty; #l' +ₗ #2 ◁ &uniq{α}ty;

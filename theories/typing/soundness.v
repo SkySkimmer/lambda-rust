@@ -21,7 +21,7 @@ Instance subG_typePreG {Σ} : subG typeΣ Σ → typePreG Σ.
 Proof. solve_inG. Qed.
 
 Section type_soundness.
-  Definition exit_cont : val := λ: [<>], #().
+  Definition exit_cont : val := λ: [<>], #☠.
 
   Definition main_type `{typeG Σ} := (fn(∅) → unit)%T.
 

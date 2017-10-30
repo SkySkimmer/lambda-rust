@@ -252,9 +252,9 @@ Section typing.
   Proof.
     iIntros (? tid) "#LFT #HE $ $ _".
     iApply wp_new; try done. iModIntro.
-    iIntros (l vl) "(% & H† & Hlft)". subst. rewrite tctx_interp_singleton tctx_hasty_val.
+    iIntros (l) "(H† & Hlft)". rewrite tctx_interp_singleton tctx_hasty_val.
     iNext. rewrite freeable_sz_full Z2Nat.id //. iFrame.
-    iExists vl. iFrame. by rewrite Nat2Z.id.
+    iExists (repeat #☠ (Z.to_nat n)). iFrame. by rewrite /= repeat_length. 
   Qed.
 
   Lemma type_new {E L C T} (n' : nat) x (n : Z) e :
