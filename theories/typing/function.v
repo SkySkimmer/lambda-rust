@@ -260,7 +260,7 @@ Section typing.
     clear dependent k. wp_apply (wp_hasty with "Hf"). iIntros (v) "% Hf".
     iApply (wp_app_vec _ _ (_::_) ((λ v, ⌜v = (λ: ["_r"], (#☠ ;; #☠) ;; k' ["_r"])%V⌝):::
                vmap (λ ty (v : val), tctx_elt_interp tid (v ◁ box ty)) (fp x).(fp_tys))%I
-            with "[Hargs]"); first wp_done.
+            with "[Hargs]").
     - rewrite /=. iSplitR "Hargs".
       { simpl. iApply wp_value. by unlock. }
       remember (fp_tys (fp x)) as tys. clear dependent k' p HE fp x.
@@ -270,13 +270,11 @@ Section typing.
       + iApply (wp_hasty with "HT"). iIntros (?). rewrite tctx_hasty_val. iIntros "? $".
       + iApply "IH". done.
     - simpl. change (@length expr ps) with (length ps).
-      iIntros (vl'). inv_vec vl'=>kv vl.
-      iIntros "/= [% Hvl]". subst kv. iDestruct "Hf" as (fb kb xb e ?) "[EQ [EQl #Hf]]".
+      iIntros (vl'). inv_vec vl'=>kv vl; csimpl.
+      iIntros "[-> Hvl]". iDestruct "Hf" as (fb kb xb e ?) "[EQ [EQl #Hf]]".
       iDestruct "EQ" as %[=->]. iDestruct "EQl" as %EQl.
-      revert vl fp HE. rewrite <-EQl=>vl fp HE. iApply wp_rec; try done.
-      { rewrite -fmap_cons Forall_fmap Forall_forall=>? _. rewrite /= to_of_val. eauto. }
-      { rewrite -fmap_cons -(subst_v_eq (fb::kb::xb) (_:::_:::vl)) //. }
-      iNext. iMod (lft_create with "LFT") as (ϝ) "[Htk #Hinh]"; first done.
+      revert vl fp HE. rewrite /= -EQl=>vl fp HE. wp_rec.
+      iMod (lft_create with "LFT") as (ϝ) "[Htk #Hinh]"; first done.
       iSpecialize ("Hf" $! x ϝ _ vl). iDestruct (HE ϝ with "HL") as "#HE'".
       iMod (bor_create _ ϝ with "LFT Hκs") as "[Hκs HκsI]"; first done.
       iDestruct (frac_bor_lft_incl with "LFT [>Hκs]") as "#Hκs".

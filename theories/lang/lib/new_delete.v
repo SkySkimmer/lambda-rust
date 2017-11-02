@@ -22,10 +22,10 @@ Section specs.
     {{{ l, RET LitV $ LitLoc l;
         (†l…(Z.to_nat n) ∨ ⌜n = 0⌝) ∗ l ↦∗ repeat (LitV LitPoison) (Z.to_nat n) }}}.
   Proof.
-    iIntros (? Φ) "_ HΦ". wp_lam. wp_op; intros ?.
+    iIntros (? Φ) "_ HΦ". wp_lam. wp_op; case_bool_decide.
     - wp_if. assert (n = 0) as -> by lia. iApply "HΦ".
       rewrite heap_mapsto_vec_nil. auto.
-    - wp_if. wp_alloc l as "H↦" "H†". iApply "HΦ". subst sz.
+    - wp_if. wp_alloc l as "H↦" "H†". omega. iApply "HΦ". subst sz.
       iFrame. auto.
   Qed.
 
@@ -36,7 +36,7 @@ Section specs.
     {{{ RET #☠; True }}}.
   Proof.
     iIntros (? Φ) "(H↦ & [H†|%]) HΦ";
-      wp_lam; wp_op; intros ?; try lia; wp_if; try wp_free; by iApply "HΦ".
+      wp_lam; wp_op; case_bool_decide; try lia; wp_if; try wp_free; by iApply "HΦ".
   Qed.
 End specs.
 

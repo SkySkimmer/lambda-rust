@@ -692,7 +692,7 @@ Section code.
     wp_apply (rc_check_unique with "[$Hna $Hrc']"); first solve_ndisj.
     iIntros (strong) "[Hrc Hc]". wp_let.
     iDestruct "Hc" as "[[% [_ Hproto]]|[% [Hproto _]]]".
-    - subst strong. wp_op=>[_|?]; last done. wp_if. wp_op.
+    - subst strong. wp_op. wp_if. wp_op.
       rewrite shift_loc_0. wp_write. wp_bind (#☠;;#☠)%E.
       iApply (wp_step_fupd with "[Hproto Hrc]");
         [| |by iApply ("Hproto" with "Hrc")|];
@@ -707,7 +707,7 @@ Section code.
       iIntros (?) "(Hna & HL & [Hr [Hrc _]])". wp_seq.
       iMod ("Hproto" with "Hna") as (weak) "[H↦weak Hproto]". wp_op. wp_read. wp_let.
       iDestruct "Hproto" as "[(% & H↦strong & Hna)|[% Hproto]]".
-      + subst. wp_op=>[_|[]//]. wp_if.
+      + subst. wp_op. wp_if.
         iApply (type_type _ _ _
              [ r ◁ own_ptr (ty_size Σ[ ty; rc ty ]) (Σ[ ty; rc ty]);
                rcx ◁ box (uninit 1);
@@ -722,7 +722,7 @@ Section code.
         iApply (type_delete (Π[uninit 2;uninit ty.(ty_size)])); [solve_typing..|].
         iApply type_jump; solve_typing.
       + rewrite (tctx_hasty_val' _ (#rc' +ₗ #2)); last done.
-        iDestruct "Hrc" as "[Hrc H†2]". wp_op=>[?|_]. lia. wp_if. wp_op. wp_op. wp_write.
+        iDestruct "Hrc" as "[Hrc H†2]". wp_op; case_bool_decide; first lia. wp_if. wp_op. wp_op. wp_write.
         iMod ("Hproto" with "[H†1 H†2] H↦weak Hrc") as "Hna".
         { rewrite -freeable_sz_full_S -(freeable_sz_split _ 2 ty.(ty_size)). iFrame. }
         iApply (type_type _ _ _
@@ -731,7 +731,7 @@ Section code.
         with "[] LFT HE Hna HL Hk [-]"); last first.
         { unlock. rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
         iApply type_jump; solve_typing.
-    - wp_op; intros Hc; first lia. wp_if. iMod ("Hproto" with "Hrc") as "[Hna Hrc]".
+    - wp_op; case_bool_decide as Hc; first lia. wp_if. iMod ("Hproto" with "Hrc") as "[Hna Hrc]".
       iApply (type_type _ _ _ [ r ◁ own_ptr (ty_size Σ[ ty; rc ty ]) (uninit _);
                                 rcx ◁ box (uninit 1); #rc' ◁ rc ty ]
         with "[] LFT HE Hna HL Hk [-]"); last first.
@@ -791,7 +791,7 @@ Section code.
     - subst strong. wp_bind (#1 = #1)%E.
       iApply (wp_step_fupd with "[Hproto Hrc]");
         [| |by iApply ("Hproto" with "Hrc")|];
-        [done..|wp_op=>[_|//]; iIntros "(Hty&H†&Hna&Hproto) !>"; wp_if].
+        [done..|wp_op; iIntros "(Hty&H†&Hna&Hproto) !>"; wp_if].
       rewrite <-freeable_sz_full_S, <-(freeable_sz_split _ 2 ty.(ty_size)).
       iDestruct "H†" as "[H†1 H†2]". wp_bind (_<-_;;_)%E.
       iApply (wp_wand with "[Hna HL Hty Hr H†2]").
@@ -802,7 +802,7 @@ Section code.
       iIntros (?) "(Hna & HL & [Hr [Hrc _]])". wp_seq.
       iMod ("Hproto" with "Hna") as (weak) "[H↦weak Hproto]". wp_op. wp_read. wp_let.
       iDestruct "Hproto" as "[(% & H↦strong & Hna)|[% Hproto]]".
-      + subst. wp_op=>[_|[]//]. wp_if.
+      + subst. wp_op. wp_if.
         iApply (type_type _ _ _
              [ r ◁ own_ptr (ty_size (option ty)) (option ty);
                rcx ◁ box (uninit 1);
@@ -817,7 +817,7 @@ Section code.
         iApply (type_delete (Π[uninit 2;uninit ty.(ty_size)])); [solve_typing..|].
         iApply type_jump; solve_typing.
       + rewrite (tctx_hasty_val' _ (#rc' +ₗ #2)); last done.
-        iDestruct "Hrc" as "[Hrc H†2]". wp_op=>[?|_]. lia. wp_if. wp_op. wp_op. wp_write.
+        iDestruct "Hrc" as "[Hrc H†2]". wp_op. case_bool_decide; first lia. wp_if. wp_op. wp_op. wp_write.
         iMod ("Hproto" with "[H†1 H†2] H↦weak Hrc") as "Hna".
         { rewrite -freeable_sz_full_S -(freeable_sz_split _ 2 ty.(ty_size)). iFrame. }
         iApply (type_type _ _ _
@@ -825,7 +825,7 @@ Section code.
         with "[] LFT HE Hna HL Hk [-]"); last first.
         { unlock. rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame. }
         iApply type_jump; solve_typing.
-    - wp_op; intros Hc; first lia. wp_if. iMod ("Hproto" with "Hrc") as "Hna".
+    - wp_op; case_bool_decide as Hc; first lia. wp_if. iMod ("Hproto" with "Hrc") as "Hna".
       iApply (type_type _ _ _ [ r ◁ own_ptr (ty_size (option ty)) (uninit _);
                                 rcx ◁ box (uninit 1) ]
         with "[] LFT HE Hna HL Hk [-]"); last first.
@@ -882,12 +882,12 @@ Section code.
     wp_apply (rc_check_unique with "[$Hna Hrcown]"); first done.
     { (* Boy this is silly... *) iDestruct "Hrcown" as "[(?&?&?&?)|?]"; last by iRight.
       iLeft. by iFrame. }
-    iIntros (c) "(Hl1 & Hc)". wp_let. wp_op; intros Hc.
+    iIntros (c) "(Hl1 & Hc)". wp_let. wp_op; case_bool_decide as Hc.
     - wp_if. iDestruct "Hc" as "[[% [Hc _]]|[% _]]"; last lia. subst.
       iDestruct "Hc" as (weak) "[Hl2 Hweak]". wp_op. wp_read. wp_let.
       iDestruct "Hweak" as "[[% Hrc]|[% [Hrc _]]]".
       + subst. wp_bind (#1 = #1)%E. iApply (wp_step_fupd with "Hrc"); [done..|].
-        wp_op=>[_|//]. iIntros "(Hl† & Hty & Hna)!>". wp_if.
+        wp_op. iIntros "(Hl† & Hty & Hna)!>". wp_if.
         iMod ("Hclose2" with "[Hrc' Hl1 Hl2 Hl†] [Hty]") as "[Hty Hα]"; [|iNext; iExact "Hty"|].
         { iIntros "!> Hty". iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame "Hrc'".
           iLeft. by iFrame. }
@@ -899,7 +899,7 @@ Section code.
           unlock. iFrame. }
         iApply (type_sum_assign (option (&uniq{_}_))); [solve_typing..|].
         iApply type_jump; solve_typing.
-      + wp_op=>[?|_]; first lia. wp_if. iMod ("Hrc" with "Hl1 Hl2") as "[Hna Hrc]".
+      + wp_op; case_bool_decide; first lia. wp_if. iMod ("Hrc" with "Hl1 Hl2") as "[Hna Hrc]".
         iMod ("Hclose2" with "[] [Hrc' Hrc]") as "[Hrc' Hα]".
         { iIntros "!> HX". iModIntro. iExact "HX". }
         { iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame. auto. }
@@ -1014,12 +1014,12 @@ Section code.
     wp_apply (rc_check_unique with "[$Hna Hrcown]"); first done.
     { (* Boy this is silly... *) iDestruct "Hrcown" as "[(?&?&?&?)|?]"; last by iRight.
       iLeft. by iFrame. }
-    iIntros (c) "(Hl1 & Hc)". wp_let. wp_op; intros Hc; wp_if.
+    iIntros (c) "(Hl1 & Hc)". wp_let. wp_op; case_bool_decide as Hc; wp_if.
     - iDestruct "Hc" as "[[% [Hc _]]|[% _]]"; last lia. subst.
       iDestruct "Hc" as (weak) "[Hl2 Hweak]". wp_op. wp_read. wp_let.
       iDestruct "Hweak" as "[[% Hrc]|[% [_ Hrc]]]".
       + subst. wp_bind (#1 = #1)%E. iApply (wp_step_fupd with "Hrc"); [done..|].
-        wp_op=>[_|//]. iIntros "(Hl† & Hty & Hna)!>". wp_if.
+        wp_op. iIntros "(Hl† & Hty & Hna)!>". wp_if.
         iMod ("Hclose2" with "[Hrc' Hl1 Hl2 Hl†] [Hty]") as "[Hty Hα1]"; [|iNext; iExact "Hty"|].
         { iIntros "!> Hty". iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame "Hrc'".
           iLeft. by iFrame. }
@@ -1031,7 +1031,7 @@ Section code.
                   tctx_hasty_val' //. unlock. iFrame. }
         iApply type_assign; [solve_typing..|].
         iApply type_jump; solve_typing.
-      + wp_op; [lia|move=>_]. wp_if. wp_op. rewrite shift_loc_0. wp_write. wp_op.
+      + wp_op; case_bool_decide; first lia. wp_if. wp_op. rewrite shift_loc_0. wp_write. wp_op.
         wp_op. wp_write. wp_bind (new _). iSpecialize ("Hrc" with "Hl1 Hl2").
         iApply (wp_step_fupd with "Hrc"); [done..|]. iApply wp_new; first lia. done.
         rewrite -!lock Nat2Z.id.

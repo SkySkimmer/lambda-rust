@@ -117,8 +117,8 @@ Section typing_rules.
     iIntros (Hc) "He He'". iIntros (tid) "#LFT #HE Htl HL HC HT". rewrite tctx_interp_app.
     iDestruct "HT" as "[HT1 HT]". wp_bind e. iApply (wp_wand with "[He HL HT1 Htl]").
     { iApply ("He" with "LFT HE Htl HL HT1"). }
-    iIntros (v) "/= (Htl & HL & HT2)". iApply wp_let; first wp_done.
-    iModIntro. iApply ("He'" with "LFT HE Htl HL HC [HT2 HT]").
+    iIntros (v) "/= (Htl & HL & HT2)". wp_let.
+    iApply ("He'" with "LFT HE Htl HL HC [HT2 HT]").
     rewrite tctx_interp_app. by iFrame.
   Qed.
 

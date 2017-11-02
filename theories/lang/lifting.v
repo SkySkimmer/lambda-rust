@@ -5,8 +5,6 @@ From lrust.lang Require Import tactics.
 From iris.proofmode Require Import tactics.
 Set Default Proof Using "Type".
 Import uPred.
-Local Hint Extern 0 (head_reducible _ _) => do_head_step eauto 2.
-Hint Constructors lit_neq lit_eq.
 
 Class lrustG Σ := LRustG {
   lrustG_invG : invG Σ;
@@ -25,9 +23,46 @@ Ltac inv_lit :=
   | H : lit_neq _ ?x ?y |- _ => inversion H; clear H; simplify_eq/=
   end.
 
+Ltac inv_bin_op_eval :=
+  repeat match goal with
+  | H : bin_op_eval _ ?c _ _ _ |- _ => is_constructor c; inversion H; clear H; simplify_eq/=
+  end.
+
+Local Hint Extern 0 (atomic _) => solve_atomic.
+Local Hint Extern 0 (head_reducible _ _) => eexists _, _, _; simpl.
+
+Local Hint Constructors head_step bin_op_eval lit_neq lit_eq.
+Local Hint Resolve alloc_fresh.
+Local Hint Resolve to_of_val.
+
+Class AsRec (e : expr) (f : binder) (xl : list binder) (erec : expr) :=
+  as_rec : e = Rec f xl erec.
+Instance AsRec_rec f xl e : AsRec (Rec f xl e) f xl e := eq_refl.
+Instance AsRec_rec_locked_val v f xl e :
+  AsRec (of_val v) f xl e → AsRec (of_val (locked v)) f xl e.
+Proof. by unlock. Qed.
+
+Class DoSubst (x : binder) (es : expr) (e er : expr) :=
+  do_subst : subst' x es e = er.
+Hint Extern 0 (DoSubst _ _ _ _) =>
+  rewrite /DoSubst; simpl_subst; reflexivity : typeclass_instances.
+
+Class DoSubstL (xl : list binder) (esl : list expr) (e er : expr) :=
+  do_subst_l : subst_l xl esl e = Some er.
+Instance do_subst_l_nil e : DoSubstL [] [] e e.
+Proof. done. Qed.
+Instance do_subst_l_cons x xl es esl e er er' :
+  DoSubstL xl esl e er' → DoSubst x es er' er →
+  DoSubstL (x :: xl) (es :: esl) e er.
+Proof. rewrite /DoSubstL /DoSubst /= => -> <- //. Qed.
+Instance do_subst_vec xl (vsl : vec val (length xl)) e :
+  DoSubstL xl (of_val <$> vec_to_list vsl) e (subst_v xl vsl e).
+Proof. by rewrite /DoSubstL subst_v_eq. Qed.
+
 Section lifting.
 Context `{lrustG Σ}.
 Implicit Types P Q : iProp Σ.
+Implicit Types e : expr.
 Implicit Types ef : option expr.
 
 (** Bind. This bundles some arguments that wp_ectx_bind leaves as indices. *)
@@ -39,6 +74,68 @@ Lemma wp_bindi {E e} Ki Φ :
   WP e @ E {{ v, WP fill_item Ki (of_val v) @ E {{ Φ }} }} -∗
      WP fill_item Ki e @ E {{ Φ }}.
 Proof. exact: weakestpre.wp_bind. Qed.
+
+(** Base axioms for core primitives of the language: Stateless reductions *)
+Lemma wp_fork E e :
+  {{{ ▷ WP e {{ _, True }} }}} Fork e @ E {{{ RET LitV LitPoison; True }}}.
+Proof.
+  iIntros (?) "?HΦ". iApply wp_lift_pure_det_head_step; eauto.
+  by intros; inv_head_step; eauto. iApply step_fupd_intro; first done. iNext.
+  rewrite big_sepL_singleton. iFrame. iApply wp_value. by iApply "HΦ".
+Qed.
+
+(** Pure reductions *)
+Local Ltac solve_exec_safe :=
+  intros; destruct_and?; subst; do 3 eexists; econstructor; simpl; eauto with omega.
+Local Ltac solve_exec_puredet :=
+  simpl; intros; destruct_and?; inv_head_step; inv_bin_op_eval; inv_lit; done.
+Local Ltac solve_pure_exec :=
+  apply det_head_step_pure_exec; [ solve_exec_safe | solve_exec_puredet ].
+
+Global Instance pure_rec e f xl erec erec' el :
+  AsRec e f xl erec →
+  TCForall AsVal el →
+  Closed (f :b: xl +b+ []) erec →
+  DoSubstL (f :: xl) (e :: el) erec erec' →
+  PureExec True (App e el) erec'.
+Proof. rewrite /AsRec /DoSubstL=> -> /TCForall_Forall ???. solve_pure_exec. Qed.
+
+Global Instance pure_le n1 n2 :
+  PureExec True (BinOp LeOp (Lit (LitInt n1)) (Lit (LitInt n2)))
+                (Lit (bool_decide (n1 ≤ n2))).
+Proof. solve_pure_exec. Qed.
+
+Global Instance pure_eq_int n1 n2 :
+  PureExec True (BinOp EqOp (Lit (LitInt n1)) (Lit (LitInt n2))) (Lit (bool_decide (n1 = n2))).
+Proof. case_bool_decide; solve_pure_exec. Qed.
+
+Global Instance pure_eq_loc_0_r l :
+  PureExec True (BinOp EqOp (Lit (LitLoc l)) (Lit (LitInt 0))) (Lit false).
+Proof. solve_pure_exec. Qed.
+
+Global Instance pure_eq_loc_0_l l :
+  PureExec True (BinOp EqOp (Lit (LitInt 0)) (Lit (LitLoc l))) (Lit false).
+Proof. solve_pure_exec. Qed.
+
+Global Instance pure_plus z1 z2 :
+  PureExec True (BinOp PlusOp (Lit $ LitInt z1) (Lit $ LitInt z2)) (Lit $ LitInt $ z1 + z2).
+Proof. solve_pure_exec. Qed.
+
+Global Instance pure_minus z1 z2 :
+  PureExec True (BinOp MinusOp (Lit $ LitInt z1) (Lit $ LitInt z2)) (Lit $ LitInt $ z1 - z2).
+Proof. solve_pure_exec. Qed.
+
+Global Instance pure_offset l z  :
+  PureExec True (BinOp OffsetOp (Lit $ LitLoc l) (Lit $ LitInt z)) (Lit $ LitLoc $ l +ₗ z).
+Proof. solve_pure_exec. Qed.
+
+Global Instance pure_case i e el :
+  PureExec (0 ≤ i ∧ el !! (Z.to_nat i) = Some e) (Case (Lit $ LitInt i) el) e | 10.
+Proof. solve_pure_exec. Qed.
+
+Global Instance pure_if b e1 e2 :
+  PureExec True (If (Lit (lit_of_bool b)) e1 e2) (if b then e1 else e2) | 1.
+Proof. destruct b; solve_pure_exec. Qed.
 
 (** Heap *)
 Lemma wp_alloc E (n : Z) :
@@ -76,7 +173,7 @@ Proof.
   iIntros (σ1) "Hσ". iDestruct (heap_read with "Hσ Hv") as %[n ?].
   iModIntro; iSplit; first by eauto.
   iNext; iIntros (v2 σ2 efs Hstep); inv_head_step.
-  iModIntro; iSplit=> //. iFrame. rewrite to_of_val. iFrame. by iApply "HΦ".
+  iModIntro; iSplit=> //. iFrame. by iApply "HΦ".
 Qed.
 
 Lemma wp_read_na E l q v :
@@ -93,12 +190,12 @@ Proof.
   iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1) "Hσ". iMod ("Hσclose" with "Hσ") as (n) "(% & Hσ & Hv)".
   iModIntro; iSplit; first by eauto.
-  iNext; iIntros (e2 σ2 efs Hstep) "!>"; inv_head_step. rewrite to_of_val /=.
+  iNext; iIntros (e2 σ2 efs Hstep) "!>"; inv_head_step.
   iFrame "Hσ". iSplit; [done|]. by iApply "HΦ".
 Qed.
 
 Lemma wp_write_sc E l e v v' :
-  to_val e = Some v →
+  IntoVal e v →
   {{{ ▷ l ↦ v' }}} Write ScOrd (Lit $ LitLoc l) e @ E
   {{{ RET LitV LitPoison; l ↦ v }}}.
 Proof.
@@ -111,7 +208,7 @@ Proof.
 Qed.
 
 Lemma wp_write_na E l e v v' :
-  to_val e = Some v →
+  IntoVal e v →
   {{{ ▷ l ↦ v' }}} Write Na1Ord (Lit $ LitLoc l) e @ E
   {{{ RET LitV LitPoison; l ↦ v }}}.
 Proof.
@@ -130,7 +227,7 @@ Proof.
 Qed.
 
 Lemma wp_cas_int_fail E l q z1 e2 lit2 zl :
-  to_val e2 = Some (LitV lit2) → z1 ≠ zl →
+  IntoVal e2 (LitV lit2) → z1 ≠ zl →
   {{{ ▷ l ↦{q} LitV (LitInt zl) }}}
     CAS (Lit $ LitLoc l) (Lit $ LitInt z1) e2 @ E
   {{{ RET LitV $ LitInt 0; l ↦{q} LitV (LitInt zl) }}}.
@@ -144,7 +241,7 @@ Proof.
 Qed.
 
 Lemma wp_cas_suc E l lit1 e2 lit2 :
-  to_val e2 = Some (LitV lit2) → lit1 ≠ LitPoison →
+  IntoVal e2 (LitV lit2) → lit1 ≠ LitPoison →
   {{{ ▷ l ↦ LitV lit1 }}}
     CAS (Lit $ LitLoc l) (Lit lit1) e2 @ E
   {{{ RET LitV (LitInt 1); l ↦ LitV lit2 }}}.
@@ -159,21 +256,21 @@ Proof.
 Qed.
 
 Lemma wp_cas_int_suc E l z1 e2 lit2 :
-  to_val e2 = Some (LitV lit2) →
+  IntoVal e2 (LitV lit2) →
   {{{ ▷ l ↦ LitV (LitInt z1) }}}
     CAS (Lit $ LitLoc l) (Lit $ LitInt z1) e2 @ E
   {{{ RET LitV (LitInt 1); l ↦ LitV lit2 }}}.
 Proof. intros ?. by apply wp_cas_suc. Qed.
 
 Lemma wp_cas_loc_suc E l l1 e2 lit2 :
-  to_val e2 = Some (LitV lit2) →
+  IntoVal e2 (LitV lit2) →
   {{{ ▷ l ↦ LitV (LitLoc l1) }}}
     CAS (Lit $ LitLoc l) (Lit $ LitLoc l1) e2 @ E
   {{{ RET LitV (LitInt 1); l ↦ LitV lit2 }}}.
 Proof. intros ?. by apply wp_cas_suc. Qed.
 
 Lemma wp_cas_loc_fail E l q q' q1 l1 v1' e2 lit2 l' vl' :
-  to_val e2 = Some (LitV lit2) → l1 ≠ l' →
+  IntoVal e2 (LitV lit2) → l1 ≠ l' →
   {{{ ▷ l ↦{q} LitV (LitLoc l') ∗ ▷ l' ↦{q'} vl' ∗ ▷ l1 ↦{q1} v1' }}}
     CAS (Lit $ LitLoc l) (Lit $ LitLoc l1) e2 @ E
   {{{ RET LitV (LitInt 0);
@@ -190,7 +287,7 @@ Proof.
 Qed.
 
 Lemma wp_cas_loc_nondet E l l1 e2 l2 ll :
-  to_val e2 = Some (LitV $ LitLoc l2) →
+  IntoVal e2 (LitV $ LitLoc l2) →
   {{{ ▷ l ↦ LitV (LitLoc ll) }}}
     CAS (Lit $ LitLoc l) (Lit $ LitLoc l1) e2 @ E
   {{{ b, RET LitV (lit_of_bool b);
@@ -208,87 +305,18 @@ Proof.
     iModIntro; iSplit; [done|]. iApply "HΦ"; iFrame.
 Qed.
 
-(** Base axioms for core primitives of the language: Stateless reductions *)
-Lemma wp_fork E e :
-  {{{ ▷ WP e {{ _, True }} }}} Fork e @ E {{{ RET LitV LitPoison; True }}}.
-Proof.
-  iIntros (?) "?HΦ". iApply wp_lift_pure_det_head_step; eauto.
-  by intros; inv_head_step; eauto. iApply step_fupd_intro; first done. iNext.
-  rewrite big_sepL_singleton. iFrame. iApply wp_value. by iApply "HΦ".
-Qed.
-
-Lemma wp_rec_step_fupd E E' e f xl erec erec' el Φ :
-  e = Rec f xl erec →
-  Forall (λ ei, is_Some (to_val ei)) el →
-  Closed (f :b: xl +b+ []) erec →
-  subst_l (f::xl) (e::el) erec = Some erec' →
-  (|={E,E'}▷=> WP erec' @ E {{ Φ }}) -∗ WP App e el @ E {{ Φ }}.
-Proof.
-  iIntros (-> ???) "H". iApply wp_lift_pure_det_head_step_no_fork; subst; eauto.
-  by intros; inv_head_step; eauto.
-Qed.
-
-Lemma wp_rec E e f xl erec erec' el Φ :
-  e = Rec f xl erec →
-  Forall (λ ei, is_Some (to_val ei)) el →
-  Closed (f :b: xl +b+ []) erec →
-  subst_l (f::xl) (e::el) erec = Some erec' →
-  ▷ WP erec' @ E {{ Φ }} -∗ WP App e el @ E {{ Φ }}.
-Proof.
-  iIntros (-> ???) "?". iApply wp_rec_step_fupd; [done..|].
-  iApply step_fupd_intro; done.
-Qed.
-
-Lemma wp_bin_op_pure E op l1 l2 l' :
-  (∀ σ, bin_op_eval σ op l1 l2 l') →
-  {{{ True }}} BinOp op (Lit l1) (Lit l2) @ E
-  {{{ l'' σ, RET LitV l''; ⌜bin_op_eval σ op l1 l2 l''⌝ }}}.
-Proof.
-  iIntros (? Φ) "_ HΦ". iApply wp_lift_pure_head_step; eauto.
-  { intros. by inv_head_step. }
-  iApply step_fupd_intro; first done. iNext. iIntros (e2 efs σ Hs).
-  inv_head_step; rewrite right_id.
-  rewrite -wp_value. iApply "HΦ". eauto.
-Qed.
-
-Lemma wp_le E (n1 n2 : Z) P Φ :
-  (n1 ≤ n2 → P -∗ ▷ Φ (LitV $  true)) →
-  (n2 < n1 → P -∗ ▷ Φ (LitV false)) →
-  P -∗ WP BinOp LeOp (Lit (LitInt n1)) (Lit (LitInt n2)) @ E {{ Φ }}.
-Proof.
-  iIntros (Hl Hg) "HP".
-  destruct (bool_decide_reflect (n1 ≤ n2)); [rewrite Hl //|rewrite Hg; last omega];
-    clear Hl Hg; (iApply wp_bin_op_pure; first by econstructor); try done; iNext; iIntros (?? Heval);
-    inversion_clear Heval; [rewrite bool_decide_true //|rewrite bool_decide_false //].
-Qed.
-
-Lemma wp_eq_int E (n1 n2 : Z) P Φ :
-  (n1 = n2 → P -∗ ▷ Φ (LitV true)) →
-  (n1 ≠ n2 → P -∗ ▷ Φ (LitV false)) →
-  P -∗ WP BinOp EqOp (Lit (LitInt n1)) (Lit (LitInt n2)) @ E {{ Φ }}.
-Proof.
-  iIntros (Heq Hne) "HP".
-  destruct (bool_decide_reflect (n1 = n2)); [rewrite Heq //|rewrite Hne //];
-    clear Hne Heq; iApply wp_bin_op_pure; subst; try done.
-  - intros. apply BinOpEqTrue. constructor.
-  - iNext; iIntros (?? Heval). by inversion_clear Heval; inv_lit.
-  - intros. apply BinOpEqFalse. by constructor.
-  - iNext; iIntros (?? Heval). by inversion_clear Heval; inv_lit.
-Qed.
-
-Lemma wp_eq_loc E (l1 : loc) (l2: loc) P Φ :
-  (P -∗ ∃ q v, ▷ l1 ↦{q} v) →
-  (P -∗ ∃ q v, ▷ l2 ↦{q} v) →
-  (l1 = l2 → P -∗ ▷ Φ (LitV true)) →
-  (l1 ≠ l2 → P -∗ ▷ Φ (LitV false)) →
+Lemma wp_eq_loc E (l1 : loc) (l2: loc) q1 q2 v1 v2 P Φ :
+  (P -∗ ▷ l1 ↦{q1} v1) →
+  (P -∗ ▷ l2 ↦{q2} v2) →
+  (P -∗ ▷ Φ (LitV (bool_decide (l1 = l2)))) →
   P -∗ WP BinOp EqOp (Lit (LitLoc l1)) (Lit (LitLoc l2)) @ E {{ Φ }}.
 Proof.
-  iIntros (Hl1 Hl2 Heq Hne) "HP".
-  destruct (bool_decide_reflect (l1 = l2)).
-  - rewrite Heq // {Heq Hne}. iApply wp_bin_op_pure; subst; try done.
-    + intros. apply BinOpEqTrue. constructor.
-    + iNext. iIntros (?? Heval). by inversion_clear Heval; inv_lit.
-  - clear Heq. iApply wp_lift_atomic_head_step_no_fork; subst=>//.
+  iIntros (Hl1 Hl2 Hpost) "HP".
+  destruct (bool_decide_reflect (l1 = l2)) as [->|].
+  - iApply wp_lift_pure_det_head_step_no_fork';
+      [done|solve_exec_safe|solve_exec_puredet|].
+    iApply wp_value. by iApply Hpost.
+  - iApply wp_lift_atomic_head_step_no_fork; subst=>//.
     iIntros (σ1) "Hσ1". iModIntro. inv_head_step.
     iSplitR.
     { iPureIntro. eexists _, _, _. constructor. apply BinOpEqFalse. by auto. }
@@ -296,85 +324,23 @@ Proof.
        ▷ but also have the ↦s. *)
     iAssert ((▷ ∃ q v, l1 ↦{q} v) ∧ (▷ ∃ q v, l2 ↦{q} v) ∧ ▷ Φ (LitV false))%I with "[HP]" as "HP".
     { iSplit; last iSplit.
-      - iDestruct (Hl1 with "HP") as (??) "?". iNext. eauto.
-      - iDestruct (Hl2 with "HP") as (??) "?". iNext. eauto.
-      - by iApply Hne. }
-    clear Hne Hl1 Hl2. iNext.
-    iIntros (e2 σ2 efs Hs) "!>".
-    inv_head_step. iSplitR=>//.
-    match goal with [ H : bin_op_eval _ _ _ _ _ |- _ ] => inversion H end;
-      inv_lit=>//.
-    * iExFalso. iDestruct "HP" as "[Hl1 _]".
+      + iExists _, _. by iApply Hl1.
+      + iExists _, _. by iApply Hl2.
+      + by iApply Hpost. }
+    clear Hl1 Hl2. iNext. iIntros (e2 σ2 efs Hs) "!>".
+    inv_head_step. iSplitR=>//. inv_bin_op_eval; inv_lit.
+    + iExFalso. iDestruct "HP" as "[Hl1 _]".
       iDestruct "Hl1" as (??) "Hl1".
-      iDestruct (heap_read σ2 with "Hσ1 Hl1") as (n') "%".
-      simplify_eq.
-    * iExFalso. iDestruct "HP" as "[_ [Hl2 _]]".
+      iDestruct (heap_read σ2 with "Hσ1 Hl1") as %[??]; simplify_eq.
+    + iExFalso. iDestruct "HP" as "[_ [Hl2 _]]".
       iDestruct "Hl2" as (??) "Hl2".
-      iDestruct (heap_read σ2 with "Hσ1 Hl2") as (n') "%".
-      simplify_eq.
-    * iDestruct "HP" as "[_ [_ $]]". done.
+      iDestruct (heap_read σ2 with "Hσ1 Hl2") as %[??]; simplify_eq.
+    + iDestruct "HP" as "[_ [_ $]]". done.
 Qed.
-
-Lemma wp_eq_loc_0_r E (l : loc) P Φ :
-  (P -∗ ▷ Φ (LitV false)) →
-  P -∗ WP BinOp EqOp (Lit (LitLoc l)) (Lit (LitInt 0)) @ E {{ Φ }}.
-Proof.
-  iIntros (HΦ) "HP". iApply wp_bin_op_pure; try done.
-  -  by intros; do 2 constructor.
-  -  rewrite HΦ. iNext. iIntros (?? Heval). by inversion_clear Heval; inv_lit.
-Qed.
-
-Lemma wp_eq_loc_0_l E (l : loc) P Φ :
-  (P -∗ ▷ Φ (LitV false)) →
-  P -∗ WP BinOp EqOp (Lit (LitInt 0)) (Lit (LitLoc l)) @ E {{ Φ }}.
-Proof.
-  iIntros (HΦ) "HP". iApply wp_bin_op_pure; try done.
-  - by intros; do 2 constructor.
-  - rewrite HΦ. iNext. iIntros (?? Heval). by inversion_clear Heval; inv_lit.
-Qed.
-
-Lemma wp_offset E l z Φ :
-  ▷ Φ (LitV $ LitLoc $ l +ₗ z) -∗
-    WP BinOp OffsetOp (Lit $ LitLoc l) (Lit $ LitInt z) @ E {{ Φ }}.
-Proof.
-  iIntros "HP". iApply wp_bin_op_pure; first (by econstructor); first done.
-  iNext. iIntros (?? Heval). inversion_clear Heval. done.
-Qed.
-
-Lemma wp_plus E z1 z2 Φ :
-  ▷ Φ (LitV $ LitInt $ z1 + z2) -∗
-    WP BinOp PlusOp (Lit $ LitInt z1) (Lit $ LitInt z2) @ E {{ Φ }}.
-Proof.
-  iIntros "HP". iApply wp_bin_op_pure; first (by econstructor); first done.
-  iNext. iIntros (?? Heval). inversion_clear Heval. done.
-Qed.
-
-Lemma wp_minus E z1 z2 Φ :
-  ▷ Φ (LitV $ LitInt $ z1 - z2) -∗
-    WP BinOp MinusOp (Lit $ LitInt z1) (Lit $ LitInt z2) @ E {{ Φ }}.
-Proof.
-  iIntros "HP". iApply (wp_bin_op_pure with "[//]"); first by econstructor.
-  iNext. iIntros (?? Heval). inversion_clear Heval. done.
-Qed.
-
-Lemma wp_case E i e el Φ :
-  0 ≤ i →
-  el !! (Z.to_nat i) = Some e →
-  ▷ WP e @ E {{ Φ }} -∗ WP Case (Lit $ LitInt i) el @ E {{ Φ }}.
-Proof.
-  iIntros (??) "?". iApply wp_lift_pure_det_head_step_no_fork'; eauto.
-  by intros; inv_head_step; eauto.
-Qed.
-
-Lemma wp_if E (b : bool) e1 e2 Φ :
-  (if b then ▷ WP e1 @ E {{ Φ }} else ▷ WP e2 @ E {{ Φ }})%I -∗
-  WP If (Lit b) e1 e2 @ E {{ Φ }}.
-Proof. iIntros "?". by destruct b; iApply wp_case. Qed.
-
 
 (** Proof rules for working on the n-ary argument list. *)
-Lemma wp_app_ind E f (el : list expr) (Ql : vec (val → iProp Σ) (length el)) vs Φ:
-  is_Some (to_val f) →
+Lemma wp_app_ind E f (el : list expr) (Ql : vec (val → iProp Σ) (length el)) vs Φ :
+  AsVal f →
   ([∗ list] eQ ∈ zip el Ql, WP eQ.1 @ E {{ eQ.2 }}) -∗
     (∀ vl : vec val (length el), ([∗ list] vQ ∈ zip vl Ql, vQ.2 $ vQ.1) -∗
                     WP App f (of_val <$> vs ++ vl) @ E {{ Φ }}) -∗
@@ -393,7 +359,7 @@ Proof.
 Qed.
 
 Lemma wp_app_vec E f el (Ql : vec (val → iProp Σ) (length el)) Φ :
-  is_Some (to_val f) →
+  AsVal f →
   ([∗ list] eQ ∈ zip el Ql, WP eQ.1 @ E {{ eQ.2 }}) -∗
     (∀ vl : vec val (length el), ([∗ list] vQ ∈ zip vl Ql, vQ.2 $ vQ.1) -∗
                     WP App f (of_val <$> (vl : list val)) @ E {{ Φ }}) -∗
@@ -401,7 +367,7 @@ Lemma wp_app_vec E f el (Ql : vec (val → iProp Σ) (length el)) Φ :
 Proof. iIntros (Hf). by iApply (wp_app_ind _ _ _ _ []). Qed.
 
 Lemma wp_app (Ql : list (val → iProp Σ)) E f el Φ :
-  length Ql = length el → is_Some (to_val f) →
+  length Ql = length el → AsVal f →
   ([∗ list] eQ ∈ zip el Ql, WP eQ.1 @ E {{ eQ.2 }}) -∗
     (∀ vl : list val, ⌜length vl = length el⌝ -∗
             ([∗ list] k ↦ vQ ∈ zip vl Ql, vQ.2 $ vQ.1) -∗
@@ -410,42 +376,7 @@ Lemma wp_app (Ql : list (val → iProp Σ)) E f el Φ :
 Proof.
   iIntros (Hlen Hf) "Hel HΦ". rewrite -(vec_to_list_of_list Ql).
   generalize (list_to_vec Ql). rewrite Hlen. clear Hlen Ql=>Ql.
-  iApply (wp_app_vec with "Hel"); first done. iIntros (vl) "Hvl".
+  iApply (wp_app_vec with "Hel"). iIntros (vl) "Hvl".
   iApply ("HΦ" with "[%] Hvl"). by rewrite vec_to_list_length.
 Qed.
-
-
-(** Proof rules for the lam-related sugar *)
-Lemma wp_lam E xl e eb e' el Φ :
-  e = Lam xl eb →
-  Forall (λ ei, is_Some (to_val ei)) el →
-  Closed (xl +b+ []) eb →
-  subst_l xl el eb = Some e' →
-  ▷ WP e' @ E {{ Φ }} -∗ WP App e el @ E {{ Φ }}.
-Proof.
-  iIntros (-> ???) "?". iApply (wp_rec _ _ BAnon)=>//.
-    by rewrite /= option_fmap_id.
-Qed.
-
-Lemma wp_let E x e1 e2 v Φ :
-  to_val e1 = Some v →
-  Closed (x :b: []) e2 →
-  ▷ WP subst' x e1 e2 @ E {{ Φ }} -∗ WP Let x e1 e2 @ E {{ Φ }}.
-Proof. eauto using wp_lam. Qed.
-
-Lemma wp_let' E x e1 e2 v Φ :
-  to_val e1 = Some v →
-  Closed (x :b: []) e2 →
-  ▷ WP subst' x (of_val v) e2 @ E {{ Φ }} -∗ WP Let x e1 e2 @ E {{ Φ }}.
-Proof. intros ?. rewrite (of_to_val e1) //. eauto using wp_let. Qed.
-
-Lemma wp_seq E e1 e2 v Φ :
-  to_val e1 = Some v →
-  Closed [] e2 →
-  ▷ WP e2 @ E {{ Φ }} -∗ WP Seq e1 e2 @ E {{ Φ }}.
-Proof. iIntros (??) "?". by iApply (wp_let _ BAnon). Qed.
-
-Lemma wp_skip E Φ : ▷ Φ (LitV LitPoison) -∗ WP Skip @ E {{ Φ }}.
-Proof. iIntros. iApply wp_seq. done. iNext. by iApply wp_value. Qed.
-
 End lifting.

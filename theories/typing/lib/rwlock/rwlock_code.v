@@ -166,7 +166,7 @@ Section rwlock_functions.
     iMod (at_bor_acc_tok with "LFT Hinv Hβtok1") as "[INV Hclose'']"; try done.
     iDestruct "INV" as (st) "(Hlx & INV)". wp_read.
     iMod ("Hclose''" with "[Hlx INV]") as "Hβtok1"; first by iExists _; iFrame.
-    iModIntro. wp_let. wp_op=>Hm1; wp_if.
+    iModIntro. wp_let. wp_op; case_bool_decide as Hm1; wp_if.
     - iMod ("Hclose'" with "[$]") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
       iApply (type_type _ _ _
               [ x ◁ box (&shr{α}(rwlock ty)); r ◁ box (uninit 2) ]
@@ -179,7 +179,7 @@ Section rwlock_functions.
       iMod (at_bor_acc_tok with "LFT Hinv Hβtok1") as "[INV Hclose'']"; try done.
       iDestruct "INV" as (st') "(Hlx & Hownst & Hst)". revert Hm1.
       destruct (decide (Z_of_rwlock_st st = Z_of_rwlock_st st')) as [->|?]=>?.
-      + iApply (wp_cas_int_suc with "Hlx"); first done. iNext. iIntros "Hlx".
+      + iApply (wp_cas_int_suc with "Hlx"). iNext. iIntros "Hlx".
         iAssert (∃ qν ν, (qβ / 2).[β] ∗ (qν).[ν] ∗
                          ty_shr ty (β ⊓ ν) tid (lx +ₗ 1) ∗
                          own γ (◯ reading_st qν ν) ∗ rwlock_inv tid lx γ β ty ∗
@@ -273,7 +273,7 @@ Section rwlock_functions.
     wp_bind (CAS _ _ _).
     iMod (at_bor_acc_tok with "LFT Hinv Hβtok") as "[INV Hclose'']"; try done.
     iDestruct "INV" as (st) "(Hlx & >Hownst & Hst)". destruct st.
-    - iApply (wp_cas_int_fail with "Hlx"). done. by destruct c as [|[[]]|].
+    - iApply (wp_cas_int_fail with "Hlx"). by destruct c as [|[[]]|].
       iNext. iIntros "Hlx".
       iMod ("Hclose''" with "[Hlx Hownst Hst]") as "Hβtok"; first by iExists _; iFrame.
       iMod ("Hclose'" with "Hβtok") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
@@ -285,7 +285,7 @@ Section rwlock_functions.
       iApply (type_sum_unit (option $ rwlockwriteguard α ty));
         [solve_typing..|]; first last.
       rewrite /option /=. iApply type_jump; solve_typing.
-    - iApply (wp_cas_int_suc with "Hlx"). done. iIntros "!> Hlx".
+    - iApply (wp_cas_int_suc with "Hlx"). iIntros "!> Hlx".
       iMod (own_update with "Hownst") as "[Hownst ?]".
       { by eapply auth_update_alloc, (op_local_update_discrete _ _ writing_st). }
       iMod ("Hclose''" with "[Hlx Hownst]") as "Hβtok". { iExists _. iFrame. }

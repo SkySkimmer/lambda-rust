@@ -26,7 +26,7 @@ Section typing.
 
   Lemma type_int_instr (z : Z) : typed_val #z int.
   Proof.
-    iIntros (E L tid) "_ _ $ $ _". wp_value.
+    iIntros (E L tid) "_ _ $ $ _". iApply wp_value.
     by rewrite tctx_interp_singleton tctx_hasty_val' //.
   Qed.
 
@@ -74,7 +74,7 @@ Section typing.
     iIntros (tid) "_ _ $ $ [Hp1 [Hp2 _]]".
     wp_apply (wp_hasty with "Hp1"). iIntros ([[]|]) "_ H1"; try done.
     wp_apply (wp_hasty with "Hp2"). iIntros ([[]|]) "_ H2"; try done.
-    wp_op; intros _; by rewrite tctx_interp_singleton tctx_hasty_val' //.
+    wp_op; case_bool_decide; by rewrite tctx_interp_singleton tctx_hasty_val' //.
   Qed.
 
   Lemma type_le E L C T T' p1 p2 x e :

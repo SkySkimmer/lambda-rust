@@ -123,7 +123,7 @@ Section rwlockreadguard_functions.
       iApply (wp_cas_int_suc with "Hlx"); try done. iNext. iIntros "Hlx INV !>".
       iMod ("INV" with "Hlx") as "INV". iMod ("Hcloseβ" with "[$INV]") as "Hβ".
       iMod ("Hcloseα" with "Hβ") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
-      iApply (wp_if _ true). iIntros "!>!>".
+      iModIntro. wp_if.
       iApply (type_type _ _ _ [ x ◁ box (uninit 1)]
               with "[] LFT HE Hna HL Hk"); first last.
       { rewrite tctx_interp_singleton tctx_hasty_val //. }
@@ -133,7 +133,7 @@ Section rwlockreadguard_functions.
     + iApply (wp_cas_int_fail with "Hlx"); try done. iNext. iIntros "Hlx".
       iMod ("Hcloseβ" with "[Hlx H● Hst]") as "Hβ". by iExists _; iFrame.
       iMod ("Hcloseα" with "Hβ") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
-      iApply (wp_if _ false). iIntros "!> !>".
+      iModIntro. wp_if.
       iApply (type_type _ _ _ [ x ◁ box (uninit 1); #lx' ◁ rwlockreadguard α ty]
               with "[] LFT HE Hna HL Hk"); first last.
       { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val

@@ -105,12 +105,11 @@ Proof.
   iDestruct "Hinv" as (b) "[>Hc Ho]". wp_read. destruct b; last first.
   { iMod ("Hclose" with "[Hc]").
     - iNext. iRight. iExists _. iFrame.
-    - iModIntro. iApply wp_if. iNext. iApply ("IH" with "Hj H†").
-      auto. }
+    - iModIntro. wp_if. iApply ("IH" with "Hj H†"). auto. }
   iDestruct "Ho" as (v) "(Hd & HΨ & Hf)".
   iMod ("Hclose" with "[Hj Hf]") as "_".
   { iNext. iLeft. iFrame. }
-  iModIntro. iApply wp_if. iNext. wp_op. wp_read. wp_let.
+  iModIntro. wp_if. wp_op. wp_read. wp_let.
   iAssert (c ↦∗ [ #true; v])%I with "[Hc Hd]" as "Hc".
   { rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton. iFrame. }
   wp_free; first done. iApply "HΦ". iApply "HΨ'". done.

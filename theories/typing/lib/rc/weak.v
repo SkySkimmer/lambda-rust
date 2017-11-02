@@ -164,7 +164,7 @@ Section code.
     - (* Success case. *)
       iDestruct "Hrcst" as (qb) "(Hl'1 & Hl'2 & Hl'† & >Hq''q0 & [Hν1 Hν2] & Hν†)".
       iDestruct "Hq''q0" as %Hq''q0.
-      wp_read. wp_let. wp_op=>[//|_]. wp_if. wp_op. rewrite shift_loc_0. wp_op. wp_write.
+      wp_read. wp_let. wp_op. wp_if. wp_op. rewrite shift_loc_0. wp_op. wp_write.
       (* Closing the invariant. *)
       iMod (own_update with "Hrc●") as "[Hrc● Hrctok2]".
       { apply auth_update_alloc, prod_local_update_1,
@@ -192,7 +192,7 @@ Section code.
       iApply type_jump; solve_typing.
     - (* Failure : dropping *)
       (* TODO : The two failure cases are almost identical. *)
-      iDestruct "Hrcst" as "[Hl'1 Hl'2]". wp_read. wp_let. wp_op=>[_|//]. wp_if.
+      iDestruct "Hrcst" as "[Hl'1 Hl'2]". wp_read. wp_let. wp_op. wp_if.
       (* Closing the invariant. *)
       iMod ("Hclose3" with "[$Hwtok] Hna") as "[Hα1 Hna]".
       iMod ("Hclose2" with "[Hrc● Hl'1 Hl'2 $Hna]") as "Hna".
@@ -208,7 +208,7 @@ Section code.
       iApply type_jump; solve_typing.
     - (* Failure : general case *)
       destruct weakc as [|weakc]; first by simpl in *; lia.
-      iDestruct "Hrcst" as "[Hl'1 Hrcst]". wp_read. wp_let. wp_op=>[_|//]. wp_if.
+      iDestruct "Hrcst" as "[Hl'1 Hrcst]". wp_read. wp_let. wp_op. wp_if.
       (* Closing the invariant. *)
       iMod ("Hclose3" with "[$Hwtok] Hna") as "[Hα1 Hna]".
       iMod ("Hclose2" with "[Hrc● Hl'1 Hrcst $Hna]") as "Hna".
@@ -421,7 +421,7 @@ Section code.
         + iRight. iSplitR; first by auto with lia. iIntros "!>?". iApply "Hclose".
           iFrame. iExists _. iFrame. simpl. destruct Pos.of_succ_nat; try done.
           by rewrite /= Pos.pred_double_succ. }
-    - subst. wp_read. wp_let. wp_op=>[_|//]. wp_if.
+    - subst. wp_read. wp_let. wp_op. wp_if.
       iApply (type_type _ _ _ [ w ◁ box (uninit 1); #lw ◁ box (uninit (2 + ty.(ty_size))) ]
               with "[] LFT HE Hna HL Hk [-]"); last first.
       { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
@@ -431,7 +431,7 @@ Section code.
         iIntros "!> !%". simpl. congruence. }
       iApply type_delete; [try solve_typing..|].
       iApply type_jump; solve_typing.
-    - wp_read. wp_let. wp_op=>[|_]; first lia. wp_if. wp_op. wp_op. wp_write.
+    - wp_read. wp_let. wp_op; case_bool_decide; first lia. wp_if. wp_op. wp_op. wp_write.
       iMod ("Hclose" with "Hlw") as "Hna".
       iApply (type_type _ _ _ [ w ◁ box (uninit 1) ]
         with "[] LFT HE Hna HL Hk [-]"); last first.

@@ -12,7 +12,7 @@ Section tests.
     {{{ (b: bool), RET LitV (lit_of_bool b); (if b then ⌜l1 = l2⌝ else ⌜l1 ≠ l2⌝) ∗
                                      l1 ↦{q1} v1 ∗ l2 ↦{q2} v2 }}}.
   Proof.
-    iIntros (Φ) "[Hl1 Hl2] HΦ". wp_op; try (by eauto); [|];
-      intros ?; iApply "HΦ"; by iFrame.
+    iIntros (Φ) "[Hl1 Hl2] HΦ". wp_op.
+    case_bool_decide; iApply "HΦ"; by iFrame.
   Qed.
 End tests.

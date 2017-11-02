@@ -771,8 +771,8 @@ Section arc.
       iDestruct "Hown" as (???) "(_ & Hlen & _)". wp_write. iIntros "(#Hν & Hown & H†)!>".
       wp_seq. wp_op. wp_op. iDestruct "Hown" as (?) "[H↦ Hown]".
       iDestruct (ty_size_eq with "Hown") as %?. rewrite Max.max_0_r.
-      iDestruct "Hlen" as %[= ?]. iApply (wp_memcpy with "[$H↦1 $H↦]"); [congruence..|].
-      iNext. iIntros "[? Hrc']". wp_seq. iMod ("Hdrop" with "[Hrc' H†]") as "Htok".
+      iDestruct "Hlen" as %[= ?]. wp_apply (wp_memcpy with "[$H↦1 $H↦]"); [congruence..|].
+      iIntros "[? Hrc']". wp_seq. iMod ("Hdrop" with "[Hrc' H†]") as "Htok".
       { unfold P2. auto with iFrame. }
       wp_apply (drop_weak_spec with "[//] Htok"). unlock. iIntros ([]); last first.
       { iIntros "_". wp_if. unlock. iFrame. iExists (_::_). rewrite heap_mapsto_vec_cons.
@@ -780,7 +780,8 @@ Section arc.
         auto 10 with iFrame. }
       iIntros "([H† H1] & H2 & H3)". iDestruct "H1" as (vl') "[H1 Heq]".
       iDestruct "Heq" as %<-. wp_if.
-      wp_apply (wp_delete _ _ _ (_::_::vl') with "[H1 H2 H3 H†]"). lia.
+      wp_apply (wp_delete _ _ _ (_::_::vl') with "[H1 H2 H3 H†]").
+      { simpl. lia. }
       { rewrite 2!heap_mapsto_vec_cons shift_loc_assoc. auto with iFrame. }
       iFrame. iIntros "_". iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame.
       iExists 1%nat, _, []. rewrite right_id_L. iFrame. iSplit; [by auto|simpl].
@@ -818,7 +819,7 @@ Section arc.
     iApply (wp_wand _ _ (λ _, True)%I with "[Hdrop]").
     { destruct b; wp_if=>//. iDestruct "Hdrop" as "((? & H↦) & ? & ?)".
       iDestruct "H↦" as (vl) "[? Heq]". iDestruct "Heq" as %<-.
-      wp_apply (wp_delete _ _ _ (_::_::vl) with "[-]"); [lia| |done].
+      wp_apply (wp_delete _ _ _ (_::_::vl) with "[-]"); [simpl;lia| |done].
       rewrite !heap_mapsto_vec_cons shift_loc_assoc. iFrame. auto. }
     iIntros (?) "_". wp_seq.
     (* Finish up the proof. *)
@@ -874,15 +875,15 @@ Section arc.
       rewrite -(firstn_skipn ty.(ty_size) vl0) heap_mapsto_vec_app.
       iDestruct "Hr1" as "[Hr1 Hr2]". iDestruct "Hown" as (vl) "[Hrc' Hown]".
       iDestruct (ty_size_eq with "Hown") as %Hlen.
-      iApply (wp_memcpy with "[$Hr1 $Hrc']"); rewrite ?firstn_length_le; try lia.
-      iIntros "!> [Hr1 Hrc']". wp_seq. wp_bind (drop_weak _).
+      wp_apply (wp_memcpy with "[$Hr1 $Hrc']"); rewrite /= ?firstn_length_le; try lia.
+      iIntros "[Hr1 Hrc']". wp_seq. wp_bind (drop_weak _).
       iMod ("Hend" with "[$H† Hrc']") as "Htok"; first by eauto.
       iApply (drop_weak_spec with "Ha Htok").
       iIntros "!> * Hdrop". wp_bind (if: _ then _ else _)%E.
       iApply (wp_wand _ _ (λ _, True)%I with "[Hdrop]").
       { destruct b; wp_if=>//. iDestruct "Hdrop" as "((? & H↦) & ? & ?)".
         iDestruct "H↦" as (vl') "[? Heq]". iDestruct "Heq" as %<-.
-        wp_apply (wp_delete _ _ _ (_::_::vl') with "[-]"); [lia| |done].
+        wp_apply (wp_delete _ _ _ (_::_::vl') with "[-]"); [simpl; lia| |done].
         rewrite !heap_mapsto_vec_cons shift_loc_assoc. iFrame. auto. }
       iIntros (?) "_". wp_seq.
       iApply (type_type _ _ _ [ rcx ◁ box (uninit 1); #r ◁ box (Σ[ ty; arc ty ]) ]

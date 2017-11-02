@@ -157,7 +157,7 @@ Section refcell_functions.
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)"; [solve_typing..|].
     iMod (lft_incl_acc with "Hαβ Hα") as (qβ) "[[Hβtok1 Hβtok2] Hclose']". done.
     iMod (na_bor_acc with "LFT Hinv Hβtok1 Hna") as "(INV & Hna & Hclose'')"; try done.
-    iDestruct "INV" as (st) "(Hlx & Hownst & Hst)". wp_read. wp_let. wp_op=>?; wp_if.
+    iDestruct "INV" as (st) "(Hlx & Hownst & Hst)". wp_read. wp_let. wp_op; case_bool_decide; wp_if.
     - iMod ("Hclose''" with "[Hlx Hownst Hst] Hna") as "[Hβtok1 Hna]";
         first by iExists st; iFrame.
       iMod ("Hclose'" with "[$Hβtok1 $Hβtok2]") as "Hα".
@@ -264,7 +264,7 @@ Section refcell_functions.
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)"; [solve_typing..|].
     iMod (lft_incl_acc with "Hαβ Hα") as (qβ) "[Hβtok Hclose']". done.
     iMod (na_bor_acc with "LFT Hinv Hβtok Hna") as "(INV & Hna & Hclose'')"; try done.
-    iDestruct "INV" as (st) "(Hlx & Hownst & Hb)". wp_read. wp_let. wp_op=>?; wp_if.
+    iDestruct "INV" as (st) "(Hlx & Hownst & Hb)". wp_read. wp_let. wp_op; case_bool_decide; wp_if.
     - wp_write. wp_apply wp_new; [done..|].
       iIntros (lref) "(H† & Hlref)". wp_let.
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.

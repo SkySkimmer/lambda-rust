@@ -18,10 +18,11 @@ Lemma wp_swap `{lrustG Σ} E l1 l2 vl1 vl2 (n : Z):
   {{{ RET #☠; l1 ↦∗ vl2 ∗ l2 ↦∗ vl1 }}}.
 Proof.
   iIntros (Hvl1 Hvl2 Φ) "(Hl1 & Hl2) HΦ".
-  iLöb as "IH" forall (n l1 l2 vl1 vl2 Hvl1 Hvl2). wp_rec. wp_op=> ?; wp_if.
+  iLöb as "IH" forall (n l1 l2 vl1 vl2 Hvl1 Hvl2). wp_rec.
+  wp_op; case_bool_decide; wp_if.
   - iApply "HΦ". assert (n = O) by lia; subst.
     destruct vl1, vl2; try discriminate. by iFrame.
-  - destruct vl1 as [|v1 vl1], vl2 as [|v2 vl2], n as [|n|]; try discriminate.
+  - destruct vl1 as [|v1 vl1], vl2 as [|v2 vl2], n as [|n|]; try (discriminate || omega).
     revert Hvl1 Hvl2. intros [= Hvl1] [= Hvl2]; rewrite !heap_mapsto_vec_cons. subst n.
     iDestruct "Hl1" as "[Hv1 Hl1]". iDestruct "Hl2" as "[Hv2 Hl2]".
     Local Opaque Zminus.

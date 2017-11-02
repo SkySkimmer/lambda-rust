@@ -27,7 +27,7 @@ Section typing.
 
   Lemma type_bool_instr (b : Datatypes.bool) : typed_val #b bool.
   Proof.
-    iIntros (E L tid) "_ _ $ $ _". wp_value.
+    iIntros (E L tid) "_ _ $ $ _". iApply wp_value.
     rewrite tctx_interp_singleton tctx_hasty_val' //. by destruct b.
   Qed.
 
@@ -45,7 +45,7 @@ Section typing.
     iIntros (Hp) "He1 He2". iIntros (tid) "#LFT #HE Htl HL HC HT".
     iDestruct (big_sepL_elem_of _ _ _ Hp with "HT") as "#Hp".
     wp_bind p. iApply (wp_hasty with "Hp").
-    iIntros ([[| |[|[]|]]|]) "_ H1"; try done; (iApply wp_case; [done..|iNext]).
+    iIntros ([[| |[|[]|]]|]) "_ H1"; try done; wp_case.
     - iApply ("He2" with "LFT HE Htl HL HC HT").
     - iApply ("He1" with "LFT HE Htl HL HC HT").
   Qed.

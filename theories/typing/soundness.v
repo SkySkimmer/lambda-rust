@@ -47,10 +47,8 @@ Section type_soundness.
     iDestruct "Hmain" as (?) "[EQ Hmain]".
     rewrite eval_path_of_val. iDestruct "EQ" as %[= <-].
     iDestruct "Hmain" as (f k x e ?) "(EQ & % & Hmain)". iDestruct "EQ" as %[= ->].
-    destruct x; try done.
-    iApply (wp_rec _ _ _ _ _ _ [exit_cont]%E); [done| |by simpl_subst|iNext].
-    { repeat econstructor. apply to_of_val. }
-    iMod (lft_create with "LFT") as (ϝ) "Hϝ". done.
+    destruct x; try done. wp_rec.
+    iMod (lft_create with "LFT") as (ϝ) "Hϝ"; first done.
     iApply ("Hmain" $! () ϝ exit_cont [#] tid with "LFT [] Htl [Hϝ] []");
       last by rewrite tctx_interp_nil.
     { by rewrite /elctx_interp /=. }

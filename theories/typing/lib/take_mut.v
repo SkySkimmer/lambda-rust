@@ -49,8 +49,7 @@ Section code.
     (* Prove the continuation of the function call. *)
     iIntros (r) "Hna Hϝ Hr". simpl.
     iDestruct (ownptr_own with "Hr") as (lr rvl) "(% & Hlr & Hrvl & Hlr†)". subst r.
-    iApply wp_rec; try (done || apply _).
-    { repeat econstructor. } simpl_subst. iNext.
+    wp_rec.
     rewrite (right_id static).
     wp_apply (wp_memcpy with "[$Hx'↦ $Hlr]"); [by auto using vec_to_list_length..|].
     iIntros "[Hlx' Hlr]". wp_seq.

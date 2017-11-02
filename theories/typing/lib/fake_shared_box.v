@@ -27,7 +27,7 @@ Section fake_shared_box.
         rewrite heap_mapsto_vec_singleton. iSplit; auto. }
       iDestruct "H" as "#H". iIntros "!# * % $". iApply step_fupd_intro. set_solver.
       by iApply ty_shr_mono. }
-    wp_seq.
+    do 2 wp_seq.
     iApply (type_type [] _ _ [ x ◁ box (&shr{α}(box ty)) ]
             with "[] LFT [] Hna HL Hk [HT]"); last first.
     { by rewrite tctx_interp_singleton tctx_hasty_val. }

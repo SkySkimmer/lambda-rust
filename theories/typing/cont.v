@@ -34,14 +34,12 @@ Section typing.
     typed_body E L2 C T (letcont: kb argsb := econt in e2).
   Proof.
     iIntros (Hc1 Hc2) "He2 #Hecont". iIntros (tid) "#LFT #HE Htl HL HC HT".
-    iApply wp_let'; first by rewrite /= decide_left.
-    iModIntro. iApply ("He2" with "LFT HE Htl HL [HC] HT").
+    rewrite (_ : (rec: kb argsb := econt)%E = of_val (rec: kb argsb := econt)%V); last by unlock.
+    wp_let. iApply ("He2" with "LFT HE Htl HL [HC] HT").
     iLöb as "IH". iIntros (x) "H".
     iDestruct "H" as %[->|?]%elem_of_cons; last by iApply "HC".
-    iIntros (args) "Htl HL HT". iApply wp_rec; try done.
-    { rewrite Forall_fmap Forall_forall=>? _. rewrite /= to_of_val. eauto. }
-    { by rewrite -(subst_v_eq (_ :: _) (RecV _ _ _ ::: _)). }
-    iNext. iApply ("Hecont" with "LFT HE Htl HL [HC] HT"). by iApply "IH".
+    iIntros (args) "Htl HL HT". wp_rec.
+    iApply ("Hecont" with "LFT HE Htl HL [HC] HT"). by iApply "IH".
   Qed.
 
   Lemma type_cont_norec argsb L1 (T' : vec val (length argsb) → _) E L2 C T econt e2 kb :
@@ -52,13 +50,11 @@ Section typing.
     typed_body E L2 C T (letcont: kb argsb := econt in e2).
   Proof.
     iIntros (Hc1 Hc2) "He2 Hecont". iIntros (tid) "#LFT #HE Htl HL HC HT".
-    iApply wp_let'; first by rewrite /= decide_left.
-    iModIntro. iApply ("He2" with "LFT HE Htl HL [HC Hecont] HT").
+    rewrite (_ : (rec: kb argsb := econt)%E = of_val (rec: kb argsb := econt)%V); last by unlock.
+    wp_let. iApply ("He2" with "LFT HE Htl HL [HC Hecont] HT").
     iIntros (x) "H".
     iDestruct "H" as %[->|?]%elem_of_cons; last by iApply "HC".
-    iIntros (args) "Htl HL HT". iApply wp_rec; try done.
-    { rewrite Forall_fmap Forall_forall=>? _. rewrite /= to_of_val. eauto. }
-    { by rewrite -(subst_v_eq (_ :: _) (RecV _ _ _ ::: _)). }
-    iNext. iApply ("Hecont" with "LFT HE Htl HL HC HT").
+    iIntros (args) "Htl HL HT". wp_rec.
+    iApply ("Hecont" with "LFT HE Htl HL HC HT").
   Qed.
 End typing.

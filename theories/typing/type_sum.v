@@ -29,7 +29,7 @@ Section case.
     rewrite nth_lookup.
     destruct (tyl !! i) as [ty|] eqn:EQty; last iDestruct "Hown" as ">[]".
     edestruct @Forall2_lookup_l as (e & He & Hety); eauto.
-    wp_read. iApply wp_case; [lia|by rewrite Nat2Z.id|]. iNext.
+    wp_read. wp_case; first (split; [lia|by rewrite Nat2Z.id]).
     destruct Hety as [Hety|Hety]; iApply (Hety with "LFT HE Hna HL HC");
       rewrite !tctx_interp_cons !tctx_hasty_val' /= ?Hv //=; iFrame "HT".
     - rewrite /own_ptr /=. iDestruct (ty.(ty_size_eq) with "Hown") as %<-.
@@ -73,7 +73,7 @@ Section case.
     iDestruct "H↦" as "(H↦i & H↦vl' & H↦vl'')".
     destruct (tyl !! i) as [ty|] eqn:EQty; last iDestruct "Hown" as ">[]".
     edestruct @Forall2_lookup_l as (e & He & Hety); eauto.
-    wp_read. iApply wp_case; [lia|by rewrite Nat2Z.id|]. iNext.
+    wp_read. wp_case; first (split; [lia|by rewrite Nat2Z.id]).
     iDestruct (ty.(ty_size_eq) with "Hown") as %EQlenvl'.
     destruct Hety as [Hety|Hety].
     - iMod ("Hclose'" $! ((l +ₗ 1) ↦∗: ty.(ty_own) tid)%I
@@ -123,7 +123,7 @@ Section case.
     rewrite nth_lookup.
     destruct (tyl !! i) as [ty|] eqn:EQty; last done.
     edestruct @Forall2_lookup_l as (e & He & Hety); eauto.
-    wp_read. iApply wp_case; [lia|by rewrite Nat2Z.id|]. iNext.
+    wp_read. wp_case; first (split; [lia|by rewrite Nat2Z.id]).
     iMod ("Hclose'" with "[$H↦i $H↦vl'']") as "Htok".
     iMod ("Hclose" with "Htok") as "HL".
     destruct Hety as [Hety|Hety]; iApply (Hety with "LFT HE Hna HL HC");
