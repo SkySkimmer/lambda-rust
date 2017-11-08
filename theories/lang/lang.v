@@ -638,7 +638,7 @@ Proof.
   apply: (irreducible_fill (K:=ectx_language.fill K)); first done.
   apply prim_head_irreducible; unfold stuck_term.
   - inversion 1.
-  - apply ectxi_language_sub_values.
+  - apply ectxi_language_sub_redexes_are_values.
     intros [] ??; simplify_eq/=; eauto; discriminate_list.
 Qed.
 

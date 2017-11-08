@@ -160,7 +160,7 @@ Proof.
     destruct e; simpl; try done; repeat (case_match; try done);
     inversion 1; try (apply val_irreducible; rewrite ?language.to_of_val; naive_solver eauto); [].
     rewrite -[stuck_term](fill_empty). apply stuck_irreducible.
-  - apply ectxi_language_sub_values=> /= Ki e' Hfill.
+  - apply ectxi_language_sub_redexes_are_values=> /= Ki e' Hfill.
     revert He. destruct e; simpl; try done; repeat (case_match; try done);
     rewrite ?bool_decide_spec;
     destruct Ki; inversion Hfill; subst; clear Hfill;

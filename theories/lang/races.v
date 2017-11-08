@@ -76,7 +76,7 @@ Lemma next_access_head_reductible_ctx e σ σ' a l K :
 Proof.
   intros Hhead Hred. apply prim_head_reducible.
   - eapply (reducible_fill (K:=ectx_language.fill K)), Hred. destruct Hhead; eauto.
-  - apply ectxi_language_sub_values. intros [] ? ->; inversion Hhead; eauto.
+  - apply ectxi_language_sub_redexes_are_values. intros [] ? ->; inversion Hhead; eauto.
 Qed.
 
 Definition head_reduce_not_to_stuck (e : expr) (σ : state) :=
