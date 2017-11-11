@@ -127,7 +127,7 @@ Section refcell.
     iAssert ((q / 2).[κ] ∗ ▷ ∃ γ, refcell_inv tid l γ κ ty)%I with "[> -Hclose]"
       as "[$ HQ]"; last first.
     { iMod ("Hclose" with "[] HQ") as "[Hb $]".
-      - iIntros "!> H !>". iNext. iDestruct "H" as (γ st) "(? & _ & _)".
+      - iIntros "!> H !>". iNext. iDestruct "H" as (γ st) "(H & _ & _)".
         iExists _. iIntros "{$H}!%". destruct st as [[?[|[]|]]|]; simpl; lia.
       - iMod (bor_exists with "LFT Hb") as (γ) "Hb". done.
         iExists κ, γ. iSplitR. by iApply lft_incl_refl. by iApply bor_na. }

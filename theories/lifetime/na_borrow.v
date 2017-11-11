@@ -52,7 +52,7 @@ Section na_bor.
 
   Lemma na_bor_shorten κ κ': κ ⊑ κ' -∗ &na{κ',tid,N}P -∗ &na{κ,tid,N}P.
   Proof.
-    iIntros "Hκκ' H". iDestruct "H" as (i) "[??]". iExists i. iFrame.
+    iIntros "Hκκ' H". iDestruct "H" as (i) "[H ?]". iExists i. iFrame.
     iApply (idx_bor_shorten with "Hκκ' H").
   Qed.
 
