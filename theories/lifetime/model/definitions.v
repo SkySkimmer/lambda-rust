@@ -20,7 +20,7 @@ End lft_notation.
 Definition static : lft := (∅ : gmultiset _).
 Definition lft_intersect (κ κ' : lft) : lft := κ ∪ κ'.
 
-Infix "⊓" := lft_intersect (at level 40) : C_scope.
+Infix "⊓" := lft_intersect (at level 40) : stdpp_scope.
 
 Inductive bor_state :=
   | Bor_in

@@ -43,7 +43,7 @@ Module Type lifetime_sig.
   Notation "&{ κ , i }" := (idx_bor κ i) (format "&{ κ , i }") : uPred_scope.
 
   Infix "⊑" := lft_incl (at level 70) : uPred_scope.
-  Infix "⊓" := lft_intersect (at level 40) : C_scope.
+  Infix "⊓" := lft_intersect (at level 40) : stdpp_scope.
 
   Section properties.
   Context `{invG, lftG Σ}.
