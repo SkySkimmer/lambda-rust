@@ -7,7 +7,7 @@ This is the Coq development accompanying lambda-Rust.
 This version is known to compile with:
 
  - Coq 8.6.1 / 8.7.0
- - Ssreflect 1.6.2
+ - Ssreflect 1.6.4
  - A development version of [Iris](https://gitlab.mpi-sws.org/FP/iris-coq/)
 
 The easiest way to install the correct versions of the dependencies is through
