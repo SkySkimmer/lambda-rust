@@ -26,7 +26,7 @@ Inductive expr :=
 Fixpoint to_expr (e : expr) : lang.expr :=
   match e with
   | Val v e' _ => e'
-  | ClosedExpr e _ => e
+  | ClosedExpr e => e
   | Var x => lang.Var x
   | Lit l => lang.Lit l
   | Rec f xl e => lang.Rec f xl (to_expr e)
@@ -75,7 +75,7 @@ Ltac of_expr e :=
 
 Fixpoint is_closed (X : list string) (e : expr) : bool :=
   match e with
-  | Val _ _ _ | ClosedExpr _ _ => true
+  | Val _ _ _ | ClosedExpr _ => true
   | Var x => bool_decide (x ∈ X)
   | Lit _ => true
   | Rec f xl e => is_closed (f :b: xl +b+ X) e
@@ -120,7 +120,7 @@ Proof. intros [v ?]; exists v; eauto using to_val_Some. Qed.
 Fixpoint subst (x : string) (es : expr) (e : expr)  : expr :=
   match e with
   | Val v e H => Val v e H
-  | ClosedExpr e H => @ClosedExpr e H
+  | @ClosedExpr e H => @ClosedExpr e H
   | Var y => if bool_decide (y = x) then es else Var y
   | Lit l => Lit l
   | Rec f xl e =>

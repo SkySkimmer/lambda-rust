@@ -97,7 +97,7 @@ Bind Scope val_scope with val.
 
 Definition of_val (v : val) : expr :=
   match v with
-  | RecV f x e _ => Rec f x e
+  | RecV f x e => Rec f x e
   | LitV l => Lit l
   end.
 
