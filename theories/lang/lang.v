@@ -622,15 +622,14 @@ Canonical Structure valC := leibnizC val.
 Canonical Structure exprC := leibnizC expr.
 
 (** Language *)
-Program Instance lrust_ectxi_lang : EctxiLanguage expr val ectx_item state :=
-  {| ectxi_language.of_val := of_val;
-     ectxi_language.to_val := to_val;
-     ectxi_language.fill_item := fill_item;
-     ectxi_language.head_step := head_step |}.
-Solve Obligations with eauto using to_of_val, of_to_val,
-  val_stuck, fill_item_val, fill_item_no_val_inj, head_ctx_step_val.
-
-Canonical Structure lrust_lang := ectx_lang expr.
+Lemma lrust_lang_mixin : EctxiLanguageMixin of_val to_val fill_item head_step.
+Proof.
+  split; apply _ || eauto using to_of_val, of_to_val,
+    val_stuck, fill_item_val, fill_item_no_val_inj, head_ctx_step_val.
+Qed.
+Canonical Structure lrust_ectxi_lang := EctxiLanguage lrust_lang_mixin.
+Canonical Structure lrust_ectx_lang := EctxLanguageOfEctxi lrust_ectxi_lang.
+Canonical Structure lrust_lang := LanguageOfEctx lrust_ectx_lang.
 
 (* Lemmas about the language. *)
 Lemma stuck_irreducible K σ : irreducible (fill K stuck_term) σ.

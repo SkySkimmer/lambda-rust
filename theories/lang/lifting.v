@@ -65,16 +65,6 @@ Implicit Types P Q : iProp Σ.
 Implicit Types e : expr.
 Implicit Types ef : option expr.
 
-(** Bind. This bundles some arguments that wp_ectx_bind leaves as indices. *)
-Lemma wp_bind {E e} K Φ :
-  WP e @ E {{ v, WP fill K (of_val v) @ E {{ Φ }} }} -∗ WP fill K e @ E {{ Φ }}.
-Proof. exact: wp_ectx_bind. Qed.
-
-Lemma wp_bindi {E e} Ki Φ :
-  WP e @ E {{ v, WP fill_item Ki (of_val v) @ E {{ Φ }} }} -∗
-     WP fill_item Ki e @ E {{ Φ }}.
-Proof. exact: weakestpre.wp_bind. Qed.
-
 (** Base axioms for core primitives of the language: Stateless reductions *)
 Lemma wp_fork E e :
   {{{ ▷ WP e {{ _, True }} }}} Fork e @ E {{{ RET LitV LitPoison; True }}}.
@@ -352,7 +342,7 @@ Proof.
   - iIntros (Q Ql) "[He Hl] HΦ".
     assert (App f ((of_val <$> vs) ++ e :: el) = fill_item (AppRCtx vf vs el) e)
       as -> by rewrite /= (of_to_val f) //.
-    iApply wp_bindi. iApply (wp_wand with "He"). iIntros (v) "HQ /=".
+    iApply wp_bind. iApply (wp_wand with "He"). iIntros (v) "HQ /=".
     rewrite cons_middle (assoc app) -(fmap_app _ _ [v]) (of_to_val f) //.
     iApply (IH _ _ with "Hl"). iIntros "* Hvl". rewrite -assoc.
     iApply ("HΦ" $! (v:::vl)). iFrame.

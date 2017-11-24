@@ -22,8 +22,7 @@ Lemma tac_wp_pure `{lrustG Σ} K Δ Δ' E e1 e2 φ Φ :
   envs_entails Δ (WP fill K e1 @ E {{ Φ }}).
 Proof.
   rewrite /envs_entails=> ??? HΔ'. rewrite into_laterN_env_sound /=.
-  rewrite -lifting.wp_bind HΔ' -wp_pure_step_later //.
-  by rewrite -ectx_lifting.wp_ectx_bind_inv.
+  rewrite -wp_bind HΔ' -wp_pure_step_later //. by rewrite -wp_bind_inv.
 Qed.
 
 Tactic Notation "wp_pure" open_constr(efoc) :=
@@ -72,7 +71,7 @@ Tactic Notation "wp_case" := wp_pure (Case _ _); try wp_value_head.
 Lemma tac_wp_bind `{lrustG Σ} K Δ E Φ e :
   envs_entails Δ (WP e @ E {{ v, WP fill K (of_val v) @ E {{ Φ }} }})%I →
   envs_entails Δ (WP fill K e @ E {{ Φ }}).
-Proof. rewrite /envs_entails=> ->. by apply wp_bind. Qed.
+Proof. rewrite /envs_entails=> ->. apply: wp_bind. Qed.
 
 Ltac wp_bind_core K :=
   lazymatch eval hnf in K with

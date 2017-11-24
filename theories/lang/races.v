@@ -192,7 +192,6 @@ Theorem safe_nonracing el σ :
                 e' ∈ el' → to_val e' = None → reducible e' σ') →
   nonracing_threadpool el σ.
 Proof.
-  change to_val with ectxi_language.to_val.
   intros Hsafe l a1 a2 (t1&?&t2&?&t3&->&(K1&e1&Ha1&->)&(K2&e2&Ha2&->)).
 
   assert (to_val e1 = None). by destruct Ha1.
