@@ -131,7 +131,7 @@ Section refmut_functions.
     { by destruct (exclusive_included (Cinl (Excl ())) st'). }
     setoid_subst. iDestruct "INV" as (ν') "(Hνν' & H† & _)".
     iDestruct "Hνν'" as %<-%(inj to_agree)%leibniz_equiv.
-    wp_bind Endlft. iApply (wp_mask_mono (↑lftN)); first done.
+    wp_bind Endlft. iApply (wp_mask_mono _ (↑lftN)); first done.
     iApply (wp_step_fupd with "[H† Hν]");
       [done| |iApply ("H†" with "Hν")|]; first set_solver.
     wp_seq. iIntros "{Hb} Hb !>".

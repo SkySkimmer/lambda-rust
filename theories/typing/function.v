@@ -292,7 +292,7 @@ Section typing.
         iDestruct "Hϝ" as  (κ') "(EQ & Htk & _)". iDestruct "EQ" as %EQ.
         rewrite /= left_id in EQ. subst κ'. simpl. wp_rec. wp_bind Endlft.
         iSpecialize ("Hinh" with "Htk"). iClear "Hκs".
-        iApply (wp_mask_mono (↑lftN)); first done.
+        iApply (wp_mask_mono _ (↑lftN)); first done.
         iApply (wp_step_fupd with "Hinh"); [solve_ndisj..|]. wp_seq.
         iIntros "#Htok !>". wp_seq. iMod ("HκsI" with "Htok") as ">Hκs".
         iApply ("Hk" with "Htl HL Hκs"). rewrite tctx_hasty_val. done.

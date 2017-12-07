@@ -168,7 +168,7 @@ Section typing_rules.
     iIntros (Hc Hub) "He". iIntros (tid) "#LFT #HE Htl [Hκ HL] HC HT".
     iDestruct "Hκ" as (Λ) "(% & Htok & #Hend)".
     iSpecialize ("Hend" with "Htok"). wp_bind Endlft.
-    iApply (wp_mask_mono (↑lftN)); first done.
+    iApply (wp_mask_mono _ (↑lftN)); first done.
     iApply (wp_step_fupd with "Hend"). done. set_solver. wp_seq.
     iIntros "#Hdead !>". wp_seq. iApply ("He" with "LFT HE Htl HL HC [> -]").
     iApply (Hub with "[] HT"). simpl in *. subst κ. rewrite -lft_dead_or. auto.

@@ -758,7 +758,7 @@ Section arc.
     wp_bind (drop_arc _). iApply (drop_arc_spec with "[] [$Htok Hν]");
       [by iDestruct "Hpersist" as "[$?]"|done|].
     iNext. iIntros (b) "Hdrop". wp_bind (if: _ then _ else _)%E.
-    iApply (wp_wand _ _ (λ _, ty_own (box (option ty)) tid [r])%I with "[Hdrop Hr]").
+    iApply (wp_wand _ _ _ (λ _, ty_own (box (option ty)) tid [r])%I with "[Hdrop Hr]").
     { destruct b; wp_if=>//. destruct r as [[]|]; try done.
       (* FIXME: 'simpl' reveals a match here.  Didn't we forbid that for ty_own? *)
       rewrite {3}[option]lock. simpl. rewrite -{2 3}lock. (* FIXME: Tried using contextual pattern, did not work. *)
@@ -816,7 +816,7 @@ Section arc.
     iDestruct "Hrc'" as (γ ν) "[#Hpersist Htok]". wp_bind (drop_weak _).
     iApply (drop_weak_spec with "[] [Htok]"); [by iDestruct "Hpersist" as "[$?]"|by auto|].
     iIntros "!> * Hdrop". wp_bind (if: _ then _ else _)%E.
-    iApply (wp_wand _ _ (λ _, True)%I with "[Hdrop]").
+    iApply (wp_wand _ _ _ (λ _, True)%I with "[Hdrop]").
     { destruct b; wp_if=>//. iDestruct "Hdrop" as "((? & H↦) & ? & ?)".
       iDestruct "H↦" as (vl) "[? Heq]". iDestruct "Heq" as %<-.
       wp_apply (wp_delete _ _ _ (_::_::vl) with "[-]"); [simpl;lia| |done].
@@ -880,7 +880,7 @@ Section arc.
       iMod ("Hend" with "[$H† Hrc']") as "Htok"; first by eauto.
       iApply (drop_weak_spec with "Ha Htok").
       iIntros "!> * Hdrop". wp_bind (if: _ then _ else _)%E.
-      iApply (wp_wand _ _ (λ _, True)%I with "[Hdrop]").
+      iApply (wp_wand _ _ _ (λ _, True)%I with "[Hdrop]").
       { destruct b; wp_if=>//. iDestruct "Hdrop" as "((? & H↦) & ? & ?)".
         iDestruct "H↦" as (vl') "[? Heq]". iDestruct "Heq" as %<-.
         wp_apply (wp_delete _ _ _ (_::_::vl') with "[-]"); [simpl; lia| |done].

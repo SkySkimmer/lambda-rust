@@ -28,7 +28,7 @@ Qed.
 Tactic Notation "wp_pure" open_constr(efoc) :=
   iStartProof;
   lazymatch goal with
-  | |- envs_entails _ (wp ?E ?e ?Q) => reshape_expr e ltac:(fun K e' =>
+  | |- envs_entails _ (wp ?s ?E ?e ?Q) => reshape_expr e ltac:(fun K e' =>
     unify e' efoc;
     eapply (tac_wp_pure K);
     [simpl; apply _                 (* PureExec *)
@@ -54,7 +54,7 @@ Qed.
 Tactic Notation "wp_eq_loc" :=
   iStartProof;
   lazymatch goal with
-  | |- envs_entails _ (wp ?E ?e ?Q) =>
+  | |- envs_entails _ (wp ?s ?E ?e ?Q) =>
      reshape_expr e ltac:(fun K e' => eapply (tac_wp_eq_loc K));
        [apply _|iAssumptionCore|iAssumptionCore|simpl; try wp_value_head]
   | _ => fail "wp_pure: not a 'wp'"
@@ -82,7 +82,7 @@ Ltac wp_bind_core K :=
 Tactic Notation "wp_bind" open_constr(efoc) :=
   iStartProof;
   lazymatch goal with
-  | |- envs_entails _ (wp ?E ?e ?Q) => reshape_expr e ltac:(fun K e' =>
+  | |- envs_entails _ (wp ?s ?E ?e ?Q) => reshape_expr e ltac:(fun K e' =>
     match e' with
     | efoc => unify e' efoc; wp_bind_core K
     end) || fail "wp_bind: cannot find" efoc "in" e
@@ -169,7 +169,7 @@ End heap.
 Tactic Notation "wp_apply" open_constr(lem) :=
   iPoseProofCore lem as false true (fun H =>
     lazymatch goal with
-    | |- envs_entails _ (wp ?E ?e ?Q) =>
+    | |- envs_entails _ (wp ?s ?E ?e ?Q) =>
       reshape_expr e ltac:(fun K e' =>
         wp_bind_core K; iApplyHyp H; try iNext; simpl) ||
       lazymatch iTypeOf H with
@@ -181,7 +181,7 @@ Tactic Notation "wp_apply" open_constr(lem) :=
 Tactic Notation "wp_alloc" ident(l) "as" constr(H) constr(Hf) :=
   iStartProof;
   lazymatch goal with
-  | |- envs_entails _ (wp ?E ?e ?Q) =>
+  | |- envs_entails _ (wp ?s ?E ?e ?Q) =>
     first
       [reshape_expr e ltac:(fun K e' => eapply (tac_wp_alloc K _ _ _ H Hf))
       |fail 1 "wp_alloc: cannot find 'Alloc' in" e];
@@ -209,7 +209,7 @@ Tactic Notation "wp_alloc" ident(l) :=
 Tactic Notation "wp_free" :=
   iStartProof;
   lazymatch goal with
-  | |- envs_entails _ (wp ?E ?e ?Q) =>
+  | |- envs_entails _ (wp ?s ?E ?e ?Q) =>
     first
       [reshape_expr e ltac:(fun K e' => eapply (tac_wp_free K))
       |fail 1 "wp_free: cannot find 'Free' in" e];
@@ -229,7 +229,7 @@ Tactic Notation "wp_free" :=
 Tactic Notation "wp_read" :=
   iStartProof;
   lazymatch goal with
-  | |- envs_entails _ (wp ?E ?e ?Q) =>
+  | |- envs_entails _ (wp ?s ?E ?e ?Q) =>
     first
       [reshape_expr e ltac:(fun K e' => eapply (tac_wp_read K))
       |fail 1 "wp_read: cannot find 'Read' in" e];
@@ -245,7 +245,7 @@ Tactic Notation "wp_read" :=
 Tactic Notation "wp_write" :=
   iStartProof;
   lazymatch goal with
-  | |- envs_entails _ (wp ?E ?e ?Q) =>
+  | |- envs_entails _ (wp ?s ?E ?e ?Q) =>
     first
       [reshape_expr e ltac:(fun K e' => eapply (tac_wp_write K); [apply _|..])
       |fail 1 "wp_write: cannot find 'Write' in" e];

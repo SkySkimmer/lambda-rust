@@ -19,7 +19,7 @@ Proof. solve_inG. Qed.
 
 Definition lrust_adequacy Σ `{lrustPreG Σ} e σ φ :
   (∀ `{lrustG Σ}, True ⊢ WP e {{ v, ⌜φ v⌝ }}) →
-  adequate e σ φ.
+  adequate NotStuck e σ φ.
 Proof.
   intros Hwp; eapply (wp_adequacy _ _); iIntros (?) "".
   iMod (own_alloc (● to_heap σ)) as (vγ) "Hvγ".

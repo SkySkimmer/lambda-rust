@@ -32,9 +32,9 @@ Section type_soundness.
     (∀ e, e ∈ t → is_Some (to_val e) ∨ reducible e σ).
   Proof.
     intros Hmain Hrtc.
-    cut (adequate (main [exit_cont]%E) ∅ (λ _, True)).
+    cut (adequate NotStuck (main [exit_cont]%E) ∅ (λ _, True)).
     { split. by eapply adequate_nonracing.
-      intros. by eapply (adequate_safe (main [exit_cont]%E)). }
+      intros. by eapply (adequate_not_stuck _ (main [exit_cont]%E)). }
     apply: lrust_adequacy=>?. iIntros "_".
     iMod lft_init as (?) "#LFT". done.
     iMod na_alloc as (tid) "Htl". set (Htype := TypeG _ _ _ _ _).

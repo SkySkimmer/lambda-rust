@@ -295,7 +295,7 @@ Proof.
 Qed.
 
 Corollary adequate_nonracing e1 t2 σ1 σ2 φ :
-  adequate e1 σ1 φ →
+  adequate NotStuck e1 σ1 φ →
   rtc step ([e1], σ1) (t2, σ2) →
   nonracing_threadpool t2 σ2.
 Proof.

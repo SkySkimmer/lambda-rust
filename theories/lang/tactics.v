@@ -153,7 +153,7 @@ Definition is_atomic (e: expr) : bool :=
     bool_decide (is_Some (to_val e0) ∧ is_Some (to_val e1) ∧ is_Some (to_val e2))
   | _ => false
   end.
-Lemma is_atomic_correct e : is_atomic e → Atomic (to_expr e).
+Lemma is_atomic_correct e : is_atomic e → Atomic WeaklyAtomic (to_expr e).
 Proof.
   intros He. apply ectx_language_atomic.
   - intros σ e' σ' ef.
@@ -195,11 +195,11 @@ Hint Extern 10 (AsVal _) => solve_to_val : typeclass_instances.
 
 Ltac solve_atomic :=
   match goal with
-  | |- Atomic ?e =>
-     let e' := W.of_expr e in change (Atomic (W.to_expr e'));
+  | |- Atomic ?s ?e =>
+     let e' := W.of_expr e in change (Atomic s (W.to_expr e'));
      apply W.is_atomic_correct; vm_compute; exact I
   end.
-Hint Extern 0 (Atomic _) => solve_atomic : typeclass_instances.
+Hint Extern 0 (Atomic _ _) => solve_atomic : typeclass_instances.
 
 (** Substitution *)
 Ltac simpl_subst :=
