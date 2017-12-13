@@ -25,7 +25,7 @@ After doing `git pull`, the development may fail to compile because of outdated
 dependencies.  To fix that, please run `opam update` followed by
 `make build-dep`.
 
-## Building Instructions
+## Building
 
 Run `make -jN` to build the full development, where `N` is the number of your
 CPU cores.
