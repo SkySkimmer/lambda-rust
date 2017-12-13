@@ -129,8 +129,9 @@ then sealed behind a module signature in
 ## For Developers: How to update the Iris dependency
 
 * Do the change in Iris, push it.
-* Wait for CI to publish a new Iris version on the opam archive.
-* In lambdaRust, change opam to depend on the new version.
+* Wait for CI to publish a new Iris version on the opam archive, then run
+  `opam update iris-dev`.
+* In lambdaRust, change the `opam` file to depend on the new version.
 * Run `make build-dep` (in lambdaRust) to install the new version of Iris.
-* You may have to do `make clean` as Coq will likely complain about .vo file
+  You may have to do `make clean` as Coq will likely complain about .vo file
   mismatches.
