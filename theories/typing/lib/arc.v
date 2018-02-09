@@ -820,7 +820,7 @@ Section arc.
     { destruct b; wp_if=>//. iDestruct "Hdrop" as "((? & H↦) & ? & ?)".
       iDestruct "H↦" as (vl) "[? Heq]". iDestruct "Heq" as %<-.
       wp_apply (wp_delete _ _ _ (_::_::vl) with "[-]"); [simpl;lia| |done].
-      rewrite !heap_mapsto_vec_cons shift_loc_assoc. iFrame. auto. }
+      rewrite !heap_mapsto_vec_cons shift_loc_assoc. iFrame. }
     iIntros (?) "_". wp_seq.
     (* Finish up the proof. *)
     iApply (type_type _ _ _ [ rcx ◁ box (uninit 1); r ◁ box (uninit 0) ]
@@ -884,7 +884,7 @@ Section arc.
       { destruct b; wp_if=>//. iDestruct "Hdrop" as "((? & H↦) & ? & ?)".
         iDestruct "H↦" as (vl') "[? Heq]". iDestruct "Heq" as %<-.
         wp_apply (wp_delete _ _ _ (_::_::vl') with "[-]"); [simpl; lia| |done].
-        rewrite !heap_mapsto_vec_cons shift_loc_assoc. iFrame. auto. }
+        rewrite !heap_mapsto_vec_cons shift_loc_assoc. iFrame. }
       iIntros (?) "_". wp_seq.
       iApply (type_type _ _ _ [ rcx ◁ box (uninit 1); #r ◁ box (Σ[ ty; arc ty ]) ]
               with "[] LFT HE Hna HL Hk [-]"); last first.

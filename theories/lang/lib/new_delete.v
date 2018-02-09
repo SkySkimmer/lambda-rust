@@ -26,7 +26,7 @@ Section specs.
     - wp_if. assert (n = 0) as -> by lia. iApply "HΦ".
       rewrite heap_mapsto_vec_nil. auto.
     - wp_if. wp_alloc l as "H↦" "H†". omega. iApply "HΦ". subst sz.
-      iFrame. auto.
+      iFrame.
   Qed.
 
   Lemma wp_delete E (n:Z) l vl :
