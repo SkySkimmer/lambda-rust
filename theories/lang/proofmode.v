@@ -17,7 +17,7 @@ Ltac wp_value_head := eapply tac_wp_value; [apply _|lazy beta].
 Lemma tac_wp_pure `{lrustG Σ} K Δ Δ' E e1 e2 φ Φ :
   PureExec φ e1 e2 →
   φ →
-  IntoLaterNEnvs 1 Δ Δ' →
+  MaybeIntoLaterNEnvs 1 Δ Δ' →
   envs_entails Δ' (WP fill K e2 @ E {{ Φ }}) →
   envs_entails Δ (WP fill K e1 @ E {{ Φ }}).
 Proof.
@@ -40,7 +40,7 @@ Tactic Notation "wp_pure" open_constr(efoc) :=
   end.
 
 Lemma tac_wp_eq_loc `{lrustG Σ} K Δ Δ' E i1 i2 l1 l2 q1 q2 v1 v2 Φ :
-  IntoLaterNEnvs 1 Δ Δ' →
+  MaybeIntoLaterNEnvs 1 Δ Δ' →
   envs_lookup i1 Δ' = Some (false, l1 ↦{q1} v1)%I →
   envs_lookup i2 Δ' = Some (false, l2 ↦{q2} v2)%I →
   envs_entails Δ' (WP fill K (Lit (bool_decide (l1 = l2))) @ E {{ Φ }}) →
@@ -97,7 +97,7 @@ Implicit Types Δ : envs (iResUR Σ).
 
 Lemma tac_wp_alloc K Δ Δ' E j1 j2 n Φ :
   0 < n →
-  IntoLaterNEnvs 1 Δ Δ' →
+  MaybeIntoLaterNEnvs 1 Δ Δ' →
   (∀ l (sz: nat), n = sz → ∃ Δ'',
     envs_app false (Esnoc (Esnoc Enil j1 (l ↦∗ repeat (LitV LitPoison) sz)) j2 (†l…sz)) Δ'
       = Some Δ'' ∧
@@ -116,7 +116,7 @@ Qed.
 
 Lemma tac_wp_free K Δ Δ' Δ'' Δ''' E i1 i2 vl (n : Z) (n' : nat) l Φ :
   n = length vl →
-  IntoLaterNEnvs 1 Δ Δ' →
+  MaybeIntoLaterNEnvs 1 Δ Δ' →
   envs_lookup i1 Δ' = Some (false, l ↦∗ vl)%I →
   envs_delete i1 false Δ' = Δ'' →
   envs_lookup i2 Δ'' = Some (false, †l…n')%I →
@@ -133,7 +133,7 @@ Qed.
 
 Lemma tac_wp_read K Δ Δ' E i l q v o Φ :
   o = Na1Ord ∨ o = ScOrd →
-  IntoLaterNEnvs 1 Δ Δ' →
+  MaybeIntoLaterNEnvs 1 Δ Δ' →
   envs_lookup i Δ' = Some (false, l ↦{q} v)%I →
   envs_entails Δ' (WP fill K (of_val v) @ E {{ Φ }}) →
   envs_entails Δ (WP fill K (Read o (Lit $ LitLoc l)) @ E {{ Φ }}).
@@ -150,7 +150,7 @@ Qed.
 Lemma tac_wp_write K Δ Δ' Δ'' E i l v e v' o Φ :
   IntoVal e v' →
   o = Na1Ord ∨ o = ScOrd →
-  IntoLaterNEnvs 1 Δ Δ' →
+  MaybeIntoLaterNEnvs 1 Δ Δ' →
   envs_lookup i Δ' = Some (false, l ↦ v)%I →
   envs_simple_replace i false (Esnoc Enil i (l ↦ v')) Δ' = Some Δ'' →
   envs_entails Δ'' (WP fill K (Lit LitPoison) @ E {{ Φ }}) →
