@@ -1,4 +1,3 @@
-From iris.base_logic Require Import namespaces.
 From iris.program_logic Require Export weakestpre.
 From iris.proofmode Require Import coq_tactics.
 From iris.proofmode Require Export tactics.

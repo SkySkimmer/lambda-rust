@@ -1,4 +1,3 @@
-From iris.base_logic.lib Require Import namespaces.
 From lrust.lang Require Export notation.
 From lrust.lang Require Import heap proofmode.
 Set Default Proof Using "Type".
