@@ -41,7 +41,7 @@ Proof.
       rewrite /lft_bor_alive. iExists _. iFrame "HboxB HB●".
       iApply @big_sepM_insert; first by destruct (B !! γB).
       simpl. iFrame. }
-    iMod ("Hclose" with "[HA HI Hclose']") as "_"; [by iExists _, _; iFrame|].
+    iMod ("Hclose" with "[HA HI Hclose']") as "_"; [by iNext; iExists _, _; iFrame|].
     iSplitL "HB◯ HsliceB".
     + rewrite /bor /raw_bor /idx_bor_own. iModIntro. iExists γB. iFrame.
       iExists P. rewrite -uPred.iff_refl. auto.
