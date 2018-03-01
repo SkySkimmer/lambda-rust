@@ -172,7 +172,7 @@ Ltac solve_closed :=
   match goal with
   | |- Closed ?X ?e =>
      let e' := W.of_expr e in change (Closed X (W.to_expr e'));
-     apply W.is_closed_correct; vm_compute; exact I
+     apply W.is_closed_correct; exact (I <: W.is_closed X e')
   end.
 Hint Extern 0 (Closed _ _) => solve_closed : typeclass_instances.
 
@@ -188,7 +188,10 @@ Ltac solve_to_val :=
      apply W.to_val_Some; simpl; unfold W.to_expr; unlock; reflexivity
   | |- is_Some (to_val ?e) =>
      let e' := W.of_expr e in change (is_Some (to_val (W.to_expr e')));
-     apply W.to_val_is_Some, (bool_decide_unpack _); vm_compute; exact I
+     apply W.to_val_is_Some, (bool_decide_unpack _);
+     match goal with [|-Is_true (@bool_decide ?P ?dec)] =>
+       exact (I <: Is_true (@bool_decide P dec))
+     end
   end.
 Hint Extern 10 (IntoVal _ _) => solve_to_val : typeclass_instances.
 Hint Extern 10 (AsVal _) => solve_to_val : typeclass_instances.
@@ -197,7 +200,7 @@ Ltac solve_atomic :=
   match goal with
   | |- Atomic ?s ?e =>
      let e' := W.of_expr e in change (Atomic s (W.to_expr e'));
-     apply W.is_atomic_correct; vm_compute; exact I
+     apply W.is_atomic_correct; exact (I <: W.is_atomic e')
   end.
 Hint Extern 0 (Atomic _ _) => solve_atomic : typeclass_instances.
 
