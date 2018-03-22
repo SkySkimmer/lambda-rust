@@ -24,8 +24,7 @@ Section specs.
     iIntros (? Φ) "_ HΦ". wp_lam. wp_op; case_bool_decide.
     - wp_if. assert (n = 0) as -> by lia. iApply "HΦ".
       rewrite heap_mapsto_vec_nil. auto.
-    - wp_if. wp_alloc l as "H↦" "H†". omega. iApply "HΦ". subst sz.
-      iFrame.
+    - wp_if. wp_alloc l as "H↦" "H†". omega. iApply "HΦ". subst sz. iFrame.
   Qed.
 
   Lemma wp_delete E (n:Z) l vl :
@@ -35,7 +34,8 @@ Section specs.
     {{{ RET #☠; True }}}.
   Proof.
     iIntros (? Φ) "(H↦ & [H†|%]) HΦ";
-      wp_lam; wp_op; case_bool_decide; try lia; wp_if; try wp_free; by iApply "HΦ".
+      wp_lam; wp_op; case_bool_decide; try lia;
+      wp_if; try wp_free; by iApply "HΦ".
   Qed.
 End specs.
 
