@@ -397,10 +397,9 @@ Section typing.
   Qed.
 
   Lemma type_rec {A} E L fb (argsb : list binder) ef e n
-        (fp : A → fn_params n) T `{!CopyC T, !SendC T} :
-    ef = (funrec: fb argsb := e)%E →
+        (fp : A → fn_params n) T `{!CopyC T, !SendC T, Closed _ e} :
+    IntoVal ef (funrec: fb argsb := e) →
     n = length argsb →
-    Closed (fb :b: "return" :b: argsb +b+ []) e →
     □ (∀ x ϝ (f : val) k (args : vec val (length argsb)),
           typed_body ((fp x).(fp_E) ϝ) [ϝ ⊑ₗ []]
                      [k ◁cont([ϝ ⊑ₗ []], λ v : vec _ 1, [v!!!0 ◁ box (fp x).(fp_ty)])]
@@ -410,8 +409,7 @@ Section typing.
                      (subst_v (fb :: BNamed "return" :: argsb) (f ::: k ::: args) e)) -∗
     typed_instruction_ty E L T ef (fn fp).
   Proof.
-    iIntros (-> -> Hc) "#Hbody". iIntros (tid) "#LFT _ $ $ #HT". iApply wp_value.
-    { unfold IntoVal. simpl. rewrite ->(decide_left Hc). done. }
+    iIntros (<-%of_to_val ->) "#Hbody". iIntros (tid) "#LFT _ $ $ #HT". iApply wp_value.
     rewrite tctx_interp_singleton. iLöb as "IH". iExists _. iSplit.
     { simpl. rewrite decide_left. done. }
     iExists fb, _, argsb, e, _. iSplit. done. iSplit. done. iNext.
@@ -422,10 +420,9 @@ Section typing.
   Qed.
 
   Lemma type_fn {A} E L (argsb : list binder) ef e n
-        (fp : A → fn_params n) T `{!CopyC T, !SendC T} :
-    ef = (funrec: <> argsb := e)%E →
+        (fp : A → fn_params n) T `{!CopyC T, !SendC T, Closed _ e} :
+    IntoVal ef (funrec: <> argsb := e) →
     n = length argsb →
-    Closed ("return" :b: argsb +b+ []) e →
     □ (∀ x ϝ k (args : vec val (length argsb)),
         typed_body ((fp x).(fp_E) ϝ) [ϝ ⊑ₗ []]
                    [k ◁cont([ϝ ⊑ₗ []], λ v : vec _ 1, [v!!!0 ◁ box (fp x).(fp_ty)])]
@@ -434,7 +431,7 @@ Section typing.
                    (subst_v (BNamed "return" :: argsb) (k ::: args) e)) -∗
     typed_instruction_ty E L T ef (fn fp).
   Proof.
-    iIntros (???) "#He". iApply type_rec; try done. iIntros "!# *".
+    iIntros (??) "#He". iApply type_rec; try done. iIntros "!# *".
     iApply typed_body_mono; last iApply "He"; try done.
     eapply contains_tctx_incl. by constructor.
   Qed.

@@ -14,13 +14,8 @@ Ltac solve_typing :=
   (typeclasses eauto with lrust_typing typeclass_instances core; fail) ||
   (typeclasses eauto with lrust_typing lrust_typing_merge typeclass_instances core; fail).
 
-Lemma of_val_unlock v e : of_val v = e → of_val (locked v) = e.
-Proof. by unlock. Qed.
-
 Hint Constructors Forall Forall2 elem_of_list : lrust_typing.
-Hint Resolve
-     of_val_unlock
-     submseteq_cons submseteq_inserts_l submseteq_inserts_r
+Hint Resolve submseteq_cons submseteq_inserts_l submseteq_inserts_r
   : lrust_typing.
 
 Hint Extern 1 (@eq nat _ (Z.to_nat _)) =>
