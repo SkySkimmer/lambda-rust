@@ -94,15 +94,14 @@ Section spawn.
                      (λ j, [j ◁ join_handle retty])); try solve_typing; [|].
     { (* The core of the proof: showing that spawn is safe. *)
       iIntros (tid) "#LFT #HE $ $ [Hf' [Henv _]]". rewrite !tctx_hasty_val [fn _]lock.
-      iApply (spawn_spec _ (join_inv tid retty) with "[-]");
-                              first solve_to_val; last first; last simpl_subst.
+      iApply (spawn_spec _ (join_inv tid retty) with "[-]"); last first.
       { iIntros "!> *". rewrite tctx_interp_singleton tctx_hasty_val.
         iIntros "?". by iFrame. }
-      iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let. unlock.
-      iApply (type_call_iris _ [] () [_] with "LFT HE Htl [] Hf' [Henv]");
+      simpl_subst. iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let.
+      unlock. iApply (type_call_iris _ [] () [_] with "LFT HE Htl [] Hf' [Henv]");
       (* The `solve_typing` here shows that, because we assume that `fty` and `retty`
          outlive `static`, the implicit requirmeents made by `call_once` are satisifed. *)
-        [solve_typing|solve_to_val|iApply (lft_tok_static 1%Qp)| |].
+        [solve_typing|iApply (lft_tok_static 1%Qp)| |].
       - by rewrite big_sepL_singleton tctx_hasty_val send_change_tid.
       - iIntros (r) "Htl _ Hret".
         wp_rec. iApply (finish_spec with "[$Hfin Hret]"); last auto.

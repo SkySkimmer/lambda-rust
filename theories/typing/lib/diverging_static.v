@@ -42,7 +42,6 @@ Section diverging_static.
     wp_let. rewrite tctx_hasty_val.
     iApply (type_call_iris _ [ϝ] () [_; _] with "LFT HE Hna [Hϝ] Hcall [Hx Hf]").
     - solve_typing.
-    - solve_to_val.
     - by rewrite /= (right_id static).
     - simpl. iFrame. iSplit; last done. rewrite !tctx_hasty_val.
       iApply "Hincl". done.
@@ -55,5 +54,4 @@ Section diverging_static.
       + iIntros (?). simpl_subst. iApply type_jump; solve_typing.
       + iIntros "!#" (? args). inv_vec args. simpl_subst. iApply type_jump; solve_typing.
   Qed.
-
 End diverging_static.

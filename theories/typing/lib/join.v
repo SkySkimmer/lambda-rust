@@ -49,14 +49,12 @@ Section join.
       [solve_typing..|].
     (* FIXME: using wp_apply here breaks calling solve_to_val. *)
     wp_bind (spawn _).
-    iApply ((spawn_spec joinN (λ v, (box R_A).(ty_own) tid [v] ∗ (qϝ1).[ϝ])%I) with "[HfA HenvA Hϝ1]");
-      first solve_to_val; first simpl_subst.
+    iApply ((spawn_spec joinN (λ v, (box R_A).(ty_own) tid [v] ∗ (qϝ1).[ϝ])%I) with "[HfA HenvA Hϝ1]").
     { (* The new thread. *)
-      iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let. unlock.
-      rewrite !tctx_hasty_val.
+      simpl_subst. iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let.
+      wp_let. unlock. rewrite !tctx_hasty_val.
       iApply (type_call_iris _ [ϝ] () [_] with "LFT HE Htl [Hϝ1] HfA [HenvA]").
       - rewrite outlives_product. solve_typing.
-      - solve_to_val.
       - by rewrite /= (right_id static).
       - by rewrite big_sepL_singleton tctx_hasty_val send_change_tid.
       - iIntros (r) "Htl Hϝ1 Hret".
@@ -68,7 +66,6 @@ Section join.
     rewrite !tctx_hasty_val.
     iApply (type_call_iris _ [ϝ] () [_] with "LFT HE Hna [Hϝ2] HfB [HenvB]").
     { rewrite outlives_product. solve_typing. }
-    { solve_to_val. }
     { by rewrite /= (right_id static). }
     { by rewrite big_sepL_singleton tctx_hasty_val. }
     (* The return continuation after calling fB in the main thread. *)
@@ -90,5 +87,4 @@ Section join.
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.
-
 End join.

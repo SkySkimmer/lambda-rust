@@ -43,7 +43,7 @@ Section code.
     (* Call the function. *)
     wp_let. unlock.
     iApply (type_call_iris _ [ϝ] () [_; _]
-      with "LFT HE Hna [Hϝ] Hf' [Henv Htl Htl† Hx'vl]"); [solve_typing|solve_to_val| | |].
+      with "LFT HE Hna [Hϝ] Hf' [Henv Htl Htl† Hx'vl]"); [solve_typing| | |].
     { by rewrite /= (right_id static). }
     { rewrite /= !tctx_hasty_val tctx_hasty_val' //. iFrame. iExists _. iFrame. }
     (* Prove the continuation of the function call. *)

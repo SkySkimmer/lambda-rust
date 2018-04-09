@@ -245,7 +245,7 @@ Section typing.
   Lemma type_call_iris' E L (κs : list lft) {A} x (ps : list path) qκs qL tid
         p (k : expr) (fp : A → fn_params (length ps)) :
     (∀ ϝ, elctx_sat (((λ κ, ϝ ⊑ₑ κ) <$> κs) ++ E) L ((fp x).(fp_E) ϝ)) →
-    is_Some (to_val k) →
+    AsVal k →
     lft_ctx -∗ elctx_interp E -∗ na_own tid ⊤ -∗ llctx_interp L qL -∗
     qκs.[lft_intersect_list κs] -∗
     tctx_elt_interp tid (p ◁ fn fp) -∗
@@ -304,7 +304,7 @@ Section typing.
   Lemma type_call_iris E (κs : list lft) {A} x (ps : list path) qκs tid
         f (k : expr) (fp : A → fn_params (length ps)) :
     (∀ ϝ, elctx_sat (((λ κ, ϝ ⊑ₑ κ) <$> κs) ++ E) [] ((fp x).(fp_E) ϝ)) →
-    is_Some (to_val k) →
+    AsVal k →
     lft_ctx -∗ elctx_interp E -∗ na_own tid ⊤ -∗
     qκs.[lft_intersect_list κs] -∗
     (fn fp).(ty_own) tid [f] -∗
@@ -333,7 +333,7 @@ Section typing.
   Proof.
     iIntros (Hκs HE tid) "#LFT #HE Htl HL HC (Hf & Hargs & HT)".
     iMod (lctx_lft_alive_tok_list _ _ κs with "HE HL") as (q) "(Hκs & HL & Hclose)"; [done..|].
-    iApply (type_call_iris' with "LFT HE Htl HL Hκs Hf Hargs"); [done|solve_to_val|].
+    iApply (type_call_iris' with "LFT HE Htl HL Hκs Hf Hargs"); [done|].
     iIntros (r) "Htl HL Hκs Hret". iMod ("Hclose" with "Hκs HL") as "HL".
     iSpecialize ("HC" with "[]"); first by (iPureIntro; apply elem_of_list_singleton).
     iApply ("HC" $! [#r] with "Htl HL").

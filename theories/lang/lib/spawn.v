@@ -62,7 +62,7 @@ Proof. solve_proper. Qed.
 
 (** The main proofs. *)
 Lemma spawn_spec (Ψ : val → iProp Σ) e (f : val) :
-  to_val e = Some f →
+  IntoVal e f →
   {{{ ∀ c, finish_handle c Ψ -∗ WP f [ #c] {{ _, True }} }}}
     spawn [e] {{{ c, RET #c; join_handle c Ψ }}}.
 Proof.

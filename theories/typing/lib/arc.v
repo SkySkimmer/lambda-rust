@@ -1078,7 +1078,7 @@ Section arc.
       iDestruct (lft_intersect_acc with "Hα2 Hν") as (q'') "[Hαν Hclose3]".
       rewrite -[α ⊓ ν](right_id_L).
       iApply (type_call_iris _ [α ⊓ ν] (α ⊓ ν) [_] with
-              "LFT HE Hna Hαν Hclone [Hl H†]"); [solve_typing|solve_to_val| |].
+              "LFT HE Hna Hαν Hclone [Hl H†]"); [solve_typing| |].
       { rewrite big_sepL_singleton tctx_hasty_val' //. rewrite /= freeable_sz_full.
         iFrame. iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame.
         iApply ty_shr_mono; last done. iApply lft_intersect_incl_r. }
