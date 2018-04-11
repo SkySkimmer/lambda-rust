@@ -23,8 +23,4 @@ Hint Extern 1 (@eq nat _ (Z.to_nat _)) =>
 Hint Extern 1 (@eq nat (Z.to_nat _) _) =>
   (etrans; [exact: Nat2Z.id | reflexivity]) : lrust_typing.
 
-(* FIXME : I would prefer using a [Hint Resolve <-] for this, but
-   unfortunately, this is not preserved across modules. See:
-     https://coq.inria.fr/bugs/show_bug.cgi?id=5189
-   This should be fixed in the next version of Coq. *)
-Hint Extern 1 (_ ∈ _ ++ _) => apply <- @elem_of_app : lrust_typing.
+Hint Resolve <- elem_of_app : lrust_typing.
