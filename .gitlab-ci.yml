@@ -29,22 +29,17 @@ variables:
 build-coq.8.7.2:
   <<: *template
   variables:
-    OPAM_PINS: "coq version 8.7.2   coq-mathcomp-ssreflect version 1.6.4"
+    OPAM_PINS: "coq version 8.7.2"
     OPAM_PKG: "coq-lambda-rust"
     TIMING_PROJECT: "lambda-rust"
     TIMING_CONF: "coq-8.7.2"
   tags:
   - fp-timing
 
-build-coq.8.6.1:
-  <<: *template
-  variables:
-    OPAM_PINS: "coq version 8.6.1   coq-mathcomp-ssreflect version 1.6.4"
-
 build-iris.dev:
   <<: *template
   variables:
-    OPAM_PINS: "coq version 8.7.2   coq-mathcomp-ssreflect version 1.6.4   coq-iris.dev git https://gitlab.mpi-sws.org/FP/iris-coq.git#$IRIS_REV"
+    OPAM_PINS: "coq version 8.7.2   coq-iris.dev git https://gitlab.mpi-sws.org/FP/iris-coq.git#$IRIS_REV"
   except:
   only:
   - triggers
