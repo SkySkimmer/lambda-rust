@@ -20,7 +20,7 @@ Global Opaque iris_invG.
 Ltac inv_lit :=
   repeat match goal with
   | H : lit_eq _ ?x ?y |- _ => inversion H; clear H; simplify_eq/=
-  | H : lit_neq _ ?x ?y |- _ => inversion H; clear H; simplify_eq/=
+  | H : lit_neq ?x ?y |- _ => inversion H; clear H; simplify_eq/=
   end.
 
 Ltac inv_bin_op_eval :=

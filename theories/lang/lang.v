@@ -233,15 +233,15 @@ Inductive lit_eq (σ : state) : base_lit → base_lit → Prop :=
     σ !! l2 = None →
     lit_eq σ (LitLoc l1) (LitLoc l2).
 
-Inductive lit_neq (σ : state) : base_lit → base_lit → Prop :=
+Inductive lit_neq : base_lit → base_lit → Prop :=
 | IntNeq z1 z2 :
-    z1 ≠ z2 → lit_neq σ (LitInt z1) (LitInt z2)
+    z1 ≠ z2 → lit_neq (LitInt z1) (LitInt z2)
 | LocNeq l1 l2 :
-    l1 ≠ l2 → lit_neq σ (LitLoc l1) (LitLoc l2)
+    l1 ≠ l2 → lit_neq (LitLoc l1) (LitLoc l2)
 | LocNeqNullR l :
-    lit_neq σ (LitLoc l) (LitInt 0)
+    lit_neq (LitLoc l) (LitInt 0)
 | LocNeqNullL l :
-    lit_neq σ (LitInt 0) (LitLoc l).
+    lit_neq (LitInt 0) (LitLoc l).
 
 Inductive bin_op_eval (σ : state) : bin_op → base_lit → base_lit → base_lit → Prop :=
 | BinOpPlus z1 z2 :
@@ -253,7 +253,7 @@ Inductive bin_op_eval (σ : state) : bin_op → base_lit → base_lit → base_l
 | BinOpEqTrue l1 l2 :
     lit_eq σ l1 l2 → bin_op_eval σ EqOp l1 l2 (lit_of_bool true)
 | BinOpEqFalse l1 l2 :
-    lit_neq σ l1 l2 → bin_op_eval σ EqOp l1 l2 (lit_of_bool false)
+    lit_neq l1 l2 → bin_op_eval σ EqOp l1 l2 (lit_of_bool false)
 | BinOpOffset l z :
     bin_op_eval σ OffsetOp (LitLoc l) (LitInt z) (LitLoc $ l +ₗ z).
 
@@ -302,7 +302,7 @@ Inductive head_step : expr → state → expr → state → list expr → Prop :
 | CasFailS l n e1 lit1 e2 lit2 litl σ :
     to_val e1 = Some $ LitV lit1 → to_val e2 = Some $ LitV lit2 →
     σ !! l = Some (RSt n, LitV litl) →
-    lit_neq σ lit1 litl →
+    lit_neq lit1 litl →
     head_step (CAS (Lit $ LitLoc l) e1 e2) σ (Lit $ lit_of_bool false) σ  []
 | CasSucS l e1 lit1 e2 lit2 litl σ :
     to_val e1 = Some $ LitV lit1 → to_val e2 = Some $ LitV lit2 →
@@ -538,16 +538,11 @@ Lemma lit_eq_state σ1 σ2 l1 l2 :
   lit_eq σ1 l1 l2 → lit_eq σ2 l1 l2.
 Proof. intros Heq. inversion 1; econstructor; eauto; eapply Heq; done. Qed.
 
-Lemma lit_neq_state σ1 σ2 l1 l2 :
-  (∀ l, σ1 !! l = None ↔ σ2 !! l = None) →
-  lit_neq σ1 l1 l2 → lit_neq σ2 l1 l2.
-Proof. intros Heq. inversion 1; econstructor; eauto; eapply Heq; done. Qed.
-
 Lemma bin_op_eval_state σ1 σ2 op l1 l2 l' :
   (∀ l, σ1 !! l = None ↔ σ2 !! l = None) →
   bin_op_eval σ1 op l1 l2 l' → bin_op_eval σ2 op l1 l2 l'.
 Proof.
-  intros Heq. inversion 1; econstructor; eauto using lit_eq_state, lit_neq_state.
+  intros Heq. inversion 1; econstructor; eauto using lit_eq_state.
 Qed.
 
 (* Misc *)

@@ -16,7 +16,7 @@ Inductive next_access_head : expr → state → access_kind * order → loc → 
     next_access_head (Write ord (Lit $ LitLoc l) e) σ (WriteAcc, ord) l
 | Access_cas_fail l st e1 lit1 e2 lit2 litl σ :
     IntoVal e1 (LitV lit1) → IntoVal e2 (LitV lit2) →
-    lit_neq σ lit1 litl → σ !! l = Some (st, LitV litl) →
+    lit_neq lit1 litl → σ !! l = Some (st, LitV litl) →
     next_access_head (CAS (Lit $ LitLoc l) e1 e2) σ (ReadAcc, ScOrd) l
 | Access_cas_suc l st e1 lit1 e2 lit2 litl σ :
     IntoVal e1 (LitV lit1) → IntoVal e2 (LitV lit2) →
@@ -118,13 +118,7 @@ Proof.
   intros Ha1 Hstep Ha2. inversion Ha1; subst; clear Ha1; inv_head_step;
   destruct Ha2; simplify_eq; econstructor; eauto; try apply lookup_insert.
   (* Oh my. FIXME. *)
-  - eapply lit_neq_state; last done.
-    setoid_rewrite <-(not_elem_of_dom (D:=gset loc)). rewrite dom_insert_L.
-    cut (is_Some (σ !! l)); last by eexists. rewrite -(elem_of_dom (D:=gset loc)). set_solver+.
   - eapply lit_eq_state; last done.
-    setoid_rewrite <-(not_elem_of_dom (D:=gset loc)). rewrite dom_insert_L.
-    cut (is_Some (σ !! l)); last by eexists. rewrite -(elem_of_dom (D:=gset loc)). set_solver+.
-  - eapply lit_neq_state; last done.
     setoid_rewrite <-(not_elem_of_dom (D:=gset loc)). rewrite dom_insert_L.
     cut (is_Some (σ !! l)); last by eexists. rewrite -(elem_of_dom (D:=gset loc)). set_solver+.
   - eapply lit_eq_state; last done.
