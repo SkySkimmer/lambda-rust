@@ -26,11 +26,20 @@ variables:
 
 ## Build jobs
 
+build-coq.8.8.0:
+  <<: *template
+  variables:
+    OPAM_PINS: "coq version 8.8.0"
+    OPAM_PKG: "coq-lambda-rust"
+    TIMING_PROJECT: "lambda-rust"
+    TIMING_CONF: "coq-8.8.0"
+  tags:
+  - fp-timing
+
 build-coq.8.7.2:
   <<: *template
   variables:
     OPAM_PINS: "coq version 8.7.2"
-    OPAM_PKG: "coq-lambda-rust"
     TIMING_PROJECT: "lambda-rust"
     TIMING_CONF: "coq-8.7.2"
   tags:
