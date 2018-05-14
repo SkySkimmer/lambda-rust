@@ -484,7 +484,7 @@ Qed.
 (** Closed expressions *)
 Lemma is_closed_weaken X Y e : is_closed X e → X ⊆ Y → is_closed Y e.
 Proof.
-  revert e X Y. fix 1; destruct e=>X Y/=; try naive_solver.
+  revert e X Y. fix FIX 1; destruct e=>X Y/=; try naive_solver.
   - naive_solver set_solver.
   - rewrite !andb_True. intros [He Hel] HXY. split. by eauto.
     induction el=>/=; naive_solver.
@@ -497,7 +497,7 @@ Proof. intros. by apply is_closed_weaken with [], list_subseteq_nil. Qed.
 
 Lemma is_closed_subst X e x es : is_closed X e → x ∉ X → subst x es e = e.
 Proof.
-  revert e X. fix 1; destruct e=> X /=; rewrite ?bool_decide_spec ?andb_True=> He ?;
+  revert e X. fix FIX 1; destruct e=> X /=; rewrite ?bool_decide_spec ?andb_True=> He ?;
     repeat case_bool_decide; simplify_eq/=; f_equal;
     try by intuition eauto with set_solver.
   - case He=> _. clear He. induction el=>//=. rewrite andb_True=>?.
@@ -518,7 +518,7 @@ Proof. intros <-%of_to_val. apply is_closed_of_val. Qed.
 Lemma subst_is_closed X x es e :
   is_closed X es → is_closed (x::X) e → is_closed X (subst x es e).
 Proof.
-  revert e X. fix 1; destruct e=>X //=; repeat (case_bool_decide=>//=);
+  revert e X. fix FIX 1; destruct e=>X //=; repeat (case_bool_decide=>//=);
     try naive_solver; rewrite ?andb_True; intros.
   - set_solver.
   - eauto using is_closed_weaken with set_solver.
@@ -591,19 +591,19 @@ Fixpoint expr_beq (e : expr) (e' : expr) : bool :=
   end.
 Lemma expr_beq_correct (e1 e2 : expr) : expr_beq e1 e2 ↔ e1 = e2.
 Proof.
-  revert e1 e2; fix 1;
+  revert e1 e2; fix FIX 1.
     destruct e1 as [| | | |? el1| | | | | |? el1|],
              e2 as [| | | |? el2| | | | | |? el2|]; simpl; try done;
-  rewrite ?andb_True ?bool_decide_spec ?expr_beq_correct;
+  rewrite ?andb_True ?bool_decide_spec ?FIX;
   try (split; intro; [destruct_and?|split_and?]; congruence).
   - match goal with |- context [?F el1 el2] => assert (F el1 el2 ↔ el1 = el2) end.
     { revert el2. induction el1 as [|el1h el1q]; destruct el2; try done.
-      specialize (expr_beq_correct el1h). naive_solver. }
-    clear expr_beq_correct. naive_solver.
+      specialize (FIX el1h). naive_solver. }
+    clear FIX. naive_solver.
   - match goal with |- context [?F el1 el2] => assert (F el1 el2 ↔ el1 = el2) end.
     { revert el2. induction el1 as [|el1h el1q]; destruct el2; try done.
-      specialize (expr_beq_correct el1h). naive_solver. }
-    clear expr_beq_correct. naive_solver.
+      specialize (FIX el1h). naive_solver. }
+    clear FIX. naive_solver.
 Qed.
 Instance expr_dec_eq : EqDecision expr.
 Proof.
