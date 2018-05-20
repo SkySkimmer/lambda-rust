@@ -115,22 +115,44 @@ Section typing.
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_jump; [solve_typing..|]. rewrite /tctx_incl /=.
-    iIntros (??) "_ _ $". rewrite !tctx_interp_singleton /tctx_elt_interp /=.
-    by iIntros "$".
+    iApply type_jump; [solve_typing..|].
+    iIntros (??) "#LFT _ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
 
   Definition cell_from_mut : val :=
     funrec: <> ["x"] := return: ["x"].
 
   Lemma cell_from_mut_type ty `{!TyWf ty} :
-    typed_val cell_get_mut (fn(∀ α, ∅; &uniq{α} ty) → &uniq{α} (cell ty)).
+    typed_val cell_from_mut (fn(∀ α, ∅; &uniq{α} ty) → &uniq{α} (cell ty)).
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
-    iApply type_jump; [solve_typing..|]. rewrite /tctx_incl /=.
-    iIntros (??) "_ _ $". rewrite !tctx_interp_singleton /tctx_elt_interp /=.
-    by iIntros "$".
+    iApply type_jump; [solve_typing..|].
+    iIntros (??) "#LFT _ $ Hty". rewrite !tctx_interp_singleton /=. done.
+  Qed.
+
+  Definition cell_into_box : val :=
+    funrec: <> ["x"] := return: ["x"].
+
+  Lemma cell_into_box_type ty `{!TyWf ty} :
+    typed_val cell_into_box (fn(∅;box (cell ty)) → box ty).
+  Proof.
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_jump; [solve_typing..|].
+    iIntros (??) "#LFT _ $ Hty". rewrite !tctx_interp_singleton /=. done.
+  Qed.
+
+  Definition cell_from_box : val :=
+    funrec: <> ["x"] := return: ["x"].
+
+  Lemma cell_from_box_type ty `{!TyWf ty} :
+    typed_val cell_from_box (fn(∅; box ty) → box (cell ty)).
+  Proof.
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_jump; [solve_typing..|].
+    iIntros (??) "#LFT _ $ Hty". rewrite !tctx_interp_singleton /=. done.
   Qed.
 
   (** Reading from a cell *)
