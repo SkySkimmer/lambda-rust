@@ -82,6 +82,8 @@ End cell.
 Section typing.
   Context `{typeG Σ}.
 
+  (** The next couple functions essentially show owned-type equalities, as they
+      are all different types for the identity function. *)
   (* Constructing a cell. *)
   Definition cell_new : val := funrec: <> ["x"] := return: ["x"].
 
@@ -118,7 +120,20 @@ Section typing.
     by iIntros "$".
   Qed.
 
-  (* Reading from a cell *)
+  Definition cell_from_mut : val :=
+    funrec: <> ["x"] := return: ["x"].
+
+  Lemma cell_from_mut_type ty `{!TyWf ty} :
+    typed_val cell_get_mut (fn(∀ α, ∅; &uniq{α} ty) → &uniq{α} (cell ty)).
+  Proof.
+    intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
+      iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
+    iApply type_jump; [solve_typing..|]. rewrite /tctx_incl /=.
+    iIntros (??) "_ _ $". rewrite !tctx_interp_singleton /tctx_elt_interp /=.
+    by iIntros "$".
+  Qed.
+
+  (** Reading from a cell *)
   Definition cell_get ty : val :=
     funrec: <> ["x"] :=
       let: "x'" := !"x" in
@@ -137,7 +152,7 @@ Section typing.
     iApply type_jump; solve_typing.
   Qed.
 
-  (* Writing to a cell *)
+  (** Writing to a cell *)
   Definition cell_replace ty : val :=
     funrec: <> ["c"; "x"] :=
       let: "c'" := !"c" in
@@ -189,8 +204,9 @@ Section typing.
     iApply type_jump; solve_typing.
   Qed.
 
-  (* Create a shared cell from a mutable borrow.
-     Called alias::one in Rust. *)
+  (** Create a shared cell from a mutable borrow.
+      Called alias::one in Rust.
+      This is really just [cell_from_mut] followed by sharing. *)
   Definition fake_shared_cell : val :=
     funrec: <> ["x"] :=
       let: "x'" := !"x" in
