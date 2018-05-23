@@ -120,7 +120,7 @@ Proof. intros [v ?]; exists v; eauto using to_val_Some. Qed.
 Fixpoint subst (x : string) (es : expr) (e : expr)  : expr :=
   match e with
   | Val v e H => Val v e H
-  | @ClosedExpr e H => @ClosedExpr e H
+  | ClosedExpr e => ClosedExpr e
   | Var y => if bool_decide (y = x) then es else Var y
   | Lit l => Lit l
   | Rec f xl e =>

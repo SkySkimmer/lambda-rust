@@ -141,7 +141,7 @@ Section heap.
 
   Lemma heap_mapsto_agree l q1 q2 v1 v2 : l ↦{q1} v1 ∗ l ↦{q2} v2 ⊢ ⌜v1 = v2⌝.
   Proof.
-    rewrite heap_mapsto_eq -own_op -auth_frag_op own_valid uPred.discrete_valid.
+    rewrite heap_mapsto_eq -own_op -auth_frag_op own_valid discrete_valid.
     eapply pure_elim; [done|]=> /auth_own_valid /=.
     rewrite op_singleton pair_op singleton_valid=> -[? /agree_op_invL'->]; eauto.
   Qed.
@@ -461,7 +461,7 @@ Section heap.
     ==∗ own heap_name (● to_heap (<[l:=(RSt (n2 + nf), v)]> σ))
         ∗ heap_mapsto_st (RSt n2) l q v.
   Proof.
-    intros Hσv. apply uPred.wand_intro_r. rewrite -!own_op to_heap_insert.
+    intros Hσv. apply wand_intro_r. rewrite -!own_op to_heap_insert.
     eapply own_update, auth_update, singleton_local_update.
     { by rewrite /to_heap lookup_fmap Hσv. }
     apply prod_local_update_1, prod_local_update_2, csum_local_update_r.
@@ -510,7 +510,7 @@ Section heap.
     ==∗ own heap_name (● to_heap (<[l:=(st2, v')]> σ))
         ∗ heap_mapsto_st st2 l 1%Qp v'.
   Proof.
-    intros Hσv. apply uPred.wand_intro_r. rewrite -!own_op to_heap_insert.
+    intros Hσv. apply wand_intro_r. rewrite -!own_op to_heap_insert.
     eapply own_update, auth_update, singleton_local_update.
     { by rewrite /to_heap lookup_fmap Hσv. }
     apply exclusive_local_update. by destruct st2.
