@@ -119,7 +119,7 @@ Proof.
   iModIntro. iNext. iApply ("Hclose" with "[] HP"). by iIntros "!> $".
 Qed.
 
-Lemma bor_persistent P `{!Persistent P} E κ :
+Lemma bor_persistent_notok P `{!Persistent P} E κ :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ}P ={E}=∗ ▷ P ∨ [†κ].
 Proof.
@@ -129,7 +129,7 @@ Proof.
   - iMod "Hclose" as "_". auto.
 Qed.
 
-Lemma bor_persistent_tok P `{!Persistent P} E κ q :
+Lemma bor_persistent P `{!Persistent P} E κ q :
   ↑lftN ⊆ E →
   lft_ctx -∗ &{κ}P -∗ q.[κ] ={E}=∗ ▷ P ∗ q.[κ].
 Proof.
@@ -174,7 +174,7 @@ Proof.
   rewrite ->(bor_unfold_idx _ P).
   iMod (bor_exists with "LFT Hbor") as (i) "Hbor"; [done|].
   iMod (bor_sep with "LFT Hbor") as "[Hidx Hbor]"; [done|].
-  iMod (bor_persistent with "LFT Hidx") as "#[Hidx|H†]"; [done| |].
+  iMod (bor_persistent_notok with "LFT Hidx") as "#[Hidx|H†]"; [done| |].
   - iIntros "!>". iNext. by iApply (idx_bor_unnest with "LFT Hidx Hbor").
   - iApply (bor_fake with "LFT"); [done|]. rewrite -lft_dead_or. auto.
 Qed.

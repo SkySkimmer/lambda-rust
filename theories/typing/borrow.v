@@ -151,7 +151,7 @@ Section borrow.
     iMod (bor_exists with "LFT Hown") as (vl) "Hbor". done.
     iMod (bor_sep with "LFT Hbor") as "[H↦ Hbor]". done.
     destruct vl as [|[[]|][]];
-      try by iMod (bor_persistent_tok with "LFT Hbor Htok") as "[>[] _]".
+      try by iMod (bor_persistent with "LFT Hbor Htok") as "[>[] _]".
     iMod (bor_acc with "LFT H↦ Htok") as "[>H↦ Hclose']". done.
     rewrite heap_mapsto_vec_singleton.
     iMod (bor_unnest with "LFT Hbor") as "Hbor"; [done|].

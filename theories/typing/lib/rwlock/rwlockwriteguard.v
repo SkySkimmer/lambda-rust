@@ -38,12 +38,12 @@ Section rwlockwriteguard.
     iMod (bor_sep with "LFT Hb") as "[H↦ Hb]". done.
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦". done.
     destruct vl as [|[[|l'|]|][]];
-      try by iMod (bor_persistent_tok with "LFT Hb Htok") as "[>[] _]".
+      try by iMod (bor_persistent with "LFT Hb Htok") as "[>[] _]".
     iMod (bor_exists with "LFT Hb") as (γ) "Hb". done.
     iMod (bor_exists with "LFT Hb") as (β) "Hb". done.
     iMod (bor_sep with "LFT Hb") as "[Hb H]". done.
     iMod (bor_sep with "LFT H") as "[Hαβ _]". done.
-    iMod (bor_persistent_tok with "LFT Hαβ Htok") as "[#Hαβ $]". done.
+    iMod (bor_persistent with "LFT Hαβ Htok") as "[#Hαβ $]". done.
     iExists _. iFrame "H↦". iApply delay_sharing_nested; try done.
     (* FIXME: "iApply lft_intersect_mono" only preserves the later on the last
        goal, as does "iApply (lft_intersect_mono with ">")". *)

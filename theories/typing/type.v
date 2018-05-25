@@ -133,7 +133,7 @@ Next Obligation.
   iIntros (?? st E κ l tid ??) "#LFT Hmt Hκ".
   iMod (bor_exists with "LFT Hmt") as (vl) "Hmt"; first solve_ndisj.
   iMod (bor_sep with "LFT Hmt") as "[Hmt Hown]"; first solve_ndisj.
-  iMod (bor_persistent_tok with "LFT Hown Hκ") as "[Hown $]"; first solve_ndisj.
+  iMod (bor_persistent with "LFT Hown Hκ") as "[Hown $]"; first solve_ndisj.
   iMod (bor_fracture with "LFT [Hmt]") as "Hfrac"; by eauto with iFrame.
 Qed.
 Next Obligation.

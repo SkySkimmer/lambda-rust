@@ -51,12 +51,12 @@ Section mguard.
     iMod (bor_sep with "LFT Hb") as "[H↦ Hb]"; first done.
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦"; first done.
     destruct vl as [|[[|l'|]|][]];
-      try by iMod (bor_persistent_tok with "LFT Hb Htok") as "[>[] _]".
+      try by iMod (bor_persistent with "LFT Hb Htok") as "[>[] _]".
     setoid_rewrite heap_mapsto_vec_singleton.
     iMod (bor_exists with "LFT Hb") as (β) "Hb"; first done.
     iMod (bor_sep with "LFT Hb") as "[Hαβ H]"; first done.
     iMod (bor_sep with "LFT H") as "[_ H]"; first done.
-    iMod (bor_persistent_tok with "LFT Hαβ Htok") as "[#Hαβ $]"; first done.
+    iMod (bor_persistent with "LFT Hαβ Htok") as "[#Hαβ $]"; first done.
     iExists _. iFrame "H↦". iApply delay_sharing_nested; try done.
     (* FIXME: "iApply lft_intersect_mono" only preserves the later on the last
        goal, as does "iApply (lft_intersect_mono with ">")". *)
@@ -208,12 +208,12 @@ Section code.
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose1)";
       [solve_typing..|].
     destruct vl as [|[[|lm|]|] [|]]; simpl;
-      try by iMod (bor_persistent_tok with "LFT Hprot Hα") as "[>[] _]".
+      try by iMod (bor_persistent with "LFT Hprot Hα") as "[>[] _]".
     rewrite heap_mapsto_vec_singleton.
     iMod (bor_exists with "LFT Hprot") as (κ) "Hprot"; first done.
     iMod (bor_sep with "LFT Hprot") as "[Hβκ Hprot]"; first done.
     iMod (bor_sep with "LFT Hprot") as "[_ Hlm]"; first done.
-    iMod (bor_persistent_tok with "LFT Hβκ Hα") as "[#Hβκ Hα]"; first done.
+    iMod (bor_persistent with "LFT Hβκ Hα") as "[#Hβκ Hα]"; first done.
     iMod (bor_acc with "LFT H↦ Hα") as "[H↦ Hclose2]"; first done.
     wp_bind (!_)%E. iMod (bor_unnest with "LFT Hlm") as "Hlm"; first done.
     wp_read. wp_let. iMod "Hlm".

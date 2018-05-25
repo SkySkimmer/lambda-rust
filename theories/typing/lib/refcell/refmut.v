@@ -43,7 +43,7 @@ Section refmut.
     iMod (bor_sep with "LFT Hb") as "[H↦ Hb]". done.
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦". done.
     destruct vl as [|[[|lv|]|][|[[|lrc|]|][]]];
-      try by iMod (bor_persistent_tok with "LFT Hb Htok") as "[>[] _]".
+      try by iMod (bor_persistent with "LFT Hb Htok") as "[>[] _]".
     iMod (bor_exists with "LFT Hb") as (ν) "Hb". done.
     iMod (bor_exists with "LFT Hb") as (γ) "Hb". done.
     iMod (bor_exists with "LFT Hb") as (β) "Hb". done.
@@ -55,7 +55,7 @@ Section refmut.
     { by rewrite Qp_mult_1_l. }
     iDestruct (frac_bor_lft_incl _ _ 1 with "LFT H") as "#Hκν". iClear "H".
     iMod (bor_sep with "LFT Hb") as "[Hb Hαβ]". done.
-    iMod (bor_persistent_tok with "LFT Hαβ Htok") as "[#Hαβ $]". done.
+    iMod (bor_persistent with "LFT Hαβ Htok") as "[#Hαβ $]". done.
     iExists _, _. iFrame "H↦". iApply delay_sharing_nested; try done.
     rewrite -assoc. iApply lft_intersect_mono; first by iApply lft_incl_refl.
     iApply lft_incl_glb; first done. iApply lft_incl_refl.

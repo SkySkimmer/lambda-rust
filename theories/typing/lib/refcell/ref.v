@@ -42,18 +42,18 @@ Section ref.
     iMod (bor_sep with "LFT Hb") as "[H↦ Hb]". done.
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦". done.
     destruct vl as [|[[|lv|]|][|[[|lrc|]|][]]];
-      try by iMod (bor_persistent_tok with "LFT Hb Htok") as "[>[] _]".
+      try by iMod (bor_persistent with "LFT Hb Htok") as "[>[] _]".
     iMod (bor_exists with "LFT Hb") as (ν) "Hb". done.
     iMod (bor_exists with "LFT Hb") as (q') "Hb". done.
     iMod (bor_exists with "LFT Hb") as (γ) "Hb". done.
     iMod (bor_exists with "LFT Hb") as (β) "Hb". done.
     iMod (bor_exists with "LFT Hb") as (ty') "Hb". done.
     iMod (bor_sep with "LFT Hb") as "[Hshr Hb]". done.
-    iMod (bor_persistent_tok with "LFT Hshr Htok") as "[#Hshr Htok]". done.
+    iMod (bor_persistent with "LFT Hshr Htok") as "[#Hshr Htok]". done.
     iMod (bor_sep with "LFT Hb") as "[Hαβ Hb]". done.
-    iMod (bor_persistent_tok with "LFT Hαβ Htok") as "[#Hαβ Htok]". done.
+    iMod (bor_persistent with "LFT Hαβ Htok") as "[#Hαβ Htok]". done.
     iMod (bor_sep with "LFT Hb") as "[Hinv Hb]". done.
-    iMod (bor_persistent_tok with "LFT Hinv Htok") as "[#Hinv $]". done.
+    iMod (bor_persistent with "LFT Hinv Htok") as "[#Hinv $]". done.
     iMod (bor_sep with "LFT Hb") as "[Hκν Hb]". done.
     iDestruct (frac_bor_lft_incl with "LFT [> Hκν]") as "#Hκν".
     { iApply bor_fracture; try done. by rewrite Qp_mult_1_r. }

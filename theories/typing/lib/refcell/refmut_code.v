@@ -71,14 +71,14 @@ Section refmut_functions.
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose')";
       [solve_typing..|].
     destruct vl as [|[[|lv|]|][|[[|lrc|]|][]]];
-      try by iMod (bor_persistent_tok with "LFT H Hα") as "[>[] _]".
+      try by iMod (bor_persistent with "LFT H Hα") as "[>[] _]".
     iMod (bor_exists with "LFT H") as (ν) "H". done.
     iMod (bor_exists with "LFT H") as (γ) "H". done.
     iMod (bor_exists with "LFT H") as (δ) "H". done.
     iMod (bor_exists with "LFT H") as (ty') "H". done.
     iMod (bor_sep with "LFT H") as "[Hb H]". done.
     iMod (bor_sep with "LFT H") as "[Hβδ H]". done.
-    iMod (bor_persistent_tok with "LFT Hβδ Hα") as "[#Hβδ Hα]". done.
+    iMod (bor_persistent with "LFT Hβδ Hα") as "[#Hβδ Hα]". done.
     rewrite (comm _ (1).[ν])%I. rewrite (assoc _ _ _ (1).[ν])%I.
     iMod (bor_sep with "LFT H") as "[_ H]". done.
     iMod (bor_fracture (λ q, (1 * q).[ν])%I with "LFT [H]") as "H". done.

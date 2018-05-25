@@ -116,7 +116,7 @@ Section arc.
        but that would be additional work here... *)
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦"; first done.
     destruct vl as [|[[|l'|]|][|]];
-      try by iMod (bor_persistent_tok with "LFT Hb Htok") as "[>[] _]".
+      try by iMod (bor_persistent with "LFT Hb Htok") as "[>[] _]".
     setoid_rewrite heap_mapsto_vec_singleton.
     iFrame "Htok". iExists _. iFrame "#". rewrite bor_unfold_idx.
     iDestruct "Hb" as (i) "(#Hpb&Hpbown)".
@@ -237,7 +237,7 @@ Section arc.
        but that would be additional work here... *)
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦"; first done.
     destruct vl as [|[[|l'|]|][|]];
-      try by iMod (bor_persistent_tok with "LFT Hb Htok") as "[>[] _]".
+      try by iMod (bor_persistent with "LFT Hb Htok") as "[>[] _]".
     setoid_rewrite heap_mapsto_vec_singleton.
     iFrame "Htok". iExists _. iFrame "#". rewrite bor_unfold_idx.
     iDestruct "Hb" as (i) "(#Hpb&Hpbown)".
@@ -934,7 +934,7 @@ Section arc.
     iMod (bor_exists with "LFT Hrc'") as (rcvl) "Hrc'"=>//.
     iMod (bor_sep with "LFT Hrc'") as "[Hrc'↦ Hrc]"=>//.
     destruct rcvl as [|[[|rc|]|][|]]; try by
-      iMod (bor_persistent_tok with "LFT Hrc Hα") as "[>[] ?]".
+      iMod (bor_persistent with "LFT Hrc Hα") as "[>[] ?]".
     rewrite heap_mapsto_vec_singleton.
     iMod (bor_acc with "LFT Hrc'↦ Hα") as "[Hrc'↦ Hclose2]"=>//. wp_read.
     iMod ("Hclose2" with "Hrc'↦") as "[_ Hα]".

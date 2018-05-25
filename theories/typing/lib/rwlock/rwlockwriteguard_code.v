@@ -76,13 +76,13 @@ Section rwlockwriteguard_functions.
     iMod (bor_sep with "LFT H") as "[H↦ H]". done.
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)"; [solve_typing..|].
     destruct vl as [|[[|l|]|][]];
-      try by iMod (bor_persistent_tok with "LFT H Hα") as "[>[] _]".
+      try by iMod (bor_persistent with "LFT H Hα") as "[>[] _]".
     rewrite heap_mapsto_vec_singleton.
     iMod (bor_exists with "LFT H") as (γ) "H". done.
     iMod (bor_exists with "LFT H") as (δ) "H". done.
     iMod (bor_sep with "LFT H") as "[Hb H]". done.
     iMod (bor_sep with "LFT H") as "[Hβδ _]". done.
-    iMod (bor_persistent_tok with "LFT Hβδ Hα") as "[#Hβδ Hα]". done.
+    iMod (bor_persistent with "LFT Hβδ Hα") as "[#Hβδ Hα]". done.
     iMod (bor_acc with "LFT H↦ Hα") as "[H↦ Hcloseα]". done.
     wp_bind (!(LitV lx'))%E. iMod (bor_unnest with "LFT Hb") as "Hb"; first done.
     wp_read. wp_op. wp_let. iMod "Hb".

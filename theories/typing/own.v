@@ -70,7 +70,7 @@ Section own.
     iMod (bor_exists with "LFT Hshr") as (vl) "Hb"; first solve_ndisj.
     iMod (bor_sep with "LFT Hb") as "[Hb1 Hb2]"; first solve_ndisj.
     destruct vl as [|[[|l'|]|][]];
-      try (iMod (bor_persistent_tok with "LFT Hb2 Htok") as "[>[]_]"; solve_ndisj).
+      try (iMod (bor_persistent with "LFT Hb2 Htok") as "[>[]_]"; solve_ndisj).
     iFrame. iExists l'. rewrite heap_mapsto_vec_singleton.
     iMod (bor_sep with "LFT Hb2") as "[Hb2 _]"; first solve_ndisj.
     iMod (bor_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "$"; first solve_ndisj.
