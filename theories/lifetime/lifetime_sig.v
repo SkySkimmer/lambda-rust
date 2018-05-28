@@ -1,7 +1,8 @@
 From iris.algebra Require Import frac.
 From stdpp Require Export gmultiset strings.
 From iris.base_logic.lib Require Export invariants.
-From iris.base_logic.lib Require Import boxes fractional.
+From iris.base_logic.lib Require Import boxes.
+From iris.bi Require Import fractional.
 Set Default Proof Using "Type".
 
 Definition lftN : namespace := nroot .@ "lft".
@@ -36,13 +37,13 @@ Module Type lifetime_sig.
 
   (** Notation *)
   Notation "q .[ κ ]" := (lft_tok q κ)
-      (format "q .[ κ ]", at level 0) : uPred_scope.
-  Notation "[† κ ]" := (lft_dead κ) (format "[† κ ]"): uPred_scope.
+      (format "q .[ κ ]", at level 0) : bi_scope.
+  Notation "[† κ ]" := (lft_dead κ) (format "[† κ ]"): bi_scope.
 
-  Notation "&{ κ }" := (bor κ) (format "&{ κ }") : uPred_scope.
-  Notation "&{ κ , i }" := (idx_bor κ i) (format "&{ κ , i }") : uPred_scope.
+  Notation "&{ κ }" := (bor κ) (format "&{ κ }") : bi_scope.
+  Notation "&{ κ , i }" := (idx_bor κ i) (format "&{ κ , i }") : bi_scope.
 
-  Infix "⊑" := lft_incl (at level 70) : uPred_scope.
+  Infix "⊑" := lft_incl (at level 70) : bi_scope.
   Infix "⊓" := lft_intersect (at level 40) : stdpp_scope.
 
   Section properties.

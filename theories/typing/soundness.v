@@ -1,5 +1,4 @@
 From iris.algebra Require Import frac.
-From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import na_invariants.
 From iris.proofmode Require Import tactics.
 From lrust.lang Require Import races adequacy proofmode notation.

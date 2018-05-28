@@ -16,7 +16,7 @@ Section panic.
   Definition panic : val :=
     funrec: <> [] := #☠.
 
-  Lemma panic_type : typed_val panic (fn(∅) → emp).
+  Lemma panic_type : typed_val panic (fn(∅) → ∅).
   Proof.
     intros E L. iApply type_fn; [done|]. iIntros "!# *".
     inv_vec args.  iIntros (tid) "LFT HE Hna HL Hk HT /=". simpl_subst.

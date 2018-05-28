@@ -1,5 +1,4 @@
 From iris.algebra Require Import csum auth frac gmap agree gset.
-From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 From lrust.lifetime Require Export lifetime_sig.
 Set Default Proof Using "Type".
@@ -209,13 +208,13 @@ Instance raw_bor_params : Params (@raw_bor) 4.
 Instance bor_params : Params (@bor) 4.
 
 Notation "q .[ κ ]" := (lft_tok q κ)
-    (format "q .[ κ ]", at level 0) : uPred_scope.
-Notation "[† κ ]" := (lft_dead κ) (format "[† κ ]"): uPred_scope.
+    (format "q .[ κ ]", at level 0) : bi_scope.
+Notation "[† κ ]" := (lft_dead κ) (format "[† κ ]"): bi_scope.
 
-Notation "&{ κ }" := (bor κ) (format "&{ κ }") : uPred_scope.
-Notation "&{ κ , i }" := (idx_bor κ i) (format "&{ κ , i }") : uPred_scope.
+Notation "&{ κ }" := (bor κ) (format "&{ κ }") : bi_scope.
+Notation "&{ κ , i }" := (idx_bor κ i) (format "&{ κ , i }") : bi_scope.
 
-Infix "⊑" := lft_incl (at level 70) : uPred_scope.
+Infix "⊑" := lft_incl (at level 70) : bi_scope.
 
 (* TODO: Making all these things opaque is rather annoying, we should
    find a way to avoid it, or *at least*, to avoid having to manually unfold

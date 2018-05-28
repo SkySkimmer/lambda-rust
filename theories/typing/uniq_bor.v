@@ -1,5 +1,4 @@
 From iris.proofmode Require Import tactics.
-From iris.base_logic Require Import big_op.
 From lrust.lang Require Import heap.
 From lrust.typing Require Export type.
 From lrust.typing Require Import util lft_contexts type_context programs.
@@ -55,7 +54,7 @@ Section uniq_bor.
     iSpecialize ("Hκ" with "HE"). iSplit; iAlways.
     - iIntros (? [|[[]|][]]) "H"; try done.
       iApply (bor_shorten with "Hκ"). iApply bor_iff; last done.
-      iSplit; iIntros "!>!# H"; iDestruct "H" as (vl) "[??]";
+      iNext. iAlways. iSplit; iIntros "H"; iDestruct "H" as (vl) "[??]";
       iExists vl; iFrame; by iApply "Ho".
     - iIntros (κ ??) "H". iAssert (κ2 ⊓ κ ⊑ κ1 ⊓ κ)%I as "#Hincl'".
       { iApply lft_intersect_mono. done. iApply lft_incl_refl. }
@@ -82,7 +81,7 @@ Section uniq_bor.
     Send ty → Send (uniq_bor κ ty).
   Proof.
     iIntros (Hsend tid1 tid2 [|[[]|][]]) "H"; try done.
-    iApply bor_iff; last done. iNext. iAlways. iApply uPred.equiv_iff.
+    iApply bor_iff; last done. iNext. iAlways. iApply bi.equiv_iff.
     do 3 f_equiv. iSplit; iIntros "."; by iApply Hsend.
   Qed.
 

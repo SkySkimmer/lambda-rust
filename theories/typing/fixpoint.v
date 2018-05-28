@@ -60,8 +60,8 @@ Section fixpoint.
       eapply (limit_preserving_ext (λ _, _ ∧ _)).
       { split; (intros [H1 H2]; split; [apply H1|apply H2]). }
       apply limit_preserving_and; repeat (apply limit_preserving_forall=> ?).
-      + apply uPred.limit_preserving_Persistent; solve_proper.
-      + apply limit_preserving_impl, uPred.limit_preserving_entails;
+      + apply bi.limit_preserving_Persistent; solve_proper.
+      + apply limit_preserving_impl, bi.limit_preserving_entails;
         solve_proper_core ltac:(fun _ => eapply ty_size_ne || f_equiv).
   Qed.
 
@@ -74,7 +74,7 @@ Section fixpoint.
     - exists bool. apply _.
     - done.
     - repeat (apply limit_preserving_forall=> ?).
-      apply uPred.limit_preserving_entails; solve_proper.
+      apply bi.limit_preserving_entails; solve_proper.
   Qed.
 
   Global Instance fixpoint_sync :
@@ -86,7 +86,7 @@ Section fixpoint.
     - exists bool. apply _.
     - done.
     - repeat (apply limit_preserving_forall=> ?).
-      apply uPred.limit_preserving_entails; solve_proper.
+      apply bi.limit_preserving_entails; solve_proper.
   Qed.
 
   Lemma fixpoint_unfold_eqtype E L : eqtype E L (type_fixpoint T) (T (type_fixpoint T)).
@@ -111,7 +111,7 @@ Section subtyping.
     - by eexists _.
     - intros. setoid_rewrite (fixpoint_unfold_eqtype T2). by apply H12.
     - repeat (apply limit_preserving_forall=> ?).
-      apply uPred.limit_preserving_entails; solve_proper.
+      apply bi.limit_preserving_entails; solve_proper.
   Qed.
 
   Lemma fixpoint_proper T1 `{TypeContractive T1} T2 `{TypeContractive T2} :
@@ -124,7 +124,7 @@ Section subtyping.
     - by eexists _.
     - intros. setoid_rewrite (fixpoint_unfold_eqtype T2). by apply H12.
     - apply limit_preserving_and; repeat (apply limit_preserving_forall=> ?);
-        apply uPred.limit_preserving_entails; solve_proper.
+        apply bi.limit_preserving_entails; solve_proper.
   Qed.
 
   Lemma fixpoint_unfold_subtype_l ty T `{TypeContractive T} :

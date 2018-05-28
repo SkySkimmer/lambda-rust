@@ -1,6 +1,5 @@
 From lrust.lifetime Require Import borrow accessors.
 From iris.algebra Require Import csum auth frac gmap agree gset.
-From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 From iris.proofmode Require Import tactics.
 Set Default Proof Using "Type".
@@ -61,7 +60,7 @@ Proof.
      (alloc_singleton_local_update _ j (1%Qp, to_agree Bor_in)); last done.
     rewrite /to_borUR lookup_fmap. by rewrite HBj. }
   iModIntro. iExists (P ∗ Pb)%I. rewrite /Iinv. iFrame "HI Hκ". iSplitL "Hj".
-  { iExists j. iFrame. iExists P. rewrite -uPred.iff_refl. auto. }
+  { iExists j. iFrame. iExists P. rewrite -bi.iff_refl. auto. }
   iSplitL "Hbox HB● HB".
   { rewrite /lft_bor_alive. iNext. iExists (<[j:=Bor_in]> B).
     rewrite /to_borUR !fmap_insert big_sepM_insert //. iFrame.

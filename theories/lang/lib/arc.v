@@ -2,7 +2,7 @@ From Coq.QArith Require Import Qcanon.
 From iris.base_logic.lib Require Import invariants.
 From iris.program_logic Require Import weakestpre.
 From iris.proofmode Require Import tactics.
-From iris.base_logic Require Import fractional.
+From iris.bi Require Import fractional.
 From iris.algebra Require Import excl csum frac auth.
 From lrust.lang Require Import lang proofmode notation new_delete.
 Set Default Proof Using "Type".

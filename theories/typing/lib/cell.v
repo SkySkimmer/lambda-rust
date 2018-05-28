@@ -1,5 +1,4 @@
 From iris.proofmode Require Import tactics.
-From iris.base_logic Require Import big_op.
 From lrust.lang.lib Require Import memcpy.
 From lrust.lifetime Require Import na_borrow.
 From lrust.typing Require Export type.
@@ -40,7 +39,7 @@ Section cell.
     iDestruct ("EQ" with "HE") as "(% & #Hown & #Hshr)".
     iSplit; [done|iSplit; iIntros "!# * H"].
     - iApply ("Hown" with "H").
-    - iApply na_bor_iff; last done. iSplit; iIntros "!>!# H";
+    - iApply na_bor_iff; last done. iNext; iAlways; iSplit; iIntros "H";
       iDestruct "H" as (vl) "[??]"; iExists vl; iFrame; by iApply "Hown".
   Qed.
   Lemma cell_mono' E L ty1 ty2 : eqtype E L ty1 ty2 → subtype E L (cell ty1) (cell ty2).

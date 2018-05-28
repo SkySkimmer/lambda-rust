@@ -1,5 +1,4 @@
 From iris.base_logic.lib Require Export na_invariants.
-From iris.base_logic Require Import big_op.
 From lrust.lang Require Export proofmode notation.
 From lrust.lifetime Require Export frac_borrow.
 From lrust.typing Require Export base.
@@ -215,10 +214,10 @@ Section ofe.
     - by intros [].
     - (* TODO: automate this *)
       repeat apply limit_preserving_and; repeat (apply limit_preserving_forall; intros ?).
-      + apply uPred.limit_preserving_Persistent=> n ty1 ty2 Hty; apply Hty.
-      + apply uPred.limit_preserving_entails=> n ty1 ty2 Hty. apply Hty. by rewrite Hty.
-      + apply uPred.limit_preserving_entails=> n ty1 ty2 Hty; repeat f_equiv; apply Hty.
-      + apply uPred.limit_preserving_entails=> n ty1 ty2 Hty; repeat f_equiv; apply Hty.
+      + apply bi.limit_preserving_Persistent=> n ty1 ty2 Hty; apply Hty.
+      + apply bi.limit_preserving_entails=> n ty1 ty2 Hty. apply Hty. by rewrite Hty.
+      + apply bi.limit_preserving_entails=> n ty1 ty2 Hty; repeat f_equiv; apply Hty.
+      + apply bi.limit_preserving_entails=> n ty1 ty2 Hty; repeat f_equiv; apply Hty.
   Qed.
 
   Inductive st_equiv' (ty1 ty2 : simple_type) : Prop :=

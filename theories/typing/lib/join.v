@@ -1,5 +1,4 @@
 From iris.proofmode Require Import tactics.
-From iris.base_logic Require Import big_op.
 From lrust.lang Require Import spawn.
 From lrust.typing Require Export type.
 From lrust.typing Require Import typing.

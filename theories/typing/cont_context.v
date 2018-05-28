@@ -1,5 +1,4 @@
 From iris.proofmode Require Import tactics.
-From iris.base_logic Require Import big_op.
 From lrust.lang Require Import notation.
 From lrust.typing Require Import type lft_contexts type_context.
 Set Default Proof Using "Type".

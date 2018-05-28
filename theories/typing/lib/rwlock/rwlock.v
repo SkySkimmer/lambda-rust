@@ -1,6 +1,6 @@
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import auth csum frac agree.
-From iris.base_logic Require Import big_op fractional.
+From iris.bi Require Import fractional.
 From lrust.lifetime Require Import at_borrow.
 From lrust.typing Require Import typing.
 Set Default Proof Using "Type".
@@ -71,7 +71,7 @@ Section rwlock_inv.
     iAssert (□ (&{α}((l +ₗ 1) ↦∗: ty_own ty1 tid) -∗
                 &{α}((l +ₗ 1) ↦∗: ty_own ty2 tid)))%I as "#Hb".
     { iIntros "!# H". iApply bor_iff; last done.
-      iSplit; iIntros "!>!#H"; iDestruct "H" as (vl) "[Hf H]"; iExists vl;
+      iNext; iAlways; iSplit; iIntros "H"; iDestruct "H" as (vl) "[Hf H]"; iExists vl;
       iFrame; by iApply "Hown". }
     iDestruct "H" as (st) "H"; iExists st;
       iDestruct "H" as "($&$&H)"; destruct st as [[|[[agν ?]?]|]|]; try done;
@@ -177,7 +177,7 @@ Section rwlock.
     - iPureIntro. simpl. congruence.
     - destruct vl as [|[[]|]]; try done. iDestruct "H" as "[$ H]". by iApply "Hown".
     - iDestruct "H" as (a γ) "[Ha H]". iExists a, γ. iFrame.
-      iApply at_bor_iff; last done. iSplit; iIntros "!>!# H".
+      iApply at_bor_iff; last done. iNext; iAlways; iSplit; iIntros "H".
       by iApply "Hty1ty2". by iApply "Hty2ty1".
   Qed.
   Lemma rwlock_mono' E L ty1 ty2 :
@@ -198,12 +198,12 @@ Section rwlock.
   Global Instance rwlock_sync :
     Send ty → Sync ty → Sync (rwlock ty).
   Proof.
-    move=>???????/=. do 2 apply uPred.exist_mono=>?. apply uPred.sep_mono_r.
-    iApply at_bor_iff. iIntros "!> !#". iApply uPred.equiv_iff.
-    apply uPred.exist_proper=>?; do 7 f_equiv; first do 7 f_equiv.
-    - do 5 f_equiv. apply uPred.equiv_spec; split; iApply send_change_tid.
-    - apply uPred.equiv_spec; split; iApply sync_change_tid.
-    - apply uPred.equiv_spec; split; iApply send_change_tid.
+    move=>???????/=. do 2 apply bi.exist_mono=>?. apply bi.sep_mono_r.
+    iApply at_bor_iff. iIntros "!> !#". iApply bi.equiv_iff.
+    apply bi.exist_proper=>?; do 7 f_equiv; first do 7 f_equiv.
+    - do 5 f_equiv. apply bi.equiv_spec; split; iApply send_change_tid.
+    - apply bi.equiv_spec; split; iApply sync_change_tid.
+    - apply bi.equiv_spec; split; iApply send_change_tid.
   Qed.
 End rwlock.
 

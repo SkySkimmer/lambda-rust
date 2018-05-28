@@ -1,6 +1,5 @@
 From lrust.lifetime Require Export primitive.
 From iris.algebra Require Import csum auth frac gmap agree gset.
-From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 From iris.proofmode Require Import tactics.
 Set Default Proof Using "Type".
@@ -89,7 +88,7 @@ Proof.
     by do 2 eapply lookup_to_gmap_None. }
   rewrite /bor /raw_bor /idx_bor_own /=. iModIntro. iSplitR "H◯".
   - iExists ({[γ]} ∪ B), (P ∗ Pinh)%I. rewrite !to_gmap_union_singleton. by iFrame.
-  - iExists γ. iFrame. iExists P. rewrite -uPred.iff_refl. eauto.
+  - iExists γ. iFrame. iExists P. rewrite -bi.iff_refl. eauto.
 Qed.
 
 Lemma raw_bor_fake' E κ P :

@@ -1,6 +1,6 @@
 From Coq Require Import Qcanon.
 From iris.proofmode Require Import tactics.
-From iris.base_logic Require Import lib.fractional.
+From iris.bi Require Import fractional.
 From iris.algebra Require Import frac.
 From lrust.lifetime Require Export at_borrow.
 Set Default Proof Using "Type".
@@ -10,7 +10,7 @@ Class frac_borG Σ := frac_borG_inG :> inG Σ fracR.
 Definition frac_bor `{invG Σ, lftG Σ, frac_borG Σ} κ (φ : Qp → iProp Σ) :=
   (∃ γ κ', κ ⊑ κ' ∗ &at{κ',lftN} (∃ q, φ q ∗ own γ q ∗
                        (⌜q = 1%Qp⌝ ∨ ∃ q', ⌜(q + q' = 1)%Qp⌝ ∗ q'.[κ'])))%I.
-Notation "&frac{ κ }" := (frac_bor κ) (format "&frac{ κ }") : uPred_scope.
+Notation "&frac{ κ }" := (frac_bor κ) (format "&frac{ κ }") : bi_scope.
 
 Section frac_bor.
   Context `{invG Σ, lftG Σ, frac_borG Σ} (φ : Qp → iProp Σ).
@@ -78,7 +78,7 @@ Section frac_bor.
     iDestruct "H" as (qφ) "(Hφqφ & >Hown & Hq)".
     destruct (Qp_lower_bound (qκ'/2) (qφ/2)) as (qq & qκ'0 & qφ0 & Hqκ' & Hqφ).
     iExists qq.
-    iAssert (▷ φ qq ∗ ▷ φ (qφ0 + qφ / 2))%Qp%I with "[Hφqφ]" as "[$ Hqφ]".
+    iAssert (▷ (φ qq ∗ φ (qφ0 + qφ / 2)))%Qp%I with "[Hφqφ]" as "[$ Hqφ]".
     { iNext. rewrite -{1}(Qp_div_2 qφ) {1}Hqφ. iApply "Hφ". by rewrite assoc. }
     rewrite -{1}(Qp_div_2 qφ) {1}Hqφ -assoc {1}Hqκ'.
     iDestruct "Hκ2" as "[Hκq Hκqκ0]". iDestruct "Hown" as "[Hownq Hown]".

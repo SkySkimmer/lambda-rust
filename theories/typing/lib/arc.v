@@ -1,7 +1,7 @@
 From Coq.QArith Require Import Qcanon.
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import auth csum frac agree.
-From iris.base_logic Require Import big_op fractional.
+From iris.bi Require Import fractional.
 From lrust.lang.lib Require Import memcpy arc.
 From lrust.lifetime Require Import at_borrow.
 From lrust.typing Require Export type.
@@ -203,7 +203,7 @@ Section arc.
   Proof.
     intros Hse Hsy tid tid' vl. destruct vl as [|[[|l|]|] []]=>//=.
     unfold full_arc_own, shared_arc_own.
-    repeat (apply send_change_tid || apply uPred.exist_mono ||
+    repeat (apply send_change_tid || apply bi.exist_mono ||
             (apply arc_persist_send; apply _) || f_equiv || intros ?).
   Qed.
 
@@ -211,7 +211,7 @@ Section arc.
     Send ty → Sync ty → Sync (arc ty).
   Proof.
     intros Hse Hsy ν tid tid' l.
-    repeat (apply send_change_tid || apply uPred.exist_mono ||
+    repeat (apply send_change_tid || apply bi.exist_mono ||
             (apply arc_persist_send; apply _) || f_equiv || intros ?).
   Qed.
 
@@ -311,7 +311,7 @@ Section arc.
     Send ty → Sync ty → Send (weak ty).
   Proof.
     intros Hse Hsy tid tid' vl. destruct vl as [|[[|l|]|] []]=>//=.
-    repeat (apply send_change_tid || apply uPred.exist_mono ||
+    repeat (apply send_change_tid || apply bi.exist_mono ||
             (apply arc_persist_send; apply _) || f_equiv || intros ?).
   Qed.
 
@@ -319,7 +319,7 @@ Section arc.
     Send ty → Sync ty → Sync (weak ty).
   Proof.
     intros Hse Hsy ν tid tid' l.
-    repeat (apply send_change_tid || apply uPred.exist_mono ||
+    repeat (apply send_change_tid || apply bi.exist_mono ||
             (apply arc_persist_send; apply _) || f_equiv || intros ?).
   Qed.
 

@@ -1,6 +1,5 @@
 From Coq Require Import Qcanon.
 From iris.proofmode Require Import tactics.
-From iris.base_logic Require Import big_op.
 From lrust.typing Require Export type.
 From lrust.typing Require Import type_context lft_contexts product own uniq_bor shr_bor.
 Set Default Proof Using "Type".

@@ -2,7 +2,7 @@ From Coq Require Import Min.
 From stdpp Require Import coPset.
 From iris.algebra Require Import big_op gmap frac agree.
 From iris.algebra Require Import csum excl auth cmra_big_op.
-From iris.base_logic Require Import big_op lib.fractional.
+From iris.bi Require Import fractional.
 From iris.base_logic Require Export lib.own.
 From iris.proofmode Require Export tactics.
 From lrust.lang Require Export lang.
@@ -71,21 +71,21 @@ Instance: Params (@heap_mapsto) 4.
 Instance: Params (@heap_freeable) 5.
 
 Notation "l ↦{ q } v" := (heap_mapsto l q v)
-  (at level 20, q at level 50, format "l  ↦{ q }  v") : uPred_scope.
-Notation "l ↦ v" := (heap_mapsto l 1 v) (at level 20) : uPred_scope.
+  (at level 20, q at level 50, format "l  ↦{ q }  v") : bi_scope.
+Notation "l ↦ v" := (heap_mapsto l 1 v) (at level 20) : bi_scope.
 
 Notation "l ↦∗{ q } vl" := (heap_mapsto_vec l q vl)
-  (at level 20, q at level 50, format "l  ↦∗{ q }  vl") : uPred_scope.
-Notation "l ↦∗ vl" := (heap_mapsto_vec l 1 vl) (at level 20) : uPred_scope.
+  (at level 20, q at level 50, format "l  ↦∗{ q }  vl") : bi_scope.
+Notation "l ↦∗ vl" := (heap_mapsto_vec l 1 vl) (at level 20) : bi_scope.
 
 Notation "l ↦∗{ q }: P" := (∃ vl, l ↦∗{ q } vl ∗ P vl)%I
-  (at level 20, q at level 50, format "l  ↦∗{ q }:  P") : uPred_scope.
+  (at level 20, q at level 50, format "l  ↦∗{ q }:  P") : bi_scope.
 Notation "l ↦∗: P " := (∃ vl, l ↦∗ vl ∗ P vl)%I
-  (at level 20, format "l  ↦∗:  P") : uPred_scope.
+  (at level 20, format "l  ↦∗:  P") : bi_scope.
 
 Notation "†{ q } l … n" := (heap_freeable l q n)
-  (at level 20, q at level 50, format "†{ q } l … n") : uPred_scope.
-Notation "† l … n" := (heap_freeable l 1 n) (at level 20) : uPred_scope.
+  (at level 20, q at level 50, format "†{ q } l … n") : bi_scope.
+Notation "† l … n" := (heap_freeable l 1 n) (at level 20) : bi_scope.
 
 Section to_heap.
   Implicit Types σ : state.

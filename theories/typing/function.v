@@ -1,6 +1,5 @@
-From iris.base_logic Require Import big_op.
 From iris.proofmode Require Import tactics.
-From iris.algebra Require Import vector.
+From iris.algebra Require Import vector list.
 From lrust.typing Require Export type.
 From lrust.typing Require Import own programs cont.
 Set Default Proof Using "Type".
@@ -88,23 +87,17 @@ Section fn.
       do 5 f_equiv. apply type_dist2_dist. apply Hfp.
     - rewrite /tctx_interp !big_sepL_zip_with /=. do 4 f_equiv.
       cut (∀ n tid p i, Proper (dist n ==> dist n)
-        (λ (l : list _), ∀ ty, ⌜l !! i = Some ty⌝ → tctx_elt_interp tid (p ◁ ty))%I).
+        (λ (l : list type),
+            match l !! i with
+            | Some ty => tctx_elt_interp tid (p ◁ ty) | None => emp
+            end)%I).
       { intros Hprop. apply Hprop, list_fmap_ne; last first.
         - symmetry. eapply Forall2_impl; first apply Hfp. intros.
           apply dist_later_dist, type_dist2_dist_later. done.
         - apply _. }
-      clear. intros n tid p i x y. rewrite list_dist_lookup=>Hxy.
-      specialize (Hxy i). destruct (x !! i) as [tyx|], (y !! i) as [tyy|];
-        inversion_clear Hxy; last done.
-      transitivity (tctx_elt_interp tid (p ◁ tyx));
-        last transitivity (tctx_elt_interp tid (p ◁ tyy)); last 2 first.
-      + unfold tctx_elt_interp. do 3 f_equiv. by apply ty_own_ne.
-      + apply equiv_dist. iSplit.
-        * iIntros "H * #EQ". by iDestruct "EQ" as %[=->].
-        * iIntros "H". by iApply "H".
-      + apply equiv_dist. iSplit.
-        * iIntros "H". by iApply "H".
-        * iIntros "H * #EQ". by iDestruct "EQ" as %[=->].
+      clear. intros n tid p i x y. rewrite list_dist_lookup=>/(_ i).
+      case _ : (x !! i)=>[tyx|]; case  _ : (y !! i)=>[tyy|];
+        inversion_clear 1; [solve_proper|done].
   Qed.
 
   Global Instance fn_ne n' :
@@ -191,15 +184,15 @@ Section typing.
          -{2}(fst_zip (fp x).(fp_tys) (fp' x).(fp_tys)) ?vec_to_list_length //
          -{2}(snd_zip (fp x).(fp_tys) (fp' x).(fp_tys)) ?vec_to_list_length //
          !zip_with_fmap_r !(zip_with_zip (λ _ _, (_ ∘ _) _ _)) !big_sepL_fmap.
-      iApply big_sepL_impl. iSplit; last done. iIntros "{HT Hty}!#".
+      iApply (big_sepL_impl with "HT"). iIntros "!#".
       iIntros (i [p [ty1' ty2']]) "#Hzip H /=".
       iDestruct "H" as (v) "[? Hown]". iExists v. iFrame.
       rewrite !lookup_zip_with.
       iDestruct "Hzip" as %(? & ? & ([? ?] & (? & Hty'1 &
         (? & Hty'2 & [=->->])%bind_Some)%bind_Some & [=->->->])%bind_Some)%bind_Some.
-      iDestruct (big_sepL_lookup with "Htys") as "#Hty".
+      iDestruct (big_sepL_lookup with "Htys") as "#Hty'".
       { rewrite lookup_zip_with /=. erewrite Hty'2. simpl. by erewrite Hty'1. }
-      iDestruct (box_type_incl with "[$Hty]") as "(_ & #Hincl & _)".
+      iDestruct (box_type_incl with "[$Hty']") as "(_ & #Hincl & _)".
       by iApply "Hincl".
   Qed.
 

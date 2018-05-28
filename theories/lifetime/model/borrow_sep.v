@@ -1,7 +1,6 @@
 From lrust.lifetime Require Export primitive.
 From lrust.lifetime Require Export faking reborrow.
 From iris.algebra Require Import csum auth frac gmap agree.
-From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 From iris.proofmode Require Import tactics.
 Set Default Proof Using "Type".
@@ -52,10 +51,10 @@ Proof.
     rewrite !own_bor_op. iDestruct "Hbor" as "[[H● H◯2] H◯1]".
     iAssert (&{κ}P)%I with "[H◯1 Hs1]" as "$".
     { rewrite /bor /raw_bor /idx_bor_own. iExists κ'. iFrame "#". iExists γ1.
-      iFrame. iExists P. rewrite -uPred.iff_refl. auto. }
+      iFrame. iExists P. rewrite -bi.iff_refl. auto. }
     iAssert (&{κ}Q)%I with "[H◯2 Hs2]" as "$".
     { rewrite /bor /raw_bor /idx_bor_own. iExists κ'. iFrame "#". iExists γ2.
-      iFrame. iExists Q. rewrite -uPred.iff_refl. auto. }
+      iFrame. iExists Q. rewrite -bi.iff_refl. auto. }
     iApply "Hclose". iExists A, I. iFrame. rewrite big_sepS_later.
     iApply "Hclose'". iLeft. iFrame "%". iExists Pb', Pi. iFrame. iExists _.
     rewrite /to_borUR -!fmap_delete -!fmap_insert. iFrame "Hbox H●".

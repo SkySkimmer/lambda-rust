@@ -1,7 +1,6 @@
-From iris.base_logic Require Import big_op.
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import list.
-From iris.base_logic Require Import fractional.
+From iris.bi Require Import fractional.
 From lrust.typing Require Export type.
 Set Default Proof Using "Type".
 
@@ -231,9 +230,9 @@ Section sum.
     iIntros (????) "[]".
   Qed.
 
-  Definition emp := sum [].
+  Definition emp_type := sum [].
 
-  Global Instance emp_empty : Empty type := emp.
+  Global Instance emp_type_empty : Empty type := emp_type.
 End sum.
 
 (* Σ is commonly used for the current functor. So it cannot be defined

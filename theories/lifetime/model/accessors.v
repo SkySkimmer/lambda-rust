@@ -1,7 +1,6 @@
 From lrust.lifetime Require Export primitive.
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import csum auth frac gmap agree gset.
-From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 Set Default Proof Using "Type".
 
@@ -202,7 +201,7 @@ Proof.
         iLeft. iFrame "%". iExists _, _. iFrame. }
       iMod ("Hclose" with "Htok") as "$". iExists κ''. iModIntro.
       iSplit; first by iApply lft_incl_refl. iExists j. iFrame.
-      iExists Q. rewrite -uPred.iff_refl. eauto.
+      iExists Q. rewrite -bi.iff_refl. eauto.
     + iDestruct "Hinv" as (?) "[Hinv _]". iDestruct "Hinv" as (B ?) "[>Hinv _]".
       iDestruct (own_bor_valid_2 with "Hinv Hbor")
         as %[(_ & <- & INCL%option_included)%singleton_included _]%auth_valid_discrete_2.
@@ -249,7 +248,7 @@ Proof.
     rewrite own_bor_op. iDestruct "Hown" as "[H● H◯]".
     iMod ("Hclose'" with "[- H◯]"); last first.
     { iModIntro. iExists (i.1). iSplit; first by iApply lft_incl_refl.
-      iExists j. iFrame. iExists Q. rewrite -uPred.iff_refl. auto. }
+      iExists j. iFrame. iExists Q. rewrite -bi.iff_refl. auto. }
     iExists _, _. iFrame. rewrite big_sepS_later. iApply "Hclose''".
     iLeft. iFrame "%". iExists _, _. iFrame. iNext.
     rewrite -!fmap_delete -fmap_insert -(fmap_insert _ _ _ Bor_in).

@@ -1,7 +1,6 @@
 From Coq.QArith Require Import Qcanon.
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import auth csum frac agree.
-From iris.base_logic Require Import big_op.
 From lrust.lang.lib Require Import memcpy lock.
 From lrust.lifetime Require Import na_borrow.
 From lrust.typing Require Export type.
@@ -122,7 +121,7 @@ Section mguard.
   Global Instance mutexguard_sync α ty :
     Sync ty → Sync (mutexguard α ty).
   Proof.
-    move=>?????/=. apply uPred.exist_mono=>?. do 6 f_equiv.
+    move=>?????/=. apply bi.exist_mono=>?. do 7 f_equiv.
     by rewrite sync_change_tid.
   Qed.
 

@@ -1,6 +1,6 @@
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import auth csum frac agree.
-From iris.base_logic Require Import big_op fractional.
+From iris.bi Require Import fractional.
 From lrust.lifetime Require Import na_borrow.
 From lrust.typing Require Import util typing.
 From lrust.typing.lib.rwlock Require Import rwlock.
@@ -87,7 +87,7 @@ Section rwlockwriteguard.
       iDestruct "H" as (γ β) "(Hb & #H⊑ & #Hinv & Hown)".
       iExists γ, β. iFrame "∗#". iSplit; last iSplit.
       + iApply bor_iff; last done.
-        iSplit; iIntros "!>!# H"; iDestruct "H" as (vl) "[??]";
+        iNext; iAlways; iSplit; iIntros "H"; iDestruct "H" as (vl) "[??]";
         iExists vl; iFrame; by iApply "Ho".
       + by iApply lft_incl_trans.
       + iApply at_bor_iff; try done.
@@ -120,7 +120,7 @@ Section rwlockwriteguard.
   Global Instance rwlockwriteguard_sync α ty :
     Sync ty → Sync (rwlockwriteguard α ty).
   Proof.
-    move=>?????/=. apply uPred.exist_mono=>?. do 6 f_equiv.
+    move=>?????/=. apply bi.exist_mono=>?. do 7 f_equiv.
     by rewrite sync_change_tid.
   Qed.
 

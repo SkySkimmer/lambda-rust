@@ -1,7 +1,6 @@
 From lrust.lifetime Require Export primitive.
 From lrust.lifetime Require Export faking.
 From iris.algebra Require Import csum auth frac gmap agree gset.
-From iris.base_logic Require Import big_op.
 From iris.base_logic.lib Require Import boxes.
 From iris.proofmode Require Import tactics.
 Set Default Proof Using "Type".
@@ -44,7 +43,7 @@ Proof.
     iMod ("Hclose" with "[HA HI Hclose']") as "_"; [by iNext; iExists _, _; iFrame|].
     iSplitL "HB◯ HsliceB".
     + rewrite /bor /raw_bor /idx_bor_own. iModIntro. iExists γB. iFrame.
-      iExists P. rewrite -uPred.iff_refl. auto.
+      iExists P. rewrite -bi.iff_refl. auto.
     + clear -HE. iIntros "!> H†".
       iInv mgmtN as (A I) "(>HA & >HI & Hinv)" "Hclose".
       iDestruct ("HIlookup" with "HI") as %Hκ.

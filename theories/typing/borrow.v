@@ -1,5 +1,4 @@
 From iris.proofmode Require Import tactics.
-From iris.base_logic Require Import big_op.
 From lrust.lang Require Import proofmode.
 From lrust.typing Require Export uniq_bor shr_bor own.
 From lrust.typing Require Import lft_contexts type_context programs.

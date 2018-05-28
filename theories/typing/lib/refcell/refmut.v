@@ -1,6 +1,6 @@
 From iris.proofmode Require Import tactics.
 From iris.algebra Require Import auth csum frac agree.
-From iris.base_logic Require Import big_op fractional.
+From iris.bi Require Import fractional.
 From lrust.lifetime Require Import na_borrow.
 From lrust.typing Require Import typing util.
 From lrust.typing.lib.refcell Require Import refcell.
@@ -93,7 +93,7 @@ Section refmut.
       iExists ν, γ, β, ty'. iFrame "∗#". iSplit.
       + iApply bor_shorten; last iApply bor_iff; last done.
         * iApply lft_intersect_mono; first done. iApply lft_incl_refl.
-        * iSplit; iIntros "!>!# H"; iDestruct "H" as (vl) "[??]";
+        * iNext; iAlways; iSplit; iIntros "H"; iDestruct "H" as (vl) "[??]";
           iExists vl; iFrame; by iApply "Ho".
       + by iApply lft_incl_trans.
     - iIntros (κ tid l) "H". iDestruct "H" as (lv lrc) "H". iExists lv, lrc.

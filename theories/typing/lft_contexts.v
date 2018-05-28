@@ -1,6 +1,5 @@
 From iris.proofmode Require Import tactics.
-From iris.base_logic Require Import big_op.
-From iris.base_logic.lib Require Import fractional.
+From iris.bi Require Import fractional.
 From lrust.lang Require Import proofmode.
 From lrust.typing Require Export base.
 From lrust.lifetime Require Import frac_borrow.

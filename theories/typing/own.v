@@ -1,6 +1,5 @@
 From Coq Require Import Qcanon.
 From iris.proofmode Require Import tactics.
-From iris.base_logic Require Import big_op.
 From lrust.lang.lib Require Import new_delete memcpy.
 From lrust.typing Require Export type.
 From lrust.typing Require Import util uninit type_context programs.
@@ -57,7 +56,7 @@ Section own.
 
             Since this assertion is timeless, this should not cause
             problems. *)
-           ▷ l ↦∗: ty.(ty_own) tid ∗ ▷ freeable_sz n ty.(ty_size) l
+           ▷ (l ↦∗: ty.(ty_own) tid ∗ freeable_sz n ty.(ty_size) l)
          | _ => False
          end%I;
        ty_shr κ tid l :=
@@ -72,6 +71,7 @@ Section own.
     destruct vl as [|[[|l'|]|][]];
       try (iMod (bor_persistent with "LFT Hb2 Htok") as "[>[]_]"; solve_ndisj).
     iFrame. iExists l'. rewrite heap_mapsto_vec_singleton.
+    rewrite bi.later_sep.
     iMod (bor_sep with "LFT Hb2") as "[Hb2 _]"; first solve_ndisj.
     iMod (bor_fracture (λ q, l ↦{q} #l')%I with "LFT Hb1") as "$"; first solve_ndisj.
     iApply delay_sharing_later; done.
@@ -203,7 +203,7 @@ Section util.
     (own_ptr n (uninit m)).(ty_own) tid [v] ⊣⊢
          ∃ (l : loc) (vl' : vec val m), ⌜v = #l⌝ ∗ ▷ l ↦∗ vl' ∗ ▷ freeable_sz n m l.
   Proof.
-    rewrite ownptr_own. apply uPred.exist_proper=>l. iSplit.
+    rewrite ownptr_own. apply bi.exist_proper=>l. iSplit.
     (* FIXME: The goals here look rather confusing:  One cannot tell that we are looking at
        a statement in Iris; the top-level → could just as well be a Coq implication. *)
     - iIntros "H". iDestruct "H" as (vl) "(% & Hl & _ & $)". subst v.
