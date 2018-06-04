@@ -13,3 +13,4 @@
 build-dep/
 Makefile.coq
 Makefile.coq.conf
+_opam
