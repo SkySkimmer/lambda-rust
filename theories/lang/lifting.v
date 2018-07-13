@@ -88,7 +88,10 @@ Global Instance pure_rec e f xl erec erec' el :
   Closed (f :b: xl +b+ []) erec →
   DoSubstL (f :: xl) (e :: el) erec erec' →
   PureExec True (App e el) erec'.
-Proof. rewrite /AsRec /DoSubstL=> -> /TCForall_Forall ???. solve_pure_exec. Qed.
+Proof.
+  rewrite /AsRec /DoSubstL=> -> /TCForall_Forall Hel ??. solve_pure_exec.
+  eapply Forall_impl; [exact Hel|]. intros e' [v <-]. rewrite to_of_val; eauto.
+Qed.
 
 Global Instance pure_le n1 n2 :
   PureExec True (BinOp LeOp (Lit (LitInt n1)) (Lit (LitInt n2)))
@@ -189,7 +192,7 @@ Lemma wp_write_sc E l e v v' :
   {{{ ▷ l ↦ v' }}} Write ScOrd (Lit $ LitLoc l) e @ E
   {{{ RET LitV LitPoison; l ↦ v }}}.
 Proof.
-  iIntros (<-%of_to_val Φ) ">Hv HΦ". iApply wp_lift_atomic_head_step_no_fork; auto.
+  iIntros (<- Φ) ">Hv HΦ". iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1) "Hσ". iDestruct (heap_read_1 with "Hσ Hv") as %?.
   iMod (heap_write _ _ _  v with "Hσ Hv") as "[Hσ Hv]".
   iModIntro; iSplit; first by eauto.
@@ -202,7 +205,7 @@ Lemma wp_write_na E l e v v' :
   {{{ ▷ l ↦ v' }}} Write Na1Ord (Lit $ LitLoc l) e @ E
   {{{ RET LitV LitPoison; l ↦ v }}}.
 Proof.
-  iIntros (<-%of_to_val Φ) ">Hv HΦ".
+  iIntros (<- Φ) ">Hv HΦ".
   iApply wp_lift_head_step; auto. iIntros (σ1) "Hσ".
   iMod (heap_write_na with "Hσ Hv") as "(% & Hσ & Hσclose)".
   iMod (fupd_intro_mask' _ ∅) as "Hclose"; first set_solver.
@@ -222,7 +225,7 @@ Lemma wp_cas_int_fail E l q z1 e2 lit2 zl :
     CAS (Lit $ LitLoc l) (Lit $ LitInt z1) e2 @ E
   {{{ RET LitV $ LitInt 0; l ↦{q} LitV (LitInt zl) }}}.
 Proof.
-  iIntros (<-%of_to_val ? Φ) ">Hv HΦ".
+  iIntros (<- ? Φ) ">Hv HΦ".
   iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1) "Hσ". iDestruct (heap_read with "Hσ Hv") as %[n ?].
   iModIntro; iSplit; first by eauto.
@@ -236,7 +239,7 @@ Lemma wp_cas_suc E l lit1 e2 lit2 :
     CAS (Lit $ LitLoc l) (Lit lit1) e2 @ E
   {{{ RET LitV (LitInt 1); l ↦ LitV lit2 }}}.
 Proof.
-  iIntros (<-%of_to_val ? Φ) ">Hv HΦ".
+  iIntros (<- ? Φ) ">Hv HΦ".
   iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1) "Hσ". iDestruct (heap_read_1 with "Hσ Hv") as %?.
   iModIntro; iSplit; first (destruct lit1; by eauto).
@@ -266,7 +269,7 @@ Lemma wp_cas_loc_fail E l q q' q1 l1 v1' e2 lit2 l' vl' :
   {{{ RET LitV (LitInt 0);
       l ↦{q} LitV (LitLoc l') ∗ l' ↦{q'} vl' ∗ l1 ↦{q1} v1' }}}.
 Proof.
-  iIntros (<-%of_to_val ? Φ) "(>Hl & >Hl' & >Hl1) HΦ".
+  iIntros (<- ? Φ) "(>Hl & >Hl' & >Hl1) HΦ".
   iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1) "Hσ". iDestruct (heap_read with "Hσ Hl") as %[nl ?].
   iDestruct (heap_read with "Hσ Hl'") as %[nl' ?].
@@ -284,7 +287,7 @@ Lemma wp_cas_loc_nondet E l l1 e2 l2 ll :
       if b is true then l ↦ LitV (LitLoc l2)
       else ⌜l1 ≠ ll⌝ ∗ l ↦ LitV (LitLoc ll) }}}.
 Proof.
-  iIntros (<-%of_to_val Φ) ">Hv HΦ".
+  iIntros (<- Φ) ">Hv HΦ".
   iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1) "Hσ". iDestruct (heap_read_1 with "Hσ Hv") as %?.
   iModIntro; iSplit; first (destruct (decide (ll = l1)) as [->|]; by eauto).
@@ -336,14 +339,13 @@ Lemma wp_app_ind E f (el : list expr) (Ql : vec (val → iProp Σ) (length el)) 
                     WP App f (of_val <$> vs ++ vl) @ E {{ Φ }}) -∗
     WP App f ((of_val <$> vs) ++ el) @ E {{ Φ }}.
 Proof.
-  intros [vf Hf]. revert vs Ql.
+  intros [vf <-]. revert vs Ql.
   induction el as [|e el IH]=>/= vs Ql; inv_vec Ql; simpl.
   - iIntros "_ H". iSpecialize ("H" $! [#]). rewrite !app_nil_r /=. by iApply "H".
   - iIntros (Q Ql) "[He Hl] HΦ".
-    assert (App f ((of_val <$> vs) ++ e :: el) = fill_item (AppRCtx vf vs el) e)
-      as -> by rewrite /= (of_to_val f) //.
+    change (App (of_val vf) ((of_val <$> vs) ++ e :: el)) with (fill_item (AppRCtx vf vs el) e).
     iApply wp_bind. iApply (wp_wand with "He"). iIntros (v) "HQ /=".
-    rewrite cons_middle (assoc app) -(fmap_app _ _ [v]) (of_to_val f) //.
+    rewrite cons_middle (assoc app) -(fmap_app _ _ [v]).
     iApply (IH _ _ with "Hl"). iIntros "* Hvl". rewrite -assoc.
     iApply ("HΦ" $! (v:::vl)). iFrame.
 Qed.

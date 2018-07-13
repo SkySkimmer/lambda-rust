@@ -249,8 +249,8 @@ Section typing.
              WP k [of_val ret] {{ _, cont_postcondition }}) -∗
     WP (call: p ps → k) {{ _, cont_postcondition }}.
   Proof.
-    iIntros (HE [k' Hk']) "#LFT #HE Htl HL Hκs Hf Hargs Hk". rewrite -(of_to_val k k') //.
-    clear dependent k. wp_apply (wp_hasty with "Hf"). iIntros (v) "% Hf".
+    iIntros (HE [k' <-]) "#LFT #HE Htl HL Hκs Hf Hargs Hk".
+    wp_apply (wp_hasty with "Hf"). iIntros (v) "% Hf".
     iApply (wp_app_vec _ _ (_::_) ((λ v, ⌜v = (λ: ["_r"], (#☠ ;; #☠) ;; k' ["_r"])%V⌝):::
                vmap (λ ty (v : val), tctx_elt_interp tid (v ◁ box ty)) (fp x).(fp_tys))%I
             with "[Hargs]").
@@ -402,7 +402,7 @@ Section typing.
                      (subst_v (fb :: BNamed "return" :: argsb) (f ::: k ::: args) e)) -∗
     typed_instruction_ty E L T ef (fn fp).
   Proof.
-    iIntros (<-%of_to_val ->) "#Hbody". iIntros (tid) "#LFT _ $ $ #HT". iApply wp_value.
+    iIntros (<- ->) "#Hbody /=". iIntros (tid) "#LFT _ $ $ #HT". iApply wp_value.
     rewrite tctx_interp_singleton. iLöb as "IH". iExists _. iSplit.
     { simpl. rewrite decide_left. done. }
     iExists fb, _, argsb, e, _. iSplit. done. iSplit. done. iNext.

@@ -66,7 +66,7 @@ Lemma spawn_spec (Ψ : val → iProp Σ) e (f : val) :
   {{{ ∀ c, finish_handle c Ψ -∗ WP f [ #c] {{ _, True }} }}}
     spawn [e] {{{ c, RET #c; join_handle c Ψ }}}.
 Proof.
-  iIntros (<-%of_to_val Φ) "Hf HΦ". rewrite /spawn /=.
+  iIntros (<- Φ) "Hf HΦ". rewrite /spawn /=.
   wp_let. wp_alloc l as "Hl" "H†". wp_let.
   iMod (own_alloc (Excl ())) as (γf) "Hγf"; first done.
   iMod (own_alloc (Excl ())) as (γj) "Hγj"; first done.

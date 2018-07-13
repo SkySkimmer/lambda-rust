@@ -12,14 +12,14 @@ Inductive next_access_head : expr → state → access_kind * order → loc → 
 | Access_read ord l σ :
     next_access_head (Read ord (Lit $ LitLoc l)) σ (ReadAcc, ord) l
 | Access_write ord l e σ :
-    AsVal e →
+    is_Some (to_val e) →
     next_access_head (Write ord (Lit $ LitLoc l) e) σ (WriteAcc, ord) l
 | Access_cas_fail l st e1 lit1 e2 lit2 litl σ :
-    IntoVal e1 (LitV lit1) → IntoVal e2 (LitV lit2) →
+    to_val e1 = Some (LitV lit1) → to_val e2 = Some (LitV lit2) →
     lit_neq lit1 litl → σ !! l = Some (st, LitV litl) →
     next_access_head (CAS (Lit $ LitLoc l) e1 e2) σ (ReadAcc, ScOrd) l
 | Access_cas_suc l st e1 lit1 e2 lit2 litl σ :
-    IntoVal e1 (LitV lit1) → IntoVal e2 (LitV lit2) →
+    to_val e1 = Some (LitV lit1) → to_val e2 = Some (LitV lit2) →
     lit_eq σ lit1 litl → σ !! l = Some (st, LitV litl) →
     next_access_head (CAS (Lit $ LitLoc l) e1 e2) σ (WriteAcc, ScOrd) l
 | Access_free n l σ i :
@@ -95,7 +95,7 @@ Lemma next_access_head_reducible_state e σ a l :
 Proof.
   intros Ha (e'&σ'&ef&Hstep) Hrednonstuck. destruct Ha; inv_head_step; eauto.
   - destruct n; first by eexists. exfalso. eapply Hrednonstuck; last done.
-    eapply CasStuckS; done.
+    by eapply CasStuckS.
   - exfalso. eapply Hrednonstuck; last done.
     eapply CasStuckS; done.
   - match goal with H : ∀ m, _ |- _ => destruct (H i) as [_ [[]?]] end; eauto.
@@ -106,7 +106,7 @@ Lemma next_access_head_Na1Ord_step e1 e2 ef σ1 σ2 a l :
   head_step e1 σ1 e2 σ2 ef →
   next_access_head e2 σ2 (a, Na2Ord) l.
 Proof.
-  intros Ha Hstep. inversion Ha; subst; clear Ha; inv_head_step; constructor; apply _.
+  intros Ha Hstep. inversion Ha; subst; clear Ha; inv_head_step; constructor; by rewrite to_of_val.
 Qed.
 
 Lemma next_access_head_Na1Ord_concurent_step e1 e1' e2 e'f σ σ' a1 a2 l :

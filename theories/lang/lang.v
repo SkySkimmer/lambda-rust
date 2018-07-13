@@ -637,14 +637,14 @@ Proof.
 Qed.
 
 (* Define some derived forms *)
-Notation Lam xl e := (Rec BAnon xl e).
-Notation Let x e1 e2 := (App (Lam [x] e2) [e1]).
-Notation Seq e1 e2 := (Let BAnon e1 e2).
-Notation LamV xl e := (RecV BAnon xl e).
+Notation Lam xl e := (Rec BAnon xl e) (only parsing).
+Notation Let x e1 e2 := (App (Lam [x] e2) [e1]) (only parsing).
+Notation Seq e1 e2 := (Let BAnon e1 e2) (only parsing).
+Notation LamV xl e := (RecV BAnon xl e) (only parsing).
 Notation LetCtx x e2 := (AppRCtx (LamV [x] e2) [] []).
 Notation SeqCtx e2 := (LetCtx BAnon e2).
 Notation Skip := (Seq (Lit LitPoison) (Lit LitPoison)).
 Coercion lit_of_bool : bool >-> base_lit.
-Notation If e0 e1 e2 := (Case e0 (@cons expr e2 (@cons expr e1 (@nil expr)))).
+Notation If e0 e1 e2 := (Case e0 (@cons expr e2 (@cons expr e1 (@nil expr)))) (only parsing).
 Notation Newlft := (Lit LitPoison) (only parsing).
 Notation Endlft := Skip (only parsing).

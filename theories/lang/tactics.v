@@ -107,15 +107,16 @@ Definition to_val (e : expr) : option val :=
   | _ => None
   end.
 Lemma to_val_Some e v :
-  to_val e = Some v → lang.to_val (to_expr e) = Some v.
+  to_val e = Some v → of_val v = W.to_expr e.
 Proof.
-  revert v. induction e; intros; simplify_option_eq; rewrite ?to_of_val; auto.
-  - do 2 f_equal. apply proof_irrel.
-  - exfalso. unfold Closed in *; eauto using is_closed_correct.
+  revert v. induction e; intros; simplify_option_eq; auto using of_to_val.
 Qed.
 Lemma to_val_is_Some e :
-  is_Some (to_val e) → is_Some (lang.to_val (to_expr e)).
+  is_Some (to_val e) → ∃ v, of_val v = to_expr e.
 Proof. intros [v ?]; exists v; eauto using to_val_Some. Qed.
+Lemma to_val_is_Some' e :
+  is_Some (to_val e) → is_Some (lang.to_val (to_expr e)).
+Proof. intros [v ?]%to_val_is_Some. exists v. rewrite -to_of_val. by f_equal. Qed.
 
 Fixpoint subst (x : string) (es : expr) (e : expr)  : expr :=
   match e with
@@ -164,7 +165,7 @@ Proof.
     revert He. destruct e; simpl; try done; repeat (case_match; try done);
     rewrite ?bool_decide_spec;
     destruct Ki; inversion Hfill; subst; clear Hfill;
-    try naive_solver eauto using to_val_is_Some.
+    try naive_solver eauto using to_val_is_Some'.
 Qed.
 End W.
 
@@ -176,23 +177,22 @@ Ltac solve_closed :=
   end.
 Hint Extern 0 (Closed _ _) => solve_closed : typeclass_instances.
 
-Ltac solve_to_val :=
-  rewrite /IntoVal /AsVal;
-  try match goal with
-  | |- context E [language.to_val ?e] =>
-     let X := context E [to_val e] in change X
-  end;
+Ltac solve_into_val :=
   match goal with
-  | |- to_val ?e = Some ?v =>
-     let e' := W.of_expr e in change (to_val (W.to_expr e') = Some v);
+  | |- IntoVal ?e ?v =>
+     let e' := W.of_expr e in change (of_val v = W.to_expr e');
      apply W.to_val_Some; simpl; unfold W.to_expr;
      ((unlock; exact eq_refl) || (idtac; exact eq_refl))
-  | |- is_Some (to_val ?e) =>
-     let e' := W.of_expr e in change (is_Some (to_val (W.to_expr e')));
+  end.
+Hint Extern 10 (IntoVal _ _) => solve_into_val : typeclass_instances.
+
+Ltac solve_as_val :=
+  match goal with
+  | |- AsVal ?e =>
+     let e' := W.of_expr e in change (∃ v, of_val v = W.to_expr e');
      apply W.to_val_is_Some, (bool_decide_unpack _); vm_compute; exact I
   end.
-Hint Extern 10 (IntoVal _ _) => solve_to_val : typeclass_instances.
-Hint Extern 10 (AsVal _) => solve_to_val : typeclass_instances.
+Hint Extern 10 (AsVal _) => solve_as_val : typeclass_instances.
 
 Ltac solve_atomic :=
   match goal with

@@ -38,12 +38,13 @@ Section type_context.
   Lemma wp_eval_path E p v :
     eval_path p = Some v → (WP p @ E {{ v', ⌜v' = v⌝ }})%I.
   Proof.
-    revert v; induction p; intros v; cbn -[to_val];
-      try (simpl; intros ?; simplify_eq; by iApply wp_value); [].
-    destruct op; try discriminate; [].
+    revert v; induction p; intros v; try done.
+    { intros [=]. by iApply wp_value. }
+    { move=> /of_to_val=> ?. by iApply wp_value. }
+    simpl. destruct op; try discriminate; [].
     destruct p2; try (intros ?; by iApply wp_value); [].
     destruct l; try (intros ?; by iApply wp_value); [].
-    destruct (eval_path p1); try (intros ?; by iApply wp_value); [].
+    destruct (eval_path p1); try done.
     destruct v0; try discriminate; [].
     destruct l; try discriminate; [].
     intros [=<-]. wp_bind p1. iApply (wp_wand with "[]").
