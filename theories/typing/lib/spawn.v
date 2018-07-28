@@ -9,17 +9,17 @@ Definition spawnN := lrustN .@ "spawn".
 Section join_handle.
   Context `{!typeG Σ, !spawnG Σ}.
 
-  Definition join_inv tid (ty : type) (v : val) :=
-    (box ty).(ty_own) tid [v].
+  Definition join_inv (ty : type) (v : val) :=
+    (∀ tid, (box ty).(ty_own) tid [v])%I.
 
   Program Definition join_handle (ty : type) :=
     {| ty_size := 1;
-       ty_own tid vl :=
+       ty_own _ vl :=
          match vl return _ with
-         | [ #(LitLoc l) ] =>join_handle spawnN l (join_inv tid ty)
+         | [ #(LitLoc l) ] => lang.lib.spawn.join_handle spawnN l (join_inv ty)
          | _ => False
          end%I;
-       ty_shr κ tid l := True%I |}.
+       ty_shr κ _ l := True%I |}.
   Next Obligation. by iIntros (ty tid [|[[]|][]]) "H". Qed.
   Next Obligation. iIntros "* _ _ _ $". auto. Qed.
   Next Obligation. iIntros (?) "**"; auto. Qed.
@@ -32,7 +32,8 @@ Section join_handle.
   Proof.
     iIntros "#Hincl". iSplit; first done. iSplit; iAlways.
     - iIntros "* Hvl". destruct vl as [|[[|vl|]|] [|]]; try done.
-      simpl. iApply (join_handle_impl with "[] Hvl"). iIntros "!# * Hown".
+      simpl. iApply (join_handle_impl with "[] Hvl"). clear tid.
+      iIntros "!# * Hown" (tid).
       iDestruct (box_type_incl with "Hincl") as "{Hincl} (_ & Hincl & _)".
       iApply "Hincl". done.
     - iIntros "* _". auto.
@@ -51,19 +52,14 @@ Section join_handle.
   Global Instance join_handle_type_contractive : TypeContractive join_handle.
   Proof.
     constructor;
-      solve_proper_core ltac:(fun _ => exact: type_dist2_dist || f_type_equiv || f_contractive || f_equiv).
+      solve_proper_core ltac:(fun _ => progress unfold join_inv || exact: type_dist2_dist || f_type_equiv || f_contractive || f_equiv).
   Qed.
   Global Instance join_handle_ne : NonExpansive join_handle.
   Proof. apply type_contractive_ne, _. Qed.
 
   Global Instance join_handle_send ty :
-    Send ty → Send (join_handle ty).
-  Proof.
-    iIntros (??? vl) "Hvl". destruct vl as [|[[|vl|]|] [|]]; try done.
-    simpl. iApply (join_handle_impl with "[] Hvl"). iIntros "!# * Hv".
-    unfold join_inv. iApply @send_change_tid. done.
-  Qed.
-
+    Send (join_handle ty).
+  Proof. iIntros (???) "$ //". Qed.
   Global Instance join_handle_sync ty : Sync (join_handle ty).
   Proof. iIntros (????) "_ //". Qed.
 End join_handle.
@@ -93,7 +89,7 @@ Section spawn.
                      (λ j, [j ◁ join_handle retty])); try solve_typing; [|].
     { (* The core of the proof: showing that spawn is safe. *)
       iIntros (tid) "#LFT #HE $ $ [Hf' [Henv _]]". rewrite !tctx_hasty_val [fn _]lock.
-      iApply (spawn_spec _ (join_inv tid retty) with "[-]"); last first.
+      iApply (spawn_spec _ (join_inv retty) with "[-]"); last first.
       { iIntros "!> *". rewrite tctx_interp_singleton tctx_hasty_val.
         iIntros "?". by iFrame. }
       simpl_subst. iIntros (c) "Hfin". iMod na_alloc as (tid') "Htl". wp_let. wp_let.
@@ -104,7 +100,7 @@ Section spawn.
       - by rewrite big_sepL_singleton tctx_hasty_val send_change_tid.
       - iIntros (r) "Htl _ Hret".
         wp_rec. iApply (finish_spec with "[$Hfin Hret]"); last auto.
-        by iApply @send_change_tid. }
+        iIntros (?). by iApply @send_change_tid. }
     iIntros (v). simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
     iApply type_assign; [solve_typing..|].
