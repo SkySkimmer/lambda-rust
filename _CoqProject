@@ -53,7 +53,7 @@ theories/typing/typing.v
 theories/typing/soundness.v
 theories/typing/lib/panic.v
 theories/typing/lib/option.v
-theories/typing/lib/fake_shared_box.v
+theories/typing/lib/fake_shared.v
 theories/typing/lib/cell.v
 theories/typing/lib/spawn.v
 theories/typing/lib/join.v
