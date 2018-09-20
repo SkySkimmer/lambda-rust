@@ -45,8 +45,6 @@ Section ref_functions.
       letalloc: "r" <-{2} !"x'" in
       delete [ #1; "x"];; return: ["r"].
 
-  (* FIXME : using λ instead of fun triggers an anomaly.
-     See: https://coq.inria.fr/bugs/show_bug.cgi?id=5326 *)
   Lemma ref_clone_type ty `{!TyWf ty} :
     typed_val ref_clone (fn(∀ '(α, β), ∅; &shr{α}(ref β ty)) → ref β ty).
 
@@ -110,7 +108,7 @@ Section ref_functions.
 
   Lemma ref_deref_type ty `{!TyWf ty} :
     typed_val ref_deref
-      (fn (fun '(α, β) => FP_wf ∅ [# &shr{α}(ref β ty)]%T (&shr{α}ty)%T)).
+      (fn(∀ '(α, β), ∅; &shr{α}(ref β ty)) → &shr{α}ty).
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.

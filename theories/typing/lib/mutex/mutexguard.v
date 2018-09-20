@@ -192,8 +192,8 @@ Section code.
       delete [ #1; "g"];; return: ["r"].
 
   Lemma mutexguard_derefmut_type ty `{!TyWf ty} :
-    typed_val mutexguard_derefmut (fn (fun '(α, β) =>
-      FP_wf ∅ [# &uniq{α}(mutexguard β ty)]%T (&uniq{α}ty)%T)).
+    typed_val mutexguard_derefmut
+              (fn(∀ '(α, β), ∅; &uniq{α}(mutexguard β ty)) → &uniq{α}ty).
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>g. simpl_subst.
@@ -234,8 +234,8 @@ Section code.
   Definition mutexguard_deref : val := mutexguard_derefmut.
 
   Lemma mutexguard_deref_type ty `{!TyWf ty} :
-    typed_val mutexguard_derefmut (fn (fun '(α, β) =>
-      FP_wf ∅ [# &shr{α}(mutexguard β ty)]%T (&shr{α}ty)%T)).
+    typed_val mutexguard_derefmut
+              (fn(∀ '(α, β), ∅; &shr{α}(mutexguard β ty)) → &shr{α}ty).
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>g. simpl_subst.

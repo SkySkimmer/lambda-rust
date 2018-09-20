@@ -19,8 +19,7 @@ Section refmut_functions.
       delete [ #1; "x"];; return: ["r"].
 
   Lemma refmut_deref_type ty `{!TyWf ty} :
-    typed_val refmut_deref (fn (fun '(α, β) =>
-       FP_wf ∅ [# &shr{α}(refmut β ty)]%T (&shr{α}ty))).
+    typed_val refmut_deref (fn(∀ '(α, β), ∅; &shr{α}(refmut β ty)) → &shr{α}ty).
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
@@ -57,9 +56,9 @@ Section refmut_functions.
   Definition refmut_derefmut : val := refmut_deref.
 
   Lemma refmut_derefmut_type ty `{!TyWf ty} :
-    typed_val refmut_derefmut (fn (fun '(α, β) =>
-      FP_wf ∅ [# &uniq{α}(refmut β ty)]%T (&uniq{α}ty)%T)).
-   Proof.
+    typed_val refmut_derefmut
+              (fn(∀ '(α, β), ∅; &uniq{α}(refmut β ty)) → &uniq{α}ty).
+  Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#".
       iIntros ([α β] ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iApply type_deref; [solve_typing..|]. iIntros (x').
