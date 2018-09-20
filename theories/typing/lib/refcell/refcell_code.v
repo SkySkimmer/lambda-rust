@@ -39,7 +39,7 @@ Section refcell_functions.
     { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //=. iFrame.
       iSplitL "Hx↦".
       - iExists _. rewrite uninit_own. auto.
-      - iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame. simpl. iFrame. auto. }
+      - iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame. }
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.
@@ -64,7 +64,6 @@ Section refcell_functions.
     iDestruct "HT" as "[Hr Hx]".
     iDestruct (ownptr_own with "Hx") as (lx vlx) "(% & >Hx↦ & Hx & Hx†)". subst x.
     inv_vec vlx=>-[[|?|?]|????] vl; try iDestruct "Hx" as ">[]". simpl vec_to_list.
-    iDestruct "Hx" as "[>% Hx]".
     iDestruct (heap_mapsto_vec_cons with "Hx↦") as "[Hx↦0 Hx↦1]".
     iDestruct (ownptr_uninit_own with "Hr") as (lr vlr) "(% & Hr↦ & Hr†)". subst r.
     wp_op. wp_apply (wp_memcpy with "[$Hr↦ $Hx↦1]"); [by auto using vec_to_list_length..|].
@@ -83,7 +82,7 @@ Section refcell_functions.
   Definition refcell_get_mut : val :=
     funrec: <> ["x"] :=
       let: "x'" := !"x" in
-      "x" <- "x'" +ₗ #1;;
+      "x" <- "x'" +ₗ #1;;       (* Get the second field *)
       return: ["x"].
 
   Lemma refcell_get_mut_type ty `{!TyWf ty} :
@@ -96,15 +95,14 @@ Section refcell_functions.
     iIntros (tid) "#LFT #HE Hna HL HC HT".
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|];  try iDestruct "Hx'" as "[]".
-    iAssert (&{α} (∃ (z : Z), lx' ↦ #z ∗ ⌜-1 ≤ z⌝) ∗
+    iAssert (&{α} (∃ (z : Z), lx' ↦ #z) ∗
         (&uniq{α} ty).(ty_own) tid [ #(lx' +ₗ 1)])%I with "[> Hx']" as "[_ Hx']".
     { iApply bor_sep; [done..|]. iApply (bor_proper with "Hx'"). iSplit.
-      - iIntros "[H1 H2]". iDestruct "H1" as (z) "[??]". iDestruct "H2" as (vl) "[??]".
-        iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame. iFrame.
+      - iIntros "[H1 H2]". iDestruct "H1" as (z) "?". iDestruct "H2" as (vl) "[??]".
+        iExists (_::_). rewrite heap_mapsto_vec_cons. by iFrame.
       - iIntros "H". iDestruct "H" as ([|[[| |z]|]vl]) "[H↦ H]"; try iDestruct "H" as "[]".
-        rewrite heap_mapsto_vec_cons.
-        iDestruct "H" as "[H1 H2]". iDestruct "H↦" as "[H↦1 H↦2]".
-        iSplitL "H1 H↦1"; eauto. iExists _. iFrame. }
+        rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[H↦1 H↦2]".
+        iSplitL "H↦1"; eauto. iExists _. iFrame. }
     destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
     iDestruct "Hx" as (vl) "[Hx↦ Hx]". rewrite uninit_own. wp_op.
     iApply (type_type _ _ _
@@ -174,35 +172,35 @@ Section refcell_functions.
       iDestruct "Hlref" as "[Hlref0 Hlref1]". wp_op. wp_write. wp_op. wp_write.
       iAssert (∃ qν ν, (qβ / 2).[β] ∗ (qν).[ν] ∗
                        ty_shr ty (β ⊓ ν) tid (lx +ₗ 1) ∗
-                       own γ (◯ reading_st qν ν) ∗ refcell_inv tid lx γ β ty)%I
+                       own γ (◯ reading_stR qν ν) ∗ refcell_inv tid lx γ β ty)%I
         with "[> Hlx Hownst Hst Hβtok2]" as (q' ν) "(Hβtok2 & Hν & Hshr & Hreading & INV)".
-      { destruct st as [[agν [|[q n]|]]|]; try done.
-        - iDestruct "Hst" as (ν) "(Hag & H† & #Hshr & Hst)".
-          iDestruct "Hst" as (q') "(#Hqq' & [Hν1 Hν2])".
-          iExists _, _. iFrame "Hν1". iDestruct "Hag" as %Hag. iDestruct "Hqq'" as %Hqq'.
-          iMod (own_update with "Hownst") as "[Hownst ?]".
+      { destruct st as [[[[ν []] s] n]|].
+        - simpl in *; lia.
+        - iDestruct "Hst" as "(H† & Hst & #Hshr)".
+          iDestruct "Hst" as (q' Hqq') "[Hν1 Hν2]".
+          iExists _, _. iFrame "Hν1". iMod (own_update with "Hownst") as "[Hownst ?]".
           { apply auth_update_alloc,
-            (op_local_update_discrete _ _ (reading_st (q'/2)%Qp ν))=>-[Hagv _].
-            split; [|split].
-            - by rewrite /= -Hag agree_idemp.
+              (op_local_update_discrete _ _ (reading_stR (q'/2)%Qp ν)) => ?.
+            split; [split|].
+            - by rewrite /= agree_idemp.
             - apply frac_valid'. rewrite -Hqq' comm -{2}(Qp_div_2 q').
               apply Qcplus_le_mono_l. rewrite -{1}(Qcplus_0_l (q'/2)%Qp).
               apply Qcplus_le_mono_r, Qp_ge_0.
             - done. }
-          iFrame "∗#". iExists _. rewrite Z.add_comm /=. iFrame. iExists _. iFrame.
-          iSplitR; first by rewrite /= Hag agree_idemp. iFrame "Hshr". iExists _. iFrame.
-          rewrite (comm Qp_plus) (assoc Qp_plus) Qp_div_2 (comm Qp_plus). auto.
+          iFrame "∗#". iExists (Some (ν, false, _, _)). iFrame "∗#".
+          rewrite [_ ⋅ _]comm -Some_op !pair_op agree_idemp. iFrame.
+          iExists _. iFrame. rewrite -(assoc Qp_plus) Qp_div_2 //.
         - iMod (lft_create with "LFT") as (ν) "[[Htok1 Htok2] #Hhν]". done.
           iMod (own_update with "Hownst") as "[Hownst Hreading]"; first by apply
-            auth_update_alloc, (op_local_update_discrete _ _ (reading_st (1/2)%Qp ν)).
+            auth_update_alloc, (op_local_update_discrete _ _ (reading_stR (1/2)%Qp ν)).
           rewrite right_id. iExists _, _. iFrame "Htok1 Hreading".
           iDestruct (lft_intersect_acc with "Hβtok2 Htok2") as (q) "[Htok Hclose]".
           iApply (fupd_mask_mono (↑lftN)); first done.
           iMod (rebor _ _ (β ⊓ ν) with "LFT [] Hst") as "[Hst Hh]". done.
           { iApply lft_intersect_incl_l. }
           iMod (ty_share with "LFT Hst Htok") as "[#Hshr Htok]". done. iFrame "Hshr".
-          iDestruct ("Hclose" with "Htok") as "[$ Htok2]". iExists _. iFrame.
-          iExists _. iSplitR; first done. iFrame "Hshr". iSplitR "Htok2".
+          iDestruct ("Hclose" with "Htok") as "[$ Htok2]". iExists _. iFrame "∗#".
+          iSplitR "Htok2".
           + iIntros "!> Hν". iMod ("Hhν" with "Hν") as "Hν". iModIntro.
             iNext. iMod "Hν". iApply "Hh". rewrite -lft_dead_or. auto.
           + iExists _. iFrame. by rewrite Qp_div_2. }
@@ -269,17 +267,20 @@ Section refcell_functions.
       iIntros (lref) "(H† & Hlref)". wp_let.
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
       iDestruct "Hlref" as "[Hlref0 Hlref1]". wp_op. wp_write. wp_op. wp_write.
-      destruct st as [[?[|[]|]]|]; try done.
-      iMod (lft_create with "LFT") as (ν) "[Htok #Hhν]". done.
+      destruct st as [[[[ν []] s] n]|]; try done.
+      iMod (lft_create with "LFT") as (ν) "[[Htok1 Htok2] #Hhν]". done.
       iMod (own_update with "Hownst") as "[Hownst ?]".
-      { by eapply auth_update_alloc, (op_local_update_discrete _ _ (writing_st ν)). }
+      { by eapply auth_update_alloc,
+          (op_local_update_discrete _ _ (refcell_st_to_R $ Some (ν, true, (1/2)%Qp, xH))). }
+      rewrite right_id.
       iApply fupd_wp. iApply (fupd_mask_mono (↑lftN)); first done.
       iMod (rebor _ _ (β ⊓ ν) with "LFT [] Hb") as "[Hb Hbh]". done.
       { iApply lft_intersect_incl_l. }
-      iModIntro. iMod ("Hclose''" with "[Hlx Hownst Hbh] Hna") as "[Hβtok Hna]".
-      { iExists _. iFrame. iExists ν. iSplit; first by auto. iNext. iSplitL; last by auto.
-        iIntros "Hν". iMod ("Hhν" with "Hν") as "Hν". iModIntro. iNext. iMod "Hν".
-        iApply "Hbh". rewrite -lft_dead_or. auto. }
+      iModIntro. iMod ("Hclose''" with "[Hlx Hownst Hbh Htok1] Hna") as "[Hβtok Hna]".
+      { iExists _. iFrame. iNext. iSplitL "Hbh".
+        - iIntros "Hν". iMod ("Hhν" with "Hν") as "Hν". iModIntro. iNext. iMod "Hν".
+          iApply "Hbh". rewrite -lft_dead_or. auto.
+        - iSplitL; [|done]. iExists _. iFrame. by rewrite Qp_div_2. }
       iMod ("Hclose'" with "Hβtok") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
       iApply (type_type _ _ _
         [ x ◁ box (&shr{α}(refcell ty)); r ◁ box (uninit 3); #lref ◁ box (refmut α ty)]
@@ -287,7 +288,7 @@ Section refcell_functions.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame.
         rewrite tctx_hasty_val' //. rewrite /= freeable_sz_full. iFrame.
         iExists [_; _]. rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
-        iFrame. iExists _, _, _, _. iFrame "#∗". iApply (bor_shorten with "[] [$Hb]").
+        iFrame. iExists _, _, _, _, _. iFrame "#∗". iApply (bor_shorten with "[] [$Hb]").
         iApply lft_intersect_mono; first done. iApply lft_incl_refl. }
       iApply (type_sum_memcpy (option $ refmut α ty)); [solve_typing..|].
       simpl. iApply type_delete; [solve_typing..|].

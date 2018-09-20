@@ -73,17 +73,18 @@ Section refmut_functions.
     destruct vl as [|[[|lv|]|][|[[|lrc|]|][]]];
       try by iMod (bor_persistent with "LFT H Hα") as "[>[] _]".
     iMod (bor_exists with "LFT H") as (ν) "H". done.
+    iMod (bor_exists with "LFT H") as (q) "H". done.
     iMod (bor_exists with "LFT H") as (γ) "H". done.
     iMod (bor_exists with "LFT H") as (δ) "H". done.
     iMod (bor_exists with "LFT H") as (ty') "H". done.
     iMod (bor_sep with "LFT H") as "[Hb H]". done.
     iMod (bor_sep with "LFT H") as "[Hβδ H]". done.
     iMod (bor_persistent with "LFT Hβδ Hα") as "[#Hβδ Hα]". done.
-    rewrite (comm _ (1).[ν])%I. rewrite (assoc _ _ _ (1).[ν])%I.
     iMod (bor_sep with "LFT H") as "[_ H]". done.
-    iMod (bor_fracture (λ q, (1 * q).[ν])%I with "LFT [H]") as "H". done.
-    { by rewrite Qp_mult_1_l. }
-    iDestruct (frac_bor_lft_incl _ _ 1 with "LFT H") as "#Hαν". iClear "H".
+    iMod (bor_sep with "LFT H") as "[H _]". done.
+    iMod (bor_fracture (λ q', (q * q').[ν])%I with "LFT [H]") as "H". done.
+    { by rewrite Qp_mult_1_r. }
+    iDestruct (frac_bor_lft_incl _ _ q with "LFT H") as "#Hαν". iClear "H".
     rewrite heap_mapsto_vec_cons. iMod (bor_sep with "LFT H↦") as "[H↦ _]". done.
     iMod (bor_acc with "LFT H↦ Hα") as "[H↦ Hcloseα]". done.
     wp_bind (!(LitV lx'))%E. iMod (bor_unnest with "LFT Hb") as "Hb"; first done.
@@ -104,7 +105,8 @@ Section refmut_functions.
   Definition refmut_drop : val :=
     funrec: <> ["x"] :=
       let: "rc" := !("x" +ₗ #1) in
-      "rc" <- #0;;
+      let: "n" := !"rc" in
+      "rc" <- "n" + #1;;
       Endlft;;
       delete [ #2; "x"];;
       let: "r" := new [ #0] in return: ["r"].
@@ -119,26 +121,39 @@ Section refmut_functions.
     iDestruct "Hx" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Hx"; try iDestruct "Hx" as "[_ >[]]".
     rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
     iDestruct "Hx" as "[[Hx↦1 Hx↦2] Hx]". wp_op. wp_read. wp_let.
-    iDestruct "Hx" as (ν γ β ty') "(Hb & #Hαβ & #Hinv & Hν & H◯)".
+    iDestruct "Hx" as (ν q γ β ty') "(Hb & #Hαβ & #Hinv & Hν & H◯)".
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)";
       [solve_typing..|].
     iMod (lft_incl_acc with "Hαβ Hα") as (qβ) "[Hβ Hcloseα]". done.
     iMod (na_bor_acc with "LFT Hinv Hβ Hna") as "(INV & Hna & Hcloseβ)"; [done..|].
-    iDestruct "INV" as (st) "(H↦lrc & H● & INV)". wp_write.
-    iDestruct (own_valid_2 with "H● H◯") as %[[[=]| (? & [agν st'] & [=<-] & -> &
-      [[Hag Heq]|[_ Hle]%prod_included])]%option_included []]%auth_valid_discrete_2;
-      last first.
-    { by destruct (exclusive_included (Cinl (Excl ())) st'). }
-    setoid_subst. iDestruct "INV" as (ν') "(Hνν' & H† & _)".
-    iDestruct "Hνν'" as %<-%(inj to_agree)%leibniz_equiv.
+    iDestruct "INV" as (st) "(H↦lrc & H● & INV)". wp_read. wp_let. wp_op. wp_write.
+    iAssert (|={↑lftN,∅}▷=> refcell_inv tid lrc γ β ty')%I
+      with "[H↦lrc H● H◯ Hν INV]" as "INV".
+    { iDestruct (own_valid_2 with "H● H◯") as
+        %[[[=]|(? & [[? q'] ?] & [= <-] & Hst & INCL)]%option_included _]
+         %auth_valid_discrete_2.
+      destruct st as [[[[??]?]?]|]; [|done]. move: Hst=>-[= ???]. subst.
+      destruct INCL as [[[[ν' ?]%to_agree_inj ?] ?]|
+            [[[??]%to_agree_included [q'' Hq'']]%prod_included [n' Hn']]%prod_included].
+      - simpl in *. setoid_subst. iExists None. iFrame.
+        iMod (own_update_2 with "H● H◯") as "$".
+        { apply auth_update_dealloc. rewrite -(right_id None op (Some _)).
+          apply cancel_local_update_unit, _. }
+        iDestruct "INV" as "(H† & Hq & _)". iApply "H†".
+        iDestruct "Hq" as (q) "(<- & ?)". iFrame.
+      - simpl in *. setoid_subst. iExists (Some (_, _, _, _)).
+        iMod (own_update_2 with "H● H◯") as "$".
+        { apply auth_update_dealloc. rewrite -(agree_idemp (to_agree _)) -!pair_op Some_op.
+          apply (cancel_local_update_unit (writing_stR q _)), _. }
+        iDestruct "INV" as "(H† & Hq & _)".
+        rewrite /= (_:Z.neg (1%positive ⋅ n') + 1 = Z.neg n');
+          last (rewrite pos_op_plus; lia). iFrame.
+        iApply step_fupd_intro; [set_solver+|]. iSplitL; [|done].
+        iDestruct "Hq" as (q' ?) "?". iExists (q+q')%Qp. iFrame.
+        rewrite assoc (comm _ q'' q) //. }
     wp_bind Endlft. iApply (wp_mask_mono _ (↑lftN)); first done.
-    iApply (wp_step_fupd with "[H† Hν]");
-      [done| |iApply ("H†" with "Hν")|]; first set_solver.
-    wp_seq. iIntros "{Hb} Hb !>".
-    iMod ("Hcloseβ" with "[> H↦lrc H● H◯ Hb] Hna") as "[Hβ Hna]".
-    { iExists None. iFrame. iMod (own_update_2 with "H● H◯") as "$"; last done.
-      apply auth_update_dealloc. rewrite -(right_id None _ (Some _)).
-      apply cancel_local_update_unit, _. }
+    iApply (wp_step_fupd with "INV"); [done|set_solver|]. wp_seq. iIntros "{Hb} Hb !>".
+    iMod ("Hcloseβ" with "Hb Hna") as "[Hβ Hna]".
     iMod ("Hcloseα" with "Hβ") as "Hα". iMod ("Hclose" with "Hα HL") as "HL". wp_seq.
     iApply (type_type _ _ _ [ #lx ◁ box (uninit 2)]
             with "[] LFT HE Hna HL Hk"); last first.
@@ -175,7 +190,7 @@ Section refmut_functions.
       try iDestruct "Href" as "[_ >[]]".
     rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
     iDestruct "Href" as "[[Href↦1 Href↦2] Href]".
-    iDestruct "Href" as (ν γ β ty') "(Hbor & #Hαβ & #Hinv & >Hν & Hγ)".
+    iDestruct "Href" as (ν q γ β ty') "(Hbor & #Hαβ & #Hinv & >Hν & Hγ)".
     wp_read. wp_let. wp_apply wp_new; first done. done.
     iIntros (lx) "(H† & Hlx)". rewrite heap_mapsto_vec_singleton.
     wp_let. wp_write. wp_let. rewrite tctx_hasty_val.

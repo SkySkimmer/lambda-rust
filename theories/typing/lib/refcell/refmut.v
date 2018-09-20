@@ -24,9 +24,9 @@ Section refmut.
        ty_own tid vl :=
          match vl return _ with
          | [ #(LitLoc lv);  #(LitLoc lrc) ] =>
-           ∃ ν γ β ty', &{α ⊓ ν}(lv ↦∗: ty.(ty_own) tid) ∗
+           ∃ ν q γ β ty', &{α ⊓ ν}(lv ↦∗: ty.(ty_own) tid) ∗
              α ⊑ β ∗ &na{β, tid, refcell_invN}(refcell_inv tid lrc γ β ty') ∗
-             1.[ν] ∗ own γ (◯ writing_st ν)
+             q.[ν] ∗ own γ (◯ writing_stR q ν)
          | _ => False
          end;
        ty_shr κ tid l :=
@@ -45,17 +45,18 @@ Section refmut.
     destruct vl as [|[[|lv|]|][|[[|lrc|]|][]]];
       try by iMod (bor_persistent with "LFT Hb Htok") as "[>[] _]".
     iMod (bor_exists with "LFT Hb") as (ν) "Hb". done.
+    iMod (bor_exists with "LFT Hb") as (q') "Hb". done.
     iMod (bor_exists with "LFT Hb") as (γ) "Hb". done.
     iMod (bor_exists with "LFT Hb") as (β) "Hb". done.
     iMod (bor_exists with "LFT Hb") as (ty') "Hb". done.
-    rewrite (assoc _ _ (α ⊑ β)%I). iMod (bor_sep with "LFT Hb") as "[Hb H]". done.
-    rewrite (comm _ (1).[ν])%I. rewrite (assoc _ _ _ (1).[ν])%I.
-    iMod (bor_sep with "LFT H") as "[_ H]". done.
-    iMod (bor_fracture (λ q, (1 * q).[ν])%I with "LFT [H]") as "H". done.
-    { by rewrite Qp_mult_1_l. }
-    iDestruct (frac_bor_lft_incl _ _ 1 with "LFT H") as "#Hκν". iClear "H".
-    iMod (bor_sep with "LFT Hb") as "[Hb Hαβ]". done.
+    iMod (bor_sep with "LFT Hb") as "[Hb H]". done.
+    iMod (bor_sep with "LFT H") as "[Hαβ H]". done.
     iMod (bor_persistent with "LFT Hαβ Htok") as "[#Hαβ $]". done.
+    iMod (bor_sep with "LFT H") as "[_ H]". done.
+    iMod (bor_sep with "LFT H") as "[H _]". done.
+    iMod (bor_fracture (λ q, (q' * q).[ν])%I with "LFT [H]") as "H". done.
+    { by rewrite Qp_mult_1_r. }
+    iDestruct (frac_bor_lft_incl with "LFT H") as "#Hκν". iClear "H".
     iExists _, _. iFrame "H↦". iApply delay_sharing_nested; try done.
     rewrite -assoc. iApply lft_intersect_mono; first by iApply lft_incl_refl.
     iApply lft_incl_glb; first done. iApply lft_incl_refl.
@@ -89,8 +90,8 @@ Section refmut.
     iDestruct ("Hty" with "HE") as "(%&#Ho&#Hs)". iSplit; [|iSplit; iAlways].
     - done.
     - iIntros (tid [|[[]|][|[[]|][]]]) "H"; try done.
-      iDestruct "H" as (ν γ β ty') "(Hb & #H⊑ & #Hinv & Hν & Hown)".
-      iExists ν, γ, β, ty'. iFrame "∗#". iSplit.
+      iDestruct "H" as (ν γ q' β ty') "(Hb & #H⊑ & #Hinv & Hν & Hown)".
+      iExists ν, γ, q', β, ty'. iFrame "∗#". iSplit.
       + iApply bor_shorten; last iApply bor_iff; last done.
         * iApply lft_intersect_mono; first done. iApply lft_incl_refl.
         * iNext; iAlways; iSplit; iIntros "H"; iDestruct "H" as (vl) "[??]";

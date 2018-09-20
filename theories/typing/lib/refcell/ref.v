@@ -26,7 +26,7 @@ Section ref.
          | [ #(LitLoc lv);  #(LitLoc lrc) ] =>
            ∃ ν q γ β ty', ty.(ty_shr) (α ⊓ ν) tid lv ∗
              α ⊑ β ∗ &na{β, tid, refcell_invN}(refcell_inv tid lrc γ β ty') ∗
-             q.[ν] ∗ own γ (◯ reading_st q ν)
+             q.[ν] ∗ own γ (◯ reading_stR q ν)
          | _ => False
          end;
        ty_shr κ tid l :=
@@ -34,7 +34,7 @@ Section ref.
              κ ⊑ ν ∗ &frac{κ} (λ q, l↦∗{q} [ #lv; #lrc]) ∗
              ▷ ty.(ty_shr) (α ⊓ ν) tid lv ∗
              ▷ (α ⊑ β) ∗ ▷ &na{β, tid, refcell_invN}(refcell_inv tid lrc γ β ty') ∗
-             &na{κ, tid, refcell_refN}(own γ (◯ reading_st q ν)) |}%I.
+             &na{κ, tid, refcell_refN}(own γ (◯ reading_stR q ν)) |}%I.
   Next Obligation. iIntros (???[|[[]|][|[[]|][]]]) "?"; auto. Qed.
   Next Obligation.
     iIntros (α ty E κ l tid q ?) "#LFT Hb Htok".
