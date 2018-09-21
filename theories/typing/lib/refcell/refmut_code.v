@@ -220,4 +220,119 @@ Section refmut_functions.
       iFrame. destruct r' as [[]|]=>//=. auto 10 with iFrame. }
     iApply type_jump; solve_typing.
   Qed.
+
+  (* Apply a function within the refmut, and create two refmuts,
+     typically for splitting the reference. *)
+  Definition refmut_map_split (call_once : val) : val :=
+    funrec: <> ["refmut"; "f"] :=
+      let: "call_once" := call_once in
+      let: "x'" := !"refmut" in
+
+      letalloc: "x" <- "x'" in
+      letcall: "r" := "call_once" ["f"; "x"]%E in
+      let: "a" := !"r" in
+      let: "b" := !("r" +ₗ #1) in
+      delete [ #2; "r"];;
+
+      let: "rc" := !("refmut" +ₗ #1) in
+      let: "n" := !"rc" in
+      "rc" <- "n" - #1;;
+
+      delete [ #2; "refmut"];;
+
+      let: "refmuts" := new [ #4 ] in
+      "refmuts" <- "a";;
+      "refmuts" +ₗ #1 <- "rc";;
+      "refmuts" +ₗ #2 <- "b";;
+      "refmuts" +ₗ #3 <- "rc";;
+
+      return: ["refmuts"].
+
+  Lemma refmut_map_split_type ty ty1 ty2 call_once fty
+        `{!TyWf ty, !TyWf ty1, !TyWf ty2, !TyWf fty} :
+    (* fty : for<'a>, FnOnce(&mut'a ty) -> (&mut'a ty1, &mut'a ty2),
+       as witnessed by the impl call_once *)
+    typed_val call_once
+              (fn(∀ α, ∅; fty, &uniq{α}ty) → Π[&uniq{α}ty1; &uniq{α}ty2]) →
+    typed_val (refmut_map_split call_once)
+              (fn(∀ α, ∅; refmut α ty, fty) → Π[refmut α ty1; refmut α ty2]).
+  Proof.
+    intros Hf E L. iApply type_fn; [solve_typing..|]. iIntros "/= !#". iIntros (α ϝ ret arg).
+       inv_vec arg=>refmut env. simpl_subst.
+    iApply type_let; [apply Hf | solve_typing |]. iIntros (f'). simpl_subst.
+    iIntros (tid) "#LFT #HE Hna HL Hk (#Hf' & Hrefmut & Henv & _)".
+    rewrite (tctx_hasty_val _ refmut). destruct refmut as [[|lrefmut|]|]; try done.
+    iDestruct "Hrefmut" as "[Hrefmut Hrefmut†]".
+    iDestruct "Hrefmut" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Hrefmut";
+      try iDestruct "Hrefmut" as "[_ >[]]".
+    rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
+    iDestruct "Hrefmut" as "[[Hrefmut↦1 Hrefmut↦2] Hrefmut]".
+    iDestruct "Hrefmut" as (ν qν γ β ty') "(Hbor & #Hαβ & #Hinv & >Hν & Hγ)".
+    wp_read. wp_let. wp_apply wp_new; [done..|].
+    iIntros (lx) "(H† & Hlx)". rewrite heap_mapsto_vec_singleton.
+    wp_let. wp_write. wp_let. rewrite tctx_hasty_val.
+    iMod (lctx_lft_alive_tok α with "HE HL") as (?) "(Hα & HL & Hclose1)";[solve_typing..|].
+    iMod (lctx_lft_alive_tok ϝ with "HE HL") as (?) "(Hϝ & HL & Hclose2)";[solve_typing..|].
+    iDestruct (lft_intersect_acc with "Hα Hν") as (?) "[Hαν Hclose3]".
+    iDestruct (lft_intersect_acc with "Hαν Hϝ") as (?) "[Hανϝ Hclose4]".
+    rewrite -[ϝ in (α ⊓ ν) ⊓ ϝ](right_id_L).
+    iApply (type_call_iris _ [α ⊓ ν; ϝ] (α ⊓ ν) [_; _]
+       with "LFT HE Hna [Hανϝ] Hf' [$Henv Hlx H† Hbor]"); [solve_typing|done| |].
+    { rewrite big_sepL_singleton tctx_hasty_val' //. rewrite /= freeable_sz_full.
+      iFrame. iExists [_]. rewrite heap_mapsto_vec_singleton. by iFrame. }
+    iIntros ([[|r|]|]) "Hna Hανϝ Hr //".
+    iDestruct ("Hclose4" with "Hανϝ") as "[Hαν Hϝ]".
+    iDestruct ("Hclose3" with "Hαν") as "[Hα Hν]".
+    iMod ("Hclose2" with "Hϝ HL") as "HL".
+    wp_rec. iDestruct "Hr" as "[Hr Hr†]".
+    iDestruct "Hr" as (?) "[Hr H]". iDestruct "H" as (vl1 ? ->) "[Hr1' H]".
+    iDestruct "H" as (vl2 ? ->) "[Hr2' ->]".
+    destruct vl1 as [|[[|lr1|]|] []], vl2 as [|[[|lr2|]|] []]=>//=.
+    rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
+    iDestruct "Hr" as "[Hr1 Hr2]". wp_read. wp_let. wp_op. wp_read. wp_let.
+    wp_apply (wp_delete _ _ _ [_; _] with "[Hr1 Hr2 Hr†]")=>//.
+    { rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton /= freeable_sz_full.
+      iFrame. }
+    iIntros "_".
+    iMod (lft_incl_acc  with "Hαβ Hα") as (?) "[Hβ Hβclose]". done.
+    iMod (na_bor_acc with "LFT Hinv Hβ Hna") as "(INV & Hna & Hclosena)"; [done..|].
+    wp_seq. wp_op. wp_read.
+    iDestruct "INV" as (st) "(Hlrc & H● & Hst)".
+    iDestruct (own_valid_2 with "H● Hγ") as %[Hst _]%auth_valid_discrete_2.
+    destruct st as [[[[??]?]?]|]; last by destruct Hst as [[?|] Hst]; inversion Hst.
+    move:Hst=>/Some_pair_included [/Some_pair_included_total_1
+              [/to_agree_included /(leibniz_equiv _ _) [= <- <-] _] _].
+    iDestruct "Hst" as "(H† & Hq & _)". iDestruct "Hq" as (q' Hqq') "[Hν1 Hν2]".
+    iMod (own_update with "H●") as "[H● ?]".
+    { apply auth_update_alloc,
+         (op_local_update_discrete _ _ (writing_stR (q'/2)%Qp ν))=>-[Hagv _].
+      split; [split|done].
+      - by rewrite /= agree_idemp.
+      - apply frac_valid'. rewrite -Hqq' comm -{2}(Qp_div_2 q').
+        apply Qcplus_le_mono_l. rewrite -{1}(Qcplus_0_l (q'/2)%Qp).
+        apply Qcplus_le_mono_r, Qp_ge_0. }
+    wp_let. wp_read. wp_let. wp_op. wp_write.
+    wp_apply (wp_delete _ _ _ [_; _] with "[Hrefmut↦1 Hrefmut↦2 Hrefmut†]")=>//.
+    { rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton /= freeable_sz_full.
+      iFrame. }
+    iIntros "_". wp_seq. wp_apply wp_new; [done..|]. iIntros (lrefmuts) "[Hrefmuts† Hrefmuts]".
+    rewrite 3!heap_mapsto_vec_cons heap_mapsto_vec_singleton. wp_let.
+    iDestruct "Hrefmuts" as "(Hrefmuts1 & Hrefmuts2 & Hrefmuts3 & Hrefmuts4)".
+    rewrite !shift_loc_assoc. wp_write. do 3 (wp_op; wp_write).
+    iMod ("Hclosena" with "[Hlrc H● Hν1 H†] Hna") as "[Hβ Hna]".
+    { iExists (Some (_, true, _, _)).
+      rewrite -Some_op !pair_op agree_idemp /= (comm _ xH _).
+      iFrame. iSplitL; [|done]. iExists _. iFrame.
+      rewrite (comm Qp_plus) (assoc Qp_plus) Qp_div_2 (comm Qp_plus). auto. }
+    iMod ("Hβclose" with "Hβ") as "Hα". iMod ("Hclose1" with "Hα HL") as "HL".
+    iApply (type_type _ [_] _ [ #lrefmuts ◁ box (Π[refmut α ty1; refmut α ty2]) ]
+       with "[] LFT HE Hna HL Hk"); first last.
+    { rewrite tctx_interp_singleton tctx_hasty_val' //= -freeable_sz_full.
+      iFrame. iExists [_;_;_;_].
+      rewrite 3!heap_mapsto_vec_cons heap_mapsto_vec_singleton !shift_loc_assoc.
+      iFrame. iExists [_;_], [_;_]. iSplit=>//=.
+      iSplitL "Hν Hγ Hr1'"; [by auto 10 with iFrame|]. iExists [_;_], [].
+      iSplitR=>//=. rewrite right_id. auto 20 with iFrame. }
+    iApply type_jump; solve_typing.
+  Qed.
 End refmut_functions.
