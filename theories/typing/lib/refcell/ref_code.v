@@ -54,7 +54,7 @@ Section ref_functions.
     iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
+    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]=>//=.
     iDestruct "Hx'" as (ν q γ δ ty' lv lrc) "#(Hαν & Hfrac & Hshr & Hβδ & Hinv & H◯inv)".
     wp_op.
     iMod (lctx_lft_alive_tok β with "HE HL") as (qβ) "(Hβ & HL & Hclose)"; [solve_typing..|].
@@ -92,8 +92,8 @@ Section ref_functions.
            [ x ◁ box (&shr{α}(ref β ty)); #lr ◁ box(ref β ty)]
         with "[] LFT HE Hna HL Hk"); first last.
     { rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
-      rewrite /= freeable_sz_full. iFrame. iExists _. iFrame. iExists _, _, _, _, _.
-      iFrame "∗#". }
+      rewrite /= freeable_sz_full. iFrame. iExists _. iFrame. simpl.
+      iExists _, _, _, _, _. iFrame "∗#". }
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.
@@ -115,7 +115,7 @@ Section ref_functions.
     iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
+    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]=>//=.
     iDestruct "Hx'" as (ν q γ δ ty' lv lrc) "#(Hαν & Hfrac & Hshr & Hx')".
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)"; [solve_typing..|].
     iMod (frac_bor_acc with "LFT Hfrac Hα") as (qlx') "[H↦ Hcloseα]". done.
@@ -150,7 +150,8 @@ Section ref_functions.
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iIntros (tid) "#LFT #HE Hna HL Hk Hx". rewrite tctx_interp_singleton tctx_hasty_val.
     destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
-    iDestruct "Hx" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Hx"; try iDestruct "Hx" as "[_ >[]]".
+    iDestruct "Hx" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Hx"; simpl;
+      try iDestruct "Hx" as "[_ >[]]".
     rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
     iDestruct "Hx" as "[[Hx↦1 Hx↦2] Hx]". wp_op. wp_read. wp_let.
     iDestruct "Hx" as (ν q γ β ty') "(_ & #Hαβ & #Hinv & Hν & H◯)".
@@ -215,7 +216,7 @@ Section ref_functions.
     iIntros (tid) "#LFT #HE Hna HL Hk (#Hf' & Href & Henv & _)".
     rewrite (tctx_hasty_val _ ref). destruct ref as [[|lref|]|]; try done.
     iDestruct "Href" as "[Href Href†]".
-    iDestruct "Href" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Href";
+    iDestruct "Href" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Href"; simpl;
       try iDestruct "Href" as "[_ >[]]".
     rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
     iDestruct "Href" as "[[Href↦1 Href↦2] Href]".
@@ -245,7 +246,7 @@ Section ref_functions.
     wp_seq. wp_write.
     iApply (type_type _ [_] _ [ #lref ◁ box (ref α ty2) ]
        with "[] LFT HE Hna HL Hk"); first last.
-    { rewrite tctx_interp_singleton tctx_hasty_val' //. iFrame.
+    { rewrite tctx_interp_singleton tctx_hasty_val' //. simpl. iFrame.
       iExists [_;_]. rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
       iFrame. destruct r' as [[]|]=>//=. auto 10 with iFrame. }
     iApply type_jump; solve_typing.
@@ -293,7 +294,7 @@ Section ref_functions.
     iIntros (tid) "#LFT #HE Hna HL Hk (#Hf' & Href & Henv & _)".
     rewrite (tctx_hasty_val _ ref). destruct ref as [[|lref|]|]; try done.
     iDestruct "Href" as "[Href Href†]".
-    iDestruct "Href" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Href";
+    iDestruct "Href" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Href"; simpl;
       try iDestruct "Href" as "[_ >[]]".
     rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
     iDestruct "Href" as "[[Href↦1 Href↦2] Href]".
@@ -354,7 +355,7 @@ Section ref_functions.
     iApply (type_type _ [_] _ [ #lrefs ◁ box (Π[ref α ty1; ref α ty2]) ]
        with "[] LFT HE Hna HL Hk"); first last.
     { rewrite tctx_interp_singleton tctx_hasty_val' //= -freeable_sz_full.
-      iFrame. iExists [_;_;_;_].
+      simpl. iFrame. iExists [_;_;_;_].
       rewrite 3!heap_mapsto_vec_cons heap_mapsto_vec_singleton !shift_loc_assoc.
       iFrame. iExists [_;_], [_;_]. iSplit=>//=.
       iSplitL "Hν H◯"; [by auto 10 with iFrame|]. iExists [_;_], [].

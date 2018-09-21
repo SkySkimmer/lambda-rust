@@ -26,7 +26,7 @@ Section refmut_functions.
     iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
+    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]=>//=.
     iDestruct "Hx'" as (lv lrc) "#(Hfrac & #Hshr)".
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "([Hα1 Hα2] & HL & Hclose')";
       [solve_typing..|].
@@ -35,7 +35,7 @@ Section refmut_functions.
     iMod (lctx_lft_alive_tok β with "HE HL") as (qβ) "(Hβ & HL & Hclose'')";
       [solve_typing..|].
     iDestruct (lft_intersect_acc with "Hβ Hα2") as (qβα) "[Hα2β Hcloseβα2]".
-    wp_bind (!(LitV lx'))%E. iApply (wp_step_fupd with "[Hα2β]");
+    wp_bind (!#lx')%E. iApply (wp_step_fupd with "[Hα2β]");
          [done| |by iApply ("Hshr" with "[] Hα2β")|]; first done.
     iMod "H↦" as "[H↦1 H↦2]". wp_read. iIntros "[#Hshr' Hα2β] !>". wp_let.
     iDestruct ("Hcloseβα2" with "Hα2β") as "[Hβ Hα2]".
@@ -69,7 +69,7 @@ Section refmut_functions.
     iMod (bor_sep with "LFT H") as "[H↦ H]". done.
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose')";
       [solve_typing..|].
-    destruct vl as [|[[|lv|]|][|[[|lrc|]|][]]];
+    destruct vl as [|[[|lv|]|][|[[|lrc|]|][]]]; simpl;
       try by iMod (bor_persistent with "LFT H Hα") as "[>[] _]".
     iMod (bor_exists with "LFT H") as (ν) "H". done.
     iMod (bor_exists with "LFT H") as (q) "H". done.
@@ -86,7 +86,7 @@ Section refmut_functions.
     iDestruct (frac_bor_lft_incl _ _ q with "LFT H") as "#Hαν". iClear "H".
     rewrite heap_mapsto_vec_cons. iMod (bor_sep with "LFT H↦") as "[H↦ _]". done.
     iMod (bor_acc with "LFT H↦ Hα") as "[H↦ Hcloseα]". done.
-    wp_bind (!(LitV lx'))%E. iMod (bor_unnest with "LFT Hb") as "Hb"; first done.
+    wp_bind (!#lx')%E. iMod (bor_unnest with "LFT Hb") as "Hb"; first done.
     wp_read. wp_let. iMod "Hb".
     iMod ("Hcloseα" with "[$H↦]") as "[_ Hα]". iMod ("Hclose'" with "Hα HL") as "HL".
     iDestruct (lctx_lft_incl_incl α β with "HL HE") as "#Hαβ"; [solve_typing..|].
@@ -117,7 +117,8 @@ Section refmut_functions.
       iIntros (α ϝ ret arg). inv_vec arg=>x. simpl_subst.
     iIntros (tid) "#LFT #HE Hna HL Hk Hx". rewrite tctx_interp_singleton tctx_hasty_val.
     destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
-    iDestruct "Hx" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Hx"; try iDestruct "Hx" as "[_ >[]]".
+    iDestruct "Hx" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Hx"; simpl;
+      try iDestruct "Hx" as "[_ >[]]".
     rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
     iDestruct "Hx" as "[[Hx↦1 Hx↦2] Hx]". wp_op. wp_read. wp_let.
     iDestruct "Hx" as (ν q γ β ty') "(Hb & #Hαβ & #Hinv & Hν & H◯)".
@@ -185,7 +186,7 @@ Section refmut_functions.
     iIntros (tid) "#LFT #HE Hna HL Hk (#Hf' & Href & Henv & _)".
     rewrite (tctx_hasty_val _ ref). destruct ref as [[|lref|]|]; try done.
     iDestruct "Href" as "[Href Href†]".
-    iDestruct "Href" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Href";
+    iDestruct "Href" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Href"; simpl;
       try iDestruct "Href" as "[_ >[]]".
     rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
     iDestruct "Href" as "[[Href↦1 Href↦2] Href]".
@@ -215,7 +216,7 @@ Section refmut_functions.
     wp_seq. wp_write.
     iApply (type_type _ [_] _ [ #lref ◁ box (refmut α ty2) ]
        with "[] LFT HE Hna HL Hk"); first last.
-    { rewrite tctx_interp_singleton tctx_hasty_val' //. iFrame.
+    { rewrite tctx_interp_singleton tctx_hasty_val' //. simpl. iFrame.
       iExists [_;_]. rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
       iFrame. destruct r' as [[]|]=>//=. auto 10 with iFrame. }
     iApply type_jump; solve_typing.
@@ -263,7 +264,7 @@ Section refmut_functions.
     iIntros (tid) "#LFT #HE Hna HL Hk (#Hf' & Hrefmut & Henv & _)".
     rewrite (tctx_hasty_val _ refmut). destruct refmut as [[|lrefmut|]|]; try done.
     iDestruct "Hrefmut" as "[Hrefmut Hrefmut†]".
-    iDestruct "Hrefmut" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Hrefmut";
+    iDestruct "Hrefmut" as ([|[[|lv|]|][|[[|lrc|]|][]]]) "Hrefmut"; simpl;
       try iDestruct "Hrefmut" as "[_ >[]]".
     rewrite {1}heap_mapsto_vec_cons heap_mapsto_vec_singleton.
     iDestruct "Hrefmut" as "[[Hrefmut↦1 Hrefmut↦2] Hrefmut]".
@@ -328,7 +329,7 @@ Section refmut_functions.
     iApply (type_type _ [_] _ [ #lrefmuts ◁ box (Π[refmut α ty1; refmut α ty2]) ]
        with "[] LFT HE Hna HL Hk"); first last.
     { rewrite tctx_interp_singleton tctx_hasty_val' //= -freeable_sz_full.
-      iFrame. iExists [_;_;_;_].
+      simpl. iFrame. iExists [_;_;_;_].
       rewrite 3!heap_mapsto_vec_cons heap_mapsto_vec_singleton !shift_loc_assoc.
       iFrame. iExists [_;_], [_;_]. iSplit=>//=.
       iSplitL "Hν Hγ Hr1'"; [by auto 10 with iFrame|]. iExists [_;_], [].

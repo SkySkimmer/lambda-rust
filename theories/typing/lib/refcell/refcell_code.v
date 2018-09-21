@@ -36,10 +36,10 @@ Section refcell_functions.
     iIntros "[Hr↦1 Hx↦]". wp_seq.
     iApply (type_type _ _ _ [ #lx ◁ box (uninit (ty_size ty)); #lr ◁ box (refcell ty)]
         with "[] LFT HE Hna HL Hk [-]"); last first.
-    { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //=. iFrame.
-      iSplitL "Hx↦".
+    { rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val' //=.
+      iFrame. iSplitL "Hx↦".
       - iExists _. rewrite uninit_own. auto.
-      - iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame. }
+      - simpl. iFrame. iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame=>//=. }
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
   Qed.
@@ -63,7 +63,7 @@ Section refcell_functions.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hr Hx]".
     iDestruct (ownptr_own with "Hx") as (lx vlx) "(% & >Hx↦ & Hx & Hx†)". subst x.
-    inv_vec vlx=>-[[|?|?]|????] vl; try iDestruct "Hx" as ">[]". simpl vec_to_list.
+    inv_vec vlx=>-[[|?|?]|????] vl; simpl; try iDestruct "Hx" as ">[]".
     iDestruct (heap_mapsto_vec_cons with "Hx↦") as "[Hx↦0 Hx↦1]".
     iDestruct (ownptr_uninit_own with "Hr") as (lr vlr) "(% & Hr↦ & Hr†)". subst r.
     wp_op. wp_apply (wp_memcpy with "[$Hr↦ $Hx↦1]"); [by auto using vec_to_list_length..|].
@@ -99,8 +99,10 @@ Section refcell_functions.
         (&uniq{α} ty).(ty_own) tid [ #(lx' +ₗ 1)])%I with "[> Hx']" as "[_ Hx']".
     { iApply bor_sep; [done..|]. iApply (bor_proper with "Hx'"). iSplit.
       - iIntros "[H1 H2]". iDestruct "H1" as (z) "?". iDestruct "H2" as (vl) "[??]".
-        iExists (_::_). rewrite heap_mapsto_vec_cons. by iFrame.
-      - iIntros "H". iDestruct "H" as ([|[[| |z]|]vl]) "[H↦ H]"; try iDestruct "H" as "[]".
+        iExists (_::_). rewrite heap_mapsto_vec_cons /=. iFrame=>//=.
+      - iIntros "H".
+        iDestruct "H" as ([|[[| |z]|]vl]) "[H↦ H]";
+          simpl; try iDestruct "H" as "[]".
         rewrite heap_mapsto_vec_cons. iDestruct "H↦" as "[H↦1 H↦2]".
         iSplitL "H↦1"; eauto. iExists _. iFrame. }
     destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
@@ -150,7 +152,7 @@ Section refcell_functions.
     iApply type_deref; [solve_typing..|].
     iIntros (x' tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
     rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "(Hx & Hx' & Hr)". destruct x' as [[|lx|]|]; try done.
+    iDestruct "HT" as "(Hx & Hx' & Hr)". destruct x' as [[|lx|]|]=>//=.
     iDestruct "Hx'" as (β γ) "#[Hαβ Hinv]".
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)"; [solve_typing..|].
     iMod (lft_incl_acc with "Hαβ Hα") as (qβ) "[[Hβtok1 Hβtok2] Hclose']". done.
@@ -213,7 +215,7 @@ Section refcell_functions.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame.
         rewrite tctx_hasty_val' //. rewrite /= freeable_sz_full. iFrame.
         iExists [_; _]. rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
-        iFrame. iExists _, _, _, _, _. iFrame "∗#". iApply ty_shr_mono; try by auto.
+        iFrame. simpl. iExists _, _, _, _, _. iFrame "∗#". iApply ty_shr_mono; try by auto.
         iApply lft_intersect_mono. done. iApply lft_incl_refl. }
       iApply (type_sum_memcpy (option $ ref α ty)); [solve_typing..|].
       simpl. iApply type_delete; [solve_typing..|].
@@ -257,7 +259,7 @@ Section refcell_functions.
     iApply type_deref; [solve_typing..|].
     iIntros (x' tid) "#LFT #HE Hna HL Hk HT". simpl_subst.
     rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "(Hx & Hx' & Hr)". destruct x' as [[|lx|]|]; try done.
+    iDestruct "HT" as "(Hx & Hx' & Hr)". destruct x' as [[|lx|]|]=>//=.
     iDestruct "Hx'" as (β γ) "#[Hαβ Hinv]".
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)"; [solve_typing..|].
     iMod (lft_incl_acc with "Hαβ Hα") as (qβ) "[Hβtok Hclose']". done.
@@ -288,7 +290,8 @@ Section refcell_functions.
       { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val. iFrame.
         rewrite tctx_hasty_val' //. rewrite /= freeable_sz_full. iFrame.
         iExists [_; _]. rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton.
-        iFrame. iExists _, _, _, _, _. iFrame "#∗". iApply (bor_shorten with "[] [$Hb]").
+        iFrame. simpl.
+        iExists _, _, _, _, _. iFrame "#∗". iApply (bor_shorten with "[] [$Hb]").
         iApply lft_intersect_mono; first done. iApply lft_incl_refl. }
       iApply (type_sum_memcpy (option $ refmut α ty)); [solve_typing..|].
       simpl. iApply type_delete; [solve_typing..|].

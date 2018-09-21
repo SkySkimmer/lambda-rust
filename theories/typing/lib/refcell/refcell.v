@@ -104,6 +104,7 @@ Section refcell.
   *)
 
   Program Definition refcell (ty : type) :=
+    tc_opaque
     {| ty_size := S ty.(ty_size);
        ty_own tid vl :=
          match vl return _ with
@@ -188,8 +189,8 @@ Section refcell.
     iIntros "!# #HE". iDestruct ("EQ'" with "HE") as "(% & #Hown & #Hshr)".
     iSplit; [|iSplit; iIntros "!# * H"].
     - iPureIntro. simpl. congruence.
-    - destruct vl as [|[[]|]]; try done. by iApply "Hown".
-    - iDestruct "H" as (a γ) "[Ha H]". iExists a, γ. iFrame.
+    - destruct vl as [|[[]|]]=>//=. by iApply "Hown".
+    - simpl. iDestruct "H" as (a γ) "[Ha H]". iExists a, γ. iFrame.
       iApply na_bor_iff; last done. iNext; iAlways; iSplit; iIntros "H".
       by iApply "Hty1ty2". by iApply "Hty2ty1".
   Qed.

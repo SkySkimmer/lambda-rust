@@ -20,6 +20,7 @@ Section refmut.
      to the refcount field of the RefCell. *)
 
   Program Definition refmut (α : lft) (ty : type) :=
+    tc_opaque
     {| ty_size := 2;
        ty_own tid vl :=
          match vl return _ with
@@ -89,7 +90,7 @@ Section refmut.
     iIntros "!# #HE". iDestruct ("Hα" with "HE") as "Hα1α2".
     iDestruct ("Hty" with "HE") as "(%&#Ho&#Hs)". iSplit; [|iSplit; iAlways].
     - done.
-    - iIntros (tid [|[[]|][|[[]|][]]]) "H"; try done.
+    - iIntros (tid [|[[]|][|[[]|][]]]) "H"=>//=.
       iDestruct "H" as (ν γ q' β ty') "(Hb & #H⊑ & #Hinv & Hν & Hown)".
       iExists ν, γ, q', β, ty'. iFrame "∗#". iSplit.
       + iApply bor_shorten; last iApply bor_iff; last done.
@@ -97,7 +98,7 @@ Section refmut.
         * iNext; iAlways; iSplit; iIntros "H"; iDestruct "H" as (vl) "[??]";
           iExists vl; iFrame; by iApply "Ho".
       + by iApply lft_incl_trans.
-    - iIntros (κ tid l) "H". iDestruct "H" as (lv lrc) "H". iExists lv, lrc.
+    - iIntros (κ tid l) "H /=". iDestruct "H" as (lv lrc) "H". iExists lv, lrc.
       iDestruct "H" as "[$ #H]". iIntros "!# * % Htok".
       iMod (lft_incl_acc with "[] Htok") as (q') "[Htok Hclose]"; first solve_ndisj.
       { iApply lft_intersect_mono. done. iApply lft_incl_refl. }

@@ -20,6 +20,7 @@ Section ref.
   *)
 
   Program Definition ref (α : lft) (ty : type) :=
+    tc_opaque
     {| ty_size := 2;
        ty_own tid vl :=
          match vl return _ with
@@ -84,13 +85,13 @@ Section ref.
     iIntros "!# #HE". iDestruct ("Hα" with "HE") as "Hα1α2".
     iDestruct ("Hty" with "HE") as "(%&#Ho&#Hs)". iSplit; [|iSplit; iAlways].
     - done.
-    - iIntros (tid [|[[]|][|[[]|][]]]) "H"; try done.
+    - iIntros (tid [|[[]|][|[[]|][]]]) "H"=>//=.
       iDestruct "H" as (ν q' γ β ty') "(#Hshr & #H⊑ & #Hinv & Htok & Hown)".
       iExists ν, q', γ, β, ty'. iFrame "∗#". iSplit.
       + iApply ty_shr_mono; last by iApply "Hs".
         iApply lft_intersect_mono. done. iApply lft_incl_refl.
       + by iApply lft_incl_trans.
-    - iIntros (κ tid l) "H". iDestruct "H" as (ν q' γ β ty' lv lrc) "H".
+    - iIntros (κ tid l) "H /=". iDestruct "H" as (ν q' γ β ty' lv lrc) "H".
       iExists ν, q', γ, β, ty', lv, lrc. iDestruct "H" as "#($&$&?&?&$&$)". iSplit.
       + iApply ty_shr_mono; last by iApply "Hs".
         iApply lft_intersect_mono. done. iApply lft_incl_refl.
