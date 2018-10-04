@@ -228,7 +228,7 @@ Ltac inv_head_step :=
     apply (f_equal (to_val)) in H; rewrite to_of_val in H;
     injection H; clear H; intro
   | H : context [to_val (of_val _)] |- _ => rewrite to_of_val in H
-  | H : head_step ?e _ _ _ _ |- _ =>
+  | H : head_step ?e _ _ _ _ _ |- _ =>
      try (is_var e; fail 1); (* inversion yields many goals if [e] is a variable
      and can thus better be avoided. *)
      inversion H; subst; clear H

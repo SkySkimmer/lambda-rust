@@ -13,7 +13,7 @@ Class lrustG Σ := LRustG {
 
 Instance lrustG_irisG `{lrustG Σ} : irisG lrust_lang Σ := {
   iris_invG := lrustG_invG;
-  state_interp := heap_ctx
+  state_interp σ κs := heap_ctx σ
 }.
 Global Opaque iris_invG.
 
@@ -29,7 +29,7 @@ Ltac inv_bin_op_eval :=
   end.
 
 Local Hint Extern 0 (atomic _) => solve_atomic.
-Local Hint Extern 0 (head_reducible _ _) => eexists _, _, _; simpl.
+Local Hint Extern 0 (head_reducible _ _) => eexists _, _, _, _; simpl.
 
 Local Hint Constructors head_step bin_op_eval lit_neq lit_eq.
 Local Hint Resolve alloc_fresh.
@@ -138,7 +138,7 @@ Lemma wp_alloc E (n : Z) :
   {{{ l (sz: nat), RET LitV $ LitLoc l; ⌜n = sz⌝ ∗ †l…sz ∗ l ↦∗ repeat (LitV LitPoison) sz }}}.
 Proof.
   iIntros (? Φ) "_ HΦ". iApply wp_lift_atomic_head_step_no_fork; auto.
-  iIntros (σ1) "Hσ !>"; iSplit; first by auto.
+  iIntros (σ1 ??) "Hσ !>"; iSplit; first by auto.
   iNext; iIntros (v2 σ2 efs Hstep); inv_head_step.
   iMod (heap_alloc with "Hσ") as "[Hσ Hl]"; [done..|].
   iModIntro; iSplit=> //. iFrame.
@@ -152,7 +152,7 @@ Lemma wp_free E (n:Z) l vl :
   {{{ RET LitV LitPoison; True }}}.
 Proof.
   iIntros (? Φ) "[>Hmt >Hf] HΦ". iApply wp_lift_atomic_head_step_no_fork; auto.
-  iIntros (σ1) "Hσ".
+  iIntros (σ1 ??) "Hσ".
   iMod (heap_free _ _ _ n with "Hσ Hmt Hf") as "(% & % & Hσ)"=>//.
   iModIntro; iSplit; first by auto.
   iNext; iIntros (v2 σ2 efs Hstep); inv_head_step.
@@ -164,7 +164,7 @@ Lemma wp_read_sc E l q v :
   {{{ RET v; l ↦{q} v }}}.
 Proof.
   iIntros (?) ">Hv HΦ". iApply wp_lift_atomic_head_step_no_fork; auto.
-  iIntros (σ1) "Hσ". iDestruct (heap_read with "Hσ Hv") as %[n ?].
+  iIntros (σ1 ??) "Hσ". iDestruct (heap_read with "Hσ Hv") as %[n ?].
   iModIntro; iSplit; first by eauto.
   iNext; iIntros (v2 σ2 efs Hstep); inv_head_step.
   iModIntro; iSplit=> //. iFrame. by iApply "HΦ".
@@ -174,7 +174,7 @@ Lemma wp_read_na E l q v :
   {{{ ▷ l ↦{q} v }}} Read Na1Ord (Lit $ LitLoc l) @ E
   {{{ RET v; l ↦{q} v }}}.
 Proof.
-  iIntros (Φ) ">Hv HΦ". iApply wp_lift_head_step; auto. iIntros (σ1) "Hσ".
+  iIntros (Φ) ">Hv HΦ". iApply wp_lift_head_step; auto. iIntros (σ1 ??) "Hσ".
   iMod (heap_read_na with "Hσ Hv") as (n) "(% & Hσ & Hσclose)".
   iMod (fupd_intro_mask' _ ∅) as "Hclose"; first set_solver.
   iModIntro; iSplit; first by eauto.
@@ -182,7 +182,7 @@ Proof.
   iModIntro. iFrame "Hσ". iSplit; last done.
   clear dependent σ1 n.
   iApply wp_lift_atomic_head_step_no_fork; auto.
-  iIntros (σ1) "Hσ". iMod ("Hσclose" with "Hσ") as (n) "(% & Hσ & Hv)".
+  iIntros (σ1 ??) "Hσ". iMod ("Hσclose" with "Hσ") as (n) "(% & Hσ & Hv)".
   iModIntro; iSplit; first by eauto.
   iNext; iIntros (e2 σ2 efs Hstep) "!>"; inv_head_step.
   iFrame "Hσ". iSplit; [done|]. by iApply "HΦ".
@@ -194,7 +194,7 @@ Lemma wp_write_sc E l e v v' :
   {{{ RET LitV LitPoison; l ↦ v }}}.
 Proof.
   iIntros (<- Φ) ">Hv HΦ". iApply wp_lift_atomic_head_step_no_fork; auto.
-  iIntros (σ1) "Hσ". iDestruct (heap_read_1 with "Hσ Hv") as %?.
+  iIntros (σ1 ??) "Hσ". iDestruct (heap_read_1 with "Hσ Hv") as %?.
   iMod (heap_write _ _ _  v with "Hσ Hv") as "[Hσ Hv]".
   iModIntro; iSplit; first by eauto.
   iNext; iIntros (v2 σ2 efs Hstep); inv_head_step.
@@ -207,14 +207,14 @@ Lemma wp_write_na E l e v v' :
   {{{ RET LitV LitPoison; l ↦ v }}}.
 Proof.
   iIntros (<- Φ) ">Hv HΦ".
-  iApply wp_lift_head_step; auto. iIntros (σ1) "Hσ".
+  iApply wp_lift_head_step; auto. iIntros (σ1 ??) "Hσ".
   iMod (heap_write_na with "Hσ Hv") as "(% & Hσ & Hσclose)".
   iMod (fupd_intro_mask' _ ∅) as "Hclose"; first set_solver.
   iModIntro; iSplit; first by eauto.
   iNext; iIntros (e2 σ2 efs Hstep); inv_head_step. iMod "Hclose" as "_".
   iModIntro. iFrame "Hσ". iSplit; last done.
   clear dependent σ1. iApply wp_lift_atomic_head_step_no_fork; auto.
-  iIntros (σ1) "Hσ". iMod ("Hσclose" with "Hσ") as "(% & Hσ & Hv)".
+  iIntros (σ1 ??) "Hσ". iMod ("Hσclose" with "Hσ") as "(% & Hσ & Hv)".
   iModIntro; iSplit; first by eauto.
   iNext; iIntros (e2 σ2 efs Hstep) "!>"; inv_head_step.
   iFrame "Hσ". iSplit; [done|]. by iApply "HΦ".
@@ -228,7 +228,7 @@ Lemma wp_cas_int_fail E l q z1 e2 lit2 zl :
 Proof.
   iIntros (<- ? Φ) ">Hv HΦ".
   iApply wp_lift_atomic_head_step_no_fork; auto.
-  iIntros (σ1) "Hσ". iDestruct (heap_read with "Hσ Hv") as %[n ?].
+  iIntros (σ1 ??) "Hσ". iDestruct (heap_read with "Hσ Hv") as %[n ?].
   iModIntro; iSplit; first by eauto.
   iNext; iIntros (v2 σ2 efs Hstep); inv_head_step; inv_lit.
   iModIntro; iSplit=> //. iFrame. by iApply "HΦ".
@@ -242,7 +242,7 @@ Lemma wp_cas_suc E l lit1 e2 lit2 :
 Proof.
   iIntros (<- ? Φ) ">Hv HΦ".
   iApply wp_lift_atomic_head_step_no_fork; auto.
-  iIntros (σ1) "Hσ". iDestruct (heap_read_1 with "Hσ Hv") as %?.
+  iIntros (σ1 ??) "Hσ". iDestruct (heap_read_1 with "Hσ Hv") as %?.
   iModIntro; iSplit; first (destruct lit1; by eauto).
   iNext; iIntros (v2 σ2 efs Hstep); inv_head_step; [inv_lit|].
   iMod (heap_write with "Hσ Hv") as "[$ Hv]".
@@ -272,7 +272,7 @@ Lemma wp_cas_loc_fail E l q q' q1 l1 v1' e2 lit2 l' vl' :
 Proof.
   iIntros (<- ? Φ) "(>Hl & >Hl' & >Hl1) HΦ".
   iApply wp_lift_atomic_head_step_no_fork; auto.
-  iIntros (σ1) "Hσ". iDestruct (heap_read with "Hσ Hl") as %[nl ?].
+  iIntros (σ1 ??) "Hσ". iDestruct (heap_read with "Hσ Hl") as %[nl ?].
   iDestruct (heap_read with "Hσ Hl'") as %[nl' ?].
   iDestruct (heap_read with "Hσ Hl1") as %[nl1 ?].
   iModIntro; iSplit; first by eauto.
@@ -290,7 +290,7 @@ Lemma wp_cas_loc_nondet E l l1 e2 l2 ll :
 Proof.
   iIntros (<- Φ) ">Hv HΦ".
   iApply wp_lift_atomic_head_step_no_fork; auto.
-  iIntros (σ1) "Hσ". iDestruct (heap_read_1 with "Hσ Hv") as %?.
+  iIntros (σ1 ??) "Hσ". iDestruct (heap_read_1 with "Hσ Hv") as %?.
   iModIntro; iSplit; first (destruct (decide (ll = l1)) as [->|]; by eauto).
   iNext; iIntros (v2 σ2 efs Hstep); inv_head_step; last lia.
   - inv_lit. iModIntro; iSplit; [done|]; iFrame "Hσ".
@@ -311,9 +311,9 @@ Proof.
       [done|solve_exec_safe|solve_exec_puredet|].
     iApply wp_value. by iApply Hpost.
   - iApply wp_lift_atomic_head_step_no_fork; subst=>//.
-    iIntros (σ1) "Hσ1". iModIntro. inv_head_step.
+    iIntros (σ1 ??) "Hσ1". iModIntro. inv_head_step.
     iSplitR.
-    { iPureIntro. eexists _, _, _. constructor. apply BinOpEqFalse. by auto. }
+    { iPureIntro. repeat eexists. econstructor. eapply BinOpEqFalse. by auto. }
     (* We need to do a little gymnastics here to apply Hne now and strip away a
        ▷ but also have the ↦s. *)
     iAssert ((▷ ∃ q v, l1 ↦{q} v) ∧ (▷ ∃ q v, l2 ↦{q} v) ∧ ▷ Φ (LitV false))%I with "[HP]" as "HP".

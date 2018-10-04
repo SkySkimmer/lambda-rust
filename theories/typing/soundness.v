@@ -26,7 +26,7 @@ Section type_soundness.
 
   Theorem type_soundness `{typePreG Σ} (main : val) σ t :
     (∀ `{typeG Σ}, typed_val main main_type) →
-    rtc step ([main [exit_cont]%E], ∅) (t, σ) →
+    rtc erased_step ([main [exit_cont]%E], ∅) (t, σ) →
     nonracing_threadpool t σ ∧
     (∀ e, e ∈ t → is_Some (to_val e) ∨ reducible e σ).
   Proof.
@@ -61,7 +61,7 @@ End type_soundness.
 
 Theorem type_soundness_closed (main : val) σ t :
   (∀ `{typeG typeΣ}, typed_val main main_type) →
-  rtc step ([main [exit_cont]%E], ∅) (t, σ) →
+  rtc erased_step ([main [exit_cont]%E], ∅) (t, σ) →
   nonracing_threadpool t σ ∧
   (∀ e, e ∈ t → is_Some (to_val e) ∨ reducible e σ).
 Proof.

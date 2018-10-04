@@ -21,12 +21,12 @@ Definition lrust_adequacy Σ `{lrustPreG Σ} e σ φ :
   (∀ `{lrustG Σ}, True ⊢ WP e {{ v, ⌜φ v⌝ }}) →
   adequate NotStuck e σ (λ v _, φ v).
 Proof.
-  intros Hwp; eapply (wp_adequacy _ _); iIntros (?) "".
+  intros Hwp; eapply (wp_adequacy _ _); iIntros (??).
   iMod (own_alloc (● to_heap σ)) as (vγ) "Hvγ".
   { apply (auth_auth_valid (to_heap _)), to_heap_valid. }
   iMod (own_alloc (● (∅ : heap_freeableUR))) as (fγ) "Hfγ"; first done.
   set (Hheap := HeapG _ _ _ vγ fγ).
-  iModIntro. iExists heap_ctx. iSplitL.
+  iModIntro. iExists (λ σ _, heap_ctx σ). iSplitL.
   { iExists ∅. by iFrame. }
   by iApply (Hwp (LRustG _ _ Hheap)).
 Qed.

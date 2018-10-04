@@ -259,56 +259,62 @@ Inductive bin_op_eval (σ : state) : bin_op → base_lit → base_lit → base_l
 
 Definition stuck_term := App (Lit $ LitInt 0) [].
 
-Inductive head_step : expr → state → expr → state → list expr → Prop :=
+Inductive head_step : expr → state → option Empty_set → expr → state → list expr → Prop :=
 | BinOpS op l1 l2 l' σ :
     bin_op_eval σ op l1 l2 l' →
-    head_step (BinOp op (Lit l1) (Lit l2)) σ (Lit l') σ []
+    head_step (BinOp op (Lit l1) (Lit l2)) σ None (Lit l') σ []
 | BetaS f xl e e' el σ:
     Forall (λ ei, is_Some (to_val ei)) el →
     Closed (f :b: xl +b+ []) e →
     subst_l (f::xl) (Rec f xl e :: el) e = Some e' →
-    head_step (App (Rec f xl e) el) σ e' σ []
+    head_step (App (Rec f xl e) el) σ None e' σ []
 | ReadScS l n v σ:
     σ !! l = Some (RSt n, v) →
-    head_step (Read ScOrd (Lit $ LitLoc l)) σ (of_val v) σ []
+    head_step (Read ScOrd (Lit $ LitLoc l)) σ None (of_val v) σ []
 | ReadNa1S l n v σ:
     σ !! l = Some (RSt n, v) →
     head_step (Read Na1Ord (Lit $ LitLoc l)) σ
+              None
               (Read Na2Ord (Lit $ LitLoc l)) (<[l:=(RSt $ S n, v)]>σ)
               []
 | ReadNa2S l n v σ:
     σ !! l = Some (RSt $ S n, v) →
     head_step (Read Na2Ord (Lit $ LitLoc l)) σ
+              None
               (of_val v) (<[l:=(RSt n, v)]>σ)
               []
 | WriteScS l e v v' σ:
     to_val e = Some v →
     σ !! l = Some (RSt 0, v') →
     head_step (Write ScOrd (Lit $ LitLoc l) e) σ
+              None
               (Lit LitPoison) (<[l:=(RSt 0, v)]>σ)
               []
 | WriteNa1S l e v v' σ:
     to_val e = Some v →
     σ !! l = Some (RSt 0, v') →
     head_step (Write Na1Ord (Lit $ LitLoc l) e) σ
+              None
               (Write Na2Ord (Lit $ LitLoc l) e) (<[l:=(WSt, v')]>σ)
               []
 | WriteNa2S l e v v' σ:
     to_val e = Some v →
     σ !! l = Some (WSt, v') →
     head_step (Write Na2Ord (Lit $ LitLoc l) e) σ
+              None
               (Lit LitPoison) (<[l:=(RSt 0, v)]>σ)
               []
 | CasFailS l n e1 lit1 e2 lit2 litl σ :
     to_val e1 = Some $ LitV lit1 → to_val e2 = Some $ LitV lit2 →
     σ !! l = Some (RSt n, LitV litl) →
     lit_neq lit1 litl →
-    head_step (CAS (Lit $ LitLoc l) e1 e2) σ (Lit $ lit_of_bool false) σ  []
+    head_step (CAS (Lit $ LitLoc l) e1 e2) σ None (Lit $ lit_of_bool false) σ  []
 | CasSucS l e1 lit1 e2 lit2 litl σ :
     to_val e1 = Some $ LitV lit1 → to_val e2 = Some $ LitV lit2 →
     σ !! l = Some (RSt 0, LitV litl) →
     lit_eq σ lit1 litl →
     head_step (CAS (Lit $ LitLoc l) e1 e2) σ
+              None
               (Lit $ lit_of_bool true) (<[l:=(RSt 0, LitV lit2)]>σ)
               []
 (* A succeeding CAS has to detect concurrent non-atomic read accesses, and
@@ -330,25 +336,29 @@ Inductive head_step : expr → state → expr → state → list expr → Prop :
     σ !! l = Some (RSt n, LitV litl) → 0 < n →
     lit_eq σ lit1 litl →
     head_step (CAS (Lit $ LitLoc l) e1 e2) σ
+              None
               stuck_term σ
               []
 | AllocS n l σ :
     0 < n →
     (∀ m, σ !! (l +ₗ m) = None) →
     head_step (Alloc $ Lit $ LitInt n) σ
-              (Lit $ LitLoc l) (init_mem l (Z.to_nat n) σ) []
+              None
+              (Lit $ LitLoc l) (init_mem l (Z.to_nat n) σ)
+              []
 | FreeS n l σ :
     0 < n →
     (∀ m, is_Some (σ !! (l +ₗ m)) ↔ 0 ≤ m < n) →
     head_step (Free (Lit $ LitInt n) (Lit $ LitLoc l)) σ
+              None
               (Lit LitPoison) (free_mem l (Z.to_nat n) σ)
               []
 | CaseS i el e σ :
     0 ≤ i →
     el !! (Z.to_nat i) = Some e →
-    head_step (Case (Lit $ LitInt i) el) σ e σ []
+    head_step (Case (Lit $ LitInt i) el) σ None e σ []
 | ForkS e σ:
-    head_step (Fork e) σ (Lit LitPoison) σ [e].
+    head_step (Fork e) σ None (Lit LitPoison) σ [e].
 
 (** Basic properties about the language *)
 Lemma to_of_val v : to_val (of_val v) = Some v.
@@ -371,12 +381,12 @@ Lemma fill_item_val Ki e :
   is_Some (to_val (fill_item Ki e)) → is_Some (to_val e).
 Proof. intros [v ?]. destruct Ki; simplify_option_eq; eauto. Qed.
 
-Lemma val_stuck e1 σ1 e2 σ2 ef :
-  head_step e1 σ1 e2 σ2 ef → to_val e1 = None.
+Lemma val_stuck e1 σ1 κ e2 σ2 ef :
+  head_step e1 σ1 κ e2 σ2 ef → to_val e1 = None.
 Proof. destruct 1; naive_solver. Qed.
 
-Lemma head_ctx_step_val Ki e σ1 e2 σ2 ef :
-  head_step (fill_item Ki e) σ1 e2 σ2 ef → is_Some (to_val e).
+Lemma head_ctx_step_val Ki e σ1 κ e2 σ2 ef :
+  head_step (fill_item Ki e) σ1 κ e2 σ2 ef → is_Some (to_val e).
 Proof.
   destruct Ki; inversion_clear 1; decompose_Forall_hyps;
     simplify_option_eq; by eauto.
@@ -462,7 +472,7 @@ Lemma alloc_fresh n σ :
   let l := (fresh_block σ, 0) in
   let init := repeat (LitV $ LitInt 0) (Z.to_nat n) in
   0 < n →
-  head_step (Alloc $ Lit $ LitInt n) σ (Lit $ LitLoc l) (init_mem l (Z.to_nat n) σ) [].
+  head_step (Alloc $ Lit $ LitInt n) σ None (Lit $ LitLoc l) (init_mem l (Z.to_nat n) σ) [].
 Proof.
   intros l init Hn. apply AllocS. auto.
   - intros i. apply (is_fresh_block _ i).
@@ -546,8 +556,8 @@ Proof.
 Qed.
 
 (* Misc *)
-Lemma stuck_not_head_step σ e' σ' ef :
-  ¬head_step stuck_term σ e' σ' ef.
+Lemma stuck_not_head_step σ e' κ σ' ef :
+  ¬head_step stuck_term σ e' κ σ' ef.
 Proof. inversion 1. Qed.
 
 (** Equality and other typeclass stuff *)
