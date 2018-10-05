@@ -31,7 +31,7 @@ Section type_soundness.
     (∀ e, e ∈ t → is_Some (to_val e) ∨ reducible e σ).
   Proof.
     intros Hmain Hrtc.
-    cut (adequate NotStuck (main [exit_cont]%E) ∅ (λ _, True)).
+    cut (adequate NotStuck (main [exit_cont]%E) ∅ (λ _ _, True)).
     { split. by eapply adequate_nonracing.
       intros. by eapply (adequate_not_stuck _ (main [exit_cont]%E)). }
     apply: lrust_adequacy=>?. iIntros "_".
