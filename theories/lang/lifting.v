@@ -80,54 +80,55 @@ Local Ltac solve_exec_safe :=
 Local Ltac solve_exec_puredet :=
   simpl; intros; destruct_and?; inv_head_step; inv_bin_op_eval; inv_lit; done.
 Local Ltac solve_pure_exec :=
-  apply det_head_step_pure_exec; [ solve_exec_safe | solve_exec_puredet ].
+  intros ?; apply nsteps_once, pure_head_step_pure_step;
+    constructor; [solve_exec_safe | solve_exec_puredet].
 
 Global Instance pure_rec e f xl erec erec' el :
   AsRec e f xl erec →
   TCForall AsVal el →
   Closed (f :b: xl +b+ []) erec →
   DoSubstL (f :: xl) (e :: el) erec erec' →
-  PureExec True (App e el) erec'.
+  PureExec True 1 (App e el) erec'.
 Proof.
   rewrite /AsRec /DoSubstL=> -> /TCForall_Forall Hel ??. solve_pure_exec.
   eapply Forall_impl; [exact Hel|]. intros e' [v <-]. rewrite to_of_val; eauto.
 Qed.
 
 Global Instance pure_le n1 n2 :
-  PureExec True (BinOp LeOp (Lit (LitInt n1)) (Lit (LitInt n2)))
-                (Lit (bool_decide (n1 ≤ n2))).
+  PureExec True 1 (BinOp LeOp (Lit (LitInt n1)) (Lit (LitInt n2)))
+                  (Lit (bool_decide (n1 ≤ n2))).
 Proof. solve_pure_exec. Qed.
 
 Global Instance pure_eq_int n1 n2 :
-  PureExec True (BinOp EqOp (Lit (LitInt n1)) (Lit (LitInt n2))) (Lit (bool_decide (n1 = n2))).
+  PureExec True 1 (BinOp EqOp (Lit (LitInt n1)) (Lit (LitInt n2))) (Lit (bool_decide (n1 = n2))).
 Proof. case_bool_decide; solve_pure_exec. Qed.
 
 Global Instance pure_eq_loc_0_r l :
-  PureExec True (BinOp EqOp (Lit (LitLoc l)) (Lit (LitInt 0))) (Lit false).
+  PureExec True 1 (BinOp EqOp (Lit (LitLoc l)) (Lit (LitInt 0))) (Lit false).
 Proof. solve_pure_exec. Qed.
 
 Global Instance pure_eq_loc_0_l l :
-  PureExec True (BinOp EqOp (Lit (LitInt 0)) (Lit (LitLoc l))) (Lit false).
+  PureExec True 1 (BinOp EqOp (Lit (LitInt 0)) (Lit (LitLoc l))) (Lit false).
 Proof. solve_pure_exec. Qed.
 
 Global Instance pure_plus z1 z2 :
-  PureExec True (BinOp PlusOp (Lit $ LitInt z1) (Lit $ LitInt z2)) (Lit $ LitInt $ z1 + z2).
+  PureExec True 1 (BinOp PlusOp (Lit $ LitInt z1) (Lit $ LitInt z2)) (Lit $ LitInt $ z1 + z2).
 Proof. solve_pure_exec. Qed.
 
 Global Instance pure_minus z1 z2 :
-  PureExec True (BinOp MinusOp (Lit $ LitInt z1) (Lit $ LitInt z2)) (Lit $ LitInt $ z1 - z2).
+  PureExec True 1 (BinOp MinusOp (Lit $ LitInt z1) (Lit $ LitInt z2)) (Lit $ LitInt $ z1 - z2).
 Proof. solve_pure_exec. Qed.
 
 Global Instance pure_offset l z  :
-  PureExec True (BinOp OffsetOp (Lit $ LitLoc l) (Lit $ LitInt z)) (Lit $ LitLoc $ l +ₗ z).
+  PureExec True 1 (BinOp OffsetOp (Lit $ LitLoc l) (Lit $ LitInt z)) (Lit $ LitLoc $ l +ₗ z).
 Proof. solve_pure_exec. Qed.
 
 Global Instance pure_case i e el :
-  PureExec (0 ≤ i ∧ el !! (Z.to_nat i) = Some e) (Case (Lit $ LitInt i) el) e | 10.
+  PureExec (0 ≤ i ∧ el !! (Z.to_nat i) = Some e) 1 (Case (Lit $ LitInt i) el) e | 10.
 Proof. solve_pure_exec. Qed.
 
 Global Instance pure_if b e1 e2 :
-  PureExec True (If (Lit (lit_of_bool b)) e1 e2) (if b then e1 else e2) | 1.
+  PureExec True 1 (If (Lit (lit_of_bool b)) e1 e2) (if b then e1 else e2) | 1.
 Proof. destruct b; solve_pure_exec. Qed.
 
 (** Heap *)

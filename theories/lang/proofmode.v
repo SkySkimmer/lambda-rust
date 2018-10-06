@@ -13,10 +13,10 @@ Proof. rewrite envs_entails_eq=> ? ->. by apply wp_value. Qed.
 
 Ltac wp_value_head := eapply tac_wp_value; [iSolveTC|reduction.pm_prettify].
 
-Lemma tac_wp_pure `{lrustG Σ} K Δ Δ' E e1 e2 φ Φ :
-  PureExec φ e1 e2 →
+Lemma tac_wp_pure `{lrustG Σ} K Δ Δ' E e1 e2 φ n Φ :
+  PureExec φ n e1 e2 →
   φ →
-  MaybeIntoLaterNEnvs 1 Δ Δ' →
+  MaybeIntoLaterNEnvs n Δ Δ' →
   envs_entails Δ' (WP fill K e2 @ E {{ Φ }}) →
   envs_entails Δ (WP fill K e1 @ E {{ Φ }}).
 Proof.
