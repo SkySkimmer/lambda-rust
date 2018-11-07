@@ -26,13 +26,20 @@ variables:
 
 ## Build jobs
 
-build-coq.8.8.0:
+build-coq.dev:
   <<: *template
   variables:
-    OPAM_PINS: "coq version 8.8.0"
+    OCAML: "ocaml-base-compiler.4.07.0"
+    OPAM_PINS: "coq version dev"
+    VALIDATE: "1"
+
+build-coq.8.8.2:
+  <<: *template
+  variables:
+    OPAM_PINS: "coq version 8.8.2"
     OPAM_PKG: "coq-lambda-rust"
     TIMING_PROJECT: "lambda-rust"
-    TIMING_CONF: "coq-8.8.0"
+    TIMING_CONF: "coq-8.8.2"
   tags:
   - fp-timing
 
@@ -44,7 +51,7 @@ build-coq.8.7.2:
 build-iris.dev:
   <<: *template
   variables:
-    OPAM_PINS: "coq version 8.7.2   coq-stdpp.dev git git+https://gitlab.mpi-sws.org/robbertkrebbers/coq-stdpp/#$STDPP_REV   coq-iris.dev git git+https://gitlab.mpi-sws.org/FP/iris-coq.git#$IRIS_REV"
+    OPAM_PINS: "coq version 8.8.2   coq-stdpp.dev git git+https://gitlab.mpi-sws.org/robbertkrebbers/coq-stdpp/#$STDPP_REV   coq-iris.dev git git+https://gitlab.mpi-sws.org/FP/iris-coq.git#$IRIS_REV"
   except:
   only:
   - triggers

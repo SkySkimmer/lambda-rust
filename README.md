@@ -6,7 +6,7 @@ This is the Coq development accompanying lambda-Rust.
 
 This version is known to compile with:
 
- - Coq 8.7.2 / 8.8.0
+ - Coq 8.7.2 / 8.8.2
  - A development version of [Iris](https://gitlab.mpi-sws.org/FP/iris-coq/)
 
 ## Building from source
