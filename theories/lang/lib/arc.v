@@ -316,7 +316,7 @@ Section arc.
               (op_local_update_discrete _ _ (1%nat)). }
       iMod ("Hclose1" with "[-Hown' HP HΦ]") as "_".
       { iExists _. iFrame. iExists _.
-        rewrite Z.add_comm (Nat2Z.inj_add 1). auto with iFrame. }
+        rewrite Z.add_comm -(Nat2Z.inj_add 1) /=. auto with iFrame. }
       iModIntro. wp_case. iApply "HΦ". iFrame.
     - destruct wlock.
       + iDestruct "Hl1" as "[Hl1 >%]". subst.

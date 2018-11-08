@@ -37,7 +37,7 @@ Section case.
       + rewrite shift_loc_0. iFrame. iExists [ #i]. rewrite heap_mapsto_vec_singleton.
         iFrame. auto.
       + eauto with iFrame.
-      + rewrite -EQlen app_length minus_plus -(shift_loc_assoc_nat _ 1).
+      + rewrite -EQlen app_length minus_plus shift_loc_assoc_nat.
         iFrame. iExists _. iFrame. auto.
     - rewrite /= -EQlen app_length -(Nat.add_1_l (_+_)) -!freeable_sz_split. iFrame.
       iExists (#i :: vl' ++ vl''). iNext. rewrite heap_mapsto_vec_cons heap_mapsto_vec_app.

@@ -318,8 +318,8 @@ Section code.
                 { iDestruct "Hty" as (vy) "[H Hty]". iExists vy. iFrame.
                   by iApply "Hinclo". }
                 iIntros "!> H". iApply ("Hclose" with "[>-]"). iFrame. iExists _.
-                iFrame. rewrite Hincls /=. iFrame. destruct Pos.of_succ_nat; try done.
-                rewrite /= ?Pos.pred_double_succ //.
+                iFrame. rewrite Hincls /= !Nat2Z.inj_succ -!Z.add_1_l Z.add_simpl_l.
+                by iFrame.
         * iIntros "Hl1".
           iMod (own_update_2 with "Hst Htok") as "[Hst Htok]".
           { apply auth_update. etrans.
@@ -351,7 +351,7 @@ Section code.
           -- iRight. iSplitR; first by auto with lia. iIntros "!> Hl† Hl2 Hvl".
              iApply ("Hclose" with "[>- $Hna]"). iExists (None, S weak).
              rewrite Hincls. iFrame. iSplitR "Hl2"; last first.
-             { simpl. destruct Pos.of_succ_nat; rewrite /= ?Pos.pred_double_succ //. }
+             { by rewrite !Nat2Z.inj_succ -!Z.add_1_l Z.add_simpl_l. }
              iMod (own_update_2 with "Hst Htok") as "$"; last done.
              apply auth_update_dealloc, prod_local_update', reflexivity.
              rewrite -{1}(right_id None _ (Some _)). apply cancel_local_update_unit, _.
@@ -370,7 +370,8 @@ Section code.
           iApply "Hclose". iFrame. iExists _. iFrame. iExists (q+q'')%Qp. iFrame.
           iSplitL; first last.
           { rewrite [(_+_)%Qp]assoc [(q'+_)%Qp]comm. auto. }
-          destruct strong=>//=. by rewrite Pos.pred_double_succ.
+          rewrite pos_op_plus Z.sub_1_r -Pos2Z.inj_pred; last lia.
+          by rewrite Pos.add_1_l Pos.pred_succ.
   Qed.
 
   Definition rc_strong_count : val :=

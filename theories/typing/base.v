@@ -24,3 +24,8 @@ Hint Extern 1 (@eq nat (Z.to_nat _) _) =>
   (etrans; [exact: Nat2Z.id | reflexivity]) : lrust_typing.
 
 Hint Resolve <- elem_of_app : lrust_typing.
+
+(* done is there to handle equalities with constants *)
+Hint Extern 100 (_ ≤ _) => simpl; first [done|lia] : lrust_typing.
+Hint Extern 100 (@eq Z _ _) => simpl; first [done|lia] : lrust_typing.
+Hint Extern 100 (@eq nat _ _) => simpl; first [done|lia] : lrust_typing.

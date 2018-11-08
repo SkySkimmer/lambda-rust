@@ -78,7 +78,7 @@ Qed.
 
 (** Pure reductions *)
 Local Ltac solve_exec_safe :=
-  intros; destruct_and?; subst; do 3 eexists; econstructor; simpl; eauto with omega.
+  intros; destruct_and?; subst; do 3 eexists; econstructor; simpl; eauto with lia.
 Local Ltac solve_exec_puredet :=
   simpl; intros; destruct_and?; inv_head_step; inv_bin_op_eval; inv_lit; done.
 Local Ltac solve_pure_exec :=

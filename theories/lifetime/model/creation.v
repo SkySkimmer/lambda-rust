@@ -32,7 +32,7 @@ Proof.
     iDestruct (@big_sepS_elem_of with "Hdead") as "Hdead"; first by eauto.
     rewrite /lft_inv_dead; iDestruct "Hdead" as (R) "(_ & Hcnt' & _)".
     iDestruct (own_cnt_valid_2 with "Hcnt' Hcnt")
-      as %[?%nat_included _]%auth_valid_discrete_2; omega. }
+      as %[?%nat_included _]%auth_valid_discrete_2; lia. }
   iMod (box_empty with "Hbox") as "[HP Hbox]"=>//; first set_solver.
   { intros i s. by rewrite lookup_fmap fmap_Some=> -[? [/HB -> ->]]. }
   rewrite lft_vs_unfold; iDestruct "Hvs" as (n) "[Hcnt Hvs]".
@@ -48,7 +48,7 @@ Proof.
   rewrite lft_vs_inv_unfold; iDestruct "Hinv" as "(?&HI&Halive)".
   iSpecialize ("Halive'" with "Halive").
   iMod (own_cnt_update_2 with "Hcnt Hcnt'") as "?".
-  { apply auth_update_dealloc, (nat_local_update _ _ 0 0); omega. }
+  { apply auth_update_dealloc, (nat_local_update _ _ 0 0); lia. }
   rewrite /Iinv. iFrame "Hdead Halive' HI".
   iModIntro. iMod (lft_inh_kill with "[$Hinh $HQ]"); first set_solver+.
   iModIntro. rewrite /lft_inv_dead. iExists Q. by iFrame.

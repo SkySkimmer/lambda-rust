@@ -24,7 +24,7 @@ Proof.
   iIntros (? Iinv Hκκ' Haliveκ') "(HI & Hκ) Hi #Hislice Hκalive' Hvs".
   rewrite lft_vs_unfold. iDestruct "Hvs" as (n) "[>Hn● Hvs]".
   iMod (own_cnt_update with "Hn●") as "[Hn● H◯]".
-  { apply auth_update_alloc, (nat_local_update _ 0 (S n) 1); omega. }
+  { apply auth_update_alloc, (nat_local_update _ 0 (S n) 1); lia. }
   rewrite {1}/raw_bor /idx_bor_own /=.
   iDestruct (own_bor_auth with "HI Hi") as %?.
   assert (κ ⊆ κ') by (by apply strict_include).

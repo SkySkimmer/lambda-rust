@@ -38,8 +38,8 @@ Section own.
     - by rewrite left_id shift_loc_0.
     - by rewrite right_id Nat.add_0_r.
     - iSplit. by iIntros "[[]?]". by iIntros "[]".
-    - rewrite heap_freeable_op_eq. f_equiv. apply Qp_eq.
-      rewrite /= -Qcmult_plus_distr_l -Z2Qc_inj_add /Z.add. do 3 f_equal. lia.
+    - rewrite heap_freeable_op_eq. f_equiv. apply Qp_eq; simpl.
+      by rewrite -Qcmult_plus_distr_l -Nat.add_succ_l Nat2Z.inj_add -Z2Qc_inj_add.
   Qed.
 
   (* Make sure 'simpl' doesn't unfold. *)
@@ -365,7 +365,3 @@ Hint Resolve own_mono' own_proper' box_mono' box_proper'
 (* By setting the priority high, we make sure copying is tried before
    moving. *)
 Hint Resolve read_own_move | 100 : lrust_typing.
-
-Hint Extern 100 (_ ≤ _) => simpl; lia : lrust_typing.
-Hint Extern 100 (@eq Z _ _) => simpl; lia : lrust_typing.
-Hint Extern 100 (@eq nat _ _) => simpl; lia : lrust_typing.

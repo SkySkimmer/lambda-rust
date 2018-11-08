@@ -21,7 +21,7 @@ Proof.
   wp_op; case_bool_decide; wp_if.
   - iApply "HΦ". assert (n = O) by lia; subst.
     destruct vl1, vl2; try discriminate. by iFrame.
-  - destruct vl1 as [|v1 vl1], vl2 as [|v2 vl2], n as [|n|]; try (discriminate || omega).
+  - destruct vl1 as [|v1 vl1], vl2 as [|v2 vl2], n as [|n|]; try (discriminate || lia).
     revert Hvl1 Hvl2. intros [= Hvl1] [= Hvl2]; rewrite !heap_mapsto_vec_cons. subst n.
     iDestruct "Hl1" as "[Hv1 Hl1]". iDestruct "Hl2" as "[Hv2 Hl2]".
     Local Opaque Zminus.

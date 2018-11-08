@@ -449,7 +449,7 @@ Section type.
       apply disjoint_union_l. split; last (rewrite -shift_loc_assoc; exact: IHn).
       clear IHn. revert n; induction m; intros n; simpl; first set_solver+.
       rewrite shift_loc_assoc. apply disjoint_union_r. split.
-      + apply ndot_ne_disjoint. destruct l. intros [=]. omega.
+      + apply ndot_ne_disjoint. destruct l. intros [=]. lia.
       + rewrite -Z.add_assoc. move:(IHm (n + 1)%nat). rewrite Nat2Z.inj_add //.
   Qed.
 

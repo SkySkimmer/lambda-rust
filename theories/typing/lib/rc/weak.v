@@ -272,7 +272,8 @@ Section code.
     { by apply auth_update_alloc, prod_local_update_2, (op_local_update_discrete _ _ 1%nat). }
     iMod ("Hclose3" with "[$Hrctok] Hna") as "[Hα1 Hna]".
     iMod ("Hclose2" with "[Hrc● Hl'1 Hl'2 Hrcst $Hna]") as "Hna".
-    { iExists _. iFrame "Hrc●". iExists _. rewrite /Z.add Pos.add_1_r. iFrame. }
+    { iExists _. iFrame "Hrc●". iExists _.
+      rewrite !Nat2Z.inj_succ Z.add_1_r. iFrame. }
     iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
     (* Finish up the proof. *)
     iApply (type_type _ _ _ [ x ◁ box (&shr{α}(rc ty)); #lr ◁ box (weak ty)]
@@ -407,19 +408,19 @@ Section code.
       destruct st as [[[q'' strong]| |]|]; try done.
       - iExists _. iDestruct "Hrcst" as (q0) "(Hlw & >$ & Hrcst)". iRight.
         iSplitR; first by auto with lia. iIntros "!>?". iApply "Hclose". iFrame.
-        iExists _. iFrame. iExists _. iFrame. simpl. destruct Pos.of_succ_nat; try done.
-        by rewrite /= Pos.pred_double_succ.
+        iExists _. iFrame. iExists _. iFrame.
+        by rewrite !Nat2Z.inj_succ -!Z.add_1_l Z.add_simpl_l.
       - iExists _. iDestruct "Hrcst" as "[Hlw >$]". iRight.
         iSplitR; first by auto with lia. iIntros "!>?". iApply "Hclose". iFrame.
-        iExists _. iFrame. simpl. destruct Pos.of_succ_nat; try done.
-        by rewrite /= Pos.pred_double_succ.
+        iExists _. iFrame. simpl.
+        by rewrite !Nat2Z.inj_succ -!Z.add_1_l Z.add_simpl_l.
       - iExists _. iDestruct "Hrcst" as "(>Hlw & >$ & >H† & >H)". destruct weakc.
         + iLeft. iSplitR; first done. iMod ("Hclose" with "[$Hna Hrc●]") as "$".
           { iExists _. iFrame. }
           rewrite Hszeq. auto with iFrame.
         + iRight. iSplitR; first by auto with lia. iIntros "!>?". iApply "Hclose".
-          iFrame. iExists _. iFrame. simpl. destruct Pos.of_succ_nat; try done.
-          by rewrite /= Pos.pred_double_succ. }
+          iFrame. iExists _. iFrame.
+          by rewrite !Nat2Z.inj_succ -!Z.add_1_l Z.add_simpl_l. }
     - subst. wp_read. wp_let. wp_op. wp_if.
       iApply (type_type _ _ _ [ w ◁ box (uninit 1); #lw ◁ box (uninit (2 + ty.(ty_size))) ]
               with "[] LFT HE Hna HL Hk [-]"); last first.

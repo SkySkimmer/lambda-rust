@@ -9,7 +9,7 @@ Section product.
 
   (* TODO: Find a better spot for this. *)
   Lemma Z_nat_add (n1 n2 : nat) : Z.to_nat (n1 + n2) = (n1 + n2)%nat.
-  Proof. rewrite Z2Nat.inj_add; [|omega..]. rewrite !Nat2Z.id //. Qed.
+  Proof. rewrite Z2Nat.inj_add; [|lia..]. rewrite !Nat2Z.id //. Qed.
 
   (* "Pre"-unit.  We later define the full unit as the empty product.  That's
      convertible, but products are opaque in some hint DBs, so this does make a
@@ -113,7 +113,7 @@ Section product.
     split; first (intros; apply _).
     intros κ tid E F l q ? HF. iIntros "#LFT [H1 H2] Htl [Htok1 Htok2]".
     iMod (@copy_shr_acc with "LFT H1 Htl Htok1") as (q1) "(Htl & H1 & Hclose1)"; first solve_ndisj.
-    { rewrite <-HF. apply shr_locsE_subseteq. simpl. clear. omega. }
+    { rewrite <-HF. apply shr_locsE_subseteq. simpl. clear. lia. }
     iMod (@copy_shr_acc with "LFT H2 Htl Htok2") as (q2) "(Htl & H2 & Hclose2)"; first solve_ndisj.
     { move: HF. rewrite /= -plus_assoc shr_locsE_shift.
       assert (shr_locsE l (ty_size ty1) ## shr_locsE (l +ₗ (ty_size ty1)) (ty_size ty2 + 1))

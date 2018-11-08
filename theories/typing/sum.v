@@ -193,11 +193,11 @@ Section sum.
       { edestruct nth_in_or_default as [| ->]; first by eapply List.Forall_forall.
         split; first by apply _. iIntros (????????) "? []". }
       { rewrite <-HF. simpl. rewrite <-union_subseteq_r.
-        apply shr_locsE_subseteq. omega. }
+        apply shr_locsE_subseteq. lia. }
       iDestruct (na_own_acc with "Htl") as "[$ Htlclose]".
       { apply difference_mono_l.
         trans (shr_locsE (l +ₗ 1) (max_list_with ty_size tyl)).
-        - apply shr_locsE_subseteq. omega.
+        - apply shr_locsE_subseteq. lia.
         - set_solver+. }
       destruct (Qp_lower_bound q'1 q'2) as (q' & q'01 & q'02 & -> & ->).
       rewrite -(heap_mapsto_pred_op _ q' q'02); last (by intros; apply ty_size_eq).
