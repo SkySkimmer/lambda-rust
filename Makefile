@@ -13,7 +13,7 @@ clean: Makefile.coq
 .PHONY: clean
 
 # Create Coq Makefile.
-Makefile.coq: _CoqProject Makefile awk.Makefile
+Makefile.coq: _CoqProject Makefile
 	"$(COQBIN)coq_makefile" -f _CoqProject -o Makefile.coq
 
 # Install build-dependencies
@@ -42,7 +42,6 @@ build-dep: build-dep/opam phony
 # Some files that do *not* need to be forwarded to Makefile.coq
 Makefile: ;
 _CoqProject: ;
-awk.Makefile: ;
 opam: ;
 
 # Phony wildcard targets
