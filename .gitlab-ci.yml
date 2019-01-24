@@ -31,7 +31,6 @@ build-coq.dev:
   variables:
     OCAML: "ocaml-base-compiler.4.07.0"
     OPAM_PINS: "coq version dev"
-    VALIDATE: "1"
 
 build-coq.8.8.2:
   <<: *template
