@@ -166,7 +166,7 @@ Section type_context.
   Definition tctx_incl (E : elctx) (L : llctx) (T1 T2 : tctx): Prop :=
     ∀ tid q2, lft_ctx -∗ elctx_interp E -∗ llctx_interp L q2 -∗
               tctx_interp tid T1 ={⊤}=∗ llctx_interp L q2 ∗ tctx_interp tid T2.
-  Global Instance : ∀ E L, RewriteRelation (tctx_incl E L).
+  Global Instance : ∀ E L, RewriteRelation (tctx_incl E L) := {}.
 
   Global Instance tctx_incl_preorder E L : PreOrder (tctx_incl E L).
   Proof.

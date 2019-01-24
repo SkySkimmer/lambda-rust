@@ -69,8 +69,8 @@ Module Type lifetime_sig.
   Global Declare Instance lft_dead_timeless κ : Timeless ([†κ]).
   Global Declare Instance idx_bor_own_timeless q i : Timeless (idx_bor_own q i).
 
-  Global Instance idx_bor_params : Params (@idx_bor) 5.
-  Global Instance bor_params : Params (@bor) 4.
+  Global Instance idx_bor_params : Params (@idx_bor) 5 := {}.
+  Global Instance bor_params : Params (@bor) 4 := {}.
 
   Global Declare Instance bor_ne κ n : Proper (dist n ==> dist n) (bor κ).
   Global Declare Instance bor_contractive κ : Contractive (bor κ).

@@ -46,9 +46,9 @@ Record type `{typeG Σ} :=
       κ' ⊑ κ -∗ ty_shr κ tid l -∗ ty_shr κ' tid l
   }.
 Existing Instance ty_shr_persistent.
-Instance: Params (@ty_size) 2.
-Instance: Params (@ty_own) 2.
-Instance: Params (@ty_shr) 2.
+Instance: Params (@ty_size) 2 := {}.
+Instance: Params (@ty_own) 2 := {}.
+Instance: Params (@ty_shr) 2 := {}.
 
 Arguments ty_own {_ _} !_ _ _ / : simpl nomatch.
 
@@ -117,7 +117,7 @@ Record simple_type `{typeG Σ} :=
     st_size_eq tid vl : st_own tid vl -∗ ⌜length vl = 1%nat⌝;
     st_own_persistent tid vl : Persistent (st_own tid vl) }.
 Existing Instance st_own_persistent.
-Instance: Params (@st_own) 2.
+Instance: Params (@st_own) 2 := {}.
 
 Program Definition ty_of_st `{typeG Σ} (st : simple_type) : type :=
   {| ty_size := 1; ty_own := st.(st_own);
@@ -399,30 +399,30 @@ Class Copy `{typeG Σ} (t : type) := {
                                   ={E}=∗ na_own tid F ∗ q.[κ])
 }.
 Existing Instances copy_persistent.
-Instance: Params (@Copy) 2.
+Instance: Params (@Copy) 2 := {}.
 
 Class LstCopy `{typeG Σ} (tys : list type) := lst_copy : Forall Copy tys.
-Instance: Params (@LstCopy) 2.
+Instance: Params (@LstCopy) 2 := {}.
 Global Instance lst_copy_nil `{typeG Σ} : LstCopy [] := List.Forall_nil _.
 Global Instance lst_copy_cons `{typeG Σ} ty tys :
   Copy ty → LstCopy tys → LstCopy (ty :: tys) := List.Forall_cons _ _ _.
 
 Class Send `{typeG Σ} (t : type) :=
   send_change_tid tid1 tid2 vl : t.(ty_own) tid1 vl -∗ t.(ty_own) tid2 vl.
-Instance: Params (@Send) 2.
+Instance: Params (@Send) 2 := {}.
 
 Class LstSend `{typeG Σ} (tys : list type) := lst_send : Forall Send tys.
-Instance: Params (@LstSend) 2.
+Instance: Params (@LstSend) 2 := {}.
 Global Instance lst_send_nil `{typeG Σ} : LstSend [] := List.Forall_nil _.
 Global Instance lst_send_cons `{typeG Σ} ty tys :
   Send ty → LstSend tys → LstSend (ty :: tys) := List.Forall_cons _ _ _.
 
 Class Sync `{typeG Σ} (t : type) :=
   sync_change_tid κ tid1 tid2 l : t.(ty_shr) κ tid1 l -∗ t.(ty_shr) κ tid2 l.
-Instance: Params (@Sync) 2.
+Instance: Params (@Sync) 2 := {}.
 
 Class LstSync `{typeG Σ} (tys : list type) := lst_sync : Forall Sync tys.
-Instance: Params (@LstSync) 2.
+Instance: Params (@LstSync) 2 := {}.
 Global Instance lst_sync_nil `{typeG Σ} : LstSync [] := List.Forall_nil _.
 Global Instance lst_sync_cons `{typeG Σ} ty tys :
   Sync ty → LstSync tys → LstSync (ty :: tys) := List.Forall_cons _ _ _.
@@ -523,17 +523,17 @@ Definition type_incl `{typeG Σ} (ty1 ty2 : type) : iProp Σ :=
     (⌜ty1.(ty_size) = ty2.(ty_size)⌝ ∗
      (□ ∀ tid vl, ty1.(ty_own) tid vl -∗ ty2.(ty_own) tid vl) ∗
      (□ ∀ κ tid l, ty1.(ty_shr) κ tid l -∗ ty2.(ty_shr) κ tid l))%I.
-Instance: Params (@type_incl) 2.
+Instance: Params (@type_incl) 2 := {}.
 (* Typeclasses Opaque type_incl. *)
 
 Definition subtype `{typeG Σ} (E : elctx) (L : llctx) (ty1 ty2 : type) : Prop :=
   ∀ qL, llctx_interp L qL -∗ □ (elctx_interp E -∗ type_incl ty1 ty2).
-Instance: Params (@subtype) 4.
+Instance: Params (@subtype) 4 := {}.
 
 (* TODO: The prelude should have a symmetric closure. *)
 Definition eqtype `{typeG Σ} (E : elctx) (L : llctx) (ty1 ty2 : type) : Prop :=
   subtype E L ty1 ty2 ∧ subtype E L ty2 ty1.
-Instance: Params (@eqtype) 4.
+Instance: Params (@eqtype) 4 := {}.
 
 Section subtyping.
   Context `{typeG Σ}.
