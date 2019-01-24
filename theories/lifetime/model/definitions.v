@@ -200,12 +200,12 @@ Section defs.
     (∃ κ', lft_incl κ κ' ∗ raw_bor κ' P)%I.
 End defs.
 
-Instance: Params (@lft_bor_alive) 4.
-Instance: Params (@lft_inh) 5.
-Instance: Params (@lft_vs) 4.
-Instance idx_bor_params : Params (@idx_bor) 5.
-Instance raw_bor_params : Params (@raw_bor) 4.
-Instance bor_params : Params (@bor) 4.
+Instance: Params (@lft_bor_alive) 4 := {}.
+Instance: Params (@lft_inh) 5 := {}.
+Instance: Params (@lft_vs) 4 := {}.
+Instance idx_bor_params : Params (@idx_bor) 5 := {}.
+Instance raw_bor_params : Params (@raw_bor) 4 := {}.
+Instance bor_params : Params (@bor) 4 := {}.
 
 Notation "q .[ κ ]" := (lft_tok q κ)
     (format "q .[ κ ]", at level 0) : bi_scope.
