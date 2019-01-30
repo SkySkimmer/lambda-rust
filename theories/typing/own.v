@@ -24,7 +24,7 @@ Section own.
     destruct n.
     - iSplit; iIntros "H /="; auto.
     - assert (Z.of_nat (S n) = 0 ↔ False) as -> by done. rewrite right_id.
-      rewrite /freeable_sz (proj2 (Qp_eq (mk_Qp _ _) 1)) //= Qcmult_inv_r //.
+      rewrite /freeable_sz (proj2 (Qp_eq (mk_Qp _ _) 1)) //= /Qcdiv Qcmult_inv_r //.
   Qed.
 
   Lemma freeable_sz_full_S n l : freeable_sz (S n) (S n) l ⊣⊢ †{1}l…(S n).
