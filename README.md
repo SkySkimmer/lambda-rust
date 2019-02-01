@@ -7,7 +7,7 @@ This is the Coq development accompanying lambda-Rust.
 This version is known to compile with:
 
  - Coq 8.7.2 / 8.8.2
- - A development version of [Iris](https://gitlab.mpi-sws.org/FP/iris-coq/)
+ - A development version of [Iris](https://gitlab.mpi-sws.org/iris/iris)
 
 ## Building from source
 
@@ -15,7 +15,7 @@ When building from source, we recommend to use opam (1.2.2 or newer) for
 installing the dependencies.  This requires the following two repositories:
 
     opam repo add coq-released https://coq.inria.fr/opam/released
-    opam repo add iris-dev https://gitlab.mpi-sws.org/FP/opam-dev.git
+    opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam-dev.git
 
 Once you got opam set up, run `make build-dep` to install the right versions
 of the dependencies.
