@@ -15,7 +15,7 @@ When building from source, we recommend to use opam (1.2.2 or newer) for
 installing the dependencies.  This requires the following two repositories:
 
     opam repo add coq-released https://coq.inria.fr/opam/released
-    opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam-dev.git
+    opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
 
 Once you got opam set up, run `make build-dep` to install the right versions
 of the dependencies.
